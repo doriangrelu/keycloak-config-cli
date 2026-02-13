@@ -29,6 +29,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -41,9 +42,11 @@ public class RealmImport extends RealmRepresentation {
 
     private Map<String, Map<String, String>> messageBundles;
 
+    private Collection<ProtectedResource> protectedResources;
+
     private String checksum;
     private String source;
-    
+
     // FGAP V2 field (Keycloak 26.2+) - Fine-Grained Admin Permissions
     // This field is not in the base RealmRepresentation but is used in newer Keycloak versions
     // When set to true, Keycloak automatically creates an "admin-permissions" client
@@ -55,6 +58,16 @@ public class RealmImport extends RealmRepresentation {
         if (authenticationFlowImports == null) return null;
 
         return new ArrayList<>(authenticationFlowImports);
+    }
+
+    @SuppressWarnings("unused")
+    @JsonSetter("protectedResources")
+    public void setAuthenticationFlowImports(Collection<ProtectedResource> protectedResources) {
+        this.protectedResources = protectedResources;
+    }
+
+    public Collection<ProtectedResource> getProtectedResources() {
+        return null == this.protectedResources ? List.of() : List.copyOf(protectedResources);
     }
 
     @SuppressWarnings("unused")

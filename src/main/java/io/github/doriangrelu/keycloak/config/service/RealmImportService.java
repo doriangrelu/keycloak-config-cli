@@ -20,11 +20,13 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
 import io.github.doriangrelu.keycloak.config.service.checksum.ChecksumService;
+import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -146,6 +148,8 @@ public class RealmImportService {
     }
 
     public void doImport(RealmImport realmImport) {
+        ExecutionContextHolder.context().put(realmImport.getRealm(), ProtectedResource.class, realmImport.getProtectedResources());
+
         boolean realmExists = realmRepository.exists(realmImport.getRealm());
 
         if (realmExists) {

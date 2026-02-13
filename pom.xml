@@ -15,9 +15,8 @@
 
     <name>keycloak-config-cli</name>
     <url>https://github.com/doriangrelu/keycloak-config-cli</url>
-    <description>This tool is able to import JSON-formatted configuration files into Keycloak by using its REST
-        interface.
-    </description>
+    <description>Import JSON/YAML configuration files into Keycloak using its REST interface.</description>
+
     <licenses>
         <license>
             <name>The Apache License, Version 2.0</name>
@@ -47,43 +46,28 @@
         <tag>HEAD</tag>
     </scm>
 
-    <issueManagement>
-        <system>Github</system>
-        <url>https://github.com/adorsys/keycloak-config-cli/issues</url>
-    </issueManagement>
-
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <keycloak.version>${keycloak.version}</keycloak.version>
-        <!-- According to a new policy of the keycloak libraries releases: https://www.keycloak.org/2024/10/release-updates.html -->
-        <keycloak.client.version>${keycloak.client.version}</keycloak.client.version>
+        <!-- Keycloak -->
+        <keycloak.version>26.5.3</keycloak.version>
+        <keycloak.client.version>26.0.8</keycloak.client.version>
 
+        <!-- Dependencies -->
         <commons-text.version>1.12.0</commons-text.version>
         <failsafe.version>3.3.2</failsafe.version>
-        <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
         <jackson.version>2.17.2</jackson.version>
-        <junit-pioneer.version>2.3.0</junit-pioneer.version>
-        <keepachangelog.version>2.1.1</keepachangelog.version>
-        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
         <javers.version>7.6.3</javers.version>
-        <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
-        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
-        <maven-replacer.version>1.5.3</maven-replacer.version>
-        <maven-scm-plugin.version>2.1.0</maven-scm-plugin.version>
-        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
+        <resteasy.version>6.2.10.Final</resteasy.version>
+
+        <!-- Test Dependencies -->
+        <junit-pioneer.version>2.3.0</junit-pioneer.version>
         <mockserver.version>5.15.0</mockserver.version>
-        <reproducible-build-maven-plugin.version>0.17</reproducible-build-maven-plugin.version>
-        <resteasy.version>7.0.0.Alpha2</resteasy.version>
-        <snakeyaml.version>2.3</snakeyaml.version>
         <testcontainers.version>1.20.3</testcontainers.version>
         <unboundid-ldapsdk.version>7.0.1</unboundid-ldapsdk.version>
-        <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
-
-        <release.signTag>true</release.signTag>
-        <release.additionalArguments />
 
         <argLine>
             --add-exports=java.base/sun.security.x509=ALL-UNNAMED
@@ -116,34 +100,11 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-text</artifactId>
-                <version>${commons-text.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>net.jodah</groupId>
-                <artifactId>failsafe</artifactId>
-                <version>${failsafe.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.javers</groupId>
-                <artifactId>javers-core</artifactId>
-                <version>${javers.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
+        <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
@@ -176,17 +137,30 @@
             <artifactId>spring-boot-loader</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-        </dependency>
-
+        <!-- Keycloak -->
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-admin-client</artifactId>
             <version>${keycloak.client.version}</version>
         </dependency>
 
+        <!-- Jackson -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+
+        <!-- Commons -->
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
@@ -208,6 +182,7 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
+        <!-- Other -->
         <dependency>
             <groupId>dev.failsafe</groupId>
             <artifactId>failsafe</artifactId>
@@ -215,18 +190,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.javers</groupId>
             <artifactId>javers-core</artifactId>
+            <version>${javers.version}</version>
         </dependency>
 
         <dependency>
@@ -268,12 +234,14 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.junit-pioneer</groupId>
             <artifactId>junit-pioneer</artifactId>
@@ -304,103 +272,8 @@
 
     <build>
         <finalName>${project.artifactId}</finalName>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.5.0</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>${maven-release-plugin.version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>com.google.code.maven-replacer-plugin</groupId>
-                    <artifactId>replacer</artifactId>
-                    <version>${maven-replacer.version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>io.github.zlika</groupId>
-                    <artifactId>reproducible-build-maven-plugin</artifactId>
-                    <version>${reproducible-build-maven-plugin.version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>pl.project13.maven</groupId>
-                    <artifactId>git-commit-id-plugin</artifactId>
-                    <version>${git-commit-id-plugin.version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>co.enear.maven.plugins</groupId>
-                    <artifactId>keepachangelog-maven-plugin</artifactId>
-                    <version>${keepachangelog.version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-scm-plugin</artifactId>
-                    <version>${maven-scm-plugin.version}</version>
-                    <configuration>
-                        <!-- commit additional files on release -->
-                        <includes>**/Chart.yaml,CHANGELOG.md</includes>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
 
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>enforce-java-home</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireEnvironmentVariable>
-                                    <variableName>JAVA_HOME</variableName>
-                                    <message>JAVA_HOME environment variable must be set!</message>
-                                </requireEnvironmentVariable>
-                            </rules>
-                            <fail>true</fail>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <configuration>
-                    <propertiesEncoding>${project.build.sourceEncoding}</propertiesEncoding>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>pl.project13.maven</groupId>
-                <artifactId>git-commit-id-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <dateFormat>yyyyMMddHHmmss</dateFormat>
-                    <dateFormatTimeZone>UTC</dateFormatTimeZone>
-                    <verbose>false</verbose>
-                    <offline>true</offline>
-                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
-                </configuration>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -412,34 +285,11 @@
             </plugin>
 
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
                 <configuration>
-                    <licenseName>apache_v2</licenseName>
-                    <projectName>keycloak-config-cli</projectName>
-                    <copyrightOwners>adorsys GmbH &amp; Co. KG @ https://adorsys.com</copyrightOwners>
-                    <inceptionYear>2017</inceptionYear>
-
-                    <includes>**/*.java</includes>
-
-                    <processStartTag>---license-start</processStartTag>
-                    <processEndTag>---license-end</processEndTag>
-
-                    <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
-                    <sectionDelimiter>---</sectionDelimiter>
-                    <trimHeaderLine>true</trimHeaderLine>
-                    <emptyLineAfterHeader>true</emptyLineAfterHeader>
-                    <failOnMissingHeader>true</failOnMissingHeader>
-                    <failOnNotUptodateHeader>true</failOnNotUptodateHeader>
+                    <propertiesEncoding>${project.build.sourceEncoding}</propertiesEncoding>
                 </configuration>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check-file-header</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
@@ -455,109 +305,9 @@
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <configuration>
-                    <pushChanges>false</pushChanges>
-                    <signTag>${release.signTag}</signTag>
-                    <tagNameFormat>v@{project.version}</tagNameFormat>
-                    <preparationGoals>
-                        -B -ntp clean verify replacer:replace
-                        co.enear.maven.plugins:keepachangelog-maven-plugin:release
-                        scm:add ${release.additionalArguments}
-                    </preparationGoals>
-                    <completionGoals>
-                        -B -ntp clean replacer:replace
-                        scm:add ${release.additionalArguments}
-                    </completionGoals>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>com.google.code.maven-replacer-plugin</groupId>
-                <artifactId>replacer</artifactId>
-                <configuration>
-                    <ignoreMissingFile>false</ignoreMissingFile>
-                    <file>${project.basedir}/contrib/charts/keycloak-config-cli/Chart.yaml</file>
-                    <replacements>
-                        <replacement>
-                            <token>version: .*</token>
-                            <value>version: ${project.version}</value>
-                        </replacement>
-                        <replacement>
-                            <token>appVersion: .*</token>
-                            <value>appVersion: ${project.version}</value>
-                        </replacement>
-                    </replacements>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifestEntries>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <Last-Commit-Id>${git.commit.id}</Last-Commit-Id>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <Last-Commit-Time>${git.commit.time}</Last-Commit-Time>
-                            <Reproducible-Build>true</Reproducible-Build>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <layout>ZIP</layout>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>io.github.zlika</groupId>
-                <artifactId>reproducible-build-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>strip-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>strip-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <!--suppress UnresolvedMavenProperty -->
-                    <zipDateTime>${git.commit.time}</zipDateTime>
-                </configuration>
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>default-keycloak-version</id>
-            <activation>
-                <property>
-                    <name>!keycloak.version</name>
-                </property>
-            </activation>
-            <properties>
-                <keycloak.version>26.5.3</keycloak.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>default-keycloak-client-version</id>
-            <activation>
-                <property>
-                    <name>!keycloak.client.version</name>
-                </property>
-            </activation>
-            <properties>
-                <keycloak.client.version>26.0.8</keycloak.client.version>
-            </properties>
-        </profile>
-    </profiles>
 </project>

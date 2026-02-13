@@ -166,13 +166,13 @@ public class ClientImportService {
         final List<ClientRepresentation> existingClients = this.clientRepository.getAll(realmImport.getRealm());
         existingClients
                 .stream()
-                .filter(client -> !KeycloakUtil.doesProtected(client.getName()))
+                .filter(client -> !KeycloakUtil.doesProtected(realmImport.getRealm(), client.getClientId()))
                 .filter(client -> !KeycloakUtil.isDefaultClient(client))
                 .filter(client -> !importedClients.contains(client.getClientId()))
-                .filter(client -> !(Objects.equals(realmImport.getRealm(), "master")))
-                .filter(client -> client.getClientId().endsWith("-realm"))
+                .filter(_ -> !Objects.equals(realmImport.getRealm(), "master"))
+                .filter(client -> !client.getClientId().endsWith("-realm"))
                 .filter(client -> !(ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getClientId())))
-                .filter(client -> this.keycloakProvider.isFgapV2Active())
+                .filter(_ -> this.keycloakProvider.isFgapV2Active())
                 .forEach(clientToRemove -> {
                     logger.warn("Remove client '{}' in realm '{}'", clientToRemove.getClientId(), realmImport.getRealm());
                     this.clientRepository.remove(realmImport.getRealm(), clientToRemove);

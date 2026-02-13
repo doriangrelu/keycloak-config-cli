@@ -165,7 +165,7 @@ public class GroupImportService {
      * </ol>
      *
      * @param realmImport the realm import configuration used as reference for deletion
-     * @see KeycloakUtil#doesProtected(String)
+     * @see KeycloakUtil#doesProtected(String, String)
      */
     public void deleteGroupsMissingInImport(final RealmImport realmImport) {
         final String realmName = realmImport.getRealm();
@@ -176,7 +176,7 @@ public class GroupImportService {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         this.groupRepository.getAll(realmName).stream()
-                .filter(group -> !KeycloakUtil.doesProtected(group.getName()))
+                .filter(group -> !KeycloakUtil.doesProtected(realmName, group.getName()))
                 .forEach(existingGroup -> this.processGroupDeletion(groupPathMap, realmName, existingGroup));
     }
 
@@ -196,8 +196,7 @@ public class GroupImportService {
         if (groupPathMap.containsKey(groupPath)) {
             this.deleteOrphanedSubGroupsRecursively(groupPathMap, realmName, group.getId());
         } else {
-            logger.warn("Delete group '{}' in realm '{}'", group.getName(), realmName);
-            this.groupRepository.deleteGroup(realmName, group.getId());
+            this.doDeleteGroup(realmName, group);
         }
     }
 
@@ -219,10 +218,16 @@ public class GroupImportService {
             if (groupPathMap.containsKey(subGroup.getPath())) {
                 this.deleteOrphanedSubGroupsRecursively(groupPathMap, realmName, subGroup.getId());
             } else {
-                logger.warn("Delete subgroup '{}' in realm '{}'", subGroup.getPath(), realmName);
-                this.groupRepository.deleteGroup(realmName, subGroup.getId());
+                this.doDeleteGroup(realmName, subGroup);
             }
         });
+    }
+
+    private void doDeleteGroup(final String realmName, final GroupRepresentation group) {
+        if (!KeycloakUtil.doesProtected(realmName, group.getName())) {
+            logger.warn("Delete group '{}' in realm '{}'", group.getPath(), realmName);
+            this.groupRepository.deleteGroup(realmName, group.getId());
+        }
     }
 
     /**

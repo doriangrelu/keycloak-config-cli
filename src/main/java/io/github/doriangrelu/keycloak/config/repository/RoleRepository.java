@@ -114,7 +114,7 @@ public class RoleRepository {
     }
 
     public void deleteRealmRole(String realmName, RoleRepresentation roleToUpdate) {
-        if (!KeycloakUtil.isDefaultRole(roleToUpdate) && !KeycloakUtil.doesProtected(roleToUpdate.getName())) {
+        if (!KeycloakUtil.isDefaultRole(roleToUpdate) && !KeycloakUtil.doesProtected(realmName, roleToUpdate.getName())) {
             log.warn("Delete role '{}' for realm '{}'", roleToUpdate.getName(), realmName);
             realmRepository.getResource(realmName)
                     .roles()
