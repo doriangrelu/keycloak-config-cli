@@ -5,6 +5,21 @@
 [![codecov](https://codecov.io/gh/adorsys/keycloak-config-cli/branch/main/graph/badge.svg)](https://codecov.io/gh/adorsys/keycloak-config-cli)
 [![GitHub license](https://img.shields.io/github/license/adorsys/keycloak-config-cli)](https://github.com/adorsys/keycloak-config-cli/blob/main/LICENSE.txt)
 
+---
+
+## Documentation
+
+**Full documentation is available in the [`documentation/`](./documentation/README.md) folder.**
+
+Quick links:
+- [Installation Guide](./documentation/getting-started/installation.md)
+- [Quick Start](./documentation/getting-started/quick-start.md)
+- [Configuration Reference](./documentation/getting-started/configuration.md)
+- [Groups Configuration](./documentation/configuration/groups.md)
+- [Examples](./documentation/examples/basic-realm.md)
+
+---
+
 # Table of Contents
 
 - [Quick start](#quick-start)
@@ -32,7 +47,7 @@ It is a Keycloak utility to ensure the desired configuration state for a realm b
 
 ## Help and community
 
-- Documentation: see `DOCUMENTATION.md` and `docs/FEATURES.md`
+- Documentation: see [`documentation/`](./documentation/README.md) folder
 - Report an issue: https://github.com/adorsys/keycloak-config-cli/issues
 - Security vulnerability? Please follow `SECURITY.md`
 - Code of Conduct: `CODE_OF_CONDUCT.md`
@@ -125,7 +140,7 @@ keycloak-config-cli supports logging in JSON format. To enable, set `SPRING_PROF
 
 # Supported features
 
-See: [docs/FEATURES.md](./docs/FEATURES.md)
+See: [documentation/reference/features.md](./documentation/reference/features.md)
 
 # Compatibility with keycloak
 
@@ -267,7 +282,7 @@ Checkout helm docs about [chart dependencies](https://helm.sh/docs/topics/charts
 | --keycloak.read-timeout               | `KEYCLOAK_READTIMEOUT`               | Read timeout                                                                      | `10s`       | configured as [Java Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html) |
 | --keycloak.availability-check.enabled | `KEYCLOAK_AVAILABILITYCHECK_ENABLED` | Wait until Keycloak is available                                                  | `false`     | configured as [Java Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html) |
 | --keycloak.availability-check.timeout | `KEYCLOAK_AVAILABILITYCHECK_TIMEOUT` | Wait timeout for keycloak availability check                                      | `120s`      |                                                                                                  |
-| --keycloak.skip-server-info          | `KEYCLOAK_SKIPSERVERINFO`            | Skip fetching Keycloak server info. Required for non-master realm authentication. | `false`     | [SKIP_SERVER_INFO.md](docs/SKIP_SERVER_INFO.md)                                                  |
+| --keycloak.skip-server-info          | `KEYCLOAK_SKIPSERVERINFO`            | Skip fetching Keycloak server info. Required for non-master realm authentication. | `false`     | [SKIP_SERVER_INFO.md](documentation/reference/skip-server-info.md)                                                  |
 
 ### Import options
 
@@ -275,12 +290,12 @@ Checkout helm docs about [chart dependencies](https://helm.sh/docs/topics/charts
 |-------------------------------------------------------|----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|-------------------------------|
 | --import.validate                                     | `IMPORT_VALIDATE`                                  | Validate configuration settings                                                                                                                                                                                                                                                                                                                                                                                                    | `false`    |                               |
 | --import.parallel                                     | `IMPORT_PARALLEL`                                  | Enable parallel import of certain resources                                                                                                                                                                                                                                                                                                                                                                                        | `false`    |                               |
-| --import.files.locations                              | `IMPORT_FILES_LOCATIONS`                           | Location of config files (URL, file path, or Ant-style pattern)                                                                                                                                                                                                                                                                                                                                                                    | -          | [IMPORT.md](docs/IMPORT.md)   |
+| --import.files.locations                              | `IMPORT_FILES_LOCATIONS`                           | Location of config files (URL, file path, or Ant-style pattern)                                                                                                                                                                                                                                                                                                                                                                    | -          | [IMPORT.md](documentation/reference/import-patterns.md)   |
 | --import.files.include-hidden-files                   | `IMPORT_FILES_INCLUDE_HIDDEN_FILES`                | Includes files that marked as hidden                                                                                                                                                                                                                                                                                                                                                                                               | `false`    |                               |
 | --import.files.excludes                               | `IMPORT_FILES_EXCLUDES`                            | Exclude files with Ant-style pattern                                                                                                                                                                                                                                                                                                                                                                                               | -          |                               |
 | --import.cache.enabled                                | `IMPORT_CACHE_ENABLED`                             | Enable caching of import file locations                                                                                                                                                                                                                                                                                                                                                                                            | `true`     |                               |
 | --import.cache.key                                    | `IMPORT_CACHE_KEY`                                 | Cache key for importing config.                                                                                                                                                                                                                                                                                                                                                                                                    | `default`  |                               |
-| --import.remote-state.enabled                         | `IMPORT_REMOTESTATE_ENABLED`                       | Enable remote state management. Purge only resources managed by keycloak-config-cli.                                                                                                                                                                                                                                                                                                                                               | `true`     | [MANAGED.md](docs/MANAGED.md) |
+| --import.remote-state.enabled                         | `IMPORT_REMOTESTATE_ENABLED`                       | Enable remote state management. Purge only resources managed by keycloak-config-cli.                                                                                                                                                                                                                                                                                                                                               | `true`     | [MANAGED.md](documentation/reference/managed-resources.md) |
 | --import.remote-state.encryption-key                  | `IMPORT_REMOTESTATE_ENCRYPTIONKEY`                 | Enables remote state in encrypted format. If unset, state will be stored in plain                                                                                                                                                                                                                                                                                                                                                  | -          |                               |
 | --import.var-substitution.enabled                     | `IMPORT_VARSUBSTITUTION_ENABLED`                   | Enable variable substitution config files                                                                                                                                                                                                                                                                                                                                                                                          | `false`    |                               |
 | --import.var-substitution.nested                      | `IMPORT_VARSUBSTITUTION_NESTED`                    | Expand variables in variables.                                                                                                                                                                                                                                                                                                                                                                                                     | `true`     |                               |

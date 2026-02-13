@@ -11,7 +11,7 @@
     <groupId>io.github.doriangrelu.keycloak</groupId>
     <artifactId>keycloak-config-cli</artifactId>
     <packaging>jar</packaging>
-    <version>6.4.2-SNAPSHOT</version>
+    <version>7.0.0-SNAPSHOT</version>
 
     <name>keycloak-config-cli</name>
     <url>https://github.com/doriangrelu/keycloak-config-cli</url>
@@ -1073,7 +1073,7 @@ import org.keycloak.representations.userprofile.config.UPConfig;</token>
                 </property>
             </activation>
             <properties>
-                <keycloak.version>26.3.3</keycloak.version>
+                <keycloak.version>26.5.3</keycloak.version>
             </properties>
         </profile>
         <profile>
@@ -1084,24 +1084,8 @@ import org.keycloak.representations.userprofile.config.UPConfig;</token>
                 </property>
             </activation>
             <properties>
-                <keycloak.client.version>26.0.6</keycloak.client.version>
+                <keycloak.client.version>26.0.8</keycloak.client.version>
             </properties>
-        </profile>
-        <!-- Configure the JBoss GA Maven repository -->
-        <profile>
-            <id>rh-sso</id>
-            <repositories>
-                <repository>
-                    <id>redhat-ga-repository</id>
-                    <url>https://maven.repository.redhat.com/ga/</url>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </repository>
-            </repositories>
         </profile>
     </profiles>
 </project>

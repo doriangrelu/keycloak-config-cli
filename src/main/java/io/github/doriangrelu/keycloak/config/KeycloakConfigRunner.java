@@ -37,6 +37,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -84,14 +85,18 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
 
             Map<String, Map<String, List<RealmImport>>> realmImports = keycloakImport.getRealmImports();
 
+            final Collection<RealmImport> importedRealm = new ArrayList<>();
+
             for (Map<String, List<RealmImport>> realmImportLocations : realmImports.values()) {
                 for (Map.Entry<String, List<RealmImport>> realmImport : realmImportLocations.entrySet()) {
                     logger.info("Importing file '{}'", realmImport.getKey());
                     for (RealmImport realmImportParts : realmImport.getValue()) {
                         realmImportService.doImport(realmImportParts);
+                        importedRealm.add(realmImportParts);
                     }
                 }
             }
+            importedRealm.forEach(realmImportService::cleanRealm);
         } catch (NullPointerException e) {
             throw e;
         } catch (Exception e) {

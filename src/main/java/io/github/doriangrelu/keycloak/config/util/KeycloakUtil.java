@@ -20,14 +20,26 @@
 
 package io.github.doriangrelu.keycloak.config.util;
 
+import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 
+import java.util.Collection;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class KeycloakUtil {
     private KeycloakUtil() {
+    }
+
+    public static boolean doesProtected(final String name) {
+        final Collection<String> protectedPatterns = ExecutionContextHolder.context().get("protected", String.class);
+
+        return protectedPatterns.stream().map(Pattern::compile)
+                .map(pattern -> pattern.matcher(name))
+                .anyMatch(Matcher::matches);
     }
 
     private static boolean isDefaultResource(String prefix, String property1, String property2) {

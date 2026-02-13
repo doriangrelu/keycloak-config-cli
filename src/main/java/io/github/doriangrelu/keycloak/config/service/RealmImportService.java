@@ -187,7 +187,6 @@ public class RealmImportService {
 
         stateService.loadState(realmImport);
         configureRealm(realmImport, realm);
-        cleanRealm(realmImport);
     }
 
     private void updateRealm(RealmImport realmImport) {
@@ -207,7 +206,6 @@ public class RealmImportService {
         realmRepository.update(realm);
 
         configureRealm(realmImport, realm);
-        cleanRealm(realmImport);
     }
 
     private void importOtpPolicy(RealmImport realmImport) {
@@ -257,9 +255,13 @@ public class RealmImportService {
      *
      * @param realmImport the realm import configuration identifying the target realm
      */
-    private void cleanRealm(final RealmImport realmImport) {
+    public void cleanRealm(final RealmImport realmImport) {
         if (importProperties.getManaged().getClient() == FULL) {
+            logger.warn("Start cleaning realm import for realm '{}'", realmImport.getRealm());
             this.clientImportService.deleteClientsMissingInImport(realmImport);
+            this.roleImportService.deleteRealmRolesMissingInImport(realmImport);
+            this.roleImportService.deleteClientRolesMissingInImport(realmImport);
+            this.groupImportService.deleteGroupsMissingInImport(realmImport);
         }
     }
 

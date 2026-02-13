@@ -24,21 +24,42 @@ import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.resource.ManagementPermissions;
-import org.keycloak.admin.client.resource.*;
-import org.keycloak.representations.idm.*;
+import io.github.doriangrelu.keycloak.config.util.KeycloakUtil;
+import jakarta.ws.rs.NotFoundException;
+import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.RoleResource;
+import org.keycloak.admin.client.resource.RoleScopeResource;
+import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.ManagementPermissionRepresentation;
+import org.keycloak.representations.idm.MappingsRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
-import jakarta.ws.rs.NotFoundException;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class RoleRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(RoleRepository.class);
+
     private final RealmRepository realmRepository;
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
@@ -55,6 +76,7 @@ public class RoleRepository {
         this.userRepository = userRepository;
         this.keycloakProvider = keycloakProvider;
     }
+
 
     public Optional<RoleRepresentation> searchRealmRole(String realmName, String name) {
         Optional<RoleRepresentation> maybeRole;
@@ -77,8 +99,8 @@ public class RoleRepository {
             rolesResource.create(role);
         } catch (Exception e) {
             throw new KeycloakRepositoryException(
-                "Cannot create realm role '%s' within realm '%s': %s",
-                role.getName(), realmName, e.getMessage()
+                    "Cannot create realm role '%s' within realm '%s': %s",
+                    role.getName(), realmName, e.getMessage()
             );
         }
     }
@@ -92,9 +114,12 @@ public class RoleRepository {
     }
 
     public void deleteRealmRole(String realmName, RoleRepresentation roleToUpdate) {
-        realmRepository.getResource(realmName)
-                .roles()
-                .deleteRole(roleToUpdate.getName());
+        if (!KeycloakUtil.isDefaultRole(roleToUpdate) && !KeycloakUtil.doesProtected(roleToUpdate.getName())) {
+            log.warn("Delete role '{}' for realm '{}'", roleToUpdate.getName(), realmName);
+            realmRepository.getResource(realmName)
+                    .roles()
+                    .deleteRole(roleToUpdate.getName());
+        }
     }
 
     public RoleRepresentation getRealmRole(String realmName, String roleName) {
@@ -172,13 +197,16 @@ public class RoleRepository {
     }
 
     public void deleteClientRole(String realmName, String clientId, RoleRepresentation role) {
-        ClientRepresentation client = clientRepository.getByClientId(realmName, clientId);
+        if (!List.of("realm-management", "account", "broker").contains(clientId)) {
+            log.warn("Delete client role '{}' within realm '{}' for client '{}'", role.getName(), realmName, clientId);
+            final ClientRepresentation client = clientRepository.getByClientId(realmName, clientId);
+            realmRepository.getResource(realmName)
+                    .clients()
+                    .get(client.getId())
+                    .roles()
+                    .deleteRole(role.getName());
+        }
 
-        realmRepository.getResource(realmName)
-                .clients()
-                .get(client.getId())
-                .roles()
-                .deleteRole(role.getName());
     }
 
     public List<RoleRepresentation> searchRealmRoles(String realmName, List<String> roleNames) {

@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [7.0.0] - 2026-02-13
+
+### Added
+- Recursive deletion of orphaned subgroups in `GroupImportService` - groups not present in import configuration are now properly deleted at all hierarchy levels
+- Deletion of orphaned realm roles in `RoleImportService` via `deleteRealmRolesMissingInImport` using ExecutionContextHolder
+- Deletion of orphaned client roles in `RoleImportService` via `deleteClientRolesMissingInImport` with per-client tracking
+- Deletion of orphaned clients in `ClientImportService` via `deleteClientsMissingInImport` with protection for system clients
+- Complete user documentation in `/documentation` folder with guides, examples, and reference material
+- Technical reference documentation merged from legacy `/docs` folder
+
+### Changed
+- **BREAKING**: Refactored `GroupImportService` to use functional programming with Java Streams
+- **BREAKING**: Refactored `RoleImportService` to track imported roles via ExecutionContextHolder for managed deletion
+- **BREAKING**: Refactored `ClientImportService` to track imported clients via ExecutionContextHolder for managed deletion
+- Renamed `tryRecursivelyDeletingDanglingSubGroups` to `deleteOrphanedSubGroupsRecursively` for clarity
+- Replaced mutable `buildGroupPathLookupMap` with immutable `flattenGroupHierarchy` returning a Stream
+- `RoleImportService` now stores imported roles in ExecutionContext for later cleanup phase
+- `ClientImportService` now stores imported clients in ExecutionContext for later cleanup phase
+- Enhanced FGAP V2 handling: `admin-permissions` client is now properly skipped during import and deletion
+- Updated README with prominent documentation links
+
+### Documentation
+- Added comprehensive JavaDoc to `GroupImportService` class
+- Added comprehensive JavaDoc to `ClientImportService` class
+- Created full documentation structure:
+  - Getting Started: installation, quick-start, configuration
+  - Concepts: overview, managed-resources, import-modes
+  - Configuration: realms, clients, groups, roles, users, authentication-flows, identity-providers, client-scopes
+  - Examples: basic-realm, groups-and-roles, client-configuration, full-realm-example
+  - Advanced: parallel-processing, state-management, normalization, protected-resources
+  - Reference: features, import-patterns, managed-resources, normalization-details, rhsso-compatibility, skip-server-info
+- Removed legacy `/docs` folder (content merged into `/documentation/reference`)
+
 ## [6.4.1] - 2026-01-28
 
 ### Added
