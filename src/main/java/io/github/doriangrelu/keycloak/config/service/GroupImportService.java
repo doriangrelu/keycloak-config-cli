@@ -718,7 +718,7 @@ public class GroupImportService {
                 continue;
             }
 
-            this.groupRepository.deleteGroup(realmName, existingSubGroup.getId());
+            this.doDeleteGroup(realmName, existingSubGroup);
         }
     }
 
