@@ -1,0 +1,32 @@
+realm: "{{environment:dev}}-{{realm_name:my-realm}}"
+
+clients:
+  - clientId: my-frontend
+    name: My Frontend SPA
+    description: Public client for single-page application (PKCE)
+    enabled: true
+    protocol: openid-connect
+
+    # Public client with PKCE
+    publicClient: true
+    serviceAccountsEnabled: false
+    standardFlowEnabled: true
+    directAccessGrantsEnabled: false
+    implicitFlowEnabled: false
+
+    rootUrl: "{{frontend_url:http://localhost:3000}}"
+    baseUrl: "{{frontend_url:http://localhost:3000}}"
+    redirectUris:
+      - "{{frontend_url:http://localhost:3000}}/*"
+    webOrigins:
+      - "{{frontend_url:http://localhost:3000}}"
+
+    defaultClientScopes:
+      - profile
+      - email
+      - roles
+      - app-api
+
+    attributes:
+      pkce.code.challenge.method: S256
+      post.logout.redirect.uris: "{{frontend_url:http://localhost:3000}}/*"

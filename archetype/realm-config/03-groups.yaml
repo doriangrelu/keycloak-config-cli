@@ -1,0 +1,12 @@
+realm: "{{environment:dev}}-{{realm_name:my-realm}}"
+
+groups:
+  - name: administrators
+    realmRoles:
+      - app-admin
+    subGroups:
+      - name: super-admins
+
+  - name: users
+    realmRoles:
+      - app-user

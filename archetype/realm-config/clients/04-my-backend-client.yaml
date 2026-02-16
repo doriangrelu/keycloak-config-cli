@@ -1,0 +1,26 @@
+realm: "{{environment:dev}}-{{realm_name:my-realm}}"
+
+clients:
+  - clientId: my-backend
+    name: My Backend Service
+    description: Confidential client for backend service-to-service communication
+    enabled: true
+    protocol: openid-connect
+
+    # Confidential client with service-account
+    publicClient: false
+    serviceAccountsEnabled: true
+    standardFlowEnabled: false
+    directAccessGrantsEnabled: false
+    implicitFlowEnabled: false
+
+    rootUrl: "{{backend_url:http://localhost:8081}}"
+    baseUrl: "{{backend_url:http://localhost:8081}}"
+    redirectUris:
+      - "{{backend_url:http://localhost:8081}}/*"
+
+    defaultClientScopes:
+      - profile
+      - email
+      - roles
+      - app-api

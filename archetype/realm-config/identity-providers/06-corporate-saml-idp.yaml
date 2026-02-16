@@ -1,0 +1,46 @@
+realm: "{{environment:dev}}-{{realm_name:my-realm}}"
+
+identityProviders:
+  - alias: corporate-saml
+    displayName: Corporate SAML IdP
+    providerId: saml
+    enabled: true
+    trustEmail: false
+    firstBrokerLoginFlowAlias: first broker login
+    config:
+      # TODO: Replace with your actual IdP metadata URL or inline XML
+      singleSignOnServiceUrl: "https://idp.example.com/sso"
+      singleLogoutServiceUrl: "https://idp.example.com/slo"
+      nameIDPolicyFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+      postBindingResponse: "true"
+      postBindingAuthnRequest: "true"
+      wantAuthnRequestsSigned: "true"
+      wantAssertionsSigned: "true"
+      wantAssertionsEncrypted: "false"
+      validateSignature: "true"
+      # signingCertificate: "<paste IdP signing cert here>"
+
+identityProviderMappers:
+  - name: saml-email-mapper
+    identityProviderAlias: corporate-saml
+    identityProviderMapper: saml-user-attribute-idp-mapper
+    config:
+      syncMode: INHERIT
+      user.attribute: email
+      attribute.name: "urn:oid:0.9.2342.19200300.100.1.3"
+
+  - name: saml-firstname-mapper
+    identityProviderAlias: corporate-saml
+    identityProviderMapper: saml-user-attribute-idp-mapper
+    config:
+      syncMode: INHERIT
+      user.attribute: firstName
+      attribute.name: "urn:oid:2.5.4.42"
+
+  - name: saml-lastname-mapper
+    identityProviderAlias: corporate-saml
+    identityProviderMapper: saml-user-attribute-idp-mapper
+    config:
+      syncMode: INHERIT
+      user.attribute: lastName
+      attribute.name: "urn:oid:2.5.4.4"

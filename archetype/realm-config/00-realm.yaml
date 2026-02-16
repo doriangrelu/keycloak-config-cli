@@ -1,0 +1,88 @@
+realm: "{{environment:dev}}-{{realm_name:my-realm}}"
+enabled: true
+displayName: "{{realm_name:my-realm}} – {{environment:dev}}"
+
+# ── Login settings ──────────────────────────────────────────────────
+registrationAllowed: false
+registrationEmailAsUsername: false
+loginWithEmailAllowed: true
+duplicateEmailsAllowed: false
+resetPasswordAllowed: true
+editUsernameAllowed: false
+rememberMe: false
+
+# ── Brute-force protection ──────────────────────────────────────────
+bruteForceProtected: true
+permanentLockout: false
+failureFactor: 5
+maxFailureWaitSeconds: 900
+minimumQuickLoginWaitSeconds: 60
+waitIncrementSeconds: 60
+quickLoginCheckMilliSeconds: 1000
+maxDeltaTimeSeconds: 43200
+
+# ── Token lifespans ─────────────────────────────────────────────────
+defaultSignatureAlgorithm: RS256
+accessTokenLifespan: 300
+accessTokenLifespanForImplicitFlow: 900
+ssoSessionIdleTimeout: 1800
+ssoSessionMaxLifespan: 36000
+offlineSessionIdleTimeout: 2592000
+offlineSessionMaxLifespan: 5184000
+accessCodeLifespan: 60
+accessCodeLifespanUserAction: 300
+accessCodeLifespanLogin: 1800
+revokeRefreshToken: true
+refreshTokenMaxReuse: 0
+
+# ── Internationalization ────────────────────────────────────────────
+internationalizationEnabled: true
+supportedLocales:
+  - en
+  - fr
+defaultLocale: en
+
+# ── SMTP ────────────────────────────────────────────────────────────
+smtpServer:
+  host: "{{smtp_host:localhost}}"
+  port: "{{smtp_port:25}}"
+  from: "{{smtp_from:no-reply@example.com}}"
+  fromDisplayName: "{{realm_name:my-realm}} – No Reply"
+  ssl: "false"
+  starttls: "false"
+
+# ── Events ──────────────────────────────────────────────────────────
+eventsEnabled: true
+eventsListeners:
+  - jboss-logging
+adminEventsEnabled: true
+adminEventsDetailsEnabled: true
+enabledEventTypes:
+  - LOGIN
+  - LOGIN_ERROR
+  - LOGOUT
+  - LOGOUT_ERROR
+  - REGISTER
+  - REGISTER_ERROR
+  - CODE_TO_TOKEN
+  - CODE_TO_TOKEN_ERROR
+  - CLIENT_LOGIN
+  - CLIENT_LOGIN_ERROR
+  - SEND_RESET_PASSWORD
+  - SEND_RESET_PASSWORD_ERROR
+  - RESET_PASSWORD
+  - RESET_PASSWORD_ERROR
+  - SEND_VERIFY_EMAIL
+  - SEND_VERIFY_EMAIL_ERROR
+  - VERIFY_EMAIL
+  - VERIFY_EMAIL_ERROR
+  - UPDATE_PASSWORD
+  - UPDATE_PASSWORD_ERROR
+  - UPDATE_PROFILE
+  - UPDATE_PROFILE_ERROR
+  - IMPERSONATE
+  - IMPERSONATE_ERROR
+  - TOKEN_EXCHANGE
+  - TOKEN_EXCHANGE_ERROR
+  - EXECUTE_ACTIONS
+  - EXECUTE_ACTIONS_ERROR

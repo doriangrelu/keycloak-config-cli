@@ -1,0 +1,10 @@
+realm: "{{environment:dev}}-{{realm_name:my-realm}}"
+
+clientScopes:
+  - name: app-api
+    description: Custom scope for application API access
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: "true"
+      display.on.consent.screen: "true"
+      consent.screen.text: "Access to the application API"

@@ -1,0 +1,18 @@
+realm: "{{environment:dev}}-{{realm_name:my-realm}}"
+
+roles:
+  realm:
+    - name: app-admin
+      description: Full administrative access to the application
+      composite: false
+      clientRole: false
+
+    - name: app-user
+      description: Standard authenticated user
+      composite: false
+      clientRole: false
+
+    - name: app-readonly
+      description: Read-only access
+      composite: false
+      clientRole: false
