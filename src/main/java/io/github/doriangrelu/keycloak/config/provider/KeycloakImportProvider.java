@@ -22,8 +22,10 @@ package io.github.doriangrelu.keycloak.config.provider;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.samskivert.mustache.Mustache;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.model.ImportResource;
+import io.github.doriangrelu.keycloak.config.mustache.MustacheContextWithDefaults;
 import io.github.doriangrelu.keycloak.config.model.KeycloakImport;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
@@ -51,12 +53,20 @@ import java.io.InputStream;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class KeycloakImportProvider {
+    protected static final String DEFAULT_VALUE = "";
     private final PathMatchingResourcePatternResolver patternResolver;
     private final ImportConfigProperties importConfigProperties;
 
@@ -69,46 +79,46 @@ public class KeycloakImportProvider {
 
     @Autowired
     public KeycloakImportProvider(
-            Environment environment,
-            PathMatchingResourcePatternResolver patternResolver,
-            ImportConfigProperties importConfigProperties
+            final Environment environment,
+            final PathMatchingResourcePatternResolver patternResolver,
+            final ImportConfigProperties importConfigProperties
     ) {
         this.patternResolver = patternResolver;
         this.importConfigProperties = importConfigProperties;
 
         if (importConfigProperties.getVarSubstitution().isEnabled()) {
-            setupVariableSubstitution(environment);
+            this.setupVariableSubstitution(environment);
         }
     }
 
-    private void setupVariableSubstitution(Environment environment) {
-        StringLookup variableResolver = StringLookupFactory.INSTANCE.interpolatorStringLookup(
+    private void setupVariableSubstitution(final Environment environment) {
+        final StringLookup variableResolver = StringLookupFactory.INSTANCE.interpolatorStringLookup(
                 StringLookupFactory.INSTANCE.functionStringLookup(environment::getProperty)
         );
 
         this.interpolator = StringSubstitutor.createInterpolator()
                 .setVariableResolver(variableResolver)
-                .setVariablePrefix(importConfigProperties.getVarSubstitution().getPrefix())
-                .setVariableSuffix(importConfigProperties.getVarSubstitution().getSuffix())
-                .setEnableSubstitutionInVariables(importConfigProperties.getVarSubstitution().isNested())
-                .setEnableUndefinedVariableException(importConfigProperties.getVarSubstitution().isUndefinedIsError());
+                .setVariablePrefix(this.importConfigProperties.getVarSubstitution().getPrefix())
+                .setVariableSuffix(this.importConfigProperties.getVarSubstitution().getSuffix())
+                .setEnableSubstitutionInVariables(this.importConfigProperties.getVarSubstitution().isNested())
+                .setEnableUndefinedVariableException(this.importConfigProperties.getVarSubstitution().isUndefinedIsError());
     }
 
-    public KeycloakImport readFromLocations(String... locations) {
-        return readFromLocations(Arrays.asList(locations));
+    public KeycloakImport readFromLocations(final String... locations) {
+        return this.readFromLocations(Arrays.asList(locations));
     }
 
-    public KeycloakImport readFromLocations(Collection<String> locations) {
-        Map<String, Map<String, List<RealmImport>>> realmImports = new LinkedHashMap<>();
+    public KeycloakImport readFromLocations(final Collection<String> locations) {
+        final Map<String, Map<String, List<RealmImport>>> realmImports = new LinkedHashMap<>();
 
-        for (String location : locations) {
+        for (final String location : locations) {
             logger.debug("Loading file location '{}'", location);
-            String resourceLocation = prepareResourceLocation(location);
+            final String resourceLocation = this.prepareResourceLocation(location);
 
             Resource[] resources;
             try {
                 resources = this.patternResolver.getResources(resourceLocation);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new InvalidImportException("Unable to proceed location '" + location + "': " + e.getMessage(), e);
             }
 
@@ -119,11 +129,12 @@ public class KeycloakImportProvider {
             }
 
             // Import Pipe
-            Map<String, List<RealmImport>> realmImport = Arrays.stream(resources)
+            final Map<String, List<RealmImport>> realmImport = Arrays.stream(resources)
                     .map(this::readResource)
                     .filter(this::filterEmptyResources)
                     .sorted(Map.Entry.comparingByKey())
                     .map(this::substituteImportResource)
+                    .map(this::applyMustacheTemplate)
                     .map(this::readRealmImportFromImportResource)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                             (oldValue, newValue) -> oldValue, LinkedHashMap::new));
@@ -134,16 +145,16 @@ public class KeycloakImportProvider {
         return new KeycloakImport(realmImports);
     }
 
-    private boolean filterExcludedResources(Resource resource) {
+    private boolean filterExcludedResources(final Resource resource) {
         if (!resource.isFile()) {
             return true;
         }
 
-        File file;
+        final File file;
 
         try {
             file = resource.getFile();
-        } catch (IOException ignored) {
+        } catch (final IOException ignored) {
             return true;
         }
 
@@ -155,14 +166,14 @@ public class KeycloakImportProvider {
             return false;
         }
 
-        PathMatcher pathMatcher = patternResolver.getPathMatcher();
-        return importConfigProperties.getFiles().getExcludes()
+        final PathMatcher pathMatcher = this.patternResolver.getPathMatcher();
+        return this.importConfigProperties.getFiles().getExcludes()
                 .stream()
                 .map(pattern -> pattern.startsWith("**") ? "/" + pattern : pattern)
                 .map(pattern -> !pattern.startsWith("/**") ? "/**" + pattern : pattern)
                 .map(pattern -> !pattern.startsWith("/") ? "/" + pattern : pattern)
                 .noneMatch(pattern -> {
-                    boolean match = pathMatcher.match(pattern, file.getPath());
+                    final boolean match = pathMatcher.match(pattern, file.getPath());
                     if (match) {
                         logger.debug("Excluding resource file '{}' (match {})", file.getPath(), pattern);
                         return true;
@@ -175,42 +186,55 @@ public class KeycloakImportProvider {
         logger.debug("Loading file '{}'", resource.getFilename());
 
         try {
-            resource = setupAuthentication(resource);
-            try (InputStream inputStream = resource.getInputStream()) {
+            resource = this.setupAuthentication(resource);
+            try (final InputStream inputStream = resource.getInputStream()) {
                 return new ImportResource(resource.getURI().toString(), new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new InvalidImportException("Unable to proceed resource '" + resource + "': " + e.getMessage(), e);
         } finally {
             Authenticator.setDefault(null);
         }
     }
 
-    private boolean filterEmptyResources(ImportResource resource) {
+    private boolean filterEmptyResources(final ImportResource resource) {
         return !resource.getValue().isEmpty();
     }
 
-    private ImportResource substituteImportResource(ImportResource importResource) {
-        if (importConfigProperties.getVarSubstitution().isEnabled()) {
-            importResource.setValue(interpolator.replace(importResource.getValue()));
+    private ImportResource substituteImportResource(final ImportResource importResource) {
+        if (this.importConfigProperties.getVarSubstitution().isEnabled()) {
+            importResource.setValue(this.interpolator.replace(importResource.getValue()));
         }
 
         return importResource;
     }
 
-    private Pair<String, List<RealmImport>> readRealmImportFromImportResource(ImportResource resource) {
-        String location = resource.getFilename();
-        String content = resource.getValue();
-        String contentChecksum = DigestUtils.sha256Hex(content);
+    private ImportResource applyMustacheTemplate(final ImportResource importResource) {
+        if (this.importConfigProperties.getMustache().isEnabled()) {
+            final Map<String, String> variables = this.importConfigProperties.getMustache().getVariables();
+            final String result = Mustache.compiler()
+                    .defaultValue(DEFAULT_VALUE)
+                    .compile(importResource.getValue())
+                    .execute(new MustacheContextWithDefaults(variables));
+            importResource.setValue(result);
+        }
+
+        return importResource;
+    }
+
+    private Pair<String, List<RealmImport>> readRealmImportFromImportResource(final ImportResource resource) {
+        final String location = resource.getFilename();
+        final String content = resource.getValue();
+        final String contentChecksum = DigestUtils.sha256Hex(content);
 
         if (logger.isTraceEnabled()) {
             logger.trace(content);
         }
 
-        List<RealmImport> realmImports;
+        final List<RealmImport> realmImports;
         try {
-            realmImports = readContent(content);
-        } catch (Exception e) {
+            realmImports = this.readContent(content);
+        } catch (final Exception e) {
             throw new InvalidImportException("Unable to parse file '" + location + "': " + e.getMessage(), e);
         }
         realmImports.forEach(realmImport -> {
@@ -221,20 +245,20 @@ public class KeycloakImportProvider {
         return new ImmutablePair<>(location, realmImports);
     }
 
-    private List<RealmImport> readContent(String content) {
-        List<RealmImport> realmImports = new ArrayList<>();
+    private List<RealmImport> readContent(final String content) {
+        final List<RealmImport> realmImports = new ArrayList<>();
 
-        Yaml yaml = new Yaml();
-        Iterable<Object> yamlDocuments = yaml.loadAll(content);
+        final Yaml yaml = new Yaml();
+        final Iterable<Object> yamlDocuments = yaml.loadAll(content);
 
-        for (Object yamlDocument : yamlDocuments) {
+        for (final Object yamlDocument : yamlDocuments) {
             realmImports.add(OBJECT_MAPPER.convertValue(yamlDocument, RealmImport.class));
         }
 
         return realmImports;
     }
 
-    private String prepareResourceLocation(String location) {
+    private String prepareResourceLocation(final String location) {
         String importLocation = location;
 
         importLocation = importLocation.replaceFirst("^zip:", "jar:");
@@ -246,20 +270,24 @@ public class KeycloakImportProvider {
         return importLocation;
     }
 
-    private Resource setupAuthentication(Resource resource) throws IOException {
-        String userInfo;
+    private Resource setupAuthentication(final Resource resource) throws IOException {
+        final String userInfo;
 
         try {
             userInfo = resource.getURL().getUserInfo();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             return resource;
         }
 
-        if (userInfo == null) return resource;
+        if (userInfo == null) {
+            return resource;
+        }
 
-        String[] userInfoSplit = userInfo.split(":");
+        final String[] userInfoSplit = userInfo.split(":");
 
-        if (userInfoSplit.length != 2) return resource;
+        if (userInfoSplit.length != 2) {
+            return resource;
+        }
 
         Authenticator.setDefault(new Authenticator() {
             @Override
@@ -269,7 +297,7 @@ public class KeycloakImportProvider {
         });
 
         // Mask AuthInfo
-        String location = resource.getURI().toString().replace(userInfo + "@", "***@");
+        final String location = resource.getURI().toString().replace(userInfo + "@", "***@");
         return new UrlResource(location);
     }
 }

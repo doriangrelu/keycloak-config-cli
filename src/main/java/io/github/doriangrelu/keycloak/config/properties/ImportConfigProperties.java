@@ -20,15 +20,15 @@
 
 package io.github.doriangrelu.keycloak.config.properties;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.Collection;
-
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import java.util.Map;
 
 @ConfigurationProperties(prefix = "import", ignoreUnknownFields = false)
 @Validated
@@ -51,6 +51,9 @@ public class ImportConfigProperties {
     private final ImportVarSubstitutionProperties varSubstitution;
 
     @Valid
+    private final ImportMustacheProperties mustache;
+
+    @Valid
     private final ImportBehaviorsProperties behaviors;
 
     @Valid
@@ -62,19 +65,21 @@ public class ImportConfigProperties {
     @Valid
     private final ImportRemoteStateProperties remoteState;
 
-    public ImportConfigProperties(@DefaultValue("true") boolean validate,
-                                  @DefaultValue("false") boolean parallel,
-                                  @DefaultValue ImportFilesProperties files,
-                                  @DefaultValue ImportVarSubstitutionProperties varSubstitution,
-                                  @DefaultValue ImportBehaviorsProperties behaviors,
-                                  @DefaultValue ImportCacheProperties cache,
-                                  @DefaultValue ImportManagedProperties managed,
-                                  @DefaultValue ImportRemoteStateProperties remoteState
+    public ImportConfigProperties(@DefaultValue("true") final boolean validate,
+                                  @DefaultValue("false") final boolean parallel,
+                                  @DefaultValue final ImportFilesProperties files,
+                                  @DefaultValue final ImportVarSubstitutionProperties varSubstitution,
+                                  @DefaultValue final ImportMustacheProperties mustache,
+                                  @DefaultValue final ImportBehaviorsProperties behaviors,
+                                  @DefaultValue final ImportCacheProperties cache,
+                                  @DefaultValue final ImportManagedProperties managed,
+                                  @DefaultValue final ImportRemoteStateProperties remoteState
     ) {
         this.validate = validate;
         this.parallel = parallel;
         this.files = files;
         this.varSubstitution = varSubstitution;
+        this.mustache = mustache;
         this.behaviors = behaviors;
         this.cache = cache;
         this.managed = managed;
@@ -82,35 +87,39 @@ public class ImportConfigProperties {
     }
 
     public boolean isValidate() {
-        return validate;
+        return this.validate;
     }
 
     public boolean isParallel() {
-        return parallel;
+        return this.parallel;
     }
 
     public ImportFilesProperties getFiles() {
-        return files;
+        return this.files;
     }
 
     public ImportVarSubstitutionProperties getVarSubstitution() {
-        return varSubstitution;
+        return this.varSubstitution;
+    }
+
+    public ImportMustacheProperties getMustache() {
+        return this.mustache;
     }
 
     public ImportBehaviorsProperties getBehaviors() {
-        return behaviors;
+        return this.behaviors;
     }
 
     public ImportCacheProperties getCache() {
-        return cache;
+        return this.cache;
     }
 
     public ImportManagedProperties getManaged() {
-        return managed;
+        return this.managed;
     }
 
     public ImportRemoteStateProperties getRemoteState() {
-        return remoteState;
+        return this.remoteState;
     }
 
     @SuppressWarnings("unused")
@@ -163,22 +172,22 @@ public class ImportConfigProperties {
         @NotNull
         private final ImportManagedPropertiesValues messageBundles;
 
-        public ImportManagedProperties(@DefaultValue("FULL") ImportManagedPropertiesValues requiredAction,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues group,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues clientScope,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues scopeMapping,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues clientScopeMapping,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues component,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues subComponent,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues authenticationFlow,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues identityProvider,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues identityProviderMapper,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues role,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues client,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues clientAuthorizationResources,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues clientAuthorizationPolicies,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues clientAuthorizationScopes,
-                                       @DefaultValue("FULL") ImportManagedPropertiesValues messageBundles) {
+        public ImportManagedProperties(@DefaultValue("FULL") final ImportManagedPropertiesValues requiredAction,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues group,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientScope,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues scopeMapping,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientScopeMapping,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues component,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues subComponent,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues authenticationFlow,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues identityProvider,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues identityProviderMapper,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues role,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues client,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationResources,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationPolicies,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationScopes,
+                                       @DefaultValue("FULL") final ImportManagedPropertiesValues messageBundles) {
             this.requiredAction = requiredAction;
             this.group = group;
             this.clientScope = clientScope;
@@ -198,67 +207,67 @@ public class ImportConfigProperties {
         }
 
         public ImportManagedPropertiesValues getRequiredAction() {
-            return requiredAction;
+            return this.requiredAction;
         }
 
         public ImportManagedPropertiesValues getClientScope() {
-            return clientScope;
+            return this.clientScope;
         }
 
         public ImportManagedPropertiesValues getScopeMapping() {
-            return scopeMapping;
+            return this.scopeMapping;
         }
 
         public ImportManagedPropertiesValues getClientScopeMapping() {
-            return clientScopeMapping;
+            return this.clientScopeMapping;
         }
 
         public ImportManagedPropertiesValues getComponent() {
-            return component;
+            return this.component;
         }
 
         public ImportManagedPropertiesValues getSubComponent() {
-            return subComponent;
+            return this.subComponent;
         }
 
         public ImportManagedPropertiesValues getAuthenticationFlow() {
-            return authenticationFlow;
+            return this.authenticationFlow;
         }
 
         public ImportManagedPropertiesValues getGroup() {
-            return group;
+            return this.group;
         }
 
         public ImportManagedPropertiesValues getIdentityProvider() {
-            return identityProvider;
+            return this.identityProvider;
         }
 
         public ImportManagedPropertiesValues getIdentityProviderMapper() {
-            return identityProviderMapper;
+            return this.identityProviderMapper;
         }
 
         public ImportManagedPropertiesValues getRole() {
-            return role;
+            return this.role;
         }
 
         public ImportManagedPropertiesValues getClient() {
-            return client;
+            return this.client;
         }
 
         public ImportManagedPropertiesValues getClientAuthorizationResources() {
-            return clientAuthorizationResources;
+            return this.clientAuthorizationResources;
         }
 
         public ImportManagedPropertiesValues getClientAuthorizationPolicies() {
-            return clientAuthorizationPolicies;
+            return this.clientAuthorizationPolicies;
         }
 
         public ImportManagedPropertiesValues getClientAuthorizationScopes() {
-            return clientAuthorizationScopes;
+            return this.clientAuthorizationScopes;
         }
 
         public ImportManagedPropertiesValues getMessageBundles() {
-            return messageBundles;
+            return this.messageBundles;
         }
 
         public enum ImportManagedPropertiesValues {
@@ -277,24 +286,24 @@ public class ImportConfigProperties {
         @NotNull
         private final boolean includeHiddenFiles;
 
-        public ImportFilesProperties(Collection<String> locations,
-                                     @DefaultValue Collection<String> excludes,
-                                     @DefaultValue("false") boolean includeHiddenFiles) {
+        public ImportFilesProperties(final Collection<String> locations,
+                                     @DefaultValue final Collection<String> excludes,
+                                     @DefaultValue("false") final boolean includeHiddenFiles) {
             this.locations = locations;
             this.excludes = excludes;
             this.includeHiddenFiles = includeHiddenFiles;
         }
 
         public Collection<String> getLocations() {
-            return locations;
+            return this.locations;
         }
 
         public Collection<String> getExcludes() {
-            return excludes;
+            return this.excludes;
         }
 
         public boolean isIncludeHiddenFiles() {
-            return includeHiddenFiles;
+            return this.includeHiddenFiles;
         }
     }
 
@@ -315,11 +324,11 @@ public class ImportConfigProperties {
         @NotNull
         private final String suffix;
 
-        public ImportVarSubstitutionProperties(@DefaultValue("false") boolean enabled,
-                                               @DefaultValue("true") boolean nested,
-                                               @DefaultValue("true") boolean undefinedIsError,
-                                               @DefaultValue("$(") String prefix,
-                                               @DefaultValue(")") String suffix) {
+        public ImportVarSubstitutionProperties(@DefaultValue("false") final boolean enabled,
+                                               @DefaultValue("true") final boolean nested,
+                                               @DefaultValue("true") final boolean undefinedIsError,
+                                               @DefaultValue("$(") final String prefix,
+                                               @DefaultValue(")") final String suffix) {
             this.enabled = enabled;
             this.nested = nested;
             this.undefinedIsError = undefinedIsError;
@@ -328,23 +337,46 @@ public class ImportConfigProperties {
         }
 
         public boolean isEnabled() {
-            return enabled;
+            return this.enabled;
         }
 
         public boolean isNested() {
-            return nested;
+            return this.nested;
         }
 
         public boolean isUndefinedIsError() {
-            return undefinedIsError;
+            return this.undefinedIsError;
         }
 
         public String getPrefix() {
-            return prefix;
+            return this.prefix;
         }
 
         public String getSuffix() {
-            return suffix;
+            return this.suffix;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public static class ImportMustacheProperties {
+        @NotNull
+        private final boolean enabled;
+
+        @NotNull
+        private final Map<String, String> variables;
+
+        public ImportMustacheProperties(@DefaultValue("false") final boolean enabled,
+                                        @DefaultValue final Map<String, String> variables) {
+            this.enabled = enabled;
+            this.variables = variables;
+        }
+
+        public boolean isEnabled() {
+            return this.enabled;
+        }
+
+        public Map<String, String> getVariables() {
+            return Map.copyOf(this.variables);
         }
     }
 
@@ -365,8 +397,8 @@ public class ImportConfigProperties {
         @NotNull
         private final ChecksumChangedOption checksumChanged;
 
-        public ImportBehaviorsProperties(boolean syncUserFederation, boolean removeDefaultRoleFromUser, boolean skipAttributesForFederatedUser,
-                                         boolean checksumWithCacheKey, ChecksumChangedOption checksumChanged) {
+        public ImportBehaviorsProperties(final boolean syncUserFederation, final boolean removeDefaultRoleFromUser, final boolean skipAttributesForFederatedUser,
+                                         final boolean checksumWithCacheKey, final ChecksumChangedOption checksumChanged) {
             this.syncUserFederation = syncUserFederation;
             this.removeDefaultRoleFromUser = removeDefaultRoleFromUser;
             this.skipAttributesForFederatedUser = skipAttributesForFederatedUser;
@@ -375,23 +407,23 @@ public class ImportConfigProperties {
         }
 
         public boolean isSyncUserFederation() {
-            return syncUserFederation;
+            return this.syncUserFederation;
         }
 
         public boolean isRemoveDefaultRoleFromUser() {
-            return removeDefaultRoleFromUser;
+            return this.removeDefaultRoleFromUser;
         }
 
         public boolean isSkipAttributesForFederatedUser() {
-            return skipAttributesForFederatedUser;
+            return this.skipAttributesForFederatedUser;
         }
 
         public boolean isChecksumWithCacheKey() {
-            return checksumWithCacheKey;
+            return this.checksumWithCacheKey;
         }
 
         public ChecksumChangedOption getChecksumChanged() {
-            return checksumChanged;
+            return this.checksumChanged;
         }
 
         public enum ChecksumChangedOption {
@@ -407,18 +439,18 @@ public class ImportConfigProperties {
         @NotNull
         private final String key;
 
-        public ImportCacheProperties(@DefaultValue("true") boolean enabled,
-                                     @DefaultValue("default") String key) {
+        public ImportCacheProperties(@DefaultValue("true") final boolean enabled,
+                                     @DefaultValue("default") final String key) {
             this.enabled = enabled;
             this.key = key;
         }
 
         public boolean isEnabled() {
-            return enabled;
+            return this.enabled;
         }
 
         public String getKey() {
-            return key;
+            return this.key;
         }
     }
 
@@ -432,24 +464,24 @@ public class ImportConfigProperties {
         @Pattern(regexp = "^[A-Fa-f0-9]+$")
         private final String encryptionSalt;
 
-        public ImportRemoteStateProperties(@DefaultValue("true") boolean enabled,
-                                           String encryptionKey,
-                                           @DefaultValue("2B521C795FBE2F2425DB150CD3700BA9") String encryptionSalt) {
+        public ImportRemoteStateProperties(@DefaultValue("true") final boolean enabled,
+                                           final String encryptionKey,
+                                           @DefaultValue("2B521C795FBE2F2425DB150CD3700BA9") final String encryptionSalt) {
             this.enabled = enabled;
             this.encryptionKey = encryptionKey;
             this.encryptionSalt = encryptionSalt;
         }
 
         public boolean isEnabled() {
-            return enabled;
+            return this.enabled;
         }
 
         public String getEncryptionKey() {
-            return encryptionKey;
+            return this.encryptionKey;
         }
 
         public String getEncryptionSalt() {
-            return encryptionSalt;
+            return this.encryptionSalt;
         }
     }
 }

@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Mustache templating support with CLI-provided variables via `import.mustache.enabled` and `import.mustache.variables.*`
+    - Variables can be passed as CLI arguments (`--import.mustache.variables.key=value`), environment variables (`IMPORT_MUSTACHE_VARIABLES_KEY=value`), or in configuration files
+    - Templates use `{{key}}` syntax in import files (JSON/YAML)
+    - Undefined variables resolve to an empty string by default
+    - Support for default values with `{{key:default_value}}` syntax
 - Cleanup of orphaned group role mappings (realm and client roles) during `cleanRealm` phase via `deleteRoleMappingMissingOnImport` in `GroupImportService`
     - Realm roles assigned to groups in Keycloak but absent from import configuration are now removed
     - Client roles assigned to groups in Keycloak but absent from import configuration are now removed

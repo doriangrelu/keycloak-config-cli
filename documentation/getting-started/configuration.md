@@ -154,6 +154,77 @@ REALM_NAME=production CLIENT_SECRET=secret123 \
   java -jar keycloak-config-cli.jar ...
 ```
 
+## Mustache Templating
+
+Mustache templating allows you to use `{{variable}}` placeholders in your import files, resolved at import time from CLI-provided variables.
+
+| Property | Environment Variable | Default | Description |
+|----------|---------------------|---------|-------------|
+| `import.mustache.enabled` | `IMPORT_MUSTACHE_ENABLED` | `false` | Enable Mustache template processing |
+| `import.mustache.variables.*` | `IMPORT_MUSTACHE_VARIABLES_*` | - | Key-value pairs used as template context |
+
+### Example
+
+Pass variables via CLI arguments:
+
+```bash
+java -jar keycloak-config-cli.jar \
+  --import.mustache.enabled=true \
+  --import.mustache.variables.realm-name=my-realm \
+  --import.mustache.variables.client-id=my-app \
+  --import.mustache.variables.admin-email=admin@example.com \
+  --import.files.locations=/config/realm.yaml
+```
+
+Or via environment variables:
+
+```bash
+export IMPORT_MUSTACHE_ENABLED=true
+export IMPORT_MUSTACHE_VARIABLES_REALM_NAME=my-realm
+export IMPORT_MUSTACHE_VARIABLES_CLIENT_ID=my-app
+```
+
+Or in `application.yaml`:
+
+```yaml
+import:
+  mustache:
+    enabled: true
+    variables:
+      realm-name: my-realm
+      client-id: my-app
+      admin-email: admin@example.com
+```
+
+Then use the variables in your import files:
+
+```yaml
+realm: "{{realm-name}}"
+clients:
+  - clientId: "{{client-id}}"
+    attributes:
+      admin.email: "{{admin-email}}"
+```
+
+### Default Values
+
+Undefined variables are resolved to an empty string by default. You can also specify an explicit default value using the `{{key:default_value}}` syntax:
+
+```yaml
+realm: "{{realm-name:my-default-realm}}"
+clients:
+  - clientId: "{{client-id:default-client}}"
+    protocol: "{{protocol:openid-connect}}"
+```
+
+In this example:
+- If `realm-name` is not provided, it resolves to `my-default-realm`
+- If `client-id` is not provided, it resolves to `default-client`
+- If `protocol` is not provided, it resolves to `openid-connect`
+- Any variable without a `:default` suffix resolves to an empty string if undefined
+
+> **Note**: Mustache templating and variable substitution (`import.var-substitution`) can be used together. Variable substitution runs first, then Mustache templating is applied.
+
 ## Command Line Examples
 
 ```bash

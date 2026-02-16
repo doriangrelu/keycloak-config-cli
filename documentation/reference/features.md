@@ -59,6 +59,7 @@ This document lists all features supported by Keycloak Config CLI with their ver
 | Synchronize user profile | 5.4.0 | Synchronize the user profile configuration |
 | Synchronize client-policies | 5.6.0 | Synchronize the client-policies (clientProfiles and clientPolicies) |
 | Synchronize message bundles | 5.12.0 | Synchronize message bundles defined on the realm configuration |
+| Mustache templating | 7.0.0 | Use `{{variable}}` placeholders in import files with CLI-provided context variables |
 | Normalize realm exports | - | Normalize a full realm export to be more minimal |
 
 ## Specificities
