@@ -169,9 +169,39 @@ import:
     group: full
 ```
 
-### How Recursive Deletion Works
+### How Cleanup Works
 
-When using `full` management mode, the CLI:
+When using `full` management mode, the CLI performs two cleanup phases during the `cleanRealm` step:
+
+#### Phase 1: Role Mappings Cleanup
+
+Before deleting any group, the CLI removes orphaned role mappings from all imported groups:
+
+1. **Flattens the group hierarchy** into a path-based map (including all subgroups)
+2. **For each imported group**, fetches its current state from Keycloak
+3. **Compares realm roles**: any realm role present in Keycloak but absent from the import is removed
+4. **Compares client roles**: for each client, roles present in Keycloak but absent from the import are removed. If an entire client is absent from the import, all its roles are removed from the group
+
+Example:
+```yaml
+# Your configuration
+groups:
+  - name: developers
+    realmRoles:
+      - user
+    clientRoles:
+      my-api:
+        - read
+```
+
+If Keycloak has:
+- Realm roles: `user`, `admin` -> `admin` will be removed
+- Client roles for `my-api`: `read`, `write` -> `write` will be removed
+- Client roles for `old-client`: `view` -> all roles for `old-client` will be removed
+
+#### Phase 2: Orphaned Groups Deletion
+
+After role mappings cleanup, the CLI deletes orphaned groups:
 
 1. **Builds a path map** of all groups in your configuration (including subgroups)
 2. **Compares with Keycloak** groups at each level

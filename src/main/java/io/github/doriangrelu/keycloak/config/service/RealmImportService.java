@@ -261,10 +261,11 @@ public class RealmImportService {
      */
     public void cleanRealm(final RealmImport realmImport) {
         if (importProperties.getManaged().getClient() == FULL) {
-            logger.warn("Start cleaning realm import for realm '{}'", realmImport.getRealm());
+            logger.warn("Start cleaning realm import for realm part '{}'", realmImport.getRealm());
             this.clientImportService.deleteClientsMissingInImport(realmImport);
             this.roleImportService.deleteRealmRolesMissingInImport(realmImport);
             this.roleImportService.deleteClientRolesMissingInImport(realmImport);
+            this.groupImportService.deleteRoleMappingMissingOnImport(realmImport);
             this.groupImportService.deleteGroupsMissingInImport(realmImport);
         }
     }

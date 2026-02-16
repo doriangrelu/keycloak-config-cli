@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-## [7.0.0] - 2026-02-13
+## [Unreleased] (7.0.0)
 
 ### Added
+
+- Cleanup of orphaned group role mappings (realm and client roles) during `cleanRealm` phase via `deleteRoleMappingMissingOnImport` in `GroupImportService`
+    - Realm roles assigned to groups in Keycloak but absent from import configuration are now removed
+    - Client roles assigned to groups in Keycloak but absent from import configuration are now removed
+    - Supports full group hierarchy (subgroups are traversed recursively)
+    - Cleanup runs before group deletion to ensure consistent state
 - Recursive deletion of orphaned subgroups in `GroupImportService` - groups not present in import configuration are now properly deleted at all hierarchy levels
 - Deletion of orphaned realm roles in `RoleImportService` via `deleteRealmRolesMissingInImport` using ExecutionContextHolder
 - Deletion of orphaned client roles in `RoleImportService` via `deleteClientRolesMissingInImport` with per-client tracking
@@ -17,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Technical reference documentation merged from legacy `/docs` folder
 
 ### Changed
+
 - **BREAKING**: Refactored `GroupImportService` to use functional programming with Java Streams
 - **BREAKING**: Refactored `RoleImportService` to track imported roles via ExecutionContextHolder for managed deletion
 - **BREAKING**: Refactored `ClientImportService` to track imported clients via ExecutionContextHolder for managed deletion
@@ -28,90 +33,116 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Updated README with prominent documentation links
 
 ### Documentation
+
 - Added comprehensive JavaDoc to `GroupImportService` class
 - Added comprehensive JavaDoc to `ClientImportService` class
 - Created full documentation structure:
-  - Getting Started: installation, quick-start, configuration
-  - Concepts: overview, managed-resources, import-modes
-  - Configuration: realms, clients, groups, roles, users, authentication-flows, identity-providers, client-scopes
-  - Examples: basic-realm, groups-and-roles, client-configuration, full-realm-example
-  - Advanced: parallel-processing, state-management, normalization, protected-resources
-  - Reference: features, import-patterns, managed-resources, normalization-details, rhsso-compatibility, skip-server-info
+    - Getting Started: installation, quick-start, configuration
+    - Concepts: overview, managed-resources, import-modes
+    - Configuration: realms, clients, groups, roles, users, authentication-flows, identity-providers, client-scopes
+    - Examples: basic-realm, groups-and-roles, client-configuration, full-realm-example
+    - Advanced: parallel-processing, state-management, normalization, protected-resources
+    - Reference: features, import-patterns, managed-resources, normalization-details, rhsso-compatibility, skip-server-info
 - Removed legacy `/docs` folder (content merged into `/documentation/reference`)
 
 ## [6.4.1] - 2026-01-28
 
 ### Added
+
 - Enhance contributing guidelines and README for clarity and community engagement [#1340](https://github.com/adorsys/keycloak-config-cli/issues/1340)
 
 ### Fixed
+
 - Fix password policy violations gracefully during user import [#1112](https://github.com/adorsys/keycloak-config-cli/issues/1112)
 - fix issue FGAP returns 501 Not implemented for keycloak-26.2.0+ [#1305](https://github.com/adorsys/keycloak-config-cli/issues/1305)
 - Fix 403 Forbidden errors in CI/CD for Keycloak 26.x [#1307](https://github.com/adorsys/keycloak-config-cli/issues/1307)
 
 ## [6.4.0] - 2025-02-21
+
 ### Added
+
 - Allow a user's username to be updated through the config [#810](https://github.com/adorsys/keycloak-config-cli/issues/810)
 
 ## [6.3.0] - 2025-02-03
+
 ### Added
+
 - Improve error logging for Keycloak responses  [1270](https://github.com/adorsys/keycloak-config-cli/issues/1270)
 
 ### Fixed
+
 - Fix high level CVE (CVE-2024-38807)
 
 ### Fixed
+
 - fix chart publish failure
+
 ### Added
+
 - added migration guide for keycloak 25.0.1 [#1072](https://github.com/adorsys/keycloak-config-cli/issues/1072)
 
-
 ### Fixed
--  Fix Service Account User always triggers UPDATE USER event [#878](https://github.com/adorsys/keycloak-config-cli/issues/878)
+
+- Fix Service Account User always triggers UPDATE USER event [#878](https://github.com/adorsys/keycloak-config-cli/issues/878)
 
 ### Added
+
 - Publish charts with github pages [#941](https://github.com/adorsys/keycloak-config-cli/issues/941)
 - Support for Keycloak 26.1
 - Ignore unknown json properties from newer Keycloak versions  [#1265](https://github.com/adorsys/keycloak-config-cli/issues/1265)
 
 ### Fixed
--  Fix Initial Credentials Causes Update [819](https://github.com/adorsys/keycloak-config-cli/issues/819)
 
+- Fix Initial Credentials Causes Update [819](https://github.com/adorsys/keycloak-config-cli/issues/819)
 
 ## [6.2.1] - 2024-12-05
+
 ### Fixed
+
 - Fix ci failure actions/upload-artifact@v4 new public artifacts are no longer accessible
+
 ## [6.2.0] - 2024-12-03
+
 ### Fix Fails to delete authentication flow when it's referenced as an IdP [#868](https://github.com/adorsys/keycloak-config-cli/issues/868)
 -
+
 ## Fixed
+
 - otpPolicyAlgorithm ignored during import [#847](https://github.com/adorsys/keycloak-config-cli/issues/847)
 
 ### Added
 
 - Added Navigation in the readme [#1187](https://github.com/adorsys/keycloak-config-cli/issues/1187)
+
 ### Added
+
 - Improve documentation of managed resources, particularly user federations [#826](https://github.com/adorsys/keycloak-config-cli/issues/826)
 
 - Added Navigation in the readme [#1099](https://github.com/adorsys/keycloak-config-cli/issues/1099)
 
 ### Added
+
 - improved logging for realm retrieval errors [#1010](https://github.com/adorsys/keycloak-config-cli/issues/1010)
+
 ### Fixed
+
 - Fix required action import handling for no-delete option [#834](https://github.com/adorsys/keycloak-config-cli/issues/834)
 
-
 ### Fixed
+
 - Fix to manage Remote state import for clientscopes and scopeMappings [#1012](https://github.com/adorsys/keycloak-config-cli/issues/1012)
 
 ### Fixed
+
 - Fixed to delete protocol mappers if not in the import[#746](https://github.com/orgs/adorsys/projects/5/views/1?pane=issue&itemId=80856370&issue=adorsys%7Ckeycloak-config-cli%7C746)
 
 ### Fixed
+
 - Allow environment variables from existing secrets [#822](https://github.com/adorsys/keycloak-config-cli/issues/822)
 
 ### Fixed
-- Fix  versioning in artifact to contain the correct keycloak version [#1097](https://github.com/adorsys/keycloak-config-cli/issues/1097)
+
+- Fix versioning in artifact to contain the correct keycloak version [#1097](https://github.com/adorsys/keycloak-config-cli/issues/1097)
 
 - Updated CI to use Keycloak 26.0.5
 
@@ -126,7 +157,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix env.JAVA_HOME test failures by ensuring env is set before build
 
 ## [6.1.10] - 2024-10-04
-
 
 - Fixed securityContext entries in job template
 
@@ -144,7 +174,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [6.1.6] - 2024-07-26
 
-
 ## [6.1.5] - 2024-06-27
 
 ## [6.1.3] - 2024-06-27
@@ -154,52 +183,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [6.1.1] - 2024-06-27
 
 ## [6.1.0] - 2024-06-26
+
 - Updated CI to use Keycloak 25.0.1
 - Identity Providers are now updated using the name of policies, scopes and resources
 
 ### Added
+
 - Alias docker tags without Keycloak minor/patch version
 
 ### Fixed
+
 - Importing more than 10 subgroups into a realm
 
 ## [6.0.2] - 2024-06-17
+
 - Restored versioning
 
 ## [6.0.1] - 2024-06-12
 
 ## [6.0.0] - 2024-06-10
+
 - Changed Java target version and temurin to 21
 - Several dependency updates
 - Reassured compatibility with 19.0.3-legacy
 - Updated CI to use Keycloak 24.0.5
 
 ### Breaking
+
 - Upgrade to Spring Boot 3
     - This affects the capability of the path matcher
 
 - Added option to calculate checksum for each import file ([#1015](https://github.com/adorsys/keycloak-config-cli/issues/1015))
 
 ## [5.12.0] - 2024-03-28
+
 - Added support for managing message bundles
 
 ## [5.11.1] - 2024-03-12
+
 - fixed github actions workflow permissions
 
 ## [5.11.0] - 2024-03-12
+
 - Updated CI to use Keycloak 24.0.1
 - Updated CI to use Keycloak 23.0.7
 - Changed briefRepresentation from false to true (mistakenly considered full: [#25096](https://github.com/keycloak/keycloak/issues/25096))
-  - Removes compatibility of Versions 23.0.0, 23.0.1, 23.0.2 and 23.0.3
+    - Removes compatibility of Versions 23.0.0, 23.0.1, 23.0.2 and 23.0.3
 - Using getGroupByPath again after being fixed ([#25111](https://github.com/keycloak/keycloak/issues/25111))
 
 ### Fixed
+
 - Corrected name of CLI option `--import.files.locations` in docs
 
 ### Fixed
+
 - The client policies in the configuration are applied during client import and configuration.
 
 ## [5.10.0] - 2023-12-12
+
 - Updated CI to use Keycloak 23.0.1
 - Added correct spelling of "authenticatorFlow" in all import files
 - Treating default-roles-${realm} as default role even with changed description
@@ -210,22 +251,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Using util classes as replacement strategy for breaking changes (GroupUtil, SubGroupUtil)
 
 ## [5.9.0] - 2023-10-13
+
 - Updated CI to use Keycloak 22.0.4
 
 ### Added
+
 - Support for managing `Client Authorization Policies` like other resources by configuring `import.managed.client-authorization-policies=<full|no-delete>`. This prevents deletion of remote managed policies.
 - Support for managing `Client Authorization Scopes` like other resources by configuring `import.managed.client-authorization-scopes=<full|no-delete>`. This prevents deletion of remote managed scopes.
 
 ### Changed
+
 - Fix issue [#907](/adorsys/keycloak-config-cli/issues/907):
-  - add missing dependency jakarta.xml.bind-api
-  - lower logstash version from 7.4 to 7.2: 7.2 is the last version to support logback 1.2, which is the version required for Spring and other components used here
+    - add missing dependency jakarta.xml.bind-api
+    - lower logstash version from 7.4 to 7.2: 7.2 is the last version to support logback 1.2, which is the version required for Spring and other components used here
+
 ## [5.8.0] - 2023-07-14
 
 ### Added
+
 - Support for Keycloak 22
 
 ### Changed
+
 - Migrated from Java EE to Jakarta EE
 - Migrated imports of javax packages to jakarta packages
 - Upgraded Spring Boot to 2.7.13
@@ -233,6 +280,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [5.7.0] - 2023-07-14
 
 ### Changed
+
 - Refactored support for user profile updates
 - Attribute groups are now allowed in the `userProfile` property in json import. The format to import User Declarative Profile attributes (and attribute groups) has slightly changed. To migrate to the new format:
     - transform the `userProfile` property to a JSON object with two properties: `attributes` and `groups`
@@ -246,58 +294,71 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [5.6.0] - 2023-03-05
 
 ### Added
+
 - Added support for keycloak 21
 
 ### Changed
+
 - Upgraded to latest keycloak 20 bugfix version
 
 ### Fixed
+
 - Consider all authentication subflows during updates.
 
 ## [5.5.0] - 2022-11-12
 
 ### Added
+
 - Added support for keycloak 20
 - Realm export scripts now use the new kc.sh export command
 
 ### Removed
+
 - Support for Keycloak 16
 
 ## [5.4.0] - 2022-11-07
 
 ### Added
+
 - Added latest Keycloak 19.0.3 library
 - Added support for managing user profiles
 
 ## [5.3.1] - 2022-08-02
 
 ### Added
+
 - Added latest Keycloak 19.0.1 library
 
 ## [5.3.0] - 2022-07-28
 
 ### Added
+
 - Support for Keycloak 19
 
 ### Removed
+
 - Support for Keycloak 15
 
 ## [5.2.2] - 2022-07-25
 
 ### Added
+
 - Added latest Keycloak 18.0.2 library
 
 ### Fixed
+
 We now also consider auth flows referenced by post-broker login flow Identity Provider configurations for flow in-use checks.
 
 ## [5.2.1] - 2022-06-20
 
 ### Added
+
 - Added latest Keycloak 18.0.1 library
 
 ## [5.2.0] - 2022-05-06
 
 ### Added
+
 - Added Keycloak 18 support
 
 ## [5.1.0] - 2022-04-08

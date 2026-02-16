@@ -180,6 +180,67 @@ public class GroupImportService {
                 .forEach(existingGroup -> this.processGroupDeletion(groupPathMap, realmName, existingGroup));
     }
 
+    public void deleteRoleMappingMissingOnImport(final RealmImport realmImport) {
+        final String realmName = realmImport.getRealm();
+        final Collection<GroupRepresentation> importedGroups =
+                ExecutionContextHolder.context().get(realmName, GroupRepresentation.class);
+
+        importedGroups.stream()
+                .flatMap(group -> this.flattenGroupHierarchy(group, "/"))
+                .forEach(entry -> this.cleanRoleMappingsForGroup(realmName, entry.getKey(), entry.getValue()));
+    }
+
+    private void cleanRoleMappingsForGroup(final String realmName, final String groupPath, final GroupRepresentation importedGroup) {
+        GroupRepresentation existingGroup = this.groupRepository.getGroupByPath(realmName, groupPath);
+        if (null == existingGroup) {
+            return;
+        }
+        existingGroup = this.groupRepository.getGroupById(realmName, existingGroup.getId());
+
+        this.cleanRealmRoleMappings(realmName, existingGroup, importedGroup);
+        this.cleanClientRoleMappings(realmName, existingGroup, importedGroup);
+    }
+
+    private void cleanRealmRoleMappings(final String realmName, final GroupRepresentation existing, final GroupRepresentation imported) {
+        final Set<String> importedRealmRoles = Optional.ofNullable(imported.getRealmRoles())
+                .map(Set::copyOf)
+                .orElse(Set.of());
+
+        final List<String> rolesToRemove = Optional.ofNullable(existing.getRealmRoles())
+                .orElse(List.of())
+                .stream()
+                .filter(role -> !importedRealmRoles.contains(role))
+                .toList();
+
+        if (!rolesToRemove.isEmpty()) {
+            logger.warn("Removing realm roles {} from group '{}' in realm '{}'", rolesToRemove, existing.getName(), realmName);
+            this.groupRepository.removeRealmRoles(realmName, existing.getId(), rolesToRemove);
+        }
+    }
+
+    private void cleanClientRoleMappings(final String realmName, final GroupRepresentation existing, final GroupRepresentation imported) {
+        final Map<String, List<String>> existingClientRoles = Optional.ofNullable(existing.getClientRoles())
+                .orElse(Map.of());
+        final Map<String, List<String>> importedClientRoles = Optional.ofNullable(imported.getClientRoles())
+                .orElse(Map.of());
+
+        existingClientRoles.forEach((clientId, existingRoles) -> {
+            if (!importedClientRoles.containsKey(clientId)) {
+                logger.warn("Removing all client roles for client '{}' from group '{}' in realm '{}'", clientId, existing.getName(), realmName);
+                this.groupRepository.removeClientRoles(realmName, existing.getId(), clientId, existingRoles);
+            } else {
+                final Set<String> importedRoles = Set.copyOf(importedClientRoles.get(clientId));
+                final List<String> rolesToRemove = existingRoles.stream()
+                        .filter(role -> !importedRoles.contains(role))
+                        .toList();
+                if (!rolesToRemove.isEmpty()) {
+                    logger.warn("Removing client roles {} for client '{}' from group '{}' in realm '{}'", rolesToRemove, clientId, existing.getName(), realmName);
+                    this.groupRepository.removeClientRoles(realmName, existing.getId(), clientId, rolesToRemove);
+                }
+            }
+        });
+    }
+
     /**
      * Processes the deletion logic for a single top-level group.
      *

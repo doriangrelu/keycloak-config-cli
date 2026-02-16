@@ -35,6 +35,7 @@ This document lists all features supported by Keycloak Config CLI with their ver
 | Remove groups | 1.3.0 | Remove existing groups while updating realms |
 | Add/Remove group attributes | 1.3.0 | Add or remove group attributes in existing groups |
 | Add/Remove group roles | 1.3.0 | Add or remove roles to/from existing groups |
+| Cleanup group role mappings | 7.1.0 | Remove orphaned realm and client role mappings from groups during cleanup phase |
 | Update/Remove subgroups | 1.3.0 | Like groups, subgroups may also be added/updated and removed |
 | Add scope-mappings | 1.0.0 | Add scope-mappings while creating or updating realms |
 | Add roles to scope-mappings | 1.0.0 | Add roles to existing scope-mappings |

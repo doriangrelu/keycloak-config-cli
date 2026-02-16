@@ -61,7 +61,20 @@ When using `full` management mode, the deletion process is:
 
 ### 1. Groups (Hierarchical)
 
-Groups support nested subgroups. The deletion is recursive:
+Groups support nested subgroups. The cleanup is done in two phases:
+
+#### Phase 1: Role Mappings Cleanup
+
+For each group present in the import, the CLI compares its current role mappings in Keycloak with the import configuration:
+- **Realm roles** not in the import are removed from the group
+- **Client roles** not in the import are removed from the group
+- If an entire client is absent from the import, all its role mappings are removed from the group
+
+This applies to all levels of the group hierarchy (subgroups included).
+
+#### Phase 2: Group Deletion
+
+After role mappings are cleaned, orphaned groups are deleted recursively:
 
 ```yaml
 # Your configuration

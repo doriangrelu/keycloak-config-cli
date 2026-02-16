@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.repository;
 
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
+import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.GroupResource;
 import org.keycloak.admin.client.resource.GroupsResource;
@@ -39,8 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import jakarta.ws.rs.core.Response;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -166,7 +165,6 @@ public class GroupRepository {
             userResource.leaveGroup(group.getId());
         }
     }
-
 
     public void addClientRoles(String realmName, String groupId, String clientId, List<String> roleNames) {
         GroupResource groupResource = getResourceById(realmName, groupId);
