@@ -292,7 +292,6 @@ public class KeycloakProvider implements AutoCloseable {
                 .clientSecret(properties.getClientSecret())
                 .username(properties.getUser())
                 .password(properties.getPassword())
-                .resteasyClient(resteasyClient)
                 .build();
     }
 

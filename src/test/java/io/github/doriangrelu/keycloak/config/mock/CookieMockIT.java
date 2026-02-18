@@ -32,8 +32,8 @@ import org.mockserver.client.MockServerClient;
 import org.mockserver.model.Cookie;
 import org.mockserver.springtest.MockServerTest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -53,7 +53,7 @@ class CookieMockIT extends AbstractImportTest {
     public KeycloakImportProvider keycloakImportProvider;
     @Autowired
     public RealmImportService realmImportService;
-    @SpyBean
+    @MockitoSpyBean
     public KeycloakProvider keycloakProvider;
 
     CookieMockIT() {
