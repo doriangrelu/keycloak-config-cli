@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.provider;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.failsafe.Failsafe;
@@ -28,6 +29,11 @@ import io.github.doriangrelu.keycloak.config.exception.KeycloakProviderException
 import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.util.ResteasyUtil;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.Form;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
@@ -47,12 +53,6 @@ import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.function.Supplier;
-
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.Form;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 /**
  * This class exists because we need to create a single keycloak instance or to
@@ -101,8 +101,8 @@ public class KeycloakProvider implements AutoCloseable {
                 // Skip server info - use explicit version or default
                 version = (properties.getVersion() != null && !properties.getVersion().isEmpty()
                         && !properties.getVersion().equals("@keycloak.version@"))
-                                ? properties.getVersion()
-                                : "unknown";
+                        ? properties.getVersion()
+                        : "unknown";
                 logger.info("Server info unavailable. Using version: {}", version);
             } else {
                 try {
@@ -114,8 +114,8 @@ public class KeycloakProvider implements AutoCloseable {
                         // Fallback if systemInfo is null
                         version = (properties.getVersion() != null && !properties.getVersion().isEmpty()
                                 && !properties.getVersion().equals("@keycloak.version@"))
-                                        ? properties.getVersion()
-                                        : "unknown";
+                                ? properties.getVersion()
+                                : "unknown";
                         logger.info("Server info unavailable. Using version: {}", version);
                     }
                 } catch (WebApplicationException e) {
@@ -124,8 +124,8 @@ public class KeycloakProvider implements AutoCloseable {
                         // access)
                         version = (properties.getVersion() != null && !properties.getVersion().isEmpty()
                                 && !properties.getVersion().equals("@keycloak.version@"))
-                                        ? properties.getVersion()
-                                        : "unknown";
+                                ? properties.getVersion()
+                                : "unknown";
                         logger.info("Server info unavailable ({}). Using version: {}", e.getResponse().getStatus(),
                                 version);
                     } else {
@@ -292,6 +292,7 @@ public class KeycloakProvider implements AutoCloseable {
                 .clientSecret(properties.getClientSecret())
                 .username(properties.getUser())
                 .password(properties.getPassword())
+                .resteasyClient(this.resteasyClient)
                 .build();
     }
 
@@ -409,6 +410,8 @@ public class KeycloakProvider implements AutoCloseable {
 
         public ObjectMapper locateMapper(Class<?> type, MediaType mediaType) {
             ObjectMapper objectMapper = super.locateMapper(type, mediaType);
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             return objectMapper;
         }

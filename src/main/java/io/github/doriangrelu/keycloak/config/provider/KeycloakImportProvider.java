@@ -25,9 +25,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samskivert.mustache.Mustache;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.model.ImportResource;
-import io.github.doriangrelu.keycloak.config.mustache.MustacheContextWithDefaults;
 import io.github.doriangrelu.keycloak.config.model.KeycloakImport;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import io.github.doriangrelu.keycloak.config.mustache.MustacheContextWithDefaults;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -53,14 +53,12 @@ import java.io.InputStream;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -122,8 +120,6 @@ public class KeycloakImportProvider {
                 throw new InvalidImportException("Unable to proceed location '" + location + "': " + e.getMessage(), e);
             }
 
-            resources = Arrays.stream(resources).filter(this::filterExcludedResources).toArray(Resource[]::new);
-
             if (resources.length == 0) {
                 throw new InvalidImportException("No files matching '" + location + "'!");
             }
@@ -145,6 +141,9 @@ public class KeycloakImportProvider {
         return new KeycloakImport(realmImports);
     }
 
+    /**
+     * FIXME -> ISSUE FILE FILTERED
+     */
     private boolean filterExcludedResources(final Resource resource) {
         if (!resource.isFile()) {
             return true;
