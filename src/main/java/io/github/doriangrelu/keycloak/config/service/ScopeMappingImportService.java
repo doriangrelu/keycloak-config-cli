@@ -209,10 +209,10 @@ public class ScopeMappingImportService {
     private void removeRolesFromScopeMappingIfNecessary(String realmName, List<String> rolesToBeRemoved, String client, String clientScope) {
         if (!rolesToBeRemoved.isEmpty()) {
             if (client != null) {
-                logger.debug("Remove roles '{}' from scope-mapping for client '{}' in realm '{}'", rolesToBeRemoved, client, realmName);
+                logger.warn("Remove roles '{}' from scope-mapping for client '{}' in realm '{}'", rolesToBeRemoved, client, realmName);
                 scopeMappingRepository.removeScopeMappingRolesForClient(realmName, client, rolesToBeRemoved);
             } else if (clientScope != null) {
-                logger.debug("Remove roles '{}' from scope-mapping for client-scope '{}' in realm '{}'", rolesToBeRemoved, clientScope, realmName);
+                logger.warn("Remove roles '{}' from scope-mapping for client-scope '{}' in realm '{}'", rolesToBeRemoved, clientScope, realmName);
                 scopeMappingRepository.removeScopeMappingRolesForClientScope(realmName, clientScope, rolesToBeRemoved);
             }
         } else {

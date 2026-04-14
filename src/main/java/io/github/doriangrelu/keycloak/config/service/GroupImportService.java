@@ -288,6 +288,8 @@ public class GroupImportService {
         if (!KeycloakUtil.doesProtected(realmName, group.getName())) {
             logger.warn("Delete group '{}' in realm '{}'", group.getPath(), realmName);
             this.groupRepository.deleteGroup(realmName, group.getId());
+        } else {
+            logger.debug("Keep group '{}' in realm '{}'", group.getPath(), realmName);
         }
     }
 

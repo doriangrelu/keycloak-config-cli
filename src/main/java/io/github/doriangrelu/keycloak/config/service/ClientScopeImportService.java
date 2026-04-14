@@ -192,8 +192,10 @@ public class ClientScopeImportService {
                     isNotDefaultScope(existingClientScope.getName(), existingDefaultClientScopes)
                             && !hasClientScopeWithName(clientScopes, existingClientScope.getName())
             ) {
-                logger.debug("Delete clientScope '{}' in realm '{}'", existingClientScope.getName(), realmName);
+                logger.warn("Delete clientScope '{}' in realm '{}'", existingClientScope.getName(), realmName);
                 clientScopeRepository.delete(realmName, existingClientScope.getId());
+            } else {
+                logger.debug("Keep clientScope '{}' in realm '{}'", existingClientScope.getName(), realmName);
             }
         }
     }

@@ -87,8 +87,10 @@ public class IdentityProviderImportService {
     ) {
         for (IdentityProviderRepresentation identityProvider : existingIdentityProviders) {
             if (!hasIdentityProviderWithAlias(identityProviders, identityProvider.getAlias())) {
-                logger.debug("Delete identityProvider '{}' in realm '{}'", identityProvider.getAlias(), realmName);
+                logger.warn("Delete identityProvider '{}' in realm '{}'", identityProvider.getAlias(), realmName);
                 identityProviderRepository.delete(realmName, identityProvider);
+            } else {
+                logger.debug("Keep identityProvider '{}' in realm '{}'", identityProvider.getAlias(), realmName);
             }
         }
     }
