@@ -63,6 +63,10 @@
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
         <resteasy.version>6.2.10.Final</resteasy.version>
 
+        <!-- Build plugins -->
+        <spotless.version>3.11.0</spotless.version>
+        <palantir-java-format.version>2.103.0</palantir-java-format.version>
+
         <!-- Test Dependencies -->
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
         <mockserver.version>5.15.0</mockserver.version>
@@ -322,6 +326,28 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <palantirJavaFormat>
+                            <version>${palantir-java-format.version}</version>
+                        </palantirJavaFormat>
+                        <trimTrailingWhitespace />
+                        <endWithNewline />
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
