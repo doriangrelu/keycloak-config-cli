@@ -26,7 +26,7 @@ Retirer la valeur par défaut versionnée de `import.remote-state.encryption-sal
 
 ### US-001-04 — Squelette des couches et ArchitectureTest
 
-**Statut :** À faire
+**Statut :** Terminé
 Créer les packages `domain`, `application`, `infrastructure` et le test ArchUnit des règles de l'ADR-001. Les packages hérités sont exclus du test jusqu'à leur migration.
 
 ### US-001-05 — Couche SDK

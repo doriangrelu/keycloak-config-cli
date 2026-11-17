@@ -70,6 +70,7 @@
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
         <mockserver.version>5.15.0</mockserver.version>
         <unboundid-ldapsdk.version>7.0.1</unboundid-ldapsdk.version>
+        <archunit.version>1.5.1</archunit.version>
 
         <argLine>
             --add-exports=java.base/sun.security.x509=ALL-UNNAMED
@@ -290,6 +291,13 @@
             <groupId>com.unboundid</groupId>
             <artifactId>unboundid-ldapsdk</artifactId>
             <version>${unboundid-ldapsdk.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
