@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.properties;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import java.util.Collection;
@@ -475,12 +476,24 @@ public class ImportConfigProperties {
         private final String encryptionSalt;
 
         public ImportRemoteStateProperties(
-                @DefaultValue("true") final boolean enabled,
-                final String encryptionKey,
-                @DefaultValue("2B521C795FBE2F2425DB150CD3700BA9") final String encryptionSalt) {
+                @DefaultValue("true") final boolean enabled, final String encryptionKey, final String encryptionSalt) {
             this.enabled = enabled;
             this.encryptionKey = encryptionKey;
             this.encryptionSalt = encryptionSalt;
+        }
+
+        /**
+         * No salt is shipped with the tool: a salt shared by every installation would weaken the key derivation.
+         */
+        @AssertTrue(
+                message =
+                        "import.remote-state.encryption-salt must be set when import.remote-state.encryption-key is set")
+        public boolean isEncryptionSaltProvidedWhenEncrypted() {
+            return isBlank(this.encryptionKey) || !isBlank(this.encryptionSalt);
+        }
+
+        private static boolean isBlank(final String value) {
+            return value == null || value.isBlank();
         }
 
         public boolean isEnabled() {

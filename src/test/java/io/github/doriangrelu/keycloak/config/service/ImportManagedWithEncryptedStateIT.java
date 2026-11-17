@@ -35,7 +35,12 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = {"import.remote-state.encryption-key=password", "import.managed.role=full"})
+@TestPropertySource(
+        properties = {
+            "import.remote-state.encryption-key=password",
+            "import.remote-state.encryption-salt=0123456789ABCDEF",
+            "import.managed.role=full"
+        })
 class ImportManagedWithEncryptedStateIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithManagedEncryptedSate";
 

@@ -27,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- **BREAKING**: No default value is shipped any more for `import.remote-state.encryption-salt`. It is now required when `import.remote-state.encryption-key` is set, and the tool refuses to start otherwise.
+    - To keep reading a state encrypted by a previous version, set `import.remote-state.encryption-salt=2B521C795FBE2F2425DB150CD3700BA9` (the former default), or start over with a salt of your own.
 - **BREAKING**: Refactored `GroupImportService` to use functional programming with Java Streams
 - **BREAKING**: Refactored `RoleImportService` to track imported roles via ExecutionContextHolder for managed deletion
 - **BREAKING**: Refactored `ClientImportService` to track imported clients via ExecutionContextHolder for managed deletion

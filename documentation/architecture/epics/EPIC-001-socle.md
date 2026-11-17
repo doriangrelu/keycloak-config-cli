@@ -21,7 +21,7 @@ Ajouter le wrapper Maven (`mvnw`), le formatage automatique (Spotless) vérifié
 
 ### US-001-03 — Sel de chiffrement de l'état distant
 
-**Statut :** À faire
+**Statut :** Terminé
 Retirer la valeur par défaut versionnée de `import.remote-state.encryption-salt` dans `application.properties`. Exiger un sel fourni par l'environnement quand une clé de chiffrement est configurée, et le documenter. Changement incompatible à annoncer.
 
 ### US-001-04 — Squelette des couches et ArchitectureTest
