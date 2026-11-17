@@ -29,9 +29,11 @@ import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
 import io.github.doriangrelu.keycloak.config.service.checksum.ChecksumService;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
+import io.github.doriangrelu.keycloak.config.service.state.ImportTracking;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RolesRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -152,12 +154,42 @@ public class RealmImportService {
                 .put(realmImport.getRealm(), ProtectedResource.class, realmImport.getProtectedResources());
 
         boolean realmExists = realmRepository.exists(realmImport.getRealm());
+        trackImport(realmImport, realmExists);
 
         if (realmExists) {
             updateRealmIfNecessary(realmImport);
         } else {
             createRealm(realmImport);
         }
+    }
+
+    /**
+     * Prepares the clean phase: captures the remote state before this import overwrites it, and records what the
+     * import declares. Done for every file, including those skipped because their checksum did not change.
+     */
+    private void trackImport(RealmImport realmImport, boolean realmExists) {
+        String realmName = realmImport.getRealm();
+        if (realmExists && importProperties.getRemoteState().isEnabled()) {
+            stateService.loadState(realmImport);
+            if (realmImport.getClients() != null) {
+                ImportTracking.captureState(realmName, ImportTracking.CLIENTS, stateService.getClients());
+            }
+            RolesRepresentation roles = realmImport.getRoles();
+            if (roles != null && roles.getRealm() != null) {
+                ImportTracking.captureState(realmName, ImportTracking.REALM_ROLES, stateService.getRealmRoles());
+            }
+            if (roles != null && roles.getClient() != null) {
+                roles.getClient()
+                        .keySet()
+                        .forEach(clientId -> ImportTracking.captureState(
+                                realmName,
+                                ImportTracking.clientRoles(clientId),
+                                stateService.getClientRoles(clientId)));
+            }
+        }
+        clientImportService.registerImported(realmImport);
+        roleImportService.registerImported(realmImport);
+        groupImportService.registerImported(realmImport);
     }
 
     private void updateRealmIfNecessary(RealmImport realmImport) {
@@ -260,11 +292,15 @@ public class RealmImportService {
      * @param realmImport the realm import configuration identifying the target realm
      */
     public void cleanRealm(final RealmImport realmImport) {
+        logger.debug("Start cleaning realm import for realm part '{}'", realmImport.getRealm());
         if (importProperties.getManaged().getClient() == FULL) {
-            logger.warn("Start cleaning realm import for realm part '{}'", realmImport.getRealm());
             this.clientImportService.deleteClientsMissingInImport(realmImport);
+        }
+        if (importProperties.getManaged().getRole() == FULL) {
             this.roleImportService.deleteRealmRolesMissingInImport(realmImport);
             this.roleImportService.deleteClientRolesMissingInImport(realmImport);
+        }
+        if (importProperties.getManaged().getGroup() == FULL) {
             this.groupImportService.deleteRoleMappingMissingOnImport(realmImport);
             this.groupImportService.deleteGroupsMissingInImport(realmImport);
         }

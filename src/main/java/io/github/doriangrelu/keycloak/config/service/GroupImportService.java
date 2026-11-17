@@ -26,6 +26,7 @@ import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.repository.GroupRepository;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
+import io.github.doriangrelu.keycloak.config.service.state.ImportTracking;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import io.github.doriangrelu.keycloak.config.util.KeycloakUtil;
 import java.util.ArrayList;
@@ -121,7 +122,18 @@ public class GroupImportService {
         }
 
         this.createOrUpdateGroups(groups, realmName);
+    }
 
+    /**
+     * Records the groups declared by the import in the execution context, for the clean phase. Called even when the
+     * import itself is skipped because its checksum did not change.
+     */
+    public void registerImported(final RealmImport realmImport) {
+        final List<GroupRepresentation> groups = realmImport.getGroups();
+        if (groups == null) {
+            return;
+        }
+        ImportTracking.declare(realmImport.getRealm(), ImportTracking.GROUPS);
         ExecutionContextHolder.context().put(realmImport.getRealm(), GroupRepresentation.class, groups);
     }
 
@@ -167,6 +179,9 @@ public class GroupImportService {
      */
     public void deleteGroupsMissingInImport(final RealmImport realmImport) {
         final String realmName = realmImport.getRealm();
+        if (!ImportTracking.isDeclared(realmName, ImportTracking.GROUPS)) {
+            return;
+        }
         final Collection<GroupRepresentation> importedGroups =
                 ExecutionContextHolder.context().get(realmName, GroupRepresentation.class);
 
@@ -181,6 +196,9 @@ public class GroupImportService {
 
     public void deleteRoleMappingMissingOnImport(final RealmImport realmImport) {
         final String realmName = realmImport.getRealm();
+        if (!ImportTracking.isDeclared(realmName, ImportTracking.GROUPS)) {
+            return;
+        }
         final Collection<GroupRepresentation> importedGroups =
                 ExecutionContextHolder.context().get(realmName, GroupRepresentation.class);
 

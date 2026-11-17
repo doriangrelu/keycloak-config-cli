@@ -30,6 +30,7 @@ import io.github.doriangrelu.keycloak.config.repository.AuthenticationFlowReposi
 import io.github.doriangrelu.keycloak.config.repository.ClientRepository;
 import io.github.doriangrelu.keycloak.config.repository.ClientScopeRepository;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
+import io.github.doriangrelu.keycloak.config.service.state.ImportTracking;
 import io.github.doriangrelu.keycloak.config.util.ClientScopeUtil;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import io.github.doriangrelu.keycloak.config.util.KeycloakUtil;
@@ -135,7 +136,18 @@ public class ClientImportService {
         } else {
             clients.forEach(loop);
         }
+    }
 
+    /**
+     * Records the clients declared by the import in the execution context, for the clean phase. Called even when the
+     * import itself is skipped because its checksum did not change.
+     */
+    public void registerImported(final RealmImport realmImport) {
+        final List<ClientRepresentation> clients = realmImport.getClients();
+        if (clients == null) {
+            return;
+        }
+        ImportTracking.declare(realmImport.getRealm(), ImportTracking.CLIENTS);
         ExecutionContextHolder.context().put(realmImport.getRealm(), ClientRepresentation.class, clients);
     }
 
@@ -154,6 +166,14 @@ public class ClientImportService {
      * @param realmImport the realm import configuration identifying the target realm
      */
     public void deleteClientsMissingInImport(final RealmImport realmImport) {
+        final String realmName = realmImport.getRealm();
+        if (!ImportTracking.isDeclared(realmName, ImportTracking.CLIENTS)) {
+            return;
+        }
+        final boolean stateEnabled =
+                this.importConfigProperties.getRemoteState().isEnabled();
+        final Set<String> clientsInState = ImportTracking.previousState(realmName, ImportTracking.CLIENTS);
+
         final Set<String> importedClients =
                 ExecutionContextHolder.context().get(realmImport.getRealm(), ClientRepresentation.class).stream()
                         .map(ClientRepresentation::getClientId)
@@ -164,10 +184,10 @@ public class ClientImportService {
                 .filter(client -> !KeycloakUtil.doesProtected(realmImport.getRealm(), client.getClientId()))
                 .filter(client -> !KeycloakUtil.isDefaultClient(client))
                 .filter(client -> !importedClients.contains(client.getClientId()))
-                .filter(_ -> !Objects.equals(realmImport.getRealm(), "master"))
-                .filter(client -> !client.getClientId().endsWith("-realm"))
-                .filter(client -> !(ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getClientId())))
-                .filter(_ -> this.keycloakProvider.isFgapV2Active())
+                .filter(client -> !stateEnabled || clientsInState.contains(client.getClientId()))
+                .filter(client ->
+                        !("master".equals(realmName) && client.getClientId().endsWith("-realm")))
+                .filter(client -> !ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getClientId()))
                 .forEach(clientToRemove -> {
                     logger.warn(
                             "Remove client '{}' in realm '{}'", clientToRemove.getClientId(), realmImport.getRealm());

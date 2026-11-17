@@ -28,6 +28,7 @@ import io.github.doriangrelu.keycloak.config.repository.RoleRepository;
 import io.github.doriangrelu.keycloak.config.service.rolecomposites.client.ClientRoleCompositeImportService;
 import io.github.doriangrelu.keycloak.config.service.rolecomposites.realm.RealmRoleCompositeImportService;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
+import io.github.doriangrelu.keycloak.config.service.state.ImportTracking;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import java.util.Collection;
@@ -124,7 +125,32 @@ public class RoleImportService {
         } else {
             rolesToImport.forEach(loop);
         }
-        ExecutionContextHolder.context().put(realmName, RoleRepresentation.class, rolesToImport);
+    }
+
+    /**
+     * Records the realm and client roles declared by the import in the execution context, for the clean phase.
+     * Called even when the import itself is skipped because its checksum did not change.
+     */
+    public void registerImported(final RealmImport realmImport) {
+        final RolesRepresentation roles = realmImport.getRoles();
+        if (roles == null) {
+            return;
+        }
+        final String realmName = realmImport.getRealm();
+        if (roles.getRealm() != null) {
+            ImportTracking.declare(realmName, ImportTracking.REALM_ROLES);
+            ExecutionContextHolder.context().put(realmName, RoleRepresentation.class, roles.getRealm());
+        }
+        if (roles.getClient() != null) {
+            roles.getClient().forEach((clientId, clientRoles) -> {
+                ImportTracking.declare(realmName, ImportTracking.clientRoles(clientId));
+                ExecutionContextHolder.context()
+                        .put(
+                                computeClientRepresentationKey(realmName, clientId),
+                                RoleRepresentation.class,
+                                clientRoles);
+            });
+        }
     }
 
     private void createOrUpdateRealmRole(
@@ -165,11 +191,6 @@ public class RoleImportService {
                 this.createOrUpdateClientRole(realmName, clientId, role, existingRoles);
             }
         }
-
-        rolesToImport.forEach((clientId, roles) -> {
-            final String key = computeClientRepresentationKey(realmName, clientId);
-            ExecutionContextHolder.context().put(key, RoleRepresentation.class, roles);
-        });
     }
 
     private static String computeClientRepresentationKey(final String realmName, final String clientId) {
@@ -249,6 +270,14 @@ public class RoleImportService {
     }
 
     public void deleteRealmRolesMissingInImport(final RealmImport realmImport) {
+        final String realmName = realmImport.getRealm();
+        if (!ImportTracking.isDeclared(realmName, ImportTracking.REALM_ROLES)) {
+            return;
+        }
+        final boolean stateEnabled =
+                this.importConfigProperties.getRemoteState().isEnabled();
+        final Set<String> rolesInState = ImportTracking.previousState(realmName, ImportTracking.REALM_ROLES);
+
         final Set<String> importedRealmRoles =
                 ExecutionContextHolder.context().get(realmImport.getRealm(), RoleRepresentation.class).stream()
                         .map(RoleRepresentation::getName)
@@ -257,6 +286,7 @@ public class RoleImportService {
         this.roleRepository.getRealmRoles(realmImport.getRealm()).stream()
                 .filter(roleRepresentation -> !roleRepresentation.getClientRole())
                 .filter(roleRepresentation -> !importedRealmRoles.contains(roleRepresentation.getName()))
+                .filter(roleRepresentation -> !stateEnabled || rolesInState.contains(roleRepresentation.getName()))
                 .forEach(roleRepresentation -> {
                     logger.debug(
                             "Delete realm-level role '{}' in realm '{}'",
@@ -267,10 +297,22 @@ public class RoleImportService {
     }
 
     public void deleteClientRolesMissingInImport(final RealmImport realmImport) {
-        final Map<String, List<RoleRepresentation>> roles = this.roleRepository.getClientRoles(realmImport.getRealm());
+        final String realmName = realmImport.getRealm();
+        final Set<String> clientsWithDeclaredRoles = ImportTracking.clientsWithDeclaredRoles(realmName);
+        if (clientsWithDeclaredRoles.isEmpty()) {
+            return;
+        }
+        final boolean stateEnabled =
+                this.importConfigProperties.getRemoteState().isEnabled();
+        final Map<String, List<RoleRepresentation>> roles = this.roleRepository.getClientRoles(realmName);
 
         roles.forEach((clientId, roleRepresentations) -> {
-            final String key = computeClientRepresentationKey(realmImport.getRealm(), clientId);
+            if (!clientsWithDeclaredRoles.contains(clientId)) {
+                return;
+            }
+            final String key = computeClientRepresentationKey(realmName, clientId);
+            final Set<String> rolesInState =
+                    ImportTracking.previousState(realmName, ImportTracking.clientRoles(clientId));
 
             final Collection<String> importedRoles =
                     ExecutionContextHolder.context().get(key, RoleRepresentation.class).stream()
@@ -279,6 +321,7 @@ public class RoleImportService {
 
             roleRepresentations.stream()
                     .filter(roleRepresentation -> !importedRoles.contains(roleRepresentation.getName()))
+                    .filter(roleRepresentation -> !stateEnabled || rolesInState.contains(roleRepresentation.getName()))
                     .forEach(roleRepresentation ->
                             this.roleRepository.deleteClientRole(realmImport.getRealm(), clientId, roleRepresentation));
         });
