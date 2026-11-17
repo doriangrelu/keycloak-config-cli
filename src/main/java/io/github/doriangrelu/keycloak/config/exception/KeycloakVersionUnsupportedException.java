@@ -20,7 +20,6 @@
 
 package io.github.doriangrelu.keycloak.config.exception;
 
-
 @SuppressWarnings("unused")
 public class KeycloakVersionUnsupportedException extends RuntimeException {
     public KeycloakVersionUnsupportedException(Throwable error) {

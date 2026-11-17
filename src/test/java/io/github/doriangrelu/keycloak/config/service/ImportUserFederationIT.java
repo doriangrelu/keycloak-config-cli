@@ -20,8 +20,14 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.extensions.LdapExtension;
+import java.io.IOException;
+import java.util.List;
 import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -32,24 +38,17 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.test.context.TestPropertySource;
 
-import java.io.IOException;
-import java.util.List;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.core.Is.is;
-
-@TestPropertySource(properties = {
-        "import.behaviors.sync-user-federation=true",
-        "import.behaviors.skip-attributes-for-federated-user=true",
-        "import.var-substitution.enabled=true"
-})
+@TestPropertySource(
+        properties = {
+            "import.behaviors.sync-user-federation=true",
+            "import.behaviors.skip-attributes-for-federated-user=true",
+            "import.var-substitution.enabled=true"
+        })
 @SuppressWarnings({"SameParameterValue"})
 class ImportUserFederationIT extends AbstractImportIT {
     @RegisterExtension
-    final static LdapExtension ldapExtension = new LdapExtension(
-            "dc=example,dc=org", "embedded-ldap.ldif", "cn=admin,dc=example,dc=org", "admin123"
-    );
+    static final LdapExtension ldapExtension =
+            new LdapExtension("dc=example,dc=org", "embedded-ldap.ldif", "cn=admin,dc=example,dc=org", "admin123");
 
     private static final String REALM_NAME = "realmWithLdap";
     private static final String REALM_NAME_WITHOUT_FEDERATION = "realmWithoutLdap";
@@ -63,18 +62,14 @@ class ImportUserFederationIT extends AbstractImportIT {
     void shouldCreateRealmWithUser() throws IOException {
         doImport("00_create_realm_with_federation.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
         AccessTokenResponse token = keycloakAuthentication.login(
-                REALM_NAME,
-                "moped-client",
-                "my-special-client-secret",
-                "jbrown",
-                "password"
-        );
+                REALM_NAME, "moped-client", "my-special-client-secret", "jbrown", "password");
 
         assertThat(token.getToken(), notNullValue());
         assertThat(token.getRefreshToken(), notNullValue());
@@ -88,7 +83,10 @@ class ImportUserFederationIT extends AbstractImportIT {
     void withoutFederationNoUsersAreCreated() throws IOException {
         doImport("01_create_realm_without_federation.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME_WITHOUT_FEDERATION).toRepresentation();
+        RealmRepresentation realm = keycloakProvider
+                .getInstance()
+                .realm(REALM_NAME_WITHOUT_FEDERATION)
+                .toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME_WITHOUT_FEDERATION));
         assertThat(realm.isEnabled(), is(true));
@@ -101,7 +99,10 @@ class ImportUserFederationIT extends AbstractImportIT {
     void withoutComponentNoUsersAreCreated() throws IOException {
         doImport("02_create_realm_without_component.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME_WITHOUT_FEDERATION).toRepresentation();
+        RealmRepresentation realm = keycloakProvider
+                .getInstance()
+                .realm(REALM_NAME_WITHOUT_FEDERATION)
+                .toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME_WITHOUT_FEDERATION));
         assertThat(realm.isEnabled(), is(true));
@@ -114,7 +115,8 @@ class ImportUserFederationIT extends AbstractImportIT {
     void importDisableShouldNotMakeRequest() throws IOException {
         doImport("03_create_realm_with_federation_import_disable.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -125,7 +127,8 @@ class ImportUserFederationIT extends AbstractImportIT {
     void importFederationAddUserGroupWithReadonlyProvider() throws IOException {
         doImport("04_update_realm_with_federation_readonly_add_group.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -148,7 +151,8 @@ class ImportUserFederationIT extends AbstractImportIT {
     void importFederationChangeUserGroupWithReadonlyProvider() throws IOException {
         doImport("05_update_realm_with_federation_readonly_change_group.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -171,7 +175,8 @@ class ImportUserFederationIT extends AbstractImportIT {
     void importFederationRemoveUserGroupWithReadonlyProvider() throws IOException {
         doImport("06_update_realm_with_federation_readonly_remove_group.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -190,7 +195,8 @@ class ImportUserFederationIT extends AbstractImportIT {
     void importFederationUserChangeAttributeWithReadonlyProvider() throws IOException {
         doImport("07_update_realm_with_federation_readonly_change_attributes.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -205,10 +211,18 @@ class ImportUserFederationIT extends AbstractImportIT {
     }
 
     private List<GroupRepresentation> getGroupsByUser(UserRepresentation user) {
-        return keycloakProvider.getInstance().realm(REALM_NAME).users().get(user.getId()).groups();
+        return keycloakProvider
+                .getInstance()
+                .realm(REALM_NAME)
+                .users()
+                .get(user.getId())
+                .groups();
     }
 
     private GroupRepresentation getGroupsByPath(List<GroupRepresentation> groups, String groupPath) {
-        return groups.stream().filter(group -> group.getPath().equals(groupPath)).findFirst().orElse(null);
+        return groups.stream()
+                .filter(group -> group.getPath().equals(groupPath))
+                .findFirst()
+                .orElse(null);
     }
 }

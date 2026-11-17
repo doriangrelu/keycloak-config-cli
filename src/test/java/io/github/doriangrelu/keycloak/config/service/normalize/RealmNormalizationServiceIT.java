@@ -18,23 +18,21 @@
  * ---license-end
  */
 
-
 package io.github.doriangrelu.keycloak.config.service.normalize;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 import io.github.doriangrelu.keycloak.config.properties.NormalizationKeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.BaselineProvider;
 import io.github.doriangrelu.keycloak.config.util.JaversUtil;
+import java.util.Collections;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
 import org.javers.core.diff.changetype.PropertyChange;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
-
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 public class RealmNormalizationServiceIT {
 
@@ -48,17 +46,23 @@ public class RealmNormalizationServiceIT {
         javers = mock(Javers.class);
         baselineProvider = mock(BaselineProvider.class);
         ClientNormalizationService clientNormalizationService = mock(ClientNormalizationService.class);
-        ScopeMappingNormalizationService scopeMappingNormalizationService = mock(ScopeMappingNormalizationService.class);
-        ProtocolMapperNormalizationService protocolMapperNormalizationService = mock(ProtocolMapperNormalizationService.class);
+        ScopeMappingNormalizationService scopeMappingNormalizationService =
+                mock(ScopeMappingNormalizationService.class);
+        ProtocolMapperNormalizationService protocolMapperNormalizationService =
+                mock(ProtocolMapperNormalizationService.class);
         ClientScopeNormalizationService clientScopeNormalizationService = mock(ClientScopeNormalizationService.class);
         RoleNormalizationService roleNormalizationService = mock(RoleNormalizationService.class);
         AttributeNormalizationService attributeNormalizationService = mock(AttributeNormalizationService.class);
         GroupNormalizationService groupNormalizationService = mock(GroupNormalizationService.class);
         AuthFlowNormalizationService authFlowNormalizationService = mock(AuthFlowNormalizationService.class);
-        IdentityProviderNormalizationService identityProviderNormalizationService = mock(IdentityProviderNormalizationService.class);
-        RequiredActionNormalizationService requiredActionNormalizationService = mock(RequiredActionNormalizationService.class);
-        UserFederationNormalizationService userFederationNormalizationService = mock(UserFederationNormalizationService.class);
-        ClientPolicyNormalizationService clientPolicyNormalizationService = mock(ClientPolicyNormalizationService.class);
+        IdentityProviderNormalizationService identityProviderNormalizationService =
+                mock(IdentityProviderNormalizationService.class);
+        RequiredActionNormalizationService requiredActionNormalizationService =
+                mock(RequiredActionNormalizationService.class);
+        UserFederationNormalizationService userFederationNormalizationService =
+                mock(UserFederationNormalizationService.class);
+        ClientPolicyNormalizationService clientPolicyNormalizationService =
+                mock(ClientPolicyNormalizationService.class);
         JaversUtil javersUtil = mock(JaversUtil.class);
         keycloakConfigProperties = mock(NormalizationKeycloakConfigProperties.class);
 
@@ -78,8 +82,7 @@ public class RealmNormalizationServiceIT {
                 requiredActionNormalizationService,
                 userFederationNormalizationService,
                 clientPolicyNormalizationService,
-                javersUtil
-        );
+                javersUtil);
     }
 
     @Test

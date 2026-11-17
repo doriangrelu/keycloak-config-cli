@@ -22,6 +22,10 @@ package io.github.doriangrelu.keycloak.config.repository;
 
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.resource.ManagementPermissions;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.Optional;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.IdentityProviderResource;
 import org.keycloak.admin.client.resource.IdentityProvidersResource;
@@ -30,12 +34,6 @@ import org.keycloak.representations.idm.ManagementPermissionRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
-
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -77,22 +75,23 @@ public class IdentityProviderRepository {
     }
 
     public void create(String realmName, IdentityProviderRepresentation identityProvider) {
-        IdentityProvidersResource identityProvidersResource = realmRepository.getResource(realmName).identityProviders();
+        IdentityProvidersResource identityProvidersResource =
+                realmRepository.getResource(realmName).identityProviders();
         try (Response response = identityProvidersResource.create(identityProvider)) {
             CreatedResponseUtil.getCreatedId(response);
         }
     }
 
     public void update(String realmName, IdentityProviderRepresentation identityProviderToUpdate) {
-        IdentityProviderResource identityProviderResource = realmRepository.getResource(realmName)
-                .identityProviders()
-                .get(identityProviderToUpdate.getAlias());
+        IdentityProviderResource identityProviderResource =
+                realmRepository.getResource(realmName).identityProviders().get(identityProviderToUpdate.getAlias());
 
         identityProviderResource.update(identityProviderToUpdate);
     }
 
     public void delete(String realmName, IdentityProviderRepresentation identityProviderToDelete) {
-        IdentityProviderResource identityProviderResource = realmRepository.getResource(realmName)
+        IdentityProviderResource identityProviderResource = realmRepository
+                .getResource(realmName)
                 .identityProviders()
                 .get(identityProviderToDelete.getInternalId());
 

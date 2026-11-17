@@ -20,9 +20,13 @@
 
 package io.github.doriangrelu.keycloak.config.properties;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
+
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportBehaviorsProperties.ChecksumChangedOption;
+import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,51 +35,47 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
-
 // From: https://tuhrig.de/testing-configurationproperties-in-spring-boot/
 @ExtendWith(SpringExtension.class)
 @ExtendWith(GithubActionsExtension.class)
 @SpringBootTest(classes = {ImportConfigPropertiesTest.TestConfiguration.class})
-@TestPropertySource(properties = {
-        "spring.main.log-startup-info=false",
-
-        "import.parallel=true",
-        "import.validate=false",
-        "import.files.locations=other",
-        "import.files.include-hidden-files=true",
-        "import.files.excludes=exclude1,exclude2",
-        "import.var-substitution.enabled=true",
-        "import.var-substitution.nested=false",
-        "import.var-substitution.undefined-is-error=false",
-        "import.var-substitution.prefix=${",
-        "import.var-substitution.suffix=}",
-        "import.cache.enabled=false",
-        "import.cache.key=custom",
-        "import.remote-state.enabled=false",
-        "import.remote-state.encryption-key=password",
-        "import.remote-state.encryption-salt=0123456789ABCDEFabcdef",
-        "import.managed.authentication-flow=no-delete",
-        "import.managed.group=no-delete",
-        "import.managed.required-action=no-delete",
-        "import.managed.client-scope=no-delete",
-        "import.managed.scope-mapping=no-delete",
-        "import.managed.client-scope-mapping=no-delete",
-        "import.managed.component=no-delete",
-        "import.managed.sub-component=no-delete",
-        "import.managed.identity-provider=no-delete",
-        "import.managed.identity-provider-mapper=no-delete",
-        "import.managed.role=no-delete",
-        "import.managed.client=no-delete",
-        "import.managed.client-authorization-resources=no-delete",
-        "import.behaviors.sync-user-federation=true",
-        "import.behaviors.remove-default-role-from-user=true",
-        "import.behaviors.skip-attributes-for-federated-user=true",
-        "import.behaviors.checksum-with-cache-key=true",
-        "import.behaviors.checksum-changed=fail"
-})
+@TestPropertySource(
+        properties = {
+            "spring.main.log-startup-info=false",
+            "import.parallel=true",
+            "import.validate=false",
+            "import.files.locations=other",
+            "import.files.include-hidden-files=true",
+            "import.files.excludes=exclude1,exclude2",
+            "import.var-substitution.enabled=true",
+            "import.var-substitution.nested=false",
+            "import.var-substitution.undefined-is-error=false",
+            "import.var-substitution.prefix=${",
+            "import.var-substitution.suffix=}",
+            "import.cache.enabled=false",
+            "import.cache.key=custom",
+            "import.remote-state.enabled=false",
+            "import.remote-state.encryption-key=password",
+            "import.remote-state.encryption-salt=0123456789ABCDEFabcdef",
+            "import.managed.authentication-flow=no-delete",
+            "import.managed.group=no-delete",
+            "import.managed.required-action=no-delete",
+            "import.managed.client-scope=no-delete",
+            "import.managed.scope-mapping=no-delete",
+            "import.managed.client-scope-mapping=no-delete",
+            "import.managed.component=no-delete",
+            "import.managed.sub-component=no-delete",
+            "import.managed.identity-provider=no-delete",
+            "import.managed.identity-provider-mapper=no-delete",
+            "import.managed.role=no-delete",
+            "import.managed.client=no-delete",
+            "import.managed.client-authorization-resources=no-delete",
+            "import.behaviors.sync-user-federation=true",
+            "import.behaviors.remove-default-role-from-user=true",
+            "import.behaviors.skip-attributes-for-federated-user=true",
+            "import.behaviors.checksum-with-cache-key=true",
+            "import.behaviors.checksum-changed=fail"
+        })
 class ImportConfigPropertiesTest {
 
     @Autowired
@@ -111,7 +111,8 @@ class ImportConfigPropertiesTest {
         assertThat(properties.getManaged().getIdentityProviderMapper(), is(ImportManagedPropertiesValues.NO_DELETE));
         assertThat(properties.getManaged().getRole(), is(ImportManagedPropertiesValues.NO_DELETE));
         assertThat(properties.getManaged().getClient(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getClientAuthorizationResources(), is(ImportManagedPropertiesValues.NO_DELETE));
+        assertThat(
+                properties.getManaged().getClientAuthorizationResources(), is(ImportManagedPropertiesValues.NO_DELETE));
         assertThat(properties.getBehaviors().isSyncUserFederation(), is(true));
         assertThat(properties.getBehaviors().isRemoveDefaultRoleFromUser(), is(true));
         assertThat(properties.getBehaviors().isSkipAttributesForFederatedUser(), is(true));

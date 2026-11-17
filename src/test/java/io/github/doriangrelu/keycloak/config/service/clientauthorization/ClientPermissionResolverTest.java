@@ -20,6 +20,15 @@
 
 package io.github.doriangrelu.keycloak.config.service.clientauthorization;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.repository.ClientRepository;
@@ -29,15 +38,6 @@ import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.ClientRepresentation;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.never;
 
 /**
  * Unit tests for ClientPermissionResolver to cover error handling paths.
@@ -62,11 +62,13 @@ class ClientPermissionResolverTest {
         when(response.getStatus()).thenReturn(status);
         when(response.getStatusInfo()).thenReturn(statusType);
         when(statusType.getStatusCode()).thenReturn(status);
-        when(statusType.getFamily()).thenReturn(
-            status >= 500 ? Response.Status.Family.SERVER_ERROR :
-            status >= 400 ? Response.Status.Family.CLIENT_ERROR :
-            Response.Status.Family.SUCCESSFUL
-        );
+        when(statusType.getFamily())
+                .thenReturn(
+                        status >= 500
+                                ? Response.Status.Family.SERVER_ERROR
+                                : status >= 400
+                                        ? Response.Status.Family.CLIENT_ERROR
+                                        : Response.Status.Family.SUCCESSFUL);
         return response;
     }
 
@@ -89,25 +91,19 @@ class ClientPermissionResolverTest {
     @Test
     void shouldThrowImportProcessingExceptionWhenClientNotFound() {
         // Given: Client not found
-        when(clientRepository.getByClientId(REALM_NAME, CLIENT_ID))
-                .thenThrow(NotFoundException.class);
+        when(clientRepository.getByClientId(REALM_NAME, CLIENT_ID)).thenThrow(NotFoundException.class);
 
         // When/Then: Should throw ImportProcessingException
-        assertThrows(ImportProcessingException.class, () ->
-            resolver.resolveObjectId(CLIENT_ID, AUTHZ_NAME)
-        );
+        assertThrows(ImportProcessingException.class, () -> resolver.resolveObjectId(CLIENT_ID, AUTHZ_NAME));
     }
 
     @Test
     void shouldThrowImportProcessingExceptionWhenKeycloakRepositoryException() {
         // Given: Repository throws KeycloakRepositoryException
-        when(clientRepository.getByClientId(REALM_NAME, CLIENT_ID))
-                .thenThrow(new KeycloakRepositoryException("Error"));
+        when(clientRepository.getByClientId(REALM_NAME, CLIENT_ID)).thenThrow(new KeycloakRepositoryException("Error"));
 
         // When/Then: Should throw ImportProcessingException
-        assertThrows(ImportProcessingException.class, () ->
-            resolver.resolveObjectId(CLIENT_ID, AUTHZ_NAME)
-        );
+        assertThrows(ImportProcessingException.class, () -> resolver.resolveObjectId(CLIENT_ID, AUTHZ_NAME));
     }
 
     @Test
@@ -139,13 +135,10 @@ class ClientPermissionResolverTest {
     @Test
     void shouldThrowImportProcessingExceptionWhenClientNotFoundOnEnablePermissions() {
         // Given: Client not found when checking permissions
-        when(clientRepository.isPermissionEnabled(REALM_NAME, CLIENT_ID))
-                .thenThrow(NotFoundException.class);
+        when(clientRepository.isPermissionEnabled(REALM_NAME, CLIENT_ID)).thenThrow(NotFoundException.class);
 
         // When/Then: Should throw ImportProcessingException
-        assertThrows(ImportProcessingException.class, () ->
-            resolver.enablePermissions(CLIENT_ID)
-        );
+        assertThrows(ImportProcessingException.class, () -> resolver.enablePermissions(CLIENT_ID));
     }
 
     @Test
@@ -155,8 +148,7 @@ class ClientPermissionResolverTest {
 
         // And: ServerErrorException with 501 (Not Implemented) when enabling
         ServerErrorException exception = new ServerErrorException(createMockResponse(501));
-        doThrow(exception)
-                .when(clientRepository).enablePermission(REALM_NAME, CLIENT_ID);
+        doThrow(exception).when(clientRepository).enablePermission(REALM_NAME, CLIENT_ID);
 
         // When: Enable permissions
         resolver.enablePermissions(CLIENT_ID);
@@ -173,8 +165,7 @@ class ClientPermissionResolverTest {
 
         // And: NotFoundException with 404 when enabling
         NotFoundException exception = new NotFoundException(createMockResponse(404));
-        doThrow(exception)
-                .when(clientRepository).enablePermission(REALM_NAME, CLIENT_ID);
+        doThrow(exception).when(clientRepository).enablePermission(REALM_NAME, CLIENT_ID);
 
         // When: Enable permissions
         resolver.enablePermissions(CLIENT_ID);
@@ -191,13 +182,10 @@ class ClientPermissionResolverTest {
 
         // And: ServerErrorException with 500 (other error) when enabling
         ServerErrorException exception = new ServerErrorException(createMockResponse(500));
-        doThrow(exception)
-                .when(clientRepository).enablePermission(REALM_NAME, CLIENT_ID);
+        doThrow(exception).when(clientRepository).enablePermission(REALM_NAME, CLIENT_ID);
 
         // When/Then: Exception should be re-thrown
-        assertThrows(ServerErrorException.class, () ->
-            resolver.enablePermissions(CLIENT_ID)
-        );
+        assertThrows(ServerErrorException.class, () -> resolver.enablePermissions(CLIENT_ID));
 
         verify(clientRepository, times(1)).isPermissionEnabled(REALM_NAME, CLIENT_ID);
         verify(clientRepository, times(1)).enablePermission(REALM_NAME, CLIENT_ID);

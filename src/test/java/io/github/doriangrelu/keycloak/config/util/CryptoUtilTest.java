@@ -20,15 +20,15 @@
 
 package io.github.doriangrelu.keycloak.config.util;
 
-import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junitpioneer.jupiter.RetryingTest;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junitpioneer.jupiter.RetryingTest;
 
 @ExtendWith(GithubActionsExtension.class)
 class CryptoUtilTest {

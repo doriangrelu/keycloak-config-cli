@@ -20,17 +20,16 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import java.io.IOException;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.keycloak.representations.idm.RealmRepresentation;
-
-import java.io.IOException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 @EnabledIf(value = "isKeycloak262orHigher", disabledReason = "FGAP V2 only available in Keycloak 26.2+")
 class ImportFgapV2SkipIT extends AbstractImportIT {
@@ -51,7 +50,8 @@ class ImportFgapV2SkipIT extends AbstractImportIT {
         // This contains the admin-permissions client. It should be skipped (logged) but not fail.
         doImport("09_create_realm_with_admin_permissions_client.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
@@ -65,7 +65,7 @@ class ImportFgapV2SkipIT extends AbstractImportIT {
         // This test uses a configuration with complex policies on admin-permissions.
         // It should be skipped and pass successfully.
         doImport("11_import_realm_with_admin_permissions_client_and_policies.json");
-        
+
         // Run again to ensure idempotency (update phase)
         doImport("11_import_realm_with_admin_permissions_client_and_policies.json");
     }

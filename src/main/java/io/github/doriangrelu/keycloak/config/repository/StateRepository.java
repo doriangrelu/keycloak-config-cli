@@ -20,21 +20,20 @@
 
 package io.github.doriangrelu.keycloak.config.repository;
 
+import static io.github.doriangrelu.keycloak.config.util.JsonUtil.fromJson;
+import static io.github.doriangrelu.keycloak.config.util.JsonUtil.toJson;
+
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.util.CryptoUtil;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static io.github.doriangrelu.keycloak.config.util.JsonUtil.fromJson;
-import static io.github.doriangrelu.keycloak.config.util.JsonUtil.toJson;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -88,13 +87,11 @@ public class StateRepository {
         }
 
         // preserve custom attributes which do not contain realm state
-        attributes.entrySet()
-                .stream()
+        attributes.entrySet().stream()
                 .filter(e -> !isStateAttribute(e))
                 .forEach(e -> customAttributes.put(e.getKey(), e.getValue()));
 
-        customAttributes.entrySet()
-                .stream()
+        customAttributes.entrySet().stream()
                 .filter(this::isStateAttribute)
                 .forEach(e -> attributes.put(e.getKey(), e.getValue()));
     }
@@ -106,10 +103,9 @@ public class StateRepository {
     public List<String> getState(String entity) {
         List<String> stateValues = new ArrayList<>();
 
-        long attributeCount = customAttributes
-                .entrySet()
-                .stream()
-                .filter(attribute -> attribute.getKey().matches(String.format("^%s-\\d+$", getCustomAttributeKey(entity))))
+        long attributeCount = customAttributes.entrySet().stream()
+                .filter(attribute ->
+                        attribute.getKey().matches(String.format("^%s-\\d+$", getCustomAttributeKey(entity))))
                 .count();
 
         for (int index = 0; index < attributeCount; index++) {
@@ -126,8 +122,7 @@ public class StateRepository {
             state = CryptoUtil.decrypt(
                     state,
                     this.importConfigProperties.getRemoteState().getEncryptionKey(),
-                    this.importConfigProperties.getRemoteState().getEncryptionSalt()
-            );
+                    this.importConfigProperties.getRemoteState().getEncryptionSalt());
         }
 
         return fromJson(state);
@@ -145,8 +140,7 @@ public class StateRepository {
         return MessageFormat.format(
                 ImportConfigProperties.REALM_STATE_ATTRIBUTE_PREFIX_KEY,
                 importConfigProperties.getCache().getKey(),
-                entity
-        );
+                entity);
     }
 
     private Map<String, String> retrieveCustomAttributes(String realmName) {
@@ -161,13 +155,13 @@ public class StateRepository {
             valuesAsString = CryptoUtil.encrypt(
                     valuesAsString,
                     this.importConfigProperties.getRemoteState().getEncryptionKey(),
-                    this.importConfigProperties.getRemoteState().getEncryptionSalt()
-            );
+                    this.importConfigProperties.getRemoteState().getEncryptionSalt());
         }
 
         List<String> valueList = splitEqually(valuesAsString);
 
-        customAttributes.entrySet()
+        customAttributes
+                .entrySet()
                 .removeIf(attribute -> attribute.getKey().startsWith(getCustomAttributeKey(entity) + "-"));
 
         // split value into multiple attributes to avoid max length limit

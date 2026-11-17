@@ -22,22 +22,17 @@ package io.github.doriangrelu.keycloak.config.util;
 
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import org.keycloak.representations.idm.AbstractAuthenticationExecutionRepresentation;
 import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
 import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
 public class AuthenticationFlowUtil {
-    private AuthenticationFlowUtil() {
-    }
+    private AuthenticationFlowUtil() {}
 
-    public static AuthenticationFlowRepresentation getSubFlow(
-            RealmImport realmImport,
-            String alias
-    ) {
+    public static AuthenticationFlowRepresentation getSubFlow(RealmImport realmImport, String alias) {
         Optional<AuthenticationFlowRepresentation> maybeSubFlow = tryToGetSubFlow(realmImport, alias);
 
         if (maybeSubFlow.isEmpty()) {
@@ -47,12 +42,8 @@ public class AuthenticationFlowUtil {
         return maybeSubFlow.get();
     }
 
-    private static Optional<AuthenticationFlowRepresentation> tryToGetSubFlow(
-            RealmImport realmImport,
-            String alias
-    ) {
-        return getSubFlows(realmImport)
-                .stream()
+    private static Optional<AuthenticationFlowRepresentation> tryToGetSubFlow(RealmImport realmImport, String alias) {
+        return getSubFlows(realmImport).stream()
                 .filter(f -> Objects.equals(f.getAlias(), alias))
                 .findFirst();
     }
@@ -69,14 +60,10 @@ public class AuthenticationFlowUtil {
                 .toList();
     }
 
-
     @SuppressWarnings("deprecation")
     public static List<AuthenticationFlowRepresentation> getSubFlowsForTopLevelFlow(
-            RealmImport realmImport,
-            AuthenticationFlowRepresentation topLevelFlow
-    ) {
-        return topLevelFlow.getAuthenticationExecutions()
-                .stream()
+            RealmImport realmImport, AuthenticationFlowRepresentation topLevelFlow) {
+        return topLevelFlow.getAuthenticationExecutions().stream()
                 .filter(AbstractAuthenticationExecutionRepresentation::isAutheticatorFlow)
                 .map(AuthenticationExecutionExportRepresentation::getFlowAlias)
                 .map(alias -> getSubFlow(realmImport, alias))

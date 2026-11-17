@@ -20,24 +20,24 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.test.context.TestPropertySource;
 
-import java.io.IOException;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
-
-@TestPropertySource(properties = {
-        "import.remote-state.enabled=false",
-        "logging.level.io.github.doriangrelu.keycloak.config.KeycloakConfigRunner=INFO",
-})
+@TestPropertySource(
+        properties = {
+            "import.remote-state.enabled=false",
+            "logging.level.io.github.doriangrelu.keycloak.config.KeycloakConfigRunner=INFO",
+        })
 @Timeout(value = 60, unit = SECONDS)
 class ImportExportedRealmIT extends AbstractImportIT {
     private static final String REALM_NAME = "master";
@@ -47,11 +47,16 @@ class ImportExportedRealmIT extends AbstractImportIT {
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "keycloak.version", matches = "26\\.[2-9].*", disabledReason = "FGAP V2 changes role composite handling in Keycloak 26.2.0+, use dedicated FGAP V2 compatibility tests instead")
+    @DisabledIfSystemProperty(
+            named = "keycloak.version",
+            matches = "26\\.[2-9].*",
+            disabledReason =
+                    "FGAP V2 changes role composite handling in Keycloak 26.2.0+, use dedicated FGAP V2 compatibility tests instead")
     void shouldImportExportedRealm() throws IOException {
         doImport("master-realm.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));

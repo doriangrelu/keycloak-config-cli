@@ -31,6 +31,4 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackages = {"io.github.doriangrelu.keycloak.config"})
 @EnableConfigurationProperties({KeycloakConfigProperties.class, ImportConfigProperties.class})
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
-public class TestConfiguration {
-
-}
+public class TestConfiguration {}

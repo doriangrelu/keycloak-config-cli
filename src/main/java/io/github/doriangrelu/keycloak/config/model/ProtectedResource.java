@@ -8,17 +8,13 @@ import java.util.regex.Pattern;
  * @author Dorian GRELU
  * @since 02.2026
  */
-public record ProtectedResource(
-        Rule rule,
-        String matcher
-) {
+public record ProtectedResource(Rule rule, String matcher) {
 
     private static final Map<String, Pattern> lazyPattern = new ConcurrentHashMap<>();
 
     public enum Rule {
         PATTERN,
         EQUALS
-
     }
 
     public boolean doesMatch(final String value) {
@@ -29,9 +25,9 @@ public record ProtectedResource(
     }
 
     private boolean matches(final String value) {
-        final Pattern pattern = lazyPattern.compute(this.matcher, (_, existsPattern) -> null == existsPattern ? Pattern.compile(this.matcher) : existsPattern);
+        final Pattern pattern = lazyPattern.compute(
+                this.matcher,
+                (_, existsPattern) -> null == existsPattern ? Pattern.compile(this.matcher) : existsPattern);
         return pattern.matcher(value).matches();
     }
-
-
 }

@@ -20,24 +20,23 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.RealmRepresentation;
-
-import java.io.IOException;
-import java.util.Map;
-
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
+import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
+import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import java.io.IOException;
+import java.util.Map;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.RealmRepresentation;
 
 @SuppressWarnings({"java:S5961", "java:S5976"})
 class ImportSimpleRealmIT extends AbstractImportIT {
@@ -52,15 +51,15 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     void shouldCreateSimpleRealm() throws IOException {
         doImport("00_create_simple-realm.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.getLoginTheme(), is(nullValue()));
         assertThat(
                 createdRealm.getAttributes().get("io.github.doriangrelu.keycloak.config.import-checksum-default"),
-                is("6292be0628c50ff8fc02bd4092f48a731133e4802e158e7bc2ba174524b4ccf1")
-        );
+                is("6292be0628c50ff8fc02bd4092f48a731133e4802e158e7bc2ba174524b4ccf1"));
     }
 
     @Test
@@ -68,15 +67,15 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     void shouldNotUpdateSimpleRealm() throws IOException {
         doImport("00.1_update_simple-realm_with_same_config.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.getLoginTheme(), is(nullValue()));
         assertThat(
                 createdRealm.getAttributes().get("io.github.doriangrelu.keycloak.config.import-checksum-default"),
-                is("6292be0628c50ff8fc02bd4092f48a731133e4802e158e7bc2ba174524b4ccf1")
-        );
+                is("6292be0628c50ff8fc02bd4092f48a731133e4802e158e7bc2ba174524b4ccf1"));
     }
 
     @Test
@@ -84,15 +83,15 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     void shouldUpdateSimpleRealm() throws IOException {
         doImport("01_update_login-theme_to_simple-realm.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
         assertThat(realm.getLoginTheme(), is("moped"));
         assertThat(
                 realm.getAttributes().get("io.github.doriangrelu.keycloak.config.import-checksum-default"),
-                is("4ac94d3adb91122979e80816a8a355a01f9c7c90a25b6b529bf2a572e1158b1c")
-        );
+                is("4ac94d3adb91122979e80816a8a355a01f9c7c90a25b6b529bf2a572e1158b1c"));
     }
 
     @Test
@@ -100,24 +99,22 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     void shouldCreateSimpleRealmWithLoginTheme() throws IOException {
         doImport("02_create_simple-realm_with_login-theme.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm("simpleWithLoginTheme").toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm("simpleWithLoginTheme").toRepresentation();
 
         assertThat(createdRealm.getRealm(), is("simpleWithLoginTheme"));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.getLoginTheme(), is("moped"));
         assertThat(
                 createdRealm.getAttributes().get("io.github.doriangrelu.keycloak.config.import-checksum-default"),
-                is("9362cc7d2e91e9b9eee39d0b9306de0f7857f9d6326133335fc2d5cf767f7018")
-        );
+                is("9362cc7d2e91e9b9eee39d0b9306de0f7857f9d6326133335fc2d5cf767f7018"));
     }
 
     @Test
     @Order(4)
     void shouldNotCreateSimpleRealmWithInvalidName() {
         KeycloakRepositoryException thrown = assertThrows(
-                KeycloakRepositoryException.class,
-                () -> doImport("04_create_simple-realm_with_invalid_name.json")
-        );
+                KeycloakRepositoryException.class, () -> doImport("04_create_simple-realm_with_invalid_name.json"));
 
         assertThat(thrown.getMessage(), matchesPattern("^Cannot create realm '.+': .+$"));
     }
@@ -127,7 +124,8 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     void shouldUpdateBruteForceProtection() throws IOException {
         doImport("05_update_simple-realm_with_brute-force-protected.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm("simple").toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm("simple").toRepresentation();
 
         assertThat(realm.getRealm(), is("simple"));
         assertThat(realm.isEnabled(), is(true));
@@ -146,7 +144,8 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     void shouldUpdateSmtpSettings() throws IOException {
         doImport("06_update_simple-realm_with_smtp-settings.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm("simple").toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm("simple").toRepresentation();
 
         assertThat(realm.getRealm(), is("simple"));
         assertThat(realm.isEnabled(), is(true));
@@ -167,14 +166,15 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     void shouldUpdateWebAuthnSettings() throws IOException {
         doImport("07_update_simple-realm_with_web-authn-settings.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm("simple").toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm("simple").toRepresentation();
 
         assertThat(realm.getRealm(), is("simple"));
         assertThat(realm.isEnabled(), is(true));
 
         // TODO: "webAuthnPolicyPasswordlessUserVerificationRequirement" is not set with Keycloak 24
         // https://github.com/keycloak/keycloak/issues/27700
-        if (VersionUtil.lt(KEYCLOAK_VERSION,"24")) {
+        if (VersionUtil.lt(KEYCLOAK_VERSION, "24")) {
             assertThat(realm.getWebAuthnPolicyPasswordlessUserVerificationRequirement(), is("required"));
         }
     }
@@ -184,7 +184,8 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     void shouldUpdateEventsEnabledAndNotReset() throws IOException {
         doImport("08.1_update_simple-realm_with_events_enabled.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm("simple").toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm("simple").toRepresentation();
         assertThat(realm.getRealm(), is("simple"));
         assertThat(realm.isEnabled(), is(true));
         assertThat(realm.isEventsEnabled(), is(true));
@@ -205,9 +206,10 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     @Order(9)
     void shouldNotUpdateSimpleRealmWithInvalidName() {
         // Pre-Keycloak 26.2.0 throws KeycloakRepositoryException immediately
-        // Keycloak 26.2.0+ fails at database level due to value exceeding VARCHAR(255), 
+        // Keycloak 26.2.0+ fails at database level due to value exceeding VARCHAR(255),
         // either way it should be wrapped in a KeycloakRepositoryException
-        Throwable thrown = assertThrows(Throwable.class, () -> doImport("09_update_simple-realm_with_invalid_property.json"));
+        Throwable thrown =
+                assertThrows(Throwable.class, () -> doImport("09_update_simple-realm_with_invalid_property.json"));
 
         // Could be direct KeycloakRepositoryException or wrapped SQL exception
         if (VersionUtil.lt(KEYCLOAK_VERSION, "26.2.0")) {
@@ -276,15 +278,13 @@ class ImportSimpleRealmIT extends AbstractImportIT {
         ImportProcessingException thrown;
         thrown = assertThrows(
                 ImportProcessingException.class,
-                () -> doImport("10.5_update_simple-realm_invalid-default_defaultScopes.json")
-        );
+                () -> doImport("10.5_update_simple-realm_invalid-default_defaultScopes.json"));
 
         assertThat(thrown.getMessage(), is("Could not find client scope 'non-exist' in realm 'simple'!"));
 
         thrown = assertThrows(
                 ImportProcessingException.class,
-                () -> doImport("10.6_update_simple-realm_invalid-optional_defaultScopes.json")
-        );
+                () -> doImport("10.6_update_simple-realm_invalid-optional_defaultScopes.json"));
 
         assertThat(thrown.getMessage(), is("Could not find client scope 'non-exist' in realm 'simple'!"));
     }
@@ -293,11 +293,13 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     @Order(11)
     void shouldUpdateEventExpiration() throws IOException {
         doImport("11.1_update_simple-realm_event_expiration_before.json");
-        RealmRepresentation realm = keycloakProvider.getInstance().realm("simple").toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm("simple").toRepresentation();
         // event expiration is 1 year before update
         assertThat(realm.getEventsExpiration(), is(31536000L));
         doImport("11.1_update_simple-realm_event_expiration_after.json");
-        RealmRepresentation realmAfter = keycloakProvider.getInstance().realm("simple").toRepresentation();
+        RealmRepresentation realmAfter =
+                keycloakProvider.getInstance().realm("simple").toRepresentation();
         // event expiration should be updated to 90 days
         assertThat(realmAfter.getEventsExpiration(), is(7776000L));
     }
@@ -305,30 +307,34 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     @Test
     @Order(80)
     void shouldNotUpdateSimpleRealmWithInvalidProperty() {
-        InvalidImportException thrown = assertThrows(
-                InvalidImportException.class,
-                () -> doImport("80_invalid_import_property.json")
-        );
+        InvalidImportException thrown =
+                assertThrows(InvalidImportException.class, () -> doImport("80_invalid_import_property.json"));
 
-        assertThat(thrown.getMessage(), matchesPattern("(?s)^Unable to parse file 'file:.+/import-files/simple-realm/80_invalid_import_property.json': Unrecognized field.+"));
+        assertThat(
+                thrown.getMessage(),
+                matchesPattern(
+                        "(?s)^Unable to parse file 'file:.+/import-files/simple-realm/80_invalid_import_property.json': Unrecognized field.+"));
     }
 
     @Test
     @Order(81)
     void shouldNotUpdateSimpleRealmWithInvalidSyntax() {
-        InvalidImportException thrown = assertThrows(
-                InvalidImportException.class,
-                () -> doImport("81_invalid_json.json")
-        );
+        InvalidImportException thrown =
+                assertThrows(InvalidImportException.class, () -> doImport("81_invalid_json.json"));
 
-        assertThat(thrown.getMessage(), matchesPattern("(?s)^Unable to parse file 'file:.+/import-files/simple-realm/81_invalid_json.json': while parsing a flow mapping.+"));
+        assertThat(
+                thrown.getMessage(),
+                matchesPattern(
+                        "(?s)^Unable to parse file 'file:.+/import-files/simple-realm/81_invalid_json.json': while parsing a flow mapping.+"));
     }
+
     @Test
     @Order(83)
     void shouldPreserveEventsExpirationWhenUpdatingRealm() throws Exception {
         doImport("08.3_update_simple-realm_with_events-expiration.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getEventsExpiration(), is(3600L));
 
         doImport("08.4_update_simple-realm_without_events-expiration.json");
@@ -336,11 +342,13 @@ class ImportSimpleRealmIT extends AbstractImportIT {
         realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getEventsExpiration(), is(3600L));
     }
+
     @Test
     @Order(84)
     void shouldUpdateOtpPolicyAlgorithmWhenUpdatingRealm() throws Exception {
         doImport("08.5_update_simple-realm_with_otp-policy-algorithm.json");
-        RealmRepresentation realm = keycloakProvider.getInstance().realm("realmWithOtpPolicy").toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm("realmWithOtpPolicy").toRepresentation();
         assertThat(realm.getOtpPolicyAlgorithm(), is("HmacSHA1"));
 
         doImport("08.6_update_simple-realm_with_new_otp-policy-algorithm.json");

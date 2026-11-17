@@ -20,21 +20,20 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.ClientRepresentation;
-
-import java.io.IOException;
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
+
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import java.io.IOException;
+import java.util.List;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
  * Integration test for FGAP V1/V2 compatibility handling.
@@ -64,13 +63,15 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
 
         doImport("00_create_realm_with_authorization_fgap_v2.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
 
         // Verify that the realm was created successfully despite HTTP 501 warnings
-        List<ClientRepresentation> clients = keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
+        List<ClientRepresentation> clients =
+                keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
         assertThat(clients, is(notNullValue()));
         assertThat(clients.size(), is(greaterThan(0)));
 
@@ -86,15 +87,16 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
     @Order(1)
     void shouldUpdateAuthorizationSettingsWhenFgapV2Returns501() throws IOException {
 
-
         doImport("01_update_realm_authorization_fgap_v2.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
 
-        List<ClientRepresentation> clients = keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
+        List<ClientRepresentation> clients =
+                keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
         ClientRepresentation testClient = clients.stream()
                 .filter(client -> "test-auth-client".equals(client.getClientId()))
                 .findFirst()
@@ -110,13 +112,15 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
 
         doImport("02_update_realm_management_permissions_fgap_v2.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
         // Verify realm-management client exists and has authorization enabled
-        List<ClientRepresentation> clients = keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
+        List<ClientRepresentation> clients =
+                keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
         ClientRepresentation realmManagementClient = clients.stream()
                 .filter(client -> "realm-management".equals(client.getClientId()))
                 .findFirst()
@@ -125,9 +129,10 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
         assertThat("Realm management client should exist", realmManagementClient, is(notNullValue()));
 
         Boolean authEnabled = realmManagementClient.getAuthorizationServicesEnabled();
-        assertThat("Realm management should have authorization enabled or be in FGAP V2 mode",
-                   authEnabled == null || authEnabled, is(true));
-
+        assertThat(
+                "Realm management should have authorization enabled or be in FGAP V2 mode",
+                authEnabled == null || authEnabled,
+                is(true));
     }
 
     @Test
@@ -137,19 +142,20 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
         // This configuration will trigger HTTP 501 responses from FGAP V2
         doImport("03_test_fgap_v2_501_error_handling.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
-        List<ClientRepresentation> clients = keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
+        List<ClientRepresentation> clients =
+                keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
         assertThat("Clients should exist", clients, is(notNullValue()));
         assertThat("Should have multiple clients", clients.size(), is(greaterThan(1)));
 
-        boolean hasAuthClient = clients.stream()
-                .anyMatch(client -> "test-auth-client".equals(client.getClientId()));
-        boolean hasRealmManagement = clients.stream()
-                .anyMatch(client -> "realm-management".equals(client.getClientId()));
+        boolean hasAuthClient = clients.stream().anyMatch(client -> "test-auth-client".equals(client.getClientId()));
+        boolean hasRealmManagement =
+                clients.stream().anyMatch(client -> "realm-management".equals(client.getClientId()));
 
         assertThat("Should have authorization test client", hasAuthClient, is(true));
         assertThat("Should have realm management client", hasRealmManagement, is(true));
@@ -159,24 +165,27 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
     @Order(4)
     void shouldHandleAuthorizationResourceCreationWithFgapV2() throws IOException {
 
-
         doImport("04_test_authorization_resource_fgap_v2.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
         // Verify that authorization-enabled clients exist
-        List<ClientRepresentation> clients = keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
+        List<ClientRepresentation> clients =
+                keycloakProvider.getInstance().realm(REALM_NAME).clients().findAll();
         ClientRepresentation resourceClient = clients.stream()
                 .filter(client -> "resource-test-client".equals(client.getClientId()))
                 .findFirst()
                 .orElse(null);
 
         assertThat("Resource test client should exist", resourceClient, is(notNullValue()));
-        assertThat("Client should have authorization services enabled",
-                   resourceClient.getAuthorizationServicesEnabled(), is(true));
+        assertThat(
+                "Client should have authorization services enabled",
+                resourceClient.getAuthorizationServicesEnabled(),
+                is(true));
     }
 
     @Test
@@ -186,28 +195,35 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
 
         // Delete test realm if it exists
         try {
-            keycloakProvider.getInstance().realm("fgap-v2-admin-permissions-test").remove();
+            keycloakProvider
+                    .getInstance()
+                    .realm("fgap-v2-admin-permissions-test")
+                    .remove();
         } catch (Exception e) {
             // Realm might not exist, ignore
         }
 
         doImport("05_test_admin_permissions_client_handling.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance()
-                .realm("fgap-v2-admin-permissions-test").toRepresentation();
+        RealmRepresentation realm = keycloakProvider
+                .getInstance()
+                .realm("fgap-v2-admin-permissions-test")
+                .toRepresentation();
 
         assertThat(realm.getRealm(), is("fgap-v2-admin-permissions-test"));
         assertThat(realm.isEnabled(), is(true));
         // Note: isAdminPermissionsEnabled() only exists in KC 26.2+
 
         // Verify the test client was created successfully
-        List<ClientRepresentation> clients = keycloakProvider.getInstance()
-                .realm("fgap-v2-admin-permissions-test").clients().findAll();
+        List<ClientRepresentation> clients = keycloakProvider
+                .getInstance()
+                .realm("fgap-v2-admin-permissions-test")
+                .clients()
+                .findAll();
 
-        boolean hasTestClient = clients.stream()
-                .anyMatch(client -> "test-app-client".equals(client.getClientId()));
-        boolean hasAdminPermissions = clients.stream()
-                .anyMatch(client -> "admin-permissions".equals(client.getClientId()));
+        boolean hasTestClient = clients.stream().anyMatch(client -> "test-app-client".equals(client.getClientId()));
+        boolean hasAdminPermissions =
+                clients.stream().anyMatch(client -> "admin-permissions".equals(client.getClientId()));
 
         assertThat("Should have test application client", hasTestClient, is(true));
         assertThat("Should have admin-permissions client", hasAdminPermissions, is(true));
@@ -225,21 +241,23 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
 
         doImport("06_test_v2_authorizationSchema_import.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance()
-                .realm("fgap-v2-schema-test").toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm("fgap-v2-schema-test").toRepresentation();
 
         assertThat(realm.getRealm(), is("fgap-v2-schema-test"));
         assertThat(realm.isEnabled(), is(true));
         // Note: isAdminPermissionsEnabled() only exists in KC 26.2+
 
         // Verify clients exist
-        List<ClientRepresentation> clients = keycloakProvider.getInstance()
-                .realm("fgap-v2-schema-test").clients().findAll();
+        List<ClientRepresentation> clients = keycloakProvider
+                .getInstance()
+                .realm("fgap-v2-schema-test")
+                .clients()
+                .findAll();
 
-        boolean hasTestApp = clients.stream()
-                .anyMatch(client -> "test-app".equals(client.getClientId()));
-        boolean hasAdminPermissions = clients.stream()
-                .anyMatch(client -> "admin-permissions".equals(client.getClientId()));
+        boolean hasTestApp = clients.stream().anyMatch(client -> "test-app".equals(client.getClientId()));
+        boolean hasAdminPermissions =
+                clients.stream().anyMatch(client -> "admin-permissions".equals(client.getClientId()));
 
         assertThat("Should have test-app client", hasTestApp, is(true));
         assertThat("Should have admin-permissions client", hasAdminPermissions, is(true));
@@ -250,26 +268,33 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
     void shouldSkipAdminPermissionsClientWhenIncludedInImport() throws IOException {
         // Ensure a clean state for the test realm
         try {
-            keycloakProvider.getInstance().realm("fgap-v2-admin-permissions-explicit-test").remove();
+            keycloakProvider
+                    .getInstance()
+                    .realm("fgap-v2-admin-permissions-explicit-test")
+                    .remove();
         } catch (Exception e) {
             // ignore if it does not exist
         }
 
         doImport("07_test_admin_permissions_client_in_import.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance()
-                .realm("fgap-v2-admin-permissions-explicit-test").toRepresentation();
+        RealmRepresentation realm = keycloakProvider
+                .getInstance()
+                .realm("fgap-v2-admin-permissions-explicit-test")
+                .toRepresentation();
 
         assertThat(realm.getRealm(), is("fgap-v2-admin-permissions-explicit-test"));
         assertThat(realm.isEnabled(), is(true));
 
-        List<ClientRepresentation> clients = keycloakProvider.getInstance()
-                .realm("fgap-v2-admin-permissions-explicit-test").clients().findAll();
+        List<ClientRepresentation> clients = keycloakProvider
+                .getInstance()
+                .realm("fgap-v2-admin-permissions-explicit-test")
+                .clients()
+                .findAll();
 
-        boolean hasTestClient = clients.stream()
-                .anyMatch(client -> "test-regular-client".equals(client.getClientId()));
-        boolean hasAdminPermissions = clients.stream()
-                .anyMatch(client -> "admin-permissions".equals(client.getClientId()));
+        boolean hasTestClient = clients.stream().anyMatch(client -> "test-regular-client".equals(client.getClientId()));
+        boolean hasAdminPermissions =
+                clients.stream().anyMatch(client -> "admin-permissions".equals(client.getClientId()));
 
         assertThat("Should have test application client", hasTestClient, is(true));
         assertThat("Should have admin-permissions client (auto-created by Keycloak)", hasAdminPermissions, is(true));
@@ -279,7 +304,7 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
     @Order(8)
     void shouldTransformResourcePlaceholdersCorrectlyForFgapV2() throws IOException {
         final String realmName = "fgap-v2-resource-syntax-test";
-        
+
         // Clean up test realm if it exists
         try {
             keycloakProvider.getInstance().realm(realmName).remove();
@@ -291,21 +316,22 @@ class ImportAuthorizationFgapV2CompatibilityIT extends AbstractImportIT {
         doImport("08_test_fgap_v2_resource_placeholder_syntax.json");
 
         // Verify realm was created correctly
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(realmName).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(realmName).toRepresentation();
 
         assertThat("Realm should be created", realm, is(notNullValue()));
         assertThat("Realm name should match", realm.getRealm(), is(realmName));
         assertThat("Realm should be enabled", realm.isEnabled(), is(true));
 
         // Verify required clients exist
-        List<ClientRepresentation> clients = keycloakProvider.getInstance().realm(realmName).clients().findAll();
-        
+        List<ClientRepresentation> clients =
+                keycloakProvider.getInstance().realm(realmName).clients().findAll();
+
         assertThat("Test client should exist", hasClientWithId(clients, "test-app"), is(true));
         assertThat("Admin-permissions client should exist", hasClientWithId(clients, "admin-permissions"), is(true));
     }
 
     private boolean hasClientWithId(List<ClientRepresentation> clients, String clientId) {
-        return clients.stream()
-                .anyMatch(client -> clientId.equals(client.getClientId()));
+        return clients.stream().anyMatch(client -> clientId.equals(client.getClientId()));
     }
 }

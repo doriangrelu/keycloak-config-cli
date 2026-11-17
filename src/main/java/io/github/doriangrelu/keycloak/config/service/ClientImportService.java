@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static java.lang.Boolean.TRUE;
+
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
@@ -34,6 +36,14 @@ import io.github.doriangrelu.keycloak.config.util.KeycloakUtil;
 import io.github.doriangrelu.keycloak.config.util.ProtocolMapperUtil;
 import io.github.doriangrelu.keycloak.config.util.ResponseUtil;
 import jakarta.ws.rs.WebApplicationException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.keycloak.common.util.CollectionUtil;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -44,26 +54,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import static java.lang.Boolean.TRUE;
-
 @Service
 @SuppressWarnings({"java:S1192"})
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class ClientImportService {
     private static final Logger logger = LoggerFactory.getLogger(ClientImportService.class);
 
-    private static final String[] propertiesWithDependencies = new String[]{
-            "authenticationFlowBindingOverrides",
-            "authorizationSettings",
+    private static final String[] propertiesWithDependencies = new String[] {
+        "authenticationFlowBindingOverrides", "authorizationSettings",
     };
 
     public static final String REALM_MANAGEMENT_CLIENT_ID = "realm-management";
@@ -130,10 +128,7 @@ public class ClientImportService {
      * @param realmImport the realm import configuration
      * @param clients     the list of client representations to create or update
      */
-    private void createOrUpdateClients(
-            final RealmImport realmImport,
-            final List<ClientRepresentation> clients
-    ) {
+    private void createOrUpdateClients(final RealmImport realmImport, final List<ClientRepresentation> clients) {
         final Consumer<ClientRepresentation> loop = client -> this.createOrUpdateClient(realmImport, client);
         if (this.importConfigProperties.isParallel()) {
             clients.parallelStream().forEach(loop);
@@ -159,13 +154,13 @@ public class ClientImportService {
      * @param realmImport the realm import configuration identifying the target realm
      */
     public void deleteClientsMissingInImport(final RealmImport realmImport) {
-        final Set<String> importedClients = ExecutionContextHolder.context().get(realmImport.getRealm(), ClientRepresentation.class).stream()
-                .map(ClientRepresentation::getClientId)
-                .collect(Collectors.toSet());
+        final Set<String> importedClients =
+                ExecutionContextHolder.context().get(realmImport.getRealm(), ClientRepresentation.class).stream()
+                        .map(ClientRepresentation::getClientId)
+                        .collect(Collectors.toSet());
 
         final List<ClientRepresentation> existingClients = this.clientRepository.getAll(realmImport.getRealm());
-        existingClients
-                .stream()
+        existingClients.stream()
                 .filter(client -> !KeycloakUtil.doesProtected(realmImport.getRealm(), client.getClientId()))
                 .filter(client -> !KeycloakUtil.isDefaultClient(client))
                 .filter(client -> !importedClients.contains(client.getClientId()))
@@ -174,22 +169,21 @@ public class ClientImportService {
                 .filter(client -> !(ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getClientId())))
                 .filter(_ -> this.keycloakProvider.isFgapV2Active())
                 .forEach(clientToRemove -> {
-                    logger.warn("Remove client '{}' in realm '{}'", clientToRemove.getClientId(), realmImport.getRealm());
+                    logger.warn(
+                            "Remove client '{}' in realm '{}'", clientToRemove.getClientId(), realmImport.getRealm());
                     this.clientRepository.remove(realmImport.getRealm(), clientToRemove);
                 });
     }
 
-    private void createOrUpdateClient(
-            final RealmImport realmImport,
-            final ClientRepresentation client
-    ) {
+    private void createOrUpdateClient(final RealmImport realmImport, final ClientRepresentation client) {
         final String realmName = realmImport.getRealm();
 
         // Skip admin-permissions client only if FGAP V2 is active
         final boolean isAdminPermissionsClient = ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getClientId())
                 || ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getName());
         if (isAdminPermissionsClient && this.keycloakProvider.isFgapV2Active()) {
-            logger.info("Skipping 'admin-permissions' client in realm '{}' - "
+            logger.info(
+                    "Skipping 'admin-permissions' client in realm '{}' - "
                             + "FGAP V2 is active and this client is system-managed by Keycloak. "
                             + "Remove it from your import configuration and use 'adminPermissionsEnabled: true' at realm level instead.",
                     realmName);
@@ -204,15 +198,13 @@ public class ClientImportService {
             if (TRUE.equals(client.isBearerOnly()) || TRUE.equals(client.isPublicClient())) {
                 throw new ImportProcessingException(
                         "Unsupported authorization settings for client '%s' in realm '%s': client must be confidential.",
-                        this.getClientIdentifier(client), realmName
-                );
+                        this.getClientIdentifier(client), realmName);
             }
 
             if (!TRUE.equals(client.isServiceAccountsEnabled())) {
                 throw new ImportProcessingException(
                         "Unsupported authorization settings for client '%s' in realm '%s': serviceAccountsEnabled must be 'true'.",
-                        this.getClientIdentifier(client), realmName
-                );
+                        this.getClientIdentifier(client), realmName);
             }
         }
 
@@ -230,11 +222,11 @@ public class ClientImportService {
         } else {
             // Don't create system clients - they should already exist
             if (REALM_MANAGEMENT_CLIENT_ID.equals(client.getClientId())
-                    || ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getClientId()) || ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getName())) {
+                    || ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getClientId())
+                    || ADMIN_PERMISSIONS_CLIENT_ID.equals(client.getName())) {
                 throw new ImportProcessingException(
                         "Cannot create system client '%s' in realm '%s': System clients should be auto-created by Keycloak",
-                        this.getClientIdentifier(client), realmName
-                );
+                        this.getClientIdentifier(client), realmName);
             }
             logger.debug("Create client '{}' in realm '{}'", this.getClientIdentifier(client), realmName);
             this.createClient(realmName, client);
@@ -244,8 +236,7 @@ public class ClientImportService {
     private void updateClientIfNeeded(
             final String realmName,
             final ClientRepresentation clientToUpdate,
-            final ClientRepresentation existingClient
-    ) {
+            final ClientRepresentation existingClient) {
         final String[] propertiesToIgnore = ArrayUtils.addAll(propertiesWithDependencies, "id", "access");
         final ClientRepresentation mergedClient = CloneUtil.patch(existingClient, clientToUpdate, propertiesToIgnore);
         final String clientIdentifier = this.getClientIdentifier(clientToUpdate);
@@ -260,34 +251,37 @@ public class ClientImportService {
     }
 
     private void createClient(final String realmName, final ClientRepresentation client) {
-        final ClientRepresentation clientToImport = CloneUtil.deepClone(
-                client, ClientRepresentation.class, propertiesWithDependencies
-        );
+        final ClientRepresentation clientToImport =
+                CloneUtil.deepClone(client, ClientRepresentation.class, propertiesWithDependencies);
         this.clientRepository.create(realmName, clientToImport);
     }
 
     private boolean isClientEqual(
             final String realmName,
             final ClientRepresentation existingClient,
-            final ClientRepresentation patchedClient
-    ) {
+            final ClientRepresentation patchedClient) {
         final String[] propertiesToIgnore = ArrayUtils.addAll(
-                propertiesWithDependencies, "id", "secret", "access", "protocolMappers", "defaultClientScopes", "optionalClientScopes"
-        );
+                propertiesWithDependencies,
+                "id",
+                "secret",
+                "access",
+                "protocolMappers",
+                "defaultClientScopes",
+                "optionalClientScopes");
 
         if (!CloneUtil.deepEquals(existingClient, patchedClient, propertiesToIgnore)) {
             return false;
         }
 
-        if (!CollectionUtil.collectionEquals(patchedClient.getDefaultClientScopes(), existingClient.getDefaultClientScopes())
-                || !CollectionUtil.collectionEquals(patchedClient.getOptionalClientScopes(), existingClient.getOptionalClientScopes())) {
+        if (!CollectionUtil.collectionEquals(
+                        patchedClient.getDefaultClientScopes(), existingClient.getDefaultClientScopes())
+                || !CollectionUtil.collectionEquals(
+                        patchedClient.getOptionalClientScopes(), existingClient.getOptionalClientScopes())) {
             return false;
         }
 
         final boolean areProtocolMapperDifferent = !ProtocolMapperUtil.areProtocolMappersEqual(
-                patchedClient.getProtocolMappers(),
-                existingClient.getProtocolMappers()
-        );
+                patchedClient.getProtocolMappers(), existingClient.getProtocolMappers());
 
         if (areProtocolMapperDifferent) {
             return false;
@@ -302,10 +296,7 @@ public class ClientImportService {
         return Objects.equals(clientSecret, patchedClientSecret);
     }
 
-    private void updateClient(
-            final String realmName,
-            final ClientRepresentation patchedClient
-    ) {
+    private void updateClient(final String realmName, final ClientRepresentation patchedClient) {
         try {
             this.clientRepository.update(realmName, patchedClient);
         } catch (final WebApplicationException error) {
@@ -318,64 +309,63 @@ public class ClientImportService {
 
             // FGAP V2: admin-permissions client may return 400 when server-managed. Swallow as defensive fallback.
             if (status == 400 && ADMIN_PERMISSIONS_CLIENT_ID.equals(patchedClient.getClientId())) {
-                logger.debug("Skipping update for 'admin-permissions' client in realm '{}' - FGAP V2 manages this client internally", realmName);
+                logger.debug(
+                        "Skipping update for 'admin-permissions' client in realm '{}' - FGAP V2 manages this client internally",
+                        realmName);
                 return;
             }
 
             final String errorMessage = ResponseUtil.getErrorMessage(error);
             throw new ImportProcessingException(
-                    String.format("Cannot update client '%s' in realm '%s': %s",
-                            this.getClientIdentifier(patchedClient), realmName, errorMessage
-                    ),
-                    error
-            );
+                    String.format(
+                            "Cannot update client '%s' in realm '%s': %s",
+                            this.getClientIdentifier(patchedClient), realmName, errorMessage),
+                    error);
         }
     }
 
     private void updateClientAuthenticationFlowBindingOverrides(
-            final RealmImport realmImport,
-            final List<ClientRepresentation> clients
-    ) {
+            final RealmImport realmImport, final List<ClientRepresentation> clients) {
         final String realmName = realmImport.getRealm();
 
         for (final ClientRepresentation client : clients) {
             final ClientRepresentation existingClient = this.getExistingClient(realmName, client);
 
             this.updateAuthenticationFlowBindingOverrides(
-                    realmName, existingClient, client.getAuthenticationFlowBindingOverrides()
-            );
+                    realmName, existingClient, client.getAuthenticationFlowBindingOverrides());
         }
     }
 
     private void updateAuthenticationFlowBindingOverrides(
             final String realmName,
             final ClientRepresentation existingClient,
-            final Map<String, String> authenticationFlowBindingOverrides
-    ) {
+            final Map<String, String> authenticationFlowBindingOverrides) {
         final boolean isEqual = Objects.equals(
-                authenticationFlowBindingOverrides, existingClient.getAuthenticationFlowBindingOverrides()
-        );
+                authenticationFlowBindingOverrides, existingClient.getAuthenticationFlowBindingOverrides());
 
         if (isEqual) {
             return;
         }
 
-        final Map<String, String> authFlowUpdates = new HashMap<>(existingClient.getAuthenticationFlowBindingOverrides());
+        final Map<String, String> authFlowUpdates =
+                new HashMap<>(existingClient.getAuthenticationFlowBindingOverrides());
 
         // Be sure that all existing values will be cleared
-        // See: https://github.com/keycloak/keycloak/blob/790b549cf99dbbba109e145654ee4a4cd1a047c9/server-spi-private/src/main/java/org/keycloak/models/utils/RepresentationToModel.java#L1516
+        // See:
+        // https://github.com/keycloak/keycloak/blob/790b549cf99dbbba109e145654ee4a4cd1a047c9/server-spi-private/src/main/java/org/keycloak/models/utils/RepresentationToModel.java#L1516
         authFlowUpdates.replaceAll((k, v) -> v = null);
 
         // Compute new values
         if (authenticationFlowBindingOverrides != null) {
             for (final Map.Entry<String, String> override : authenticationFlowBindingOverrides.entrySet()) {
-                if (
-                        override.getValue() == null || override.getValue().isEmpty()
-                                || this.authenticationFlowRepository.exists(realmName, override.getValue())
-                ) {
+                if (override.getValue() == null
+                        || override.getValue().isEmpty()
+                        || this.authenticationFlowRepository.exists(realmName, override.getValue())) {
                     authFlowUpdates.put(override.getKey(), override.getValue());
                 } else {
-                    final String flowId = this.authenticationFlowRepository.getByAlias(realmName, override.getValue()).getId();
+                    final String flowId = this.authenticationFlowRepository
+                            .getByAlias(realmName, override.getValue())
+                            .getId();
                     authFlowUpdates.put(override.getKey(), flowId);
                 }
             }
@@ -386,65 +376,76 @@ public class ClientImportService {
     }
 
     private void updateClientDefaultOptionalClientScopes(
-            final String realmName,
-            final ClientRepresentation client,
-            final ClientRepresentation existingClient
-    ) {
-        final List<String> defaultClientScopeNamesToAdd = ClientScopeUtil
-                .estimateClientScopesToAdd(client.getDefaultClientScopes(), existingClient.getDefaultClientScopes());
-        final List<String> defaultClientScopeNamesToRemove = ClientScopeUtil
-                .estimateClientScopesToRemove(client.getDefaultClientScopes(), existingClient.getDefaultClientScopes());
+            final String realmName, final ClientRepresentation client, final ClientRepresentation existingClient) {
+        final List<String> defaultClientScopeNamesToAdd = ClientScopeUtil.estimateClientScopesToAdd(
+                client.getDefaultClientScopes(), existingClient.getDefaultClientScopes());
+        final List<String> defaultClientScopeNamesToRemove = ClientScopeUtil.estimateClientScopesToRemove(
+                client.getDefaultClientScopes(), existingClient.getDefaultClientScopes());
 
-
-        final List<String> optionalClientScopeNamesToAdd = ClientScopeUtil
-                .estimateClientScopesToAdd(client.getOptionalClientScopes(), existingClient.getOptionalClientScopes());
-        final List<String> optionalClientScopeNamesToRemove = ClientScopeUtil
-                .estimateClientScopesToRemove(client.getOptionalClientScopes(), existingClient.getOptionalClientScopes());
+        final List<String> optionalClientScopeNamesToAdd = ClientScopeUtil.estimateClientScopesToAdd(
+                client.getOptionalClientScopes(), existingClient.getOptionalClientScopes());
+        final List<String> optionalClientScopeNamesToRemove = ClientScopeUtil.estimateClientScopesToRemove(
+                client.getOptionalClientScopes(), existingClient.getOptionalClientScopes());
 
         if (!defaultClientScopeNamesToRemove.isEmpty()) {
-            logger.debug("Remove default client scopes '{}' for client '{}' in realm '{}'",
-                    defaultClientScopeNamesToRemove, client.getClientId(), realmName);
+            logger.debug(
+                    "Remove default client scopes '{}' for client '{}' in realm '{}'",
+                    defaultClientScopeNamesToRemove,
+                    client.getClientId(),
+                    realmName);
 
-            final List<ClientScopeRepresentation> defaultClientScopesToRemove = this.clientScopeRepository
-                    .getListByNames(realmName, defaultClientScopeNamesToRemove);
+            final List<ClientScopeRepresentation> defaultClientScopesToRemove =
+                    this.clientScopeRepository.getListByNames(realmName, defaultClientScopeNamesToRemove);
 
-            this.clientRepository.removeDefaultClientScopes(realmName, client.getClientId(), defaultClientScopesToRemove);
+            this.clientRepository.removeDefaultClientScopes(
+                    realmName, client.getClientId(), defaultClientScopesToRemove);
         }
 
         if (!optionalClientScopeNamesToRemove.isEmpty()) {
-            logger.debug("Remove optional client scopes '{}' for client '{}' in realm '{}'",
-                    optionalClientScopeNamesToRemove, client.getClientId(), realmName);
+            logger.debug(
+                    "Remove optional client scopes '{}' for client '{}' in realm '{}'",
+                    optionalClientScopeNamesToRemove,
+                    client.getClientId(),
+                    realmName);
 
-            final List<ClientScopeRepresentation> optionalClientScopesToRemove = this.clientScopeRepository
-                    .getListByNames(realmName, optionalClientScopeNamesToRemove);
+            final List<ClientScopeRepresentation> optionalClientScopesToRemove =
+                    this.clientScopeRepository.getListByNames(realmName, optionalClientScopeNamesToRemove);
 
-            this.clientRepository.removeOptionalClientScopes(realmName, client.getClientId(), optionalClientScopesToRemove);
+            this.clientRepository.removeOptionalClientScopes(
+                    realmName, client.getClientId(), optionalClientScopesToRemove);
         }
 
-
         if (!defaultClientScopeNamesToAdd.isEmpty()) {
-            logger.debug("Add default client scopes '{}' for client '{}' in realm '{}'",
-                    defaultClientScopeNamesToAdd, client.getClientId(), realmName);
+            logger.debug(
+                    "Add default client scopes '{}' for client '{}' in realm '{}'",
+                    defaultClientScopeNamesToAdd,
+                    client.getClientId(),
+                    realmName);
 
-            final List<ClientScopeRepresentation> defaultClientScopesToAdd = this.clientScopeRepository
-                    .getListByNames(realmName, defaultClientScopeNamesToAdd);
+            final List<ClientScopeRepresentation> defaultClientScopesToAdd =
+                    this.clientScopeRepository.getListByNames(realmName, defaultClientScopeNamesToAdd);
 
             this.clientRepository.addDefaultClientScopes(realmName, client.getClientId(), defaultClientScopesToAdd);
         }
 
         if (!optionalClientScopeNamesToAdd.isEmpty()) {
-            logger.debug("Add optional client scopes '{}' for client '{}' in realm '{}'",
-                    optionalClientScopeNamesToAdd, client.getClientId(), realmName);
+            logger.debug(
+                    "Add optional client scopes '{}' for client '{}' in realm '{}'",
+                    optionalClientScopeNamesToAdd,
+                    client.getClientId(),
+                    realmName);
 
-            final List<ClientScopeRepresentation> optionalClientScopesToAdd = this.clientScopeRepository
-                    .getListByNames(realmName, optionalClientScopeNamesToAdd);
+            final List<ClientScopeRepresentation> optionalClientScopesToAdd =
+                    this.clientScopeRepository.getListByNames(realmName, optionalClientScopeNamesToAdd);
 
             this.clientRepository.addOptionalClientScopes(realmName, client.getClientId(), optionalClientScopesToAdd);
         }
     }
 
     private String getClientIdentifier(final ClientRepresentation client) {
-        return client.getName() != null && !KeycloakUtil.isDefaultClient(client) ? client.getName() : client.getClientId();
+        return client.getName() != null && !KeycloakUtil.isDefaultClient(client)
+                ? client.getName()
+                : client.getClientId();
     }
 
     private ClientRepresentation getExistingClient(final String realmName, final ClientRepresentation client) {

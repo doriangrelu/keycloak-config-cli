@@ -29,6 +29,19 @@ import io.github.doriangrelu.keycloak.config.model.KeycloakImport;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.mustache.MustacheContextWithDefaults;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -47,20 +60,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.PathMatcher;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class KeycloakImportProvider {
@@ -72,15 +71,14 @@ public class KeycloakImportProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(KeycloakImportProvider.class);
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    private static final ObjectMapper OBJECT_MAPPER =
+            new ObjectMapper().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     @Autowired
     public KeycloakImportProvider(
             final Environment environment,
             final PathMatchingResourcePatternResolver patternResolver,
-            final ImportConfigProperties importConfigProperties
-    ) {
+            final ImportConfigProperties importConfigProperties) {
         this.patternResolver = patternResolver;
         this.importConfigProperties = importConfigProperties;
 
@@ -91,15 +89,18 @@ public class KeycloakImportProvider {
 
     private void setupVariableSubstitution(final Environment environment) {
         final StringLookup variableResolver = StringLookupFactory.INSTANCE.interpolatorStringLookup(
-                StringLookupFactory.INSTANCE.functionStringLookup(environment::getProperty)
-        );
+                StringLookupFactory.INSTANCE.functionStringLookup(environment::getProperty));
 
         this.interpolator = StringSubstitutor.createInterpolator()
                 .setVariableResolver(variableResolver)
-                .setVariablePrefix(this.importConfigProperties.getVarSubstitution().getPrefix())
-                .setVariableSuffix(this.importConfigProperties.getVarSubstitution().getSuffix())
-                .setEnableSubstitutionInVariables(this.importConfigProperties.getVarSubstitution().isNested())
-                .setEnableUndefinedVariableException(this.importConfigProperties.getVarSubstitution().isUndefinedIsError());
+                .setVariablePrefix(
+                        this.importConfigProperties.getVarSubstitution().getPrefix())
+                .setVariableSuffix(
+                        this.importConfigProperties.getVarSubstitution().getSuffix())
+                .setEnableSubstitutionInVariables(
+                        this.importConfigProperties.getVarSubstitution().isNested())
+                .setEnableUndefinedVariableException(
+                        this.importConfigProperties.getVarSubstitution().isUndefinedIsError());
     }
 
     public KeycloakImport readFromLocations(final String... locations) {
@@ -132,8 +133,11 @@ public class KeycloakImportProvider {
                     .map(this::substituteImportResource)
                     .map(this::applyMustacheTemplate)
                     .map(this::readRealmImportFromImportResource)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-                            (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (oldValue, newValue) -> oldValue,
+                            LinkedHashMap::new));
 
             realmImports.put(location, realmImport);
         }
@@ -161,13 +165,13 @@ public class KeycloakImportProvider {
             return false;
         }
 
-        if (!this.importConfigProperties.getFiles().isIncludeHiddenFiles() && (file.isHidden() || FileUtils.hasHiddenAncestorDirectory(file))) {
+        if (!this.importConfigProperties.getFiles().isIncludeHiddenFiles()
+                && (file.isHidden() || FileUtils.hasHiddenAncestorDirectory(file))) {
             return false;
         }
 
         final PathMatcher pathMatcher = this.patternResolver.getPathMatcher();
-        return this.importConfigProperties.getFiles().getExcludes()
-                .stream()
+        return this.importConfigProperties.getFiles().getExcludes().stream()
                 .map(pattern -> pattern.startsWith("**") ? "/" + pattern : pattern)
                 .map(pattern -> !pattern.startsWith("/**") ? "/**" + pattern : pattern)
                 .map(pattern -> !pattern.startsWith("/") ? "/" + pattern : pattern)
@@ -187,7 +191,8 @@ public class KeycloakImportProvider {
         try {
             resource = this.setupAuthentication(resource);
             try (final InputStream inputStream = resource.getInputStream()) {
-                return new ImportResource(resource.getURI().toString(), new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
+                return new ImportResource(
+                        resource.getURI().toString(), new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
             }
         } catch (final IOException e) {
             throw new InvalidImportException("Unable to proceed resource '" + resource + "': " + e.getMessage(), e);
@@ -210,7 +215,8 @@ public class KeycloakImportProvider {
 
     private ImportResource applyMustacheTemplate(final ImportResource importResource) {
         if (this.importConfigProperties.getMustache().isEnabled()) {
-            final Map<String, String> variables = this.importConfigProperties.getMustache().getVariables();
+            final Map<String, String> variables =
+                    this.importConfigProperties.getMustache().getVariables();
             final String result = Mustache.compiler()
                     .defaultValue(DEFAULT_VALUE)
                     .compile(importResource.getValue())

@@ -20,7 +20,6 @@
 
 package io.github.doriangrelu.keycloak.config.exception;
 
-
 public class KeycloakProviderException extends RuntimeException {
     public KeycloakProviderException(String message) {
         super(message);

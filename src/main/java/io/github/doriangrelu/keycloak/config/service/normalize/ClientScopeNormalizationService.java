@@ -20,6 +20,12 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.javers.core.Javers;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
@@ -27,13 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -47,15 +46,15 @@ public class ClientScopeNormalizationService {
         this.unOrderedJavers = unOrderedJavers;
     }
 
-    public List<ClientScopeRepresentation> normalizeClientScopes(List<ClientScopeRepresentation> exportedScopes,
-                                                                 List<ClientScopeRepresentation> baselineScopes) {
+    public List<ClientScopeRepresentation> normalizeClientScopes(
+            List<ClientScopeRepresentation> exportedScopes, List<ClientScopeRepresentation> baselineScopes) {
         var exportedOrEmpty = getNonNull(exportedScopes);
         var baselineOrEmpty = getNonNull(baselineScopes);
 
-        var exportedMap = exportedOrEmpty.stream().collect(Collectors.toMap(ClientScopeRepresentation::getName,
-                Function.identity()));
-        var baselineMap = baselineOrEmpty.stream().collect(Collectors.toMap(ClientScopeRepresentation::getName,
-                Function.identity()));
+        var exportedMap = exportedOrEmpty.stream()
+                .collect(Collectors.toMap(ClientScopeRepresentation::getName, Function.identity()));
+        var baselineMap = baselineOrEmpty.stream()
+                .collect(Collectors.toMap(ClientScopeRepresentation::getName, Function.identity()));
 
         var normalizedScopes = new ArrayList<ClientScopeRepresentation>();
         for (var entry : baselineMap.entrySet()) {
@@ -64,7 +63,9 @@ public class ClientScopeNormalizationService {
             var exportedScope = exportedMap.remove(scopeName);
 
             if (exportedScope == null) {
-                logger.warn("Default realm clientScope '{}' was deleted in exported realm. It may be reintroduced during import!", scopeName);
+                logger.warn(
+                        "Default realm clientScope '{}' was deleted in exported realm. It may be reintroduced during import!",
+                        scopeName);
                 continue;
             }
 
@@ -92,7 +93,8 @@ public class ClientScopeNormalizationService {
         }
     }
 
-    public boolean clientScopeChanged(ClientScopeRepresentation exportedScope, ClientScopeRepresentation baselineScope) {
+    public boolean clientScopeChanged(
+            ClientScopeRepresentation exportedScope, ClientScopeRepresentation baselineScope) {
         if (unOrderedJavers.compare(baselineScope, exportedScope).hasChanges()) {
             return true;
         }
@@ -100,8 +102,11 @@ public class ClientScopeNormalizationService {
         return protocolMappersChanged(exportedScope.getProtocolMappers(), baselineScope.getProtocolMappers());
     }
 
-    public boolean protocolMappersChanged(List<ProtocolMapperRepresentation> exportedMappers, List<ProtocolMapperRepresentation> baselineMappers) {
-        return unOrderedJavers.compareCollections(getNonNull(baselineMappers), getNonNull(exportedMappers),
-                ProtocolMapperRepresentation.class).hasChanges();
+    public boolean protocolMappersChanged(
+            List<ProtocolMapperRepresentation> exportedMappers, List<ProtocolMapperRepresentation> baselineMappers) {
+        return unOrderedJavers
+                .compareCollections(
+                        getNonNull(baselineMappers), getNonNull(exportedMappers), ProtocolMapperRepresentation.class)
+                .hasChanges();
     }
 }

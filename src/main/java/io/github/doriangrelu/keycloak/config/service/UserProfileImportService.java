@@ -42,9 +42,11 @@ public class UserProfileImportService {
     }
 
     public void doImport(RealmImport realmImport) {
-        var userProfileEnabledString = realmImport.getAttributesOrEmpty().get(UserProfileRepository.REALM_ATTRIBUTES_USER_PROFILE_ENABLED_STRING);
+        var userProfileEnabledString = realmImport
+                .getAttributesOrEmpty()
+                .get(UserProfileRepository.REALM_ATTRIBUTES_USER_PROFILE_ENABLED_STRING);
         if (userProfileEnabledString == null) {
-            //if not defined at all, ignore everything else
+            // if not defined at all, ignore everything else
             logger.trace("UpdateProfile realm-attribute '"
                     + UserProfileRepository.REALM_ATTRIBUTES_USER_PROFILE_ENABLED_STRING
                     + "' not set: skipping profile import.");
@@ -54,7 +56,8 @@ public class UserProfileImportService {
         var userProfileEnabled = Boolean.parseBoolean(userProfileEnabledString);
         var userProfileAttributeString = buildUserProfileConfigurationString(realmImport);
 
-        this.userProfileRepository.updateUserProfile(realmImport.getRealm(), userProfileEnabled, userProfileAttributeString);
+        this.userProfileRepository.updateUserProfile(
+                realmImport.getRealm(), userProfileEnabled, userProfileAttributeString);
     }
 
     private String buildUserProfileConfigurationString(RealmImport realmImport) {
@@ -64,5 +67,4 @@ public class UserProfileImportService {
         }
         return JsonUtil.toJson(userProfile);
     }
-
 }

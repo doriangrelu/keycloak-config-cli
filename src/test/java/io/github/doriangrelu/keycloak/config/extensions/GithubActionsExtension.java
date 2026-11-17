@@ -20,11 +20,10 @@
 
 package io.github.doriangrelu.keycloak.config.extensions;
 
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
-
 import java.net.URL;
 import java.text.MessageFormat;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 // More info: https://help.github.com/en/actions/reference/workflow-commands-for-github-actions
 public class GithubActionsExtension implements TestWatcher {
@@ -35,7 +34,8 @@ public class GithubActionsExtension implements TestWatcher {
 
     @Override
     public void testFailed(ExtensionContext context, Throwable cause) {
-        if (System.getenv("GITHUB_ACTIONS") != null && System.getenv("GITHUB_ACTIONS").equals("true")) {
+        if (System.getenv("GITHUB_ACTIONS") != null
+                && System.getenv("GITHUB_ACTIONS").equals("true")) {
             formatError(context, cause);
         }
     }
@@ -49,15 +49,16 @@ public class GithubActionsExtension implements TestWatcher {
         String clazz = stackTrace[2].getClassName();
         String method = stackTrace[2].getMethodName();
 
-        URL callerFilePath = getClass().getClassLoader().getResource(
-                stackTrace[2].getClassName().replace('.', '/') + ".class"
-        );
+        URL callerFilePath = getClass()
+                .getClassLoader()
+                .getResource(stackTrace[2].getClassName().replace('.', '/') + ".class");
 
         String filePath = callerFilePath == null
                 ? file
-                : callerFilePath.getFile()
-                .replace("target/test-classes/", "src/test/java/")
-                .replace(".class", ".java");
+                : callerFilePath
+                        .getFile()
+                        .replace("target/test-classes/", "src/test/java/")
+                        .replace(".class", ".java");
 
         // https://github.com/actions/toolkit/issues/193#issuecomment-605394935
 
@@ -72,7 +73,8 @@ public class GithubActionsExtension implements TestWatcher {
             message = cause.toString().replace("\n", "%0A");
         }
 
-        String annotation = MessageFormat.format("::error file={0},line={1}::{2}#{3}: {4}", filePath, line, clazz, method, message);
+        String annotation =
+                MessageFormat.format("::error file={0},line={1}::{2}#{3}: {4}", filePath, line, clazz, method, message);
 
         System.out.println(annotation);
     }

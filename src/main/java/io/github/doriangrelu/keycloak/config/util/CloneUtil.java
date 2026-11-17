@@ -24,12 +24,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CloneUtil {
     private static final Logger logger = LoggerFactory.getLogger(CloneUtil.class);
@@ -46,8 +45,7 @@ public class CloneUtil {
         nonFailingMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    private CloneUtil() {
-    }
+    private CloneUtil() {}
 
     public static <T> T deepClone(T object, String... ignoredProperties) {
         return deepClone(object, null, ignoredProperties);
@@ -72,7 +70,6 @@ public class CloneUtil {
     /**
      * This patch will not merge list properties
      */
-
     public static <T, S> S patch(S origin, T patch, String... ignoredProperties) {
         if (origin == null) return null;
         if (patch == null) return origin;
@@ -100,14 +97,16 @@ public class CloneUtil {
         removeIgnoredProperties(originJsonNode, ignoredProperties);
         removeIgnoredProperties(otherJsonNode, ignoredProperties);
 
-
         handleEmptyCredentials(originJsonNode);
         handleEmptyCredentials(otherJsonNode);
 
         boolean ret = Objects.equals(originJsonNode, otherJsonNode);
-        logger.trace("objects.deepEquals: ret: {} | origin: {} | other: {} | ignoredProperties: {}",
-                ret, originJsonNode, otherJsonNode, ignoredProperties
-        );
+        logger.trace(
+                "objects.deepEquals: ret: {} | origin: {} | other: {} | ignoredProperties: {}",
+                ret,
+                originJsonNode,
+                otherJsonNode,
+                ignoredProperties);
 
         return ret;
     }

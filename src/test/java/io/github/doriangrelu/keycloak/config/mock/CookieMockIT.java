@@ -20,6 +20,12 @@
 
 package io.github.doriangrelu.keycloak.config.mock;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.doReturn;
+import static org.mockserver.model.HttpRequest.request;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportTest;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
@@ -35,24 +41,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.Mockito.doReturn;
-import static org.mockserver.model.HttpRequest.request;
-
 @MockServerTest("keycloak.url=http://localhost:${mockServerPort}")
-@TestPropertySource(properties = {
-        "import.remote-state.enabled=false",
-        "import.cache.enabled=false"
-})
+@TestPropertySource(properties = {"import.remote-state.enabled=false", "import.cache.enabled=false"})
 class CookieMockIT extends AbstractImportTest {
     private MockServerClient mockServerClient;
 
     @Autowired
     public KeycloakImportProvider keycloakImportProvider;
+
     @Autowired
     public RealmImportService realmImportService;
+
     @MockitoSpyBean
     public KeycloakProvider keycloakProvider;
 
@@ -67,20 +66,29 @@ class CookieMockIT extends AbstractImportTest {
 
     @Test
     void run() throws Exception {
-        mockServerClient.when(request().withPath("/realms/master/protocol/openid-connect/token")).respond(KeycloakMock::grantToken);
+        mockServerClient
+                .when(request().withPath("/realms/master/protocol/openid-connect/token"))
+                .respond(KeycloakMock::grantToken);
         mockServerClient.when(request().withPath("/admin/realms")).respond(KeycloakMock::realm);
         mockServerClient.when(request().withPath("/admin/realms/simple")).respond(KeycloakMock::realm);
-        mockServerClient.when(request().withPath("/admin/realms/simple/default-default-client-scopes")).respond(KeycloakMock::emptyList);
-        mockServerClient.when(request().withPath("/admin/realms/simple/default-optional-client-scopes")).respond(KeycloakMock::emptyList);
-        mockServerClient.when(request().withPath("/admin/realms/simple/identity-provider/instances")).respond(KeycloakMock::emptyList);
-        mockServerClient.when(request().withPath("/realms/master/protocol/openid-connect/logout")).respond(KeycloakMock::noContent);
+        mockServerClient
+                .when(request().withPath("/admin/realms/simple/default-default-client-scopes"))
+                .respond(KeycloakMock::emptyList);
+        mockServerClient
+                .when(request().withPath("/admin/realms/simple/default-optional-client-scopes"))
+                .respond(KeycloakMock::emptyList);
+        mockServerClient
+                .when(request().withPath("/admin/realms/simple/identity-provider/instances"))
+                .respond(KeycloakMock::emptyList);
+        mockServerClient
+                .when(request().withPath("/realms/master/protocol/openid-connect/logout"))
+                .respond(KeycloakMock::noContent);
 
         mockServerClient.when(request().withPath("/admin/serverinfo")).respond((request) -> {
             assertThat(request.getCookieList(), hasSize(2));
-            assertThat(request.getCookieList(), containsInAnyOrder(
-                    new Cookie("key_expires", "value"),
-                    new Cookie("key", "value")
-            ));
+            assertThat(
+                    request.getCookieList(),
+                    containsInAnyOrder(new Cookie("key_expires", "value"), new Cookie("key", "value")));
 
             return KeycloakMock.serverInfo(request);
         });

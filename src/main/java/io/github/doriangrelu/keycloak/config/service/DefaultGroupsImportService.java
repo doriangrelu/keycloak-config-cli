@@ -24,14 +24,12 @@ import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.repository.GroupRepository;
 import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
+import jakarta.ws.rs.NotFoundException;
+import java.util.List;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-import jakarta.ws.rs.NotFoundException;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -40,10 +38,7 @@ public class DefaultGroupsImportService {
     private final GroupRepository groupRepository;
 
     @Autowired
-    public DefaultGroupsImportService(
-            RealmRepository realmRepository,
-            GroupRepository groupRepository
-    ) {
+    public DefaultGroupsImportService(RealmRepository realmRepository, GroupRepository groupRepository) {
         this.realmRepository = realmRepository;
         this.groupRepository = groupRepository;
     }
@@ -60,7 +55,9 @@ public class DefaultGroupsImportService {
         if (existingDefaultGroups != null) {
             for (String existingDefaultGroup : existingDefaultGroups) {
                 if (!newDefaultGroups.contains(existingDefaultGroup)) {
-                    String existingDefaultGroupId = groupRepository.getGroupByPath(realmName, existingDefaultGroup).getId();
+                    String existingDefaultGroupId = groupRepository
+                            .getGroupByPath(realmName, existingDefaultGroup)
+                            .getId();
                     realmResource.removeDefaultGroup(existingDefaultGroupId);
                 }
             }
@@ -69,10 +66,13 @@ public class DefaultGroupsImportService {
         for (String newDefaultGroup : newDefaultGroups) {
             if (existingDefaultGroups == null || !existingDefaultGroups.contains(newDefaultGroup)) {
                 try {
-                    String newDefaultGroupId = groupRepository.getGroupByPath(realmName, newDefaultGroup).getId();
+                    String newDefaultGroupId = groupRepository
+                            .getGroupByPath(realmName, newDefaultGroup)
+                            .getId();
                     realmResource.addDefaultGroup(newDefaultGroupId);
                 } catch (NotFoundException ignored) {
-                    throw new InvalidImportException(String.format("Unable to add default group '%s'. Does group exists?", newDefaultGroup));
+                    throw new InvalidImportException(
+                            String.format("Unable to add default group '%s'. Does group exists?", newDefaultGroup));
                 }
             }
         }

@@ -19,19 +19,19 @@
  */
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 public class ClientScopeNormalizationServiceIT {
 
@@ -84,12 +84,15 @@ public class ClientScopeNormalizationServiceIT {
 
     @Test
     public void testProtocolMappersChanged() {
-        List<ProtocolMapperRepresentation> exportedMappers = Collections.singletonList(new ProtocolMapperRepresentation());
-        List<ProtocolMapperRepresentation> baselineMappers = Collections.singletonList(new ProtocolMapperRepresentation());
+        List<ProtocolMapperRepresentation> exportedMappers =
+                Collections.singletonList(new ProtocolMapperRepresentation());
+        List<ProtocolMapperRepresentation> baselineMappers =
+                Collections.singletonList(new ProtocolMapperRepresentation());
 
         Diff diff = mock(Diff.class);
         when(diff.hasChanges()).thenReturn(true);
-        when(javers.compareCollections(anyList(), anyList(), eq(ProtocolMapperRepresentation.class))).thenReturn(diff);
+        when(javers.compareCollections(anyList(), anyList(), eq(ProtocolMapperRepresentation.class)))
+                .thenReturn(diff);
 
         boolean result = service.protocolMappersChanged(exportedMappers, baselineMappers);
 

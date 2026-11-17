@@ -20,20 +20,18 @@
 
 package io.github.doriangrelu.keycloak.config.model;
 
+import java.io.Serializable;
+import java.util.Comparator;
+import java.util.List;
 import org.apache.commons.lang3.ObjectUtils;
 import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
 import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
-import java.util.Comparator;
-import java.util.List;
-
 /**
  * Represents a {@link AuthenticationFlowRepresentation} with authenticationExecutions which are sorted by its priority
  */
-
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class AuthenticationFlowImport extends AuthenticationFlowRepresentation {
@@ -42,8 +40,7 @@ public class AuthenticationFlowImport extends AuthenticationFlowRepresentation {
 
     @Override
     public void setAuthenticationExecutions(
-            List<AuthenticationExecutionExportRepresentation> authenticationExecutions
-    ) {
+            List<AuthenticationExecutionExportRepresentation> authenticationExecutions) {
         authenticationExecutions.sort(COMPARATOR);
         super.setAuthenticationExecutions(authenticationExecutions);
     }
@@ -55,9 +52,7 @@ public class AuthenticationFlowImport extends AuthenticationFlowRepresentation {
             implements Comparator<AuthenticationExecutionExportRepresentation>, Serializable {
         @Override
         public int compare(
-                AuthenticationExecutionExportRepresentation first,
-                AuthenticationExecutionExportRepresentation second
-        ) {
+                AuthenticationExecutionExportRepresentation first, AuthenticationExecutionExportRepresentation second) {
             return ObjectUtils.compare(first.getPriority(), second.getPriority());
         }
     }

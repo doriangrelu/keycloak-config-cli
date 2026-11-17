@@ -23,6 +23,13 @@ package io.github.doriangrelu.keycloak.config.repository;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.util.ResponseUtil;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.ClientsResource;
@@ -37,15 +44,6 @@ import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -62,7 +60,8 @@ public class ClientRepository {
     }
 
     public Optional<ClientRepresentation> searchByClientId(String realmName, String clientId) {
-        List<ClientRepresentation> foundClients = getResource(realmName).findByClientId(Objects.requireNonNull(clientId));
+        List<ClientRepresentation> foundClients =
+                getResource(realmName).findByClientId(Objects.requireNonNull(clientId));
 
         Optional<ClientRepresentation> client;
         if (foundClients.isEmpty()) {
@@ -79,12 +78,10 @@ public class ClientRepository {
 
         // this is expensive, but easy to implement.
         // if this too expensive, please provide a PR which implement a pagination for findAll()
-        Optional<ClientRepresentation> foundClients = realmRepository.getResource(realmName)
-                .partialExport(false, true)
-                .getClients()
-                .stream()
-                .filter(client -> Objects.equals(name, client.getName()))
-                .findAny();
+        Optional<ClientRepresentation> foundClients =
+                realmRepository.getResource(realmName).partialExport(false, true).getClients().stream()
+                        .filter(client -> Objects.equals(name, client.getName()))
+                        .findAny();
 
         return foundClients.map(clientRepresentation -> getByClientId(realmName, clientRepresentation.getId()));
     }
@@ -125,9 +122,10 @@ public class ClientRepository {
             String errorMessage = ResponseUtil.getErrorMessage(error);
 
             throw new ImportProcessingException(
-                    String.format("Cannot create client '%s' in realm '%s': %s", client.getClientId(), realmName, errorMessage),
-                    error
-            );
+                    String.format(
+                            "Cannot create client '%s' in realm '%s': %s",
+                            client.getClientId(), realmName, errorMessage),
+                    error);
         }
     }
 
@@ -162,17 +160,15 @@ public class ClientRepository {
     }
 
     public final Set<String> getAllIds(String realmName) {
-        return getAll(realmName)
-                .stream()
-                .map(ClientRepresentation::getClientId)
-                .collect(Collectors.toSet());
+        return getAll(realmName).stream().map(ClientRepresentation::getClientId).collect(Collectors.toSet());
     }
 
     public final List<ClientRepresentation> getAll(String realmName) {
         return getResource(realmName).findAll();
     }
 
-    public void updateAuthorizationSettings(String realmName, String id, ResourceServerRepresentation authorizationSettings) {
+    public void updateAuthorizationSettings(
+            String realmName, String id, ResourceServerRepresentation authorizationSettings) {
         ClientResource clientResource = getResourceById(realmName, id);
         clientResource.authorization().update(authorizationSettings);
     }
@@ -207,14 +203,14 @@ public class ClientRepository {
         // Note: findByName is not exact filter the resource with the exact name
         return clientResource.authorization().resources().findByName(resourceName, clientId).stream()
                 .filter(r -> resourceName.equals(r.getName()))
-                .findFirst().map(ResourceRepresentation::getId)
-                .orElseGet(
-                        () -> clientResource.authorization().resources()
-                                .findByName(resourceName).stream()
-                                .filter(r -> resourceName.equals(r.getName())
-                                        && !clientId.equals(r.getOwner().getName()))
-                                .findFirst().map(ResourceRepresentation::getId)
-                                .orElse(null));
+                .findFirst()
+                .map(ResourceRepresentation::getId)
+                .orElseGet(() -> clientResource.authorization().resources().findByName(resourceName).stream()
+                        .filter(r -> resourceName.equals(r.getName())
+                                && !clientId.equals(r.getOwner().getName()))
+                        .findFirst()
+                        .map(ResourceRepresentation::getId)
+                        .orElse(null));
     }
 
     public void addAuthorizationScope(String realmName, String id, ScopeRepresentation scope) {
@@ -242,7 +238,8 @@ public class ClientRepository {
     }
 
     private String getScopeId(ClientResource clientResource, String scopeName) {
-        ScopeRepresentation scopeRepresentation = clientResource.authorization().scopes().findByName(scopeName);
+        ScopeRepresentation scopeRepresentation =
+                clientResource.authorization().scopes().findByName(scopeName);
         if (scopeRepresentation != null) {
             return scopeRepresentation.getId();
         }
@@ -274,33 +271,28 @@ public class ClientRepository {
     }
 
     private String getPolicyId(ClientResource clientResource, String policyName) {
-        PolicyRepresentation policyRepresentation = clientResource.authorization().policies().findByName(policyName);
+        PolicyRepresentation policyRepresentation =
+                clientResource.authorization().policies().findByName(policyName);
         if (policyRepresentation != null) {
             return policyRepresentation.getId();
         }
         return null;
     }
 
-    public void addScopeMapping(String realmName, String clientId,
-                                String clientLevelId, List<RoleRepresentation> roles) {
+    public void addScopeMapping(
+            String realmName, String clientId, String clientLevelId, List<RoleRepresentation> roles) {
         ClientResource clientResource = getResourceByClientId(realmName, clientId);
-        clientResource
-                .getScopeMappings()
-                .clientLevel(clientLevelId)
-                .add(roles);
+        clientResource.getScopeMappings().clientLevel(clientLevelId).add(roles);
     }
 
-    public void removeScopeMapping(String realmName, String clientId,
-                                   String clientLevelId, List<RoleRepresentation> roles) {
+    public void removeScopeMapping(
+            String realmName, String clientId, String clientLevelId, List<RoleRepresentation> roles) {
         ClientResource clientResource = getResourceByClientId(realmName, clientId);
-        clientResource
-                .getScopeMappings()
-                .clientLevel(clientLevelId)
-                .remove(roles);
+        clientResource.getScopeMappings().clientLevel(clientLevelId).remove(roles);
     }
 
-    public void addDefaultClientScopes(String realmName, String clientId,
-                                       List<ClientScopeRepresentation> defaultClientScopes) {
+    public void addDefaultClientScopes(
+            String realmName, String clientId, List<ClientScopeRepresentation> defaultClientScopes) {
         ClientResource clientResource = getResourceByClientId(realmName, clientId);
         defaultClientScopes.stream()
                 .filter(Objects::nonNull)
@@ -308,8 +300,8 @@ public class ClientRepository {
                 .forEach(clientResource::addDefaultClientScope);
     }
 
-    public void removeDefaultClientScopes(String realmName, String clientId,
-                                          List<ClientScopeRepresentation> defaultClientScopes) {
+    public void removeDefaultClientScopes(
+            String realmName, String clientId, List<ClientScopeRepresentation> defaultClientScopes) {
         ClientResource clientResource = getResourceByClientId(realmName, clientId);
 
         for (ClientScopeRepresentation defaultClientScope : defaultClientScopes) {
@@ -317,8 +309,8 @@ public class ClientRepository {
         }
     }
 
-    public void addOptionalClientScopes(String realmName, String clientId,
-                                        List<ClientScopeRepresentation> optionalClientScopes) {
+    public void addOptionalClientScopes(
+            String realmName, String clientId, List<ClientScopeRepresentation> optionalClientScopes) {
         ClientResource clientResource = getResourceByClientId(realmName, clientId);
 
         for (ClientScopeRepresentation optionalClientScope : optionalClientScopes) {
@@ -326,8 +318,8 @@ public class ClientRepository {
         }
     }
 
-    public void removeOptionalClientScopes(String realmName, String clientId,
-                                           List<ClientScopeRepresentation> optionalClientScopes) {
+    public void removeOptionalClientScopes(
+            String realmName, String clientId, List<ClientScopeRepresentation> optionalClientScopes) {
         ClientResource clientResource = getResourceByClientId(realmName, clientId);
 
         for (ClientScopeRepresentation optionalClientScope : optionalClientScopes) {
@@ -347,12 +339,15 @@ public class ClientRepository {
         return clientResource.getPermissions().isEnabled();
     }
 
-    private void handleAuthorizationApiException(WebApplicationException e, ClientResource clientResource, String realmName) {
+    private void handleAuthorizationApiException(
+            WebApplicationException e, ClientResource clientResource, String realmName) {
         int status = e.getResponse().getStatus();
         if (status == HTTP_NOT_FOUND || status == HTTP_NOT_IMPLEMENTED || status == 400) {
             throw new KeycloakRepositoryException(
-                    String.format("Authorization API not supported for client '%s' in realm '%s' (FGAP V2 active)",
-                            clientResource.toRepresentation().getClientId(), realmName), e);
+                    String.format(
+                            "Authorization API not supported for client '%s' in realm '%s' (FGAP V2 active)",
+                            clientResource.toRepresentation().getClientId(), realmName),
+                    e);
         }
         throw e;
     }

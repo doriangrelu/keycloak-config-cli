@@ -23,6 +23,12 @@ package io.github.doriangrelu.keycloak.config.repository;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.util.ResponseUtil;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.ComponentsResource;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -30,14 +36,6 @@ import org.keycloak.representations.idm.ComponentRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -59,10 +57,8 @@ public class ComponentRepository {
             throw new ImportProcessingException(
                     String.format(
                             "Cannot create component '%s' in realm '%s': %s",
-                            component.getName(), realmName, errorMessage
-                    ),
-                    error
-            );
+                            component.getName(), realmName, errorMessage),
+                    error);
         }
     }
 
@@ -77,10 +73,12 @@ public class ComponentRepository {
     }
 
     public ComponentRepresentation getById(String realmName, String componentId) {
-        ComponentRepresentation component = getComponentsResource(realmName).component(componentId).toRepresentation();
+        ComponentRepresentation component =
+                getComponentsResource(realmName).component(componentId).toRepresentation();
 
         if (component == null) {
-            throw new KeycloakRepositoryException("Cannot find component by id '%s' in realm '%s' ", componentId, realmName);
+            throw new KeycloakRepositoryException(
+                    "Cannot find component by id '%s' in realm '%s' ", componentId, realmName);
         }
 
         return component;
@@ -107,9 +105,10 @@ public class ComponentRepository {
         return search(realmName, type, subType, name, null);
     }
 
-    public Optional<ComponentRepresentation> search(String realmName, String type, String subType, String name, String parentId) {
-        List<ComponentRepresentation> component = getComponentsResource(realmName)
-                .query(parentId, type, name);
+    public Optional<ComponentRepresentation> search(
+            String realmName, String type, String subType, String name, String parentId) {
+        List<ComponentRepresentation> component =
+                getComponentsResource(realmName).query(parentId, type, name);
 
         return component.stream()
                 .filter(item -> Objects.equals(subType, item.getSubType()))

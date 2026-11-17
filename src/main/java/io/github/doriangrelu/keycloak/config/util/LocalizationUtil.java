@@ -20,18 +20,15 @@
 
 package io.github.doriangrelu.keycloak.config.util;
 
-import org.keycloak.admin.client.resource.RealmLocalizationResource;
-
 import java.util.Map;
+import org.keycloak.admin.client.resource.RealmLocalizationResource;
 
 public class LocalizationUtil {
 
-    private LocalizationUtil() {
-    }
+    private LocalizationUtil() {}
 
-    public static Map<String, String> getRealmLocalizationTexts(RealmLocalizationResource localizationResource,
-                                                                String locale) {
+    public static Map<String, String> getRealmLocalizationTexts(
+            RealmLocalizationResource localizationResource, String locale) {
         return localizationResource.getRealmLocalizationTexts(locale);
     }
-
 }

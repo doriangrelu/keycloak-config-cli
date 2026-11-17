@@ -31,5 +31,4 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackages = {"io.github.doriangrelu.keycloak.config"})
 @EnableConfigurationProperties({NormalizationKeycloakConfigProperties.class, NormalizationConfigProperties.class})
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
-public class NormalizeTestConfiguration {
-}
+public class NormalizeTestConfiguration {}

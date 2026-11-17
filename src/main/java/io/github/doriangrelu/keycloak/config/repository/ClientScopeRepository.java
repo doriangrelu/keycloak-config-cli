@@ -22,6 +22,12 @@ package io.github.doriangrelu.keycloak.config.repository;
 
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.util.ResponseUtil;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.ClientScopeResource;
 import org.keycloak.admin.client.resource.ClientScopesResource;
@@ -31,14 +37,6 @@ import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -52,13 +50,13 @@ public class ClientScopeRepository {
     }
 
     public List<ClientScopeRepresentation> getAll(String realmName) {
-        ClientScopesResource clientScopeResource = realmRepository.getResource(realmName).clientScopes();
+        ClientScopesResource clientScopeResource =
+                realmRepository.getResource(realmName).clientScopes();
         return clientScopeResource.findAll();
     }
 
     public List<ClientScopeRepresentation> getListByNames(String realmName, List<String> clientScopeNames) {
-        return clientScopeNames
-                .stream()
+        return clientScopeNames.stream()
                 .map(scopeName -> getByName(realmName, scopeName))
                 .toList();
     }
@@ -80,7 +78,8 @@ public class ClientScopeRepository {
     }
 
     public void create(String realmName, ClientScopeRepresentation clientScope) {
-        try (Response response = realmRepository.getResource(realmName).clientScopes().create(clientScope)) {
+        try (Response response =
+                realmRepository.getResource(realmName).clientScopes().create(clientScope)) {
             CreatedResponseUtil.getCreatedId(response);
         }
     }
@@ -95,7 +94,8 @@ public class ClientScopeRepository {
         clientScopeResource.update(clientScope);
     }
 
-    public void addProtocolMappers(String realmName, String clientScopeId, List<ProtocolMapperRepresentation> protocolMappers) {
+    public void addProtocolMappers(
+            String realmName, String clientScopeId, List<ProtocolMapperRepresentation> protocolMappers) {
         ClientScopeResource clientScopeResource = getResourceById(realmName, clientScopeId);
         ProtocolMappersResource protocolMappersResource = clientScopeResource.getProtocolMappers();
 
@@ -106,15 +106,15 @@ public class ClientScopeRepository {
         }
     }
 
-    public void removeProtocolMappers(String realmName, String clientScopeId, List<ProtocolMapperRepresentation> protocolMappers) {
+    public void removeProtocolMappers(
+            String realmName, String clientScopeId, List<ProtocolMapperRepresentation> protocolMappers) {
         ClientScopeResource clientScopeResource = getResourceById(realmName, clientScopeId);
         ProtocolMappersResource protocolMappersResource = clientScopeResource.getProtocolMappers();
 
-        List<ProtocolMapperRepresentation> existingProtocolMappers = clientScopeResource.getProtocolMappers().getMappers();
+        List<ProtocolMapperRepresentation> existingProtocolMappers =
+                clientScopeResource.getProtocolMappers().getMappers();
         List<ProtocolMapperRepresentation> protocolMapperToRemove = existingProtocolMappers.stream()
-                .filter(em -> protocolMappers.stream()
-                        .anyMatch(m -> Objects.equals(m.getName(), em.getName()))
-                )
+                .filter(em -> protocolMappers.stream().anyMatch(m -> Objects.equals(m.getName(), em.getName())))
                 .toList();
 
         for (ProtocolMapperRepresentation protocolMapper : protocolMapperToRemove) {
@@ -122,7 +122,8 @@ public class ClientScopeRepository {
         }
     }
 
-    public void updateProtocolMappers(String realmName, String clientScopeId, List<ProtocolMapperRepresentation> protocolMappers) {
+    public void updateProtocolMappers(
+            String realmName, String clientScopeId, List<ProtocolMapperRepresentation> protocolMappers) {
         ClientScopeResource clientScopeResource = getResourceById(realmName, clientScopeId);
         ProtocolMappersResource protocolMappersResource = clientScopeResource.getProtocolMappers();
 
@@ -134,11 +135,11 @@ public class ClientScopeRepository {
                 throw new ImportProcessingException(
                         String.format(
                                 "Cannot update protocolMapper '%s' for clientScope '%s' in realm '%s': %s",
-                                protocolMapper.getName(), clientScopeResource.toRepresentation().getName(),
-                                realmName, errorMessage
-                        ),
-                        error
-                );
+                                protocolMapper.getName(),
+                                clientScopeResource.toRepresentation().getName(),
+                                realmName,
+                                errorMessage),
+                        error);
             }
         }
     }
@@ -160,10 +161,10 @@ public class ClientScopeRepository {
     }
 
     public Optional<ClientScopeRepresentation> searchByName(String realmName, String clientScopeName) {
-        ClientScopesResource clientScopeResource = realmRepository.getResource(realmName).clientScopes();
+        ClientScopesResource clientScopeResource =
+                realmRepository.getResource(realmName).clientScopes();
 
-        return clientScopeResource.findAll()
-                .stream()
+        return clientScopeResource.findAll().stream()
                 .filter(s -> Objects.equals(s.getName(), clientScopeName))
                 .findFirst();
     }

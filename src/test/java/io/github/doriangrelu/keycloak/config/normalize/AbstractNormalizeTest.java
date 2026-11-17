@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.normalize;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import io.github.doriangrelu.keycloak.config.configuration.NormalizeTestConfiguration;
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
 import org.junit.jupiter.api.*;
@@ -30,18 +32,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 @ExtendWith(SpringExtension.class)
 @ExtendWith(GithubActionsExtension.class)
 @ExtendWith(OutputCaptureExtension.class)
 @ContextConfiguration(
         classes = {NormalizeTestConfiguration.class},
-        initializers = {ConfigDataApplicationContextInitializer.class}
-)
+        initializers = {ConfigDataApplicationContextInitializer.class})
 @ActiveProfiles("normalize-IT")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @Timeout(value = 30, unit = SECONDS)
-public abstract class AbstractNormalizeTest {
-}
+public abstract class AbstractNormalizeTest {}

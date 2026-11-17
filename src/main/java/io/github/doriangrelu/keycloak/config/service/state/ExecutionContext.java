@@ -60,7 +60,9 @@ public class ExecutionContext {
      */
     public <T> void put(final String key, final Class<T> type, final Collection<T> newElements) {
         final String computedKey = computeKey(key, type);
-        this.elements.compute(computedKey, (unused, objects) -> computeNewElements(newElements).apply(objects));
+        this.elements.compute(
+                computedKey,
+                (unused, objects) -> computeNewElements(newElements).apply(objects));
     }
 
     /**
@@ -76,14 +78,14 @@ public class ExecutionContext {
      */
     public <T> Collection<T> get(final String key, final Class<T> type) {
         final String computedKey = computeKey(key, type);
-        return this.elements.getOrDefault(computedKey, List.of())
-                .stream()
+        return this.elements.getOrDefault(computedKey, List.of()).stream()
                 .filter(type::isInstance)
                 .map(type::cast)
                 .toList();
     }
 
-    private static <T> Function<Collection<Object>, Collection<Object>> computeNewElements(final Collection<T> newElements) {
+    private static <T> Function<Collection<Object>, Collection<Object>> computeNewElements(
+            final Collection<T> newElements) {
         return actual -> {
             final Collection<Object> updated = null == actual ? new ArrayList<>() : actual;
             updated.addAll(newElements);
@@ -94,5 +96,4 @@ public class ExecutionContext {
     private static <T> String computeKey(final String realmName, final Class<T> type) {
         return realmName + KEY_SEPARATOR + type;
     }
-
 }

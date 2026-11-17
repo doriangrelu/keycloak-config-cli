@@ -20,18 +20,17 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.UserFederationMapperRepresentation;
 import org.keycloak.representations.idm.UserFederationProviderRepresentation;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 public class UserFederationNormalizationServiceIT {
 
@@ -42,7 +41,6 @@ public class UserFederationNormalizationServiceIT {
     public void setUp() {
         javers = mock(Javers.class);
         service = new UserFederationNormalizationService(javers);
-
     }
 
     @Test
@@ -62,7 +60,8 @@ public class UserFederationNormalizationServiceIT {
         when(diff.hasChanges()).thenReturn(true);
         when(javers.compare(any(), any())).thenReturn(diff);
 
-        List<UserFederationProviderRepresentation> result = service.normalizeProviders(exportedProviders, baselineProviders);
+        List<UserFederationProviderRepresentation> result =
+                service.normalizeProviders(exportedProviders, baselineProviders);
 
         assertThat(result).isNotEmpty();
     }

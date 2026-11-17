@@ -1,18 +1,16 @@
 package io.github.doriangrelu.keycloak.config.util.resteasy;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.ext.WriterInterceptor;
 import jakarta.ws.rs.ext.WriterInterceptorContext;
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +35,8 @@ public class LoggingClientFilter implements ClientRequestFilter, ClientResponseF
     }
 
     @Override
-    public void aroundWriteTo(WriterInterceptorContext context) throws IOException, jakarta.ws.rs.WebApplicationException {
+    public void aroundWriteTo(WriterInterceptorContext context)
+            throws IOException, jakarta.ws.rs.WebApplicationException {
         if (!logger.isDebugEnabled()) {
             context.proceed();
             return;
@@ -69,7 +68,8 @@ public class LoggingClientFilter implements ClientRequestFilter, ClientResponseF
             return;
         }
 
-        logger.debug("<< {} {} -> {} {}",
+        logger.debug(
+                "<< {} {} -> {} {}",
                 requestContext.getMethod(),
                 requestContext.getUri(),
                 responseContext.getStatus(),

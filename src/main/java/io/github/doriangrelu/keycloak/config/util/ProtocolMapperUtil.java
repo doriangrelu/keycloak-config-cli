@@ -20,25 +20,21 @@
 
 package io.github.doriangrelu.keycloak.config.util;
 
-import org.keycloak.representations.idm.ProtocolMapperRepresentation;
-
 import java.util.*;
 import java.util.stream.Collectors;
+import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 
 public class ProtocolMapperUtil {
-    private ProtocolMapperUtil() {
-    }
+    private ProtocolMapperUtil() {}
 
     public static List<ProtocolMapperRepresentation> estimateProtocolMappersToRemove(
             List<ProtocolMapperRepresentation> protocolMappers,
-            List<ProtocolMapperRepresentation> existingProtocolMappers
-    ) {
+            List<ProtocolMapperRepresentation> existingProtocolMappers) {
         if (existingProtocolMappers == null || existingProtocolMappers.isEmpty()) {
             return List.of(); // Return an immutable empty list
         }
 
-        Set<String> protocolMapperNames = Optional.ofNullable(protocolMappers)
-                .stream()
+        Set<String> protocolMapperNames = Optional.ofNullable(protocolMappers).stream()
                 .flatMap(List::stream)
                 .map(ProtocolMapperRepresentation::getName)
                 .collect(Collectors.toSet());
@@ -50,8 +46,7 @@ public class ProtocolMapperUtil {
 
     public static List<ProtocolMapperRepresentation> estimateProtocolMappersToAdd(
             List<ProtocolMapperRepresentation> protocolMappers,
-            List<ProtocolMapperRepresentation> existingProtocolMappers
-    ) {
+            List<ProtocolMapperRepresentation> existingProtocolMappers) {
         List<ProtocolMapperRepresentation> protocolMappersToAdd = new ArrayList<>();
 
         if (existingProtocolMappers == null) {
@@ -59,9 +54,8 @@ public class ProtocolMapperUtil {
         }
 
         for (ProtocolMapperRepresentation protocolMapper : protocolMappers) {
-            boolean shouldAdd = existingProtocolMappers.stream().noneMatch(
-                    m -> Objects.equals(m.getName(), protocolMapper.getName())
-            );
+            boolean shouldAdd = existingProtocolMappers.stream()
+                    .noneMatch(m -> Objects.equals(m.getName(), protocolMapper.getName()));
 
             if (shouldAdd) {
                 protocolMappersToAdd.add(protocolMapper);
@@ -73,8 +67,7 @@ public class ProtocolMapperUtil {
 
     public static List<ProtocolMapperRepresentation> estimateProtocolMappersToUpdate(
             List<ProtocolMapperRepresentation> protocolMappers,
-            List<ProtocolMapperRepresentation> existingProtocolMappers
-    ) {
+            List<ProtocolMapperRepresentation> existingProtocolMappers) {
         List<ProtocolMapperRepresentation> protocolMappersToUpdate = new ArrayList<>();
 
         if (existingProtocolMappers == null) {
@@ -82,15 +75,13 @@ public class ProtocolMapperUtil {
         }
 
         for (ProtocolMapperRepresentation protocolMapper : protocolMappers) {
-            Optional<ProtocolMapperRepresentation> existingProtocolMapper = existingProtocolMappers
-                    .stream()
+            Optional<ProtocolMapperRepresentation> existingProtocolMapper = existingProtocolMappers.stream()
                     .filter(m -> Objects.equals(m.getName(), protocolMapper.getName()))
                     .findFirst();
 
             if (existingProtocolMapper.isPresent()) {
-                ProtocolMapperRepresentation patchedProtocolMapper = CloneUtil.patch(
-                        existingProtocolMapper.get(), protocolMapper, "id"
-                );
+                ProtocolMapperRepresentation patchedProtocolMapper =
+                        CloneUtil.patch(existingProtocolMapper.get(), protocolMapper, "id");
                 protocolMappersToUpdate.add(patchedProtocolMapper);
             }
         }
@@ -100,15 +91,15 @@ public class ProtocolMapperUtil {
 
     public static boolean areProtocolMappersEqual(
             List<ProtocolMapperRepresentation> protocolMappers,
-            List<ProtocolMapperRepresentation> existingProtocolMappers
-    ) {
+            List<ProtocolMapperRepresentation> existingProtocolMappers) {
         if (protocolMappers == null || protocolMappers.isEmpty()) return existingProtocolMappers == null;
         if (existingProtocolMappers == null || protocolMappers.size() != existingProtocolMappers.size()) return false;
 
         for (ProtocolMapperRepresentation protocolMapper : protocolMappers) {
             ProtocolMapperRepresentation existingProtocolMapper = existingProtocolMappers.stream()
                     .filter(em -> Objects.equals(em.getName(), protocolMapper.getName()))
-                    .findFirst().orElse(null);
+                    .findFirst()
+                    .orElse(null);
 
             if (existingProtocolMapper == null) {
                 return false;

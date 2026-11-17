@@ -20,11 +20,11 @@
 
 package io.github.doriangrelu.keycloak.config.util;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(GithubActionsExtension.class)
 class VersionUtilTest {

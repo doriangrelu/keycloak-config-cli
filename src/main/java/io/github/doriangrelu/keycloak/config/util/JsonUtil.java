@@ -25,20 +25,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.IOException;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 
 public class JsonUtil {
-    private JsonUtil() {
-    }
+    private JsonUtil() {}
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static List<String> fromJson(String value) {
         try {
-            return objectMapper.readValue(value, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            return objectMapper.readValue(
+                    value, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
         } catch (IOException e) {
             throw new ImportProcessingException(e);
         }

@@ -22,21 +22,22 @@ package io.github.doriangrelu.keycloak.config.service;
 
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
 @ContextConfiguration()
-@TestPropertySource(properties = {
-        "import.behaviors.checksum-with-cache-key=false",
-        "import.behaviors.checksum-changed=fail"
-})
+@TestPropertySource(
+        properties = {"import.behaviors.checksum-with-cache-key=false", "import.behaviors.checksum-changed=fail"})
 public class FailWhenChecksumChangedIT extends AbstractChecksumServiceIT {
 
     @Test
-    @DisabledIfSystemProperty(named = "keycloak.version", matches = "2[6-9]\\..*", disabledReason = "Keycloak 26.0+ requires cross-realm permissions that cannot be reliably granted in test setup")
+    @DisabledIfSystemProperty(
+            named = "keycloak.version",
+            matches = "2[6-9]\\..*",
+            disabledReason =
+                    "Keycloak 26.0+ requires cross-realm permissions that cannot be reliably granted in test setup")
     void hasToBeUpdated_with_multiple_files_fails() throws Exception {
         this.resourcePath = "import-files/simple-realm";
 
@@ -55,5 +56,4 @@ public class FailWhenChecksumChangedIT extends AbstractChecksumServiceIT {
         var realmImports = importFromDirectory("classpath:import-files/import/same-names/**/*.yaml");
         realmImports.forEach(realmImport -> verifyHasToBeUpdated(realmImport, false));
     }
-
 }

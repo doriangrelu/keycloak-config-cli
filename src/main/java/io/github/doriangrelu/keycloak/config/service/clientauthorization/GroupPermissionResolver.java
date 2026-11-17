@@ -23,10 +23,9 @@ package io.github.doriangrelu.keycloak.config.service.clientauthorization;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.repository.GroupRepository;
+import jakarta.ws.rs.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.ws.rs.NotFoundException;
 
 public class GroupPermissionResolver implements PermissionResolver {
     private static final Logger logger = LoggerFactory.getLogger(GroupPermissionResolver.class);
@@ -44,7 +43,8 @@ public class GroupPermissionResolver implements PermissionResolver {
         try {
             return groupRepository.getGroupByPath(realmName, groupPath).getId();
         } catch (NotFoundException | KeycloakRepositoryException e) {
-            throw new ImportProcessingException("Cannot find group with path '%s' in realm '%s' for '%s'", groupPath, realmName, authzName);
+            throw new ImportProcessingException(
+                    "Cannot find group with path '%s' in realm '%s' for '%s'", groupPath, realmName, authzName);
         }
     }
 

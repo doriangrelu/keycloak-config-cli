@@ -20,19 +20,18 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.util.LocalizationUtil;
+import java.io.IOException;
+import java.util.Map;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.resource.RealmLocalizationResource;
 import org.keycloak.representations.idm.RealmRepresentation;
-
-import java.io.IOException;
-import java.util.Map;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.core.Is.is;
 
 class ImportMessageBundlesIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithMessageBundles";
@@ -46,7 +45,8 @@ class ImportMessageBundlesIT extends AbstractImportIT {
     void shouldCreateRealmWithMessageBundles() throws IOException {
         doImport("00_create_realm_with_message_bundles.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.isInternationalizationEnabled(), is(true));
@@ -67,7 +67,8 @@ class ImportMessageBundlesIT extends AbstractImportIT {
     void shouldUpdateRealmWithNewMessageBundleKeys() throws IOException {
         doImport("01_update_realm_with_new_message_bundles_keys.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.isInternationalizationEnabled(), is(true));
@@ -90,7 +91,8 @@ class ImportMessageBundlesIT extends AbstractImportIT {
     void shouldUpdateRealmWithNewLocale() throws IOException {
         doImport("02_update_realm_with_new_locale.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.isInternationalizationEnabled(), is(true));
@@ -118,7 +120,8 @@ class ImportMessageBundlesIT extends AbstractImportIT {
     void shouldUpdateRealmWithRemovedLocale() throws IOException {
         doImport("03_update_realm_with_removed_locale.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.isInternationalizationEnabled(), is(true));
@@ -144,7 +147,8 @@ class ImportMessageBundlesIT extends AbstractImportIT {
     void shouldUpdateRealmWithRemovedLocaleKeyForEn() throws IOException {
         doImport("04_update_realm_with_removed_locale_key_for_en.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.isInternationalizationEnabled(), is(true));
@@ -167,7 +171,8 @@ class ImportMessageBundlesIT extends AbstractImportIT {
     void shouldUpdateRealmWithRemovedAndNewKeys() throws IOException {
         doImport("05_update_realm_with_removed_and_new_keys.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.isInternationalizationEnabled(), is(true));
@@ -186,11 +191,9 @@ class ImportMessageBundlesIT extends AbstractImportIT {
     }
 
     private Map<String, String> loadMessageBundle(String locale) {
-        RealmLocalizationResource realmLocalizationResource = keycloakProvider.getInstance()
-                .realm(REALM_NAME)
-                .localization();
+        RealmLocalizationResource realmLocalizationResource =
+                keycloakProvider.getInstance().realm(REALM_NAME).localization();
 
         return LocalizationUtil.getRealmLocalizationTexts(realmLocalizationResource, locale);
     }
-
 }

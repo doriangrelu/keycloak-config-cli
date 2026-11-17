@@ -26,16 +26,15 @@ import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.I
 import io.github.doriangrelu.keycloak.config.repository.RequiredActionRepository;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
 import org.keycloak.representations.idm.RequiredActionProviderSimpleRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Creates and updates required-actions in your realm
@@ -51,7 +50,8 @@ public class RequiredActionsImportService {
 
     public RequiredActionsImportService(
             RequiredActionRepository requiredActionRepository,
-            ImportConfigProperties importConfigProperties, StateService stateService) {
+            ImportConfigProperties importConfigProperties,
+            StateService stateService) {
         this.requiredActionRepository = requiredActionRepository;
         this.importConfigProperties = importConfigProperties;
         this.stateService = stateService;
@@ -75,11 +75,9 @@ public class RequiredActionsImportService {
     }
 
     private void createOrUpdateRequireAction(
-            String realmName,
-            RequiredActionProviderRepresentation requiredActionToImport
-    ) {
-        RequiredActionProviderRepresentation existingRequiredAction = requiredActionRepository
-                .getByAlias(realmName, requiredActionToImport.getAlias());
+            String realmName, RequiredActionProviderRepresentation requiredActionToImport) {
+        RequiredActionProviderRepresentation existingRequiredAction =
+                requiredActionRepository.getByAlias(realmName, requiredActionToImport.getAlias());
 
         if (existingRequiredAction != null) {
             updateRequiredActionIfNeeded(realmName, requiredActionToImport, existingRequiredAction);
@@ -92,8 +90,7 @@ public class RequiredActionsImportService {
     private void updateRequiredActionIfNeeded(
             String realmName,
             RequiredActionProviderRepresentation requiredActionToImport,
-            RequiredActionProviderRepresentation existingRequiredAction
-    ) {
+            RequiredActionProviderRepresentation existingRequiredAction) {
         if (hasToBeUpdated(requiredActionToImport, existingRequiredAction)) {
             // Keycloak does not allow updating provider id
             // https://github.com/keycloak/keycloak/blob/eb002c7ecde6ebefeafb7828a582b5f185bcbc86/services/src/main/java/org/keycloak/services/resources/admin/AuthenticationManagementResource.java#L1016
@@ -112,56 +109,52 @@ public class RequiredActionsImportService {
 
     private boolean checkIfRecreateIsRequired(
             RequiredActionProviderRepresentation requiredActionToImport,
-            RequiredActionProviderRepresentation existingRequiredAction
-    ) {
+            RequiredActionProviderRepresentation existingRequiredAction) {
         return !requiredActionToImport.getProviderId().equals(existingRequiredAction.getProviderId());
     }
 
     private boolean hasToBeUpdated(
             RequiredActionProviderRepresentation requiredActionToImport,
-            RequiredActionProviderRepresentation existingRequiredAction
-    ) {
+            RequiredActionProviderRepresentation existingRequiredAction) {
         return !CloneUtil.deepEquals(requiredActionToImport, existingRequiredAction);
     }
 
     private void createAndConfigureRequiredAction(
-            String realmName,
-            RequiredActionProviderRepresentation requiredActionToImport
-    ) {
-        RequiredActionProviderSimpleRepresentation requiredActionToCreate = CloneUtil
-                .deepClone(requiredActionToImport, RequiredActionProviderSimpleRepresentation.class);
+            String realmName, RequiredActionProviderRepresentation requiredActionToImport) {
+        RequiredActionProviderSimpleRepresentation requiredActionToCreate =
+                CloneUtil.deepClone(requiredActionToImport, RequiredActionProviderSimpleRepresentation.class);
 
         requiredActionRepository.create(realmName, requiredActionToCreate);
 
-        // See: https://github.com/keycloak/keycloak/blob/d266165f63013f0ea3480ddaa83108ff34da407e/services/src/main/java/org/keycloak/services/resources/admin/AuthenticationManagementResource.java#L932
-        RequiredActionProviderRepresentation createdRequiredAction = requiredActionRepository
-                .getNewlyCreated(realmName, requiredActionToImport.getName(), requiredActionToImport.getProviderId());
+        // See:
+        // https://github.com/keycloak/keycloak/blob/d266165f63013f0ea3480ddaa83108ff34da407e/services/src/main/java/org/keycloak/services/resources/admin/AuthenticationManagementResource.java#L932
+        RequiredActionProviderRepresentation createdRequiredAction = requiredActionRepository.getNewlyCreated(
+                realmName, requiredActionToImport.getName(), requiredActionToImport.getProviderId());
 
         /*
          we need to update the required-action after creation because the creation only accepts following properties to be set:
          - providerId
          - name
         */
-        updateRequiredAction(realmName, createdRequiredAction.getAlias(), requiredActionToImport, createdRequiredAction);
+        updateRequiredAction(
+                realmName, createdRequiredAction.getAlias(), requiredActionToImport, createdRequiredAction);
     }
 
     private void updateRequiredAction(
             String realmName,
             RequiredActionProviderRepresentation requiredActionToImport,
-            RequiredActionProviderRepresentation existingRequiredAction
-    ) {
-        updateRequiredAction(realmName, requiredActionToImport.getAlias(), requiredActionToImport, existingRequiredAction);
+            RequiredActionProviderRepresentation existingRequiredAction) {
+        updateRequiredAction(
+                realmName, requiredActionToImport.getAlias(), requiredActionToImport, existingRequiredAction);
     }
 
     private void updateRequiredAction(
             String realmName,
             String requiredActionAlias,
             RequiredActionProviderRepresentation requiredActionToImport,
-            RequiredActionProviderRepresentation existingRequiredAction
-    ) {
-        RequiredActionProviderRepresentation requiredActionToBeConfigured = CloneUtil.deepClone(
-                existingRequiredAction, RequiredActionProviderRepresentation.class
-        );
+            RequiredActionProviderRepresentation existingRequiredAction) {
+        RequiredActionProviderRepresentation requiredActionToBeConfigured =
+                CloneUtil.deepClone(existingRequiredAction, RequiredActionProviderRepresentation.class);
 
         requiredActionToBeConfigured.setProviderId(requiredActionToImport.getProviderId());
         requiredActionToBeConfigured.setName(requiredActionToImport.getName());
@@ -177,8 +170,7 @@ public class RequiredActionsImportService {
     private void deleteRequiredActionsMissingInImport(
             String realmName,
             List<RequiredActionProviderRepresentation> importedRequiredActions,
-            List<RequiredActionProviderRepresentation> existingRequiredActions
-    ) {
+            List<RequiredActionProviderRepresentation> existingRequiredActions) {
         if (importConfigProperties.getRemoteState().isEnabled()) {
             List<String> requiredActionsInState = stateService.getRequiredActions();
 

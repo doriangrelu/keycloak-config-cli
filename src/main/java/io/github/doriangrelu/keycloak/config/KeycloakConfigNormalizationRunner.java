@@ -20,12 +20,19 @@
 
 package io.github.doriangrelu.keycloak.config;
 
+import static io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties.OutputFormat.YAML;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationKeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakExportProvider;
 import io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService;
+import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,14 +41,6 @@ import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
-
-import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import static io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties.OutputFormat.YAML;
 
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -59,11 +58,12 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
     private int exitCode;
 
     @Autowired
-    public KeycloakConfigNormalizationRunner(RealmNormalizationService normalizationService,
-                                             KeycloakExportProvider exportProvider,
-                                             NormalizationConfigProperties normalizationConfigProperties,
-                                             YAMLMapper yamlMapper,
-                                             ObjectMapper objectMapper) {
+    public KeycloakConfigNormalizationRunner(
+            RealmNormalizationService normalizationService,
+            KeycloakExportProvider exportProvider,
+            NormalizationConfigProperties normalizationConfigProperties,
+            YAMLMapper yamlMapper,
+            ObjectMapper objectMapper) {
         this.normalizationService = normalizationService;
         this.exportProvider = exportProvider;
         this.normalizationConfigProperties = normalizationConfigProperties;
@@ -74,7 +74,8 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
     @Override
     public void run(String... args) throws Exception {
         try {
-            var outputLocation = Paths.get(normalizationConfigProperties.getFiles().getOutputDirectory());
+            var outputLocation =
+                    Paths.get(normalizationConfigProperties.getFiles().getOutputDirectory());
             if (!Files.exists(outputLocation)) {
                 logger.info("Creating output directory '{}'", outputLocation);
                 Files.createDirectories(outputLocation);
@@ -91,7 +92,8 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
                     for (var realm : export.getValue()) {
                         var normalizedRealm = normalizationService.normalizeRealm(realm);
                         var suffix = normalizationConfigProperties.getOutputFormat() == YAML ? "yaml" : "json";
-                        var outputFile = outputLocation.resolve(String.format("%s.%s", normalizedRealm.getRealm(), suffix));
+                        var outputFile =
+                                outputLocation.resolve(String.format("%s.%s", normalizedRealm.getRealm(), suffix));
                         try (var os = new FileOutputStream(outputFile.toFile())) {
                             if (normalizationConfigProperties.getOutputFormat() == YAML) {
                                 yamlMapper.writeValue(os, normalizedRealm);

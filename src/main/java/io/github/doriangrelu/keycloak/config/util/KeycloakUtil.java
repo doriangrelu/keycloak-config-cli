@@ -22,19 +22,18 @@ package io.github.doriangrelu.keycloak.config.util;
 
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
+import java.util.Collection;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 
-import java.util.Collection;
-import java.util.Objects;
-
 public class KeycloakUtil {
-    private KeycloakUtil() {
-    }
+    private KeycloakUtil() {}
 
     public static boolean doesProtected(final String realm, final String name) {
-        final Collection<ProtectedResource> protectedResources = ExecutionContextHolder.context().get(realm, ProtectedResource.class);
+        final Collection<ProtectedResource> protectedResources =
+                ExecutionContextHolder.context().get(realm, ProtectedResource.class);
         return protectedResources.stream().anyMatch(protectedResource -> protectedResource.doesMatch(name));
     }
 
@@ -43,18 +42,15 @@ public class KeycloakUtil {
             return false;
         }
 
-        return Objects.equals(
-                String.format("${%s_%s}", prefix, property1),
-                property2
-        ) || Objects.equals(
-                // offline_access is named '${role_offline-access}' by default
-                String.format("${%s_%s}", prefix, property1.replace("_", "-")),
-                property2
-        );
+        return Objects.equals(String.format("${%s_%s}", prefix, property1), property2)
+                || Objects.equals(
+                        // offline_access is named '${role_offline-access}' by default
+                        String.format("${%s_%s}", prefix, property1.replace("_", "-")), property2);
     }
 
     public static boolean isDefaultRole(RoleRepresentation role) {
-        if (StringUtils.startsWith(role.getName(), "default-roles-") && role.getDescription().equals("${role_default-roles}")) {
+        if (StringUtils.startsWith(role.getName(), "default-roles-")
+                && role.getDescription().equals("${role_default-roles}")) {
             return true;
         }
 

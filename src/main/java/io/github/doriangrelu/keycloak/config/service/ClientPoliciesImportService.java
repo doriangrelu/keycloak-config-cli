@@ -43,9 +43,7 @@ public class ClientPoliciesImportService {
 
     @Autowired
     public ClientPoliciesImportService(
-            ClientPoliciesRepository clientPoliciesRepository,
-            KeycloakProvider keycloakProvider
-    ) {
+            ClientPoliciesRepository clientPoliciesRepository, KeycloakProvider keycloakProvider) {
         this.clientPoliciesRepository = clientPoliciesRepository;
         this.keycloakProvider = keycloakProvider;
     }

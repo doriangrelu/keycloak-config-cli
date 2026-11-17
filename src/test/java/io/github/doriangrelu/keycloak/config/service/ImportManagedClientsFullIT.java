@@ -20,25 +20,22 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.springframework.test.context.TestPropertySource;
-
-import java.io.IOException;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@TestPropertySource(properties = {
-        "import.managed.client=full"
-})
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.springframework.test.context.TestPropertySource;
+
+@TestPropertySource(properties = {"import.managed.client=full"})
 class ImportManagedClientsFullIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithManagedClients";
 
@@ -50,7 +47,8 @@ class ImportManagedClientsFullIT extends AbstractImportIT {
     void shouldDeleteExtraClient() throws IOException {
         doImport("01_prepare_client_to_delete.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(false, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(false, true);
         assertNotNull(getClientByClientId(realm, "moped-client"));
         assertNotNull(getClientByClientId(realm, "admin-cli"));
         assertNotNull(getClientByClientId(realm, "delete-that-client-1"));
@@ -59,20 +57,32 @@ class ImportManagedClientsFullIT extends AbstractImportIT {
         assertNotNull(getClientByClientId(realm, "delete-that-client-4"));
 
         doImport("00_create_realm_with_client.json");
-        RealmRepresentation realmAfterDelete = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(false, true);
-        Set<String> clients = realmAfterDelete.getClients()
-                .stream()
+        RealmRepresentation realmAfterDelete =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(false, true);
+        Set<String> clients = realmAfterDelete.getClients().stream()
                 .map(ClientRepresentation::getClientId)
                 .collect(Collectors.toSet());
 
-        assertThat(clients, hasItems("moped-client", "realm-management", "security-admin-console", "admin-cli", "broker", "account"));
-        assertThat(clients, not(hasItems("delete-that-client-1", "delete-that-client-2", "delete-that-client-3", "delete-that-client-4")));
+        assertThat(
+                clients,
+                hasItems(
+                        "moped-client",
+                        "realm-management",
+                        "security-admin-console",
+                        "admin-cli",
+                        "broker",
+                        "account"));
+        assertThat(
+                clients,
+                not(hasItems(
+                        "delete-that-client-1",
+                        "delete-that-client-2",
+                        "delete-that-client-3",
+                        "delete-that-client-4")));
     }
 
     private ClientRepresentation getClientByClientId(RealmRepresentation realm, String clientId) {
-        return realm
-                .getClients()
-                .stream()
+        return realm.getClients().stream()
                 .filter(s -> Objects.equals(s.getClientId(), clientId))
                 .findFirst()
                 .orElse(null);

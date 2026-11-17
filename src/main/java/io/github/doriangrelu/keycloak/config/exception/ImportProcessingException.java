@@ -20,7 +20,6 @@
 
 package io.github.doriangrelu.keycloak.config.exception;
 
-
 public class ImportProcessingException extends RuntimeException {
     public ImportProcessingException(String message) {
         super(message);

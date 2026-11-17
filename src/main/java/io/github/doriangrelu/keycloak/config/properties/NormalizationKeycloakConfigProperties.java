@@ -20,10 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.properties;
 
+import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-
-import jakarta.validation.constraints.NotNull;
 
 /*
  * Duplicated prefix keycloak. Since only one of the two classes is loaded (depending on configuration) this is fine.

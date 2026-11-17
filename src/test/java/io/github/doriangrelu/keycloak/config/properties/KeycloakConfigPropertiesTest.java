@@ -20,8 +20,13 @@
 
 package io.github.doriangrelu.keycloak.config.properties;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,32 +35,27 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.net.MalformedURLException;
-import java.time.Duration;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-
 // From: https://tuhrig.de/testing-configurationproperties-in-spring-boot/
 @ExtendWith(SpringExtension.class)
 @ExtendWith(GithubActionsExtension.class)
 @SpringBootTest(classes = {KeycloakConfigPropertiesTest.TestConfiguration.class})
-@TestPropertySource(properties = {
-        "spring.main.log-startup-info=false",
-        "keycloak.ssl-verify=false",
-        "keycloak.url=https://localhost:8443",
-        "keycloak.login-realm=moped",
-        "keycloak.client-id=moped",
-        "keycloak.client-id=moped-client",
-        "keycloak.user=otherUser",
-        "keycloak.password=otherPassword",
-        "keycloak.http-proxy=http://localhost:8080",
-        "keycloak.connect-timeout=2m",
-        "keycloak.read-timeout=20s",
-        "keycloak.availability-check.enabled=true",
-        "keycloak.availability-check.timeout=60s",
-        "keycloak.availability-check.retry-delay=10s"
-})
+@TestPropertySource(
+        properties = {
+            "spring.main.log-startup-info=false",
+            "keycloak.ssl-verify=false",
+            "keycloak.url=https://localhost:8443",
+            "keycloak.login-realm=moped",
+            "keycloak.client-id=moped",
+            "keycloak.client-id=moped-client",
+            "keycloak.user=otherUser",
+            "keycloak.password=otherPassword",
+            "keycloak.http-proxy=http://localhost:8080",
+            "keycloak.connect-timeout=2m",
+            "keycloak.read-timeout=20s",
+            "keycloak.availability-check.enabled=true",
+            "keycloak.availability-check.timeout=60s",
+            "keycloak.availability-check.retry-delay=10s"
+        })
 class KeycloakConfigPropertiesTest {
 
     @Autowired
@@ -69,7 +69,9 @@ class KeycloakConfigPropertiesTest {
         assertThat(properties.getPassword(), is("otherPassword"));
         assertThat(properties.getUrl(), is("https://localhost:8443"));
         assertThat(properties.isSslVerify(), is(false));
-        assertThat(properties.getHttpProxy(), is(URI.create("http://localhost:8080").toURL()));
+        assertThat(
+                properties.getHttpProxy(),
+                is(URI.create("http://localhost:8080").toURL()));
         assertThat(properties.getConnectTimeout(), is(Duration.ofSeconds(120)));
         assertThat(properties.getReadTimeout(), is(Duration.ofSeconds(20)));
         assertThat(properties.getAvailabilityCheck().isEnabled(), is(true));

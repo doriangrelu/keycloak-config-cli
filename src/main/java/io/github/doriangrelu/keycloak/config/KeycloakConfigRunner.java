@@ -27,6 +27,12 @@ import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties
 import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,13 +41,6 @@ import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 @Component
 /*
@@ -80,7 +79,8 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
     public void run(String... args) {
         try {
             ExecutionContextHolder.initializeEmptyContext();
-            Collection<String> importLocations = importConfigProperties.getFiles().getLocations();
+            Collection<String> importLocations =
+                    importConfigProperties.getFiles().getLocations();
             KeycloakImport keycloakImport = keycloakImportProvider.readFromLocations(importLocations);
 
             Map<String, Map<String, List<RealmImport>>> realmImports = keycloakImport.getRealmImports();

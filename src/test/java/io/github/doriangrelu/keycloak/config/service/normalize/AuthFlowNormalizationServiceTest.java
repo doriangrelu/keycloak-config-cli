@@ -20,6 +20,14 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,20 +36,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
 import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
 import org.keycloak.representations.idm.AuthenticatorConfigRepresentation;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 public class AuthFlowNormalizationServiceTest {
@@ -54,7 +51,8 @@ public class AuthFlowNormalizationServiceTest {
         unOrderedJavers = mock(Javers.class);
         service = new AuthFlowNormalizationService(unOrderedJavers);
         // NOTE: Do not provide a default global stub for unOrderedJavers.compare here.
-        // Tests should explicitly stub compare(...) with a local Diff mock when they need to exercise the Javers branch.
+        // Tests should explicitly stub compare(...) with a local Diff mock when they need to exercise the Javers
+        // branch.
     }
 
     // Helper creators
@@ -103,7 +101,8 @@ public class AuthFlowNormalizationServiceTest {
 
     @Test
     void testExecutionsChanged_DifferentSizes() {
-        List<AuthenticationExecutionExportRepresentation> exported = Arrays.asList(exec("a", null, 1), exec("b", null, 2));
+        List<AuthenticationExecutionExportRepresentation> exported =
+                Arrays.asList(exec("a", null, 1), exec("b", null, 2));
         List<AuthenticationExecutionExportRepresentation> baseline = Collections.singletonList(exec("a", null, 1));
         assertThat(service.executionsChanged(exported, baseline)).isTrue();
     }
@@ -126,14 +125,17 @@ public class AuthFlowNormalizationServiceTest {
 
     @Test
     void testExecutionsChanged_PrioritySorting() {
-        List<AuthenticationExecutionExportRepresentation> exported = Arrays.asList(exec("a", null, 2), exec("b", null, 1));
-        List<AuthenticationExecutionExportRepresentation> baseline = Arrays.asList(exec("b", null, 1), exec("a", null, 2));
+        List<AuthenticationExecutionExportRepresentation> exported =
+                Arrays.asList(exec("a", null, 2), exec("b", null, 1));
+        List<AuthenticationExecutionExportRepresentation> baseline =
+                Arrays.asList(exec("b", null, 1), exec("a", null, 2));
         assertThat(service.executionsChanged(exported, baseline)).isFalse();
     }
 
     @Test
     void testExecutionsChanged_EmptyLists() {
-        assertThat(service.executionsChanged(new ArrayList<>(), new ArrayList<>())).isFalse();
+        assertThat(service.executionsChanged(new ArrayList<>(), new ArrayList<>()))
+                .isFalse();
     }
 
     // executionChanged tests
@@ -377,7 +379,8 @@ public class AuthFlowNormalizationServiceTest {
 
         // No need to mock Javers since we're only testing deleted flow handling
 
-        List<AuthenticationFlowRepresentation> result = service.normalizeAuthFlows(exported, Collections.singletonList(baseline));
+        List<AuthenticationFlowRepresentation> result =
+                service.normalizeAuthFlows(exported, Collections.singletonList(baseline));
         // result may be null or empty; ensure method runs without exception
         assertThat(result == null || result.isEmpty()).isTrue();
     }
@@ -393,7 +396,8 @@ public class AuthFlowNormalizationServiceTest {
         when(diff.hasChanges()).thenReturn(false);
         when(unOrderedJavers.compare(baseline, exported)).thenReturn(diff);
 
-        List<AuthenticationFlowRepresentation> result = service.normalizeAuthFlows(exportedList, Collections.singletonList(baseline));
+        List<AuthenticationFlowRepresentation> result =
+                service.normalizeAuthFlows(exportedList, Collections.singletonList(baseline));
         // when no changes detected by Javers and no execution changes, flow should be omitted
         assertThat(result == null || result.isEmpty()).isTrue();
     }
@@ -407,7 +411,8 @@ public class AuthFlowNormalizationServiceTest {
         when(diff.hasChanges()).thenReturn(true);
         when(unOrderedJavers.compare(baseline, exported)).thenReturn(diff);
 
-        List<AuthenticationFlowRepresentation> result = service.normalizeAuthFlows(Collections.singletonList(exported), Collections.singletonList(baseline));
+        List<AuthenticationFlowRepresentation> result =
+                service.normalizeAuthFlows(Collections.singletonList(exported), Collections.singletonList(baseline));
         assertThat(result).contains(exported);
     }
 
@@ -421,7 +426,8 @@ public class AuthFlowNormalizationServiceTest {
         when(diffFalse.hasChanges()).thenReturn(false);
         when(unOrderedJavers.compare(baseline, exported)).thenReturn(diffFalse);
 
-        List<AuthenticationFlowRepresentation> result = service.normalizeAuthFlows(Collections.singletonList(exported), Collections.singletonList(baseline));
+        List<AuthenticationFlowRepresentation> result =
+                service.normalizeAuthFlows(Collections.singletonList(exported), Collections.singletonList(baseline));
         // since executionsChanged() is true the flow should be included
         assertThat(result).contains(exported);
     }
@@ -437,7 +443,8 @@ public class AuthFlowNormalizationServiceTest {
         when(diffFalse.hasChanges()).thenReturn(false);
         when(unOrderedJavers.compare(baseline, baseline)).thenReturn(diffFalse);
 
-        List<AuthenticationFlowRepresentation> result = service.normalizeAuthFlows(exported, Collections.singletonList(baseline));
+        List<AuthenticationFlowRepresentation> result =
+                service.normalizeAuthFlows(exported, Collections.singletonList(baseline));
         assertThat(result).contains(f2);
     }
 
@@ -472,6 +479,7 @@ public class AuthFlowNormalizationServiceTest {
 
         service.normalizeAuthFlows(exported, Collections.emptyList());
     }
+
     @Test
     void testDetectBrokenAuthenticationFlows_MissingSubFlowAliasLogsWarning(CapturedOutput output) {
         AuthenticationFlowRepresentation parent = flow("parent", true, false);
@@ -525,7 +533,9 @@ public class AuthFlowNormalizationServiceTest {
         List<AuthenticatorConfigRepresentation> result = service.normalizeAuthConfig(configs, flows);
 
         assertThat(result).hasSize(2);
-        assertThat(result).extracting(AuthenticatorConfigRepresentation::getAlias).containsExactlyInAnyOrder("cfg1", "cfg2");
+        assertThat(result)
+                .extracting(AuthenticatorConfigRepresentation::getAlias)
+                .containsExactlyInAnyOrder("cfg1", "cfg2");
         assertThat(result).allMatch(c -> c.getId() == null);
     }
 
@@ -537,12 +547,15 @@ public class AuthFlowNormalizationServiceTest {
         flow1.setAuthenticationExecutions(Collections.singletonList(e1));
 
         List<AuthenticationFlowRepresentation> flows = Collections.singletonList(flow1);
-        List<AuthenticatorConfigRepresentation> configs = Arrays.asList(config("cfg1", "id1"), config("cfg2", "id2"), config("cfg3", "id3"));
+        List<AuthenticatorConfigRepresentation> configs =
+                Arrays.asList(config("cfg1", "id1"), config("cfg2", "id2"), config("cfg3", "id3"));
 
         List<AuthenticatorConfigRepresentation> result = service.normalizeAuthConfig(configs, flows);
 
         assertThat(result).hasSize(1);
-        assertThat(result).extracting(AuthenticatorConfigRepresentation::getAlias).containsExactly("cfg1");
+        assertThat(result)
+                .extracting(AuthenticatorConfigRepresentation::getAlias)
+                .containsExactly("cfg1");
         assertThat(output.toString()).contains("Some authenticator configs are unused");
     }
 
@@ -573,11 +586,8 @@ public class AuthFlowNormalizationServiceTest {
         flow1.setAuthenticationExecutions(Collections.singletonList(e1));
 
         List<AuthenticationFlowRepresentation> flows = Collections.singletonList(flow1);
-        List<AuthenticatorConfigRepresentation> configs = Arrays.asList(
-            config("cfg1", "id1"),
-            config("cfg1", "id2"),
-            config("cfg2", "id3")
-        );
+        List<AuthenticatorConfigRepresentation> configs =
+                Arrays.asList(config("cfg1", "id1"), config("cfg1", "id2"), config("cfg2", "id3"));
 
         List<AuthenticatorConfigRepresentation> result = service.normalizeAuthConfig(configs, flows);
 
@@ -633,5 +643,4 @@ public class AuthFlowNormalizationServiceTest {
 
         assertThat(result).isNull();
     }
-
 }

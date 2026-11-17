@@ -20,18 +20,17 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+import java.lang.reflect.Field;
+import java.util.*;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.ScopeMappingRepresentation;
-
-import java.lang.reflect.Field;
-import java.util.*;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 public class ScopeMappingNormalizationServiceTest {
 
@@ -43,7 +42,6 @@ public class ScopeMappingNormalizationServiceTest {
         javers = mock(Javers.class);
         service = new ScopeMappingNormalizationService(javers);
     }
-
 
     @Test
     public void testNormalizeScopeMappings() throws NoSuchFieldException, IllegalAccessException {
@@ -98,9 +96,11 @@ public class ScopeMappingNormalizationServiceTest {
 
         Diff diff = mock(Diff.class);
         when(diff.hasChanges()).thenReturn(true);
-        when(javers.compareCollections(anyList(), anyList(), eq(ScopeMappingRepresentation.class))).thenReturn(diff);
+        when(javers.compareCollections(anyList(), anyList(), eq(ScopeMappingRepresentation.class)))
+                .thenReturn(diff);
 
-        Map<String, List<ScopeMappingRepresentation>> result = service.normalizeClientScopeMappings(exportedRealm, baselineRealm);
+        Map<String, List<ScopeMappingRepresentation>> result =
+                service.normalizeClientScopeMappings(exportedRealm, baselineRealm);
 
         assertThat(result).containsKey("clientScope1");
         assertThat(result.get("clientScope1")).contains(exportedMapping);

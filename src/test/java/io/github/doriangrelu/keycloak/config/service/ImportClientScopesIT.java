@@ -20,25 +20,24 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ImportClientScopesIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithClientScopes";
@@ -52,7 +51,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldCreateRealmWithClientScope() throws IOException {
         doImport("00_create_realm_with_clientScope.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -74,7 +74,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldAddClientScope() throws IOException {
         doImport("01_update_realm__add_clientScope.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -96,7 +97,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldChangeClientScope() throws IOException {
         doImport("02_update_realm__change_clientScope.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -118,7 +120,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldChangeClientScopeWithAddProtocolMapper() throws IOException {
         doImport("03_update_realm__change_clientScope_add_protocolMapper.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -151,7 +154,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldChangeClientScopeWithChangeProtocolMapper() throws IOException {
         doImport("04_update_realm__change_clientScope_change_protocolMapper.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -184,7 +188,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldChangeClientScopeWithReplaceProtocolMapper() throws IOException {
         doImport("05_update_realm__change_clientScope_replace_protocolMapper.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -200,7 +205,8 @@ class ImportClientScopesIT extends AbstractImportIT {
         assertThat(createdClientScope.getAttributes().get("display.on.consent.screen"), is("false"));
         assertThat(createdClientScope.getProtocolMappers(), hasSize(1));
 
-        ProtocolMapperRepresentation protocolMapper = getProtocolMapper(createdClientScope, "my_replaced_protocol_mapper");
+        ProtocolMapperRepresentation protocolMapper =
+                getProtocolMapper(createdClientScope, "my_replaced_protocol_mapper");
 
         assertThat(protocolMapper, notNullValue());
         assertThat(protocolMapper.getProtocol(), is("openid-connect"));
@@ -215,11 +221,16 @@ class ImportClientScopesIT extends AbstractImportIT {
     @Test
     @Order(6)
     void shouldNotUpdateRealmUpdateScopeMappingsWithError() throws IOException {
-        RealmImport foundImport = getFirstImport("06_update_realm__try-to-change_clientScope_invalid_protocolMapper.json");
+        RealmImport foundImport =
+                getFirstImport("06_update_realm__try-to-change_clientScope_invalid_protocolMapper.json");
 
-        ImportProcessingException thrown = assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        ImportProcessingException thrown =
+                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
 
-        assertThat(thrown.getMessage(), matchesPattern("Cannot update protocolMapper 'my_replaced_protocol_mapper' for clientScope 'my_other_clientScope' in realm 'realmWithClientScopes': .*"));
+        assertThat(
+                thrown.getMessage(),
+                matchesPattern(
+                        "Cannot update protocolMapper 'my_replaced_protocol_mapper' for clientScope 'my_other_clientScope' in realm 'realmWithClientScopes': .*"));
     }
 
     @Test
@@ -227,7 +238,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldChangeDefaultClientScopeAddProtocolMapper() throws IOException {
         doImport("09_update_realm__change_default_clientScope_add_protocolMapper.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -250,18 +262,18 @@ class ImportClientScopesIT extends AbstractImportIT {
 
     @Test
     @Order(11)
-        // https://github.com/adorsys/keycloak-config-cli/issues/183
+    // https://github.com/adorsys/keycloak-config-cli/issues/183
     void shouldCreateClientScopeWithProtocolMapper() throws IOException {
         doImport("70.0_create_empty_realm.json");
         doImport("70.1_update_realm__create_clientScope_with_protocolMapper.json");
 
         final String REALM_NAME_70 = REALM_NAME.concat("_70");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME_70).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME_70).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME_70));
         assertThat(realm.isEnabled(), is(true));
-
 
         ClientScopeRepresentation updatedDefaultScope = getClientScope(realm, "profile");
         assertThat(updatedDefaultScope, notNullValue());
@@ -303,7 +315,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldChangeClientScopeDeleteProtocolMapper() throws IOException {
         doImport("96_update_realm__change_clientScope_delete_protocolMapper.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -325,7 +338,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldRetainClientScopeWhenNoDeleteIsSet() throws IOException {
         doImport("97_update_realm__delete_clientScope.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -341,7 +355,8 @@ class ImportClientScopesIT extends AbstractImportIT {
     void shouldRetainExistingClientScopesWithNonExistingClientScopes() throws IOException {
         doImport("98_update_realm__skip_delete.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -354,14 +369,14 @@ class ImportClientScopesIT extends AbstractImportIT {
         assertThat(otherClientScope, notNullValue()); // Modified this assertion
     }
 
-
     @Test
     @Order(99)
     void shouldRetainAllClientScopesIncludingNonDefaultsWhenNoDeleteIsSet() throws IOException {
         doImport("99_update_realm__delete_all.json");
 
         RealmResource realmResource = keycloakProvider.getInstance().realm(REALM_NAME);
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         final List<ClientScopeRepresentation> defaultClientScopes = new ArrayList<>();
         defaultClientScopes.addAll(realmResource.getDefaultDefaultClientScopes());
@@ -373,9 +388,12 @@ class ImportClientScopesIT extends AbstractImportIT {
         List<ClientScopeRepresentation> clientScopes = getClientScopes(realm);
 
         // Ensure that both default and non-default client scopes are retained
-        assertThat(clientScopes.stream()
-                .allMatch(s -> defaultClientScopes.stream()
-                        .anyMatch(d -> Objects.equals(s.getName(), d.getName())) || s != null), is(true));
+        assertThat(
+                clientScopes.stream()
+                        .allMatch(s ->
+                                defaultClientScopes.stream().anyMatch(d -> Objects.equals(s.getName(), d.getName()))
+                                        || s != null),
+                is(true));
     }
 
     private List<ClientScopeRepresentation> getClientScopes(RealmRepresentation realmExport) {
@@ -383,14 +401,14 @@ class ImportClientScopesIT extends AbstractImportIT {
     }
 
     private ClientScopeRepresentation getClientScope(RealmRepresentation realmExport, String clientScopeName) {
-        return getClientScopes(realmExport)
-                .stream()
+        return getClientScopes(realmExport).stream()
                 .filter(s -> clientScopeName.equals(s.getName()))
                 .findFirst()
                 .orElse(null);
     }
 
-    private ProtocolMapperRepresentation getProtocolMapper(ClientScopeRepresentation clientScope, String protocolMapper) {
+    private ProtocolMapperRepresentation getProtocolMapper(
+            ClientScopeRepresentation clientScope, String protocolMapper) {
         List<ProtocolMapperRepresentation> protocolMappers = clientScope.getProtocolMappers();
         if (protocolMappers == null) return null;
 

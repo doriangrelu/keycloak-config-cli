@@ -21,7 +21,6 @@
 package io.github.doriangrelu.keycloak.config.service.state;
 
 import io.github.doriangrelu.keycloak.config.exception.MissingRequiredExecutionContextException;
-
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -70,5 +69,4 @@ public class ExecutionContextHolder {
         }
         return executionContext.get();
     }
-
 }

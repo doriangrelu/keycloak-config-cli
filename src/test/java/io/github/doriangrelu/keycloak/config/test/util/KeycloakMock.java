@@ -20,6 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.test.util;
 
+import static org.mockserver.model.HttpResponse.response;
+
+import java.util.Collections;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -29,19 +32,15 @@ import org.mockserver.model.*;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.Collections;
-
-import static org.mockserver.model.HttpResponse.response;
-
 public class KeycloakMock {
     static final Headers cookieHeader = new Headers(
             new Header("Set-Cookie", "key_expires=value; Expires=Sat, 09 Oct 2021 06:38:53 GMT; Path=/"),
-            new Header("Set-Cookie", "key=value")
-    );
+            new Header("Set-Cookie", "key=value"));
 
     public static HttpResponse grantToken(HttpRequest request) throws JsonProcessingException {
         AccessTokenResponse token = new AccessTokenResponse();
-        String dummyToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+        String dummyToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
 
         token.setToken(dummyToken);
         token.setRefreshToken(dummyToken);
@@ -54,9 +53,7 @@ public class KeycloakMock {
 
         String json = new ObjectMapper().writeValueAsString(token);
 
-        return response()
-                .withHeaders(cookieHeader)
-                .withBody(json, MediaType.APPLICATION_JSON);
+        return response().withHeaders(cookieHeader).withBody(json, MediaType.APPLICATION_JSON);
     }
 
     public static HttpResponse serverInfo(HttpRequest request) throws JsonProcessingException {
@@ -64,9 +61,7 @@ public class KeycloakMock {
         serverInfo.setSystemInfo(SystemInfoRepresentation.create(0, System.getProperty("keycloak.version")));
 
         String json = new ObjectMapper().writeValueAsString(serverInfo);
-        return response()
-                .withHeaders(cookieHeader)
-                .withBody(json, MediaType.APPLICATION_JSON);
+        return response().withHeaders(cookieHeader).withBody(json, MediaType.APPLICATION_JSON);
     }
 
     public static HttpResponse realm(HttpRequest request) throws JsonProcessingException {
@@ -84,20 +79,14 @@ public class KeycloakMock {
 
         String json = new ObjectMapper().writeValueAsString(realm);
 
-        return response()
-                .withHeaders(cookieHeader)
-                .withBody(json, MediaType.APPLICATION_JSON);
+        return response().withHeaders(cookieHeader).withBody(json, MediaType.APPLICATION_JSON);
     }
 
     public static HttpResponse emptyList(HttpRequest request) {
-        return response()
-                .withHeaders(cookieHeader)
-                .withBody("[]", MediaType.APPLICATION_JSON);
+        return response().withHeaders(cookieHeader).withBody("[]", MediaType.APPLICATION_JSON);
     }
 
     public static HttpResponse noContent(HttpRequest request) {
-        return response()
-                .withHeaders(cookieHeader)
-                .withStatusCode(204);
+        return response().withHeaders(cookieHeader).withStatusCode(204);
     }
 }

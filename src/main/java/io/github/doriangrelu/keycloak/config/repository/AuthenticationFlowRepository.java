@@ -23,6 +23,13 @@ package io.github.doriangrelu.keycloak.config.repository;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.util.ResponseUtil;
+import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.AuthenticationManagementResource;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -35,15 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import jakarta.ws.rs.ClientErrorException;
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -60,13 +58,13 @@ public class AuthenticationFlowRepository {
     public Optional<AuthenticationFlowRepresentation> searchByAlias(String realmName, String alias) {
         logger.trace("Try to get top-level-flow '{}' from realm '{}'", alias, realmName);
 
-        // with `AuthenticationManagementResource.getFlows()` keycloak is NOT returning all so-called top-level-flows, so
+        // with `AuthenticationManagementResource.getFlows()` keycloak is NOT returning all so-called top-level-flows,
+        // so
         // we need a partial export
         RealmRepresentation realmExport = realmRepository.partialExport(realmName, false, false);
         Assert.notNull(realmExport, "partialExport returns null.");
 
-        return realmExport.getAuthenticationFlows()
-                .stream()
+        return realmExport.getAuthenticationFlows().stream()
                 .filter(flow -> Objects.equals(flow.getAlias(), alias))
                 .findFirst();
     }
@@ -93,8 +91,7 @@ public class AuthenticationFlowRepository {
         } catch (WebApplicationException error) {
             String errorMessage = String.format(
                     "Cannot create top-level-flow '%s' in realm '%s': %s",
-                    flow.getAlias(), realmName, ResponseUtil.getErrorMessage(error)
-            );
+                    flow.getAlias(), realmName, ResponseUtil.getErrorMessage(error));
 
             throw new ImportProcessingException(errorMessage, error);
         }
@@ -105,7 +102,8 @@ public class AuthenticationFlowRepository {
         try {
             flowsResource.updateFlow(flow.getId(), flow);
         } catch (WebApplicationException error) {
-            String errorMessage = String.format("Cannot update top-level-flow '%s' in realm '%s'.", flow.getAlias(), realmName);
+            String errorMessage =
+                    String.format("Cannot update top-level-flow '%s' in realm '%s'.", flow.getAlias(), realmName);
 
             throw new ImportProcessingException(errorMessage, error);
         }
@@ -136,10 +134,8 @@ public class AuthenticationFlowRepository {
             throw new ImportProcessingException(
                     String.format(
                             "Error occurred while trying to delete top-level-flow by id '%s' in realm '%s'",
-                            flow, realmName
-                    ),
-                    e
-            );
+                            flow, realmName),
+                    e);
         }
     }
 
@@ -159,26 +155,24 @@ public class AuthenticationFlowRepository {
     }
 
     public List<AuthenticationFlowRepresentation> getAll(String realmName) {
-        RealmRepresentation realmExport = realmRepository
-                .partialExport(realmName, false, false);
+        RealmRepresentation realmExport = realmRepository.partialExport(realmName, false, false);
 
         return realmExport.getAuthenticationFlows();
     }
 
     public Optional<AuthenticationExecutionInfoRepresentation> searchSubFlow(
-            String realmName,
-            String topLevelFlowAlias,
-            String subFlowAlias
-    ) {
-        logger.trace("Search non-top-level-flow '{}' in realm '{}' and top-level-flow '{}'",
-                subFlowAlias, realmName, topLevelFlowAlias);
+            String realmName, String topLevelFlowAlias, String subFlowAlias) {
+        logger.trace(
+                "Search non-top-level-flow '{}' in realm '{}' and top-level-flow '{}'",
+                subFlowAlias,
+                realmName,
+                topLevelFlowAlias);
 
         AuthenticationManagementResource flowsResource = getFlowResources(realmName);
 
-        return flowsResource.getExecutions(topLevelFlowAlias)
-                .stream()
+        return flowsResource.getExecutions(topLevelFlowAlias).stream()
                 /* we have to compare the display name with the alias, because the alias property in
-                 AuthenticationExecutionInfoRepresentation representations is always set to null. */
+                AuthenticationExecutionInfoRepresentation representations is always set to null. */
                 .filter(flow -> Objects.equals(flow.getDisplayName(), subFlowAlias))
                 .findFirst();
     }

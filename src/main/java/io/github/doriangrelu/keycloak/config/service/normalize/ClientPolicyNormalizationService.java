@@ -29,8 +29,8 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
 public class ClientPolicyNormalizationService {
 
-    public ClientPoliciesRepresentation normalizePolicies(ClientPoliciesRepresentation exportedPolicies,
-                                                          ClientPoliciesRepresentation baselinePolicies) {
+    public ClientPoliciesRepresentation normalizePolicies(
+            ClientPoliciesRepresentation exportedPolicies, ClientPoliciesRepresentation baselinePolicies) {
         var policies = exportedPolicies.getPolicies();
         if (policies == null || policies.isEmpty()) {
             return null;
@@ -38,8 +38,8 @@ public class ClientPolicyNormalizationService {
         return exportedPolicies;
     }
 
-    public ClientProfilesRepresentation normalizeProfiles(ClientProfilesRepresentation exportedProfiles,
-                                                          ClientProfilesRepresentation baselineProfiles) {
+    public ClientProfilesRepresentation normalizeProfiles(
+            ClientProfilesRepresentation exportedProfiles, ClientProfilesRepresentation baselineProfiles) {
         var profiles = exportedProfiles.getProfiles();
         if (profiles == null || profiles.isEmpty()) {
             return null;

@@ -21,8 +21,7 @@
 package io.github.doriangrelu.keycloak.config.util;
 
 public class VersionUtil {
-    private VersionUtil() {
-    }
+    private VersionUtil() {}
 
     public static boolean gt(String a, String b) {
         return compareVersions(a, b) > 0;

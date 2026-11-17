@@ -27,6 +27,7 @@ import io.github.doriangrelu.keycloak.config.repository.ComponentRepository;
 import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
+import java.util.*;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentExportRepresentation;
@@ -36,8 +37,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -78,22 +77,24 @@ public class ComponentImportService {
         syncUserFederationIfNecessary(realmImport);
     }
 
-    private void importComponents(String realmName, Map<String, List<ComponentExportRepresentation>> componentsToImport) {
+    private void importComponents(
+            String realmName, Map<String, List<ComponentExportRepresentation>> componentsToImport) {
         for (Map.Entry<String, List<ComponentExportRepresentation>> entry : componentsToImport.entrySet()) {
             createOrUpdateComponents(realmName, entry.getKey(), entry.getValue());
         }
     }
 
-    private void createOrUpdateComponents(String realmName, String providerType, List<ComponentExportRepresentation> componentsToImport) {
+    private void createOrUpdateComponents(
+            String realmName, String providerType, List<ComponentExportRepresentation> componentsToImport) {
         for (ComponentExportRepresentation componentToImport : componentsToImport) {
             createOrUpdateComponent(realmName, providerType, componentToImport);
         }
     }
 
-    private void createOrUpdateComponent(String realmName, String providerType, ComponentExportRepresentation componentToImport) {
+    private void createOrUpdateComponent(
+            String realmName, String providerType, ComponentExportRepresentation componentToImport) {
         Optional<ComponentRepresentation> existingComponent = componentRepository.search(
-                realmName, providerType, componentToImport.getSubType(), componentToImport.getName()
-        );
+                realmName, providerType, componentToImport.getSubType(), componentToImport.getName());
 
         if (existingComponent.isPresent()) {
             updateComponentIfNeeded(realmName, providerType, componentToImport, existingComponent.get());
@@ -107,7 +108,8 @@ public class ComponentImportService {
         createComponent(realmName, providerType, component, null);
     }
 
-    private void createComponent(String realmName, String providerType, ComponentExportRepresentation component, String parentId) {
+    private void createComponent(
+            String realmName, String providerType, ComponentExportRepresentation component, String parentId) {
         ComponentRepresentation componentToCreate = CloneUtil.deepClone(component, ComponentRepresentation.class);
 
         if (componentToCreate.getProviderType() == null) {
@@ -136,29 +138,34 @@ public class ComponentImportService {
             String realmName,
             String providerType,
             ComponentExportRepresentation componentToImport,
-            ComponentRepresentation existingComponent
-    ) {
+            ComponentRepresentation existingComponent) {
         boolean hasSubComponents = !componentToImport.getSubComponents().isEmpty();
 
         ComponentRepresentation patchedComponent = CloneUtil.patch(existingComponent, componentToImport, "id");
         if (hasSubComponents || !isComponentEqual(realmName, existingComponent, patchedComponent)) {
             updateComponent(realmName, providerType, componentToImport, patchedComponent);
         } else {
-            logger.debug("No need to update component: {}/{}", existingComponent.getProviderType(), componentToImport.getName());
+            logger.debug(
+                    "No need to update component: {}/{}",
+                    existingComponent.getProviderType(),
+                    componentToImport.getName());
         }
     }
 
-    private boolean isComponentEqual(String realmName, ComponentRepresentation existingComponent, ComponentRepresentation patchedComponent) {
+    private boolean isComponentEqual(
+            String realmName, ComponentRepresentation existingComponent, ComponentRepresentation patchedComponent) {
         // compare component config
         MultivaluedHashMap<String, String> existingComponentConfig = existingComponent.getConfig();
         MultivaluedHashMap<String, String> patchedComponentConfig = patchedComponent.getConfig();
 
         // https://lists.jboss.org/pipermail/keycloak-user/2018-December/016706.html
-        boolean isUserStorageProvider = Objects.equals(patchedComponent.getProviderType(), "org.keycloak.storage.ldap.mappers.UserStorageProvider");
+        boolean isUserStorageProvider = Objects.equals(
+                patchedComponent.getProviderType(), "org.keycloak.storage.ldap.mappers.UserStorageProvider");
 
         boolean looksEquals = CloneUtil.deepEquals(existingComponent, patchedComponent, "config");
-        boolean componentConfigHaveSameKeys = patchedComponentConfig.keySet().containsAll(existingComponentConfig.keySet())
-                && existingComponentConfig.keySet().containsAll(patchedComponentConfig.keySet());
+        boolean componentConfigHaveSameKeys =
+                patchedComponentConfig.keySet().containsAll(existingComponentConfig.keySet())
+                        && existingComponentConfig.keySet().containsAll(patchedComponentConfig.keySet());
 
         if (isUserStorageProvider || !looksEquals || !componentConfigHaveSameKeys) {
             return false;
@@ -168,15 +175,14 @@ public class ComponentImportService {
             List<String> patchedComponentConfigValue = config.getValue();
             List<String> existingComponentConfigValue = existingComponentConfig.get(config.getKey());
 
-            if (
-                    !patchedComponentConfigValue.containsAll(existingComponentConfigValue)
-                            || !existingComponentConfigValue.containsAll(patchedComponentConfigValue)
-            ) {
+            if (!patchedComponentConfigValue.containsAll(existingComponentConfigValue)
+                    || !existingComponentConfigValue.containsAll(patchedComponentConfigValue)) {
                 return false;
             }
         }
 
-        List<ComponentRepresentation> existingSubComponents = componentRepository.getAll(realmName, patchedComponent.getId());
+        List<ComponentRepresentation> existingSubComponents =
+                componentRepository.getAll(realmName, patchedComponent.getId());
         return existingSubComponents.isEmpty();
     }
 
@@ -184,8 +190,7 @@ public class ComponentImportService {
             String realmName,
             String providerType,
             ComponentExportRepresentation componentToImport,
-            ComponentRepresentation patchedComponent
-    ) {
+            ComponentRepresentation patchedComponent) {
         logger.debug("Updating component: {}/{}", patchedComponent.getProviderType(), componentToImport.getName());
 
         if (patchedComponent.getProviderType() == null) {
@@ -206,34 +211,23 @@ public class ComponentImportService {
     }
 
     private void createOrUpdateSubComponents(
-            String realmName,
-            Map<String, List<ComponentExportRepresentation>> subComponents,
-            String parentId
-    ) {
+            String realmName, Map<String, List<ComponentExportRepresentation>> subComponents, String parentId) {
         for (Map.Entry<String, List<ComponentExportRepresentation>> entry : subComponents.entrySet()) {
             createOrUpdateSubComponents(realmName, entry.getKey(), entry.getValue(), parentId);
         }
     }
 
     private void createOrUpdateSubComponents(
-            String realmName,
-            String providerType,
-            List<ComponentExportRepresentation> subComponents, String parentId
-    ) {
+            String realmName, String providerType, List<ComponentExportRepresentation> subComponents, String parentId) {
         for (ComponentExportRepresentation subComponent : subComponents) {
             createOrUpdateSubComponent(realmName, parentId, providerType, subComponent);
         }
     }
 
     private void createOrUpdateSubComponent(
-            String realmName,
-            String parentId,
-            String providerType,
-            ComponentExportRepresentation subComponent
-    ) {
+            String realmName, String parentId, String providerType, ComponentExportRepresentation subComponent) {
         Optional<ComponentRepresentation> maybeComponent = componentRepository.search(
-                realmName, providerType, subComponent.getSubType(), subComponent.getName(), parentId
-        );
+                realmName, providerType, subComponent.getSubType(), subComponent.getName(), parentId);
 
         if (maybeComponent.isPresent()) {
             updateComponentIfNeeded(realmName, providerType, subComponent, maybeComponent.get());
@@ -245,19 +239,20 @@ public class ComponentImportService {
     private void deleteComponentsMissingInImport(
             String realmName,
             MultivaluedHashMap<String, ComponentExportRepresentation> componentsToImport,
-            ComponentRepresentation parentComponent
-    ) {
+            ComponentRepresentation parentComponent) {
         List<ComponentRepresentation> existingComponents = getAllComponentsFromState(realmName, parentComponent);
 
         for (ComponentRepresentation existingComponent : existingComponents) {
             if (checkIfComponentMissingImport(existingComponent, componentsToImport)) {
-                logger.debug("Delete component: {}/{}", existingComponent.getProviderType(), existingComponent.getName());
+                logger.debug(
+                        "Delete component: {}/{}", existingComponent.getProviderType(), existingComponent.getName());
                 componentRepository.delete(realmName, existingComponent);
             }
         }
     }
 
-    private List<ComponentRepresentation> getAllComponentsFromState(String realmName, ComponentRepresentation parentComponent) {
+    private List<ComponentRepresentation> getAllComponentsFromState(
+            String realmName, ComponentRepresentation parentComponent) {
         String parentId = parentComponent != null ? parentComponent.getId() : null;
 
         List<ComponentRepresentation> existingComponents = componentRepository.getAll(realmName, parentId);
@@ -273,8 +268,7 @@ public class ComponentImportService {
 
     private boolean checkIfComponentMissingImport(
             ComponentRepresentation existingComponent,
-            MultivaluedHashMap<String, ComponentExportRepresentation> componentsToImport
-    ) {
+            MultivaluedHashMap<String, ComponentExportRepresentation> componentsToImport) {
         String existingComponentProviderType = existingComponent.getProviderType();
         String existingComponentName = existingComponent.getName();
 
@@ -286,7 +280,8 @@ public class ComponentImportService {
                 continue;
             }
 
-            boolean isInImport = componentToImport.stream().anyMatch(component -> Objects.equals(existingComponentName, component.getName()));
+            boolean isInImport = componentToImport.stream()
+                    .anyMatch(component -> Objects.equals(existingComponentName, component.getName()));
 
             if (isInImport) {
                 return false;
@@ -301,19 +296,20 @@ public class ComponentImportService {
         if (!importConfigProperties.getBehaviors().isSyncUserFederation() || !isUserStorageExist(realmImport)) return;
 
         RealmResource resource = realmRepository.getResource(realmImport.getRealm());
-        resource.components()
-                .query()
-                .stream()
-                .filter(componentRepresentation -> componentRepresentation.getProviderType().equals("org.keycloak.storage.UserStorageProvider"))
-                .filter(componentRepresentation -> componentRepresentation.getConfig()
-                        .getOrDefault("importEnabled", Collections.singletonList("false"))
-                        .stream().allMatch(Boolean::valueOf)
-                )
+        resource.components().query().stream()
+                .filter(componentRepresentation ->
+                        componentRepresentation.getProviderType().equals("org.keycloak.storage.UserStorageProvider"))
+                .filter(componentRepresentation ->
+                        componentRepresentation
+                                .getConfig()
+                                .getOrDefault("importEnabled", Collections.singletonList("false"))
+                                .stream()
+                                .allMatch(Boolean::valueOf))
                 .forEach(componentRepresentation -> {
                     logger.debug(
                             "Syncing user from federation '{}' for realm '{}'...",
-                            componentRepresentation.getName(), realmImport.getRealm()
-                    );
+                            componentRepresentation.getName(),
+                            realmImport.getRealm());
                     resource.userStorage().syncUsers(componentRepresentation.getId(), "triggerFullSync");
                 });
     }

@@ -20,6 +20,13 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.javers.core.Javers;
 import org.keycloak.representations.idm.UserFederationMapperRepresentation;
 import org.keycloak.representations.idm.UserFederationProviderRepresentation;
@@ -28,14 +35,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -50,8 +49,9 @@ public class UserFederationNormalizationService {
         this.unOrderedJavers = unOrderedJavers;
     }
 
-    public List<UserFederationProviderRepresentation> normalizeProviders(List<UserFederationProviderRepresentation> exportedProviders,
-                                                                         List<UserFederationProviderRepresentation> baselineProviders) {
+    public List<UserFederationProviderRepresentation> normalizeProviders(
+            List<UserFederationProviderRepresentation> exportedProviders,
+            List<UserFederationProviderRepresentation> baselineProviders) {
         var exportedOrEmpty = getNonNull(exportedProviders);
         var baselineOrEmpty = getNonNull(baselineProviders);
 
@@ -66,8 +66,10 @@ public class UserFederationNormalizationService {
             var exportedProvider = exportedMap.remove(displayName);
 
             if (exportedProvider == null) {
-                logger.warn("Default realm UserFederationProvider '{}' was deleted in exported realm. "
-                        + "It may be reintroduced during import!", displayName);
+                logger.warn(
+                        "Default realm UserFederationProvider '{}' was deleted in exported realm. "
+                                + "It may be reintroduced during import!",
+                        displayName);
                 continue;
             }
 
@@ -86,23 +88,29 @@ public class UserFederationNormalizationService {
         return normalizedProviders.isEmpty() ? null : normalizedProviders;
     }
 
-    public List<UserFederationMapperRepresentation> normalizeMappers(List<UserFederationMapperRepresentation> exportedMappers,
-                                                                     List<UserFederationMapperRepresentation> baselineMappers) {
+    public List<UserFederationMapperRepresentation> normalizeMappers(
+            List<UserFederationMapperRepresentation> exportedMappers,
+            List<UserFederationMapperRepresentation> baselineMappers) {
         var exportedOrEmpty = getNonNull(exportedMappers);
         var baselineOrEmpty = getNonNull(baselineMappers);
 
         var exportedMap = exportedOrEmpty.stream()
-                .collect(Collectors.toMap(m -> new MapperKey(m.getName(), m.getFederationProviderDisplayName()), Function.identity()));
+                .collect(Collectors.toMap(
+                        m -> new MapperKey(m.getName(), m.getFederationProviderDisplayName()), Function.identity()));
         var baselineMap = baselineOrEmpty.stream()
-                .collect(Collectors.toMap(m -> new MapperKey(m.getName(), m.getFederationProviderDisplayName()), Function.identity()));
+                .collect(Collectors.toMap(
+                        m -> new MapperKey(m.getName(), m.getFederationProviderDisplayName()), Function.identity()));
 
         var normalizedMappers = new ArrayList<UserFederationMapperRepresentation>();
         for (var entry : baselineMap.entrySet()) {
             var key = entry.getKey();
             var exportedMapper = exportedMap.remove(key);
             if (exportedMapper == null) {
-                logger.warn("Default realm UserFederationMapper '{}' for federation '{}' was deleted in exported realm. "
-                        + "It may be reintroduced during import!", key.getName(), key.getFederationDisplayName());
+                logger.warn(
+                        "Default realm UserFederationMapper '{}' for federation '{}' was deleted in exported realm. "
+                                + "It may be reintroduced during import!",
+                        key.getName(),
+                        key.getFederationDisplayName());
             }
 
             var baselineMapper = entry.getValue();
@@ -142,7 +150,8 @@ public class UserFederationNormalizationService {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             UserFederationNormalizationService.MapperKey mapperKey = (UserFederationNormalizationService.MapperKey) o;
-            return Objects.equals(name, mapperKey.name) && Objects.equals(federationDisplayName, mapperKey.federationDisplayName);
+            return Objects.equals(name, mapperKey.name)
+                    && Objects.equals(federationDisplayName, mapperKey.federationDisplayName);
         }
 
         @Override
@@ -150,5 +159,4 @@ public class UserFederationNormalizationService {
             return Objects.hash(name, federationDisplayName);
         }
     }
-
 }

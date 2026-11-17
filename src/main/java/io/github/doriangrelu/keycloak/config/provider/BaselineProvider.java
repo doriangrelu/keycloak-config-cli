@@ -23,6 +23,9 @@ package io.github.doriangrelu.keycloak.config.provider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.doriangrelu.keycloak.config.exception.NormalizationException;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.slf4j.Logger;
@@ -30,10 +33,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -58,10 +57,12 @@ public class BaselineProvider {
              * Replace the placeholder with the realm name to import. This sets some internal values like role names,
              * baseUrls and redirectUrls so that they don't get picked up as "changes"
              */
-            var realmString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).replace(PLACEHOLDER, realmName);
+            var realmString =
+                    new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).replace(PLACEHOLDER, realmName);
             return objectMapper.readValue(realmString, RealmRepresentation.class);
         } catch (IOException ex) {
-            throw new NormalizationException(String.format("Failed to load baseline realm for version %s", version), ex);
+            throw new NormalizationException(
+                    String.format("Failed to load baseline realm for version %s", version), ex);
         }
     }
 
@@ -71,7 +72,8 @@ public class BaselineProvider {
             client.setClientId(clientId);
             return client;
         } catch (IOException ex) {
-            throw new NormalizationException(String.format("Failed to load baseline client for version %s", version), ex);
+            throw new NormalizationException(
+                    String.format("Failed to load baseline client for version %s", version), ex);
         }
     }
 
@@ -79,14 +81,21 @@ public class BaselineProvider {
         var inputStream = getClass().getResourceAsStream(String.format("/baseline/%s/realm/realm.json", version));
         if (inputStream == null) {
             if (fallbackVersion != null) {
-                logger.warn("Reference realm not found for version {}. Using fallback version {}!", version, fallbackVersion);
-                inputStream = getClass().getResourceAsStream(String.format("/baseline/%s/realm/realm.json", fallbackVersion));
+                logger.warn(
+                        "Reference realm not found for version {}. Using fallback version {}!",
+                        version,
+                        fallbackVersion);
+                inputStream =
+                        getClass().getResourceAsStream(String.format("/baseline/%s/realm/realm.json", fallbackVersion));
                 if (inputStream == null) {
-                    throw new NormalizationException(String.format("Reference realm for version %s does not exist, "
-                            + "and fallback version %s does not exist either. Aborting!", version, fallbackVersion));
+                    throw new NormalizationException(String.format(
+                            "Reference realm for version %s does not exist, "
+                                    + "and fallback version %s does not exist either. Aborting!",
+                            version, fallbackVersion));
                 }
             } else {
-                throw new NormalizationException(String.format("Reference realm for version %s does not exist. Aborting!", version));
+                throw new NormalizationException(
+                        String.format("Reference realm for version %s does not exist. Aborting!", version));
             }
         }
         return inputStream;
@@ -96,14 +105,21 @@ public class BaselineProvider {
         var inputStream = getClass().getResourceAsStream(String.format("/baseline/%s/client/client.json", version));
         if (inputStream == null) {
             if (fallbackVersion != null) {
-                logger.debug("Reference client not found for version {}. Using fallback version {}!", version, fallbackVersion);
-                inputStream = getClass().getResourceAsStream(String.format("/baseline/%s/client/client.json", fallbackVersion));
+                logger.debug(
+                        "Reference client not found for version {}. Using fallback version {}!",
+                        version,
+                        fallbackVersion);
+                inputStream = getClass()
+                        .getResourceAsStream(String.format("/baseline/%s/client/client.json", fallbackVersion));
                 if (inputStream == null) {
-                    throw new NormalizationException(String.format("Reference client for version %s does not exist, "
-                            + "and fallback version %s does not exist either. Aborting!", version, fallbackVersion));
+                    throw new NormalizationException(String.format(
+                            "Reference client for version %s does not exist, "
+                                    + "and fallback version %s does not exist either. Aborting!",
+                            version, fallbackVersion));
                 }
             } else {
-                throw new NormalizationException(String.format("Reference client for version %s does not exist. Aborting!", version));
+                throw new NormalizationException(
+                        String.format("Reference client for version %s does not exist. Aborting!", version));
             }
         }
         return inputStream;

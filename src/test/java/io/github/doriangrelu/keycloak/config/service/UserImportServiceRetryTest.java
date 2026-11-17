@@ -20,6 +20,11 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportBehaviorsProperties;
@@ -31,21 +36,15 @@ import io.github.doriangrelu.keycloak.config.repository.UserRepository;
 import io.github.doriangrelu.keycloak.config.util.JsonUtil;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.Response;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 
 class UserImportServiceRetryTest {
 
@@ -58,12 +57,18 @@ class UserImportServiceRetryTest {
     private final ImportBehaviorsProperties importBehaviorsProperties = mock(ImportBehaviorsProperties.class);
 
     private final UserImportService userImportService = new UserImportService(
-            realmRepository, userRepository, roleRepository, groupRepository, clientRepository, importConfigProperties
-    );
+            realmRepository, userRepository, roleRepository, groupRepository, clientRepository, importConfigProperties);
 
     @BeforeEach
     void setUp() {
-        reset(realmRepository, userRepository, roleRepository, groupRepository, clientRepository, importConfigProperties, importBehaviorsProperties);
+        reset(
+                realmRepository,
+                userRepository,
+                roleRepository,
+                groupRepository,
+                clientRepository,
+                importConfigProperties,
+                importBehaviorsProperties);
         when(importConfigProperties.getBehaviors()).thenReturn(importBehaviorsProperties);
         when(importBehaviorsProperties.isSkipAttributesForFederatedUser()).thenReturn(false);
     }
@@ -71,12 +76,14 @@ class UserImportServiceRetryTest {
     @Test
     void shouldRetryUpdateWithoutPasswordWhenPasswordHistoryViolationOccurs() throws IOException {
         // Given
-        UserRepresentation userToImport = loadUserFromJson("import-files/users/61_create_realm_with_password_history_policy.json");
+        UserRepresentation userToImport =
+                loadUserFromJson("import-files/users/61_create_realm_with_password_history_policy.json");
         String realm = "testPasswordHistory";
 
-        UserRepresentation existingUser = loadUserFromJson("import-files/users/61_create_realm_with_password_history_policy.json");
+        UserRepresentation existingUser =
+                loadUserFromJson("import-files/users/61_create_realm_with_password_history_policy.json");
         existingUser.setId("user1");
-        
+
         userToImport.setEmail("new@example.com");
 
         when(userRepository.search(realm, userToImport.getUsername())).thenReturn(Optional.of(existingUser));
@@ -92,16 +99,21 @@ class UserImportServiceRetryTest {
         when(passwordHistoryException.getMessage()).thenReturn("HTTP 400 Bad Request");
 
         doAnswer(invocation -> {
-            UserRepresentation userArg = invocation.getArgument(1);
-            assertNotNull(userArg.getCredentials(), "First attempt should have credentials");
-            assertFalse(userArg.getCredentials().isEmpty(), "First attempt should have credentials");
-            throw passwordHistoryException;
-        }).doAnswer(invocation -> {
-            UserRepresentation userArg = invocation.getArgument(1);
-            assertTrue(userArg.getCredentials() == null || userArg.getCredentials().isEmpty(), 
-                    "Second attempt should not have password credentials");
-            return null;
-        }).when(userRepository).updateUser(eq(realm), any(UserRepresentation.class));
+                    UserRepresentation userArg = invocation.getArgument(1);
+                    assertNotNull(userArg.getCredentials(), "First attempt should have credentials");
+                    assertFalse(userArg.getCredentials().isEmpty(), "First attempt should have credentials");
+                    throw passwordHistoryException;
+                })
+                .doAnswer(invocation -> {
+                    UserRepresentation userArg = invocation.getArgument(1);
+                    assertTrue(
+                            userArg.getCredentials() == null
+                                    || userArg.getCredentials().isEmpty(),
+                            "Second attempt should not have password credentials");
+                    return null;
+                })
+                .when(userRepository)
+                .updateUser(eq(realm), any(UserRepresentation.class));
 
         assertDoesNotThrow(() -> userImportService.doImport(createRealmImport(realm, userToImport)));
 
@@ -111,12 +123,14 @@ class UserImportServiceRetryTest {
     @Test
     void shouldUpdateFieldsWithoutChangingPassword() throws IOException {
         // Given
-        UserRepresentation userToImport = loadUserFromJson("import-files/users/61_create_realm_with_password_history_policy.json");
+        UserRepresentation userToImport =
+                loadUserFromJson("import-files/users/61_create_realm_with_password_history_policy.json");
         String realm = "testPasswordHistory";
-        
+
         userToImport.setLastName("UpdatedLastName");
 
-        UserRepresentation existingUser = loadUserFromJson("import-files/users/61_create_realm_with_password_history_policy.json");
+        UserRepresentation existingUser =
+                loadUserFromJson("import-files/users/61_create_realm_with_password_history_policy.json");
         existingUser.setId("user1");
 
         when(userRepository.search(realm, userToImport.getUsername())).thenReturn(Optional.of(existingUser));

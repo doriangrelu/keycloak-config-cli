@@ -20,19 +20,18 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.javers.core.Javers;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -46,8 +45,8 @@ public class ProtocolMapperNormalizationService {
         this.unOrderedJavers = unOrderedJavers;
     }
 
-    public List<ProtocolMapperRepresentation> normalizeProtocolMappers(List<ProtocolMapperRepresentation> exportedMappers,
-                                                                       List<ProtocolMapperRepresentation> baselineMappers) {
+    public List<ProtocolMapperRepresentation> normalizeProtocolMappers(
+            List<ProtocolMapperRepresentation> exportedMappers, List<ProtocolMapperRepresentation> baselineMappers) {
         var exportedOrEmpty = getNonNull(exportedMappers);
         var baselineOrEmpty = getNonNull(baselineMappers);
 
@@ -61,7 +60,9 @@ public class ProtocolMapperNormalizationService {
             var name = entry.getKey();
             var exportedMapper = exportedMap.remove(name);
             if (exportedMapper == null) {
-                logger.warn("Default realm protocolMapper '{}' was deleted in exported realm. It may be reintroduced during import!", name);
+                logger.warn(
+                        "Default realm protocolMapper '{}' was deleted in exported realm. It may be reintroduced during import!",
+                        name);
                 continue;
             }
 

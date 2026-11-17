@@ -20,27 +20,21 @@
 
 package io.github.doriangrelu.keycloak.config.test.util;
 
+import java.util.List;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.GroupRepresentation;
-
-import java.util.List;
 import org.springframework.util.CollectionUtils;
 
 public class SubGroupUtil {
 
-    private SubGroupUtil() {
-    }
+    private SubGroupUtil() {}
 
     public static List<GroupRepresentation> getSubGroups(
-            GroupRepresentation groupRepresentation,
-            RealmResource realmResource
-    ) {
+            GroupRepresentation groupRepresentation, RealmResource realmResource) {
         if (!CollectionUtils.isEmpty(groupRepresentation.getSubGroups())) {
             return groupRepresentation.getSubGroups();
         }
 
-        return realmResource.groups()
-                .group(groupRepresentation.getId())
-                .getSubGroups(0, Integer.MAX_VALUE, false);
+        return realmResource.groups().group(groupRepresentation.getId()).getSubGroups(0, Integer.MAX_VALUE, false);
     }
 }

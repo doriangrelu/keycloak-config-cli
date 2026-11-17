@@ -20,6 +20,12 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.javers.core.Javers;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentExportRepresentation;
@@ -27,13 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -47,9 +46,9 @@ public class ComponentNormalizationService {
         this.unOrderedJavers = unOrderedJavers;
     }
 
-    public MultivaluedHashMap<String, ComponentExportRepresentation>
-            normalizeComponents(MultivaluedHashMap<String, ComponentExportRepresentation> exportedComponents,
-                                MultivaluedHashMap<String, ComponentExportRepresentation> baselineComponents) {
+    public MultivaluedHashMap<String, ComponentExportRepresentation> normalizeComponents(
+            MultivaluedHashMap<String, ComponentExportRepresentation> exportedComponents,
+            MultivaluedHashMap<String, ComponentExportRepresentation> baselineComponents) {
         var exportedOrEmpty = getNonNull(exportedComponents);
         var baselineOrEmpty = getNonNull(baselineComponents);
 
@@ -60,7 +59,9 @@ public class ComponentNormalizationService {
             var exportedList = exportedOrEmpty.remove(componentClass);
 
             if (exportedList == null) {
-                logger.warn("Default realm component '{}' was deleted in exported realm. It may be reintroduced during import!", componentClass);
+                logger.warn(
+                        "Default realm component '{}' was deleted in exported realm. It may be reintroduced during import!",
+                        componentClass);
                 continue;
             }
             var baselineList = entry.getValue();
@@ -68,7 +69,7 @@ public class ComponentNormalizationService {
             normalizedMap.put(componentClass, normalizedList);
         }
         normalizedMap.putAll(exportedOrEmpty);
-        //var toRemove = new HashSet<String>();
+        // var toRemove = new HashSet<String>();
         for (var entry : normalizedMap.entrySet()) {
             var componentList = entry.getValue();
             for (var component : componentList) {
@@ -78,9 +79,10 @@ public class ComponentNormalizationService {
         return normalizedMap;
     }
 
-    public List<ComponentExportRepresentation> normalizeList(List<ComponentExportRepresentation> exportedComponents,
-                                                             List<ComponentExportRepresentation> baselineComponents,
-                                                             String componentClass) {
+    public List<ComponentExportRepresentation> normalizeList(
+            List<ComponentExportRepresentation> exportedComponents,
+            List<ComponentExportRepresentation> baselineComponents,
+            String componentClass) {
         var exportedOrEmpty = getNonNull(exportedComponents);
         var baselineOrEmpty = getNonNull(baselineComponents);
 
@@ -94,7 +96,9 @@ public class ComponentNormalizationService {
             var name = entry.getKey();
             var exportedComponent = exportedMap.remove(name);
             if (exportedComponent == null) {
-                logger.warn("Default realm component '{}' was deleted in exported realm. It may be reintroduced during import!", name);
+                logger.warn(
+                        "Default realm component '{}' was deleted in exported realm. It may be reintroduced during import!",
+                        name);
                 continue;
             }
 

@@ -20,23 +20,22 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.repository.IdentityProviderMapperRepository;
-import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.*;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
+
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.repository.IdentityProviderMapperRepository;
+import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
+import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @SuppressWarnings({"java:S5961", "java:S5976"})
 class ImportIdentityProvidersIT extends AbstractImportIT {
@@ -53,7 +52,9 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     }
 
     private List<IdentityProviderRepresentation> getIdentityProviders(RealmRepresentation realm) {
-        return VersionUtil.lt(KEYCLOAK_VERSION, "26") ? realm.getIdentityProviders() : identityProviderRepository.getAll(realm.getRealm());
+        return VersionUtil.lt(KEYCLOAK_VERSION, "26")
+                ? realm.getIdentityProviders()
+                : identityProviderRepository.getAll(realm.getRealm());
     }
 
     @Test
@@ -61,7 +62,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldCreateIdentityProvider() throws IOException {
         doImport("00_create_realm_with_identity-providers.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -85,7 +87,10 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         assertThat(config.get("validateSignature"), is("false"));
         assertThat(config.get("samlXmlKeyNameTranformer"), is("KEY_ID"));
-        assertThat(config.get("signingCertificate"), is("MIIDETCCAfmgAwIBAgIUZRpDhkNKl5eWtJqk0Bu1BgTTargwDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwHhcNMTgwODI0MjExNDEwWhcNMzgw\nODI0MjExNDEwWjAWMRQwEgYDVQQDDAtzYW1sdGVzdC5pZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJrh9/PcDsiv3UeL8Iv9rf4WfLPxuOm9W6aCntEA\n8l6c1LQ1Zyrz+Xa/40ZgP29ENf3oKKbPCzDcc6zooHMji2fBmgXp6Li3fQUzu7yd\n+nIC2teejijVtrNLjn1WUTwmqjLtuzrKC/ePoZyIRjpoUxyEMJopAd4dJmAcCq/K\nk2eYX9GYRlqvIjLFoGNgy2R4dWwAKwljyh6pdnPUgyO/WjRDrqUBRFrLQJorR2kD\nc4seZUbmpZZfp4MjmWMDgyGM1ZnR0XvNLtYeWAyt0KkSvFoOMjZUeVK/4xR74F8e\n8ToPqLmZEg9ZUx+4z2KjVK00LpdRkH9Uxhh03RQ0FabHW6UCAwEAAaNXMFUwHQYD\nVR0OBBYEFJDbe6uSmYQScxpVJhmt7PsCG4IeMDQGA1UdEQQtMCuCC3NhbWx0ZXN0\nLmlkhhxodHRwczovL3NhbWx0ZXN0LmlkL3NhbWwvaWRwMA0GCSqGSIb3DQEBCwUA\nA4IBAQBNcF3zkw/g51q26uxgyuy4gQwnSr01Mhvix3Dj/Gak4tc4XwvxUdLQq+jC\ncxr2Pie96klWhY/v/JiHDU2FJo9/VWxmc/YOk83whvNd7mWaNMUsX3xGv6AlZtCO\nL3JhCpHjiN+kBcMgS5jrtGgV1Lz3/1zpGxykdvS0B4sPnFOcaCwHe2B9SOCWbDAN\nJXpTjz1DmJO4ImyWPJpN1xsYKtm67Pefxmn0ax0uE2uuzq25h0xbTkqIQgJzyoE/\nDPkBFK1vDkMfAW11dQ0BXatEnW7Gtkc0lh2/PIbHWj4AzxYMyBf5Gy6HSVOftwjC\nvoQR2qr2xJBixsg+MIORKtmKHLfU,MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0\nThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE\njj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl\nbN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF\n/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n\nspXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G\nA1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn\n7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT\nTNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl\nD1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU\nZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu\n3kXPjhSfj1AJGR1l9JGvJrHki1iHTA=="));
+        assertThat(
+                config.get("signingCertificate"),
+                is(
+                        "MIIDETCCAfmgAwIBAgIUZRpDhkNKl5eWtJqk0Bu1BgTTargwDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwHhcNMTgwODI0MjExNDEwWhcNMzgw\nODI0MjExNDEwWjAWMRQwEgYDVQQDDAtzYW1sdGVzdC5pZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJrh9/PcDsiv3UeL8Iv9rf4WfLPxuOm9W6aCntEA\n8l6c1LQ1Zyrz+Xa/40ZgP29ENf3oKKbPCzDcc6zooHMji2fBmgXp6Li3fQUzu7yd\n+nIC2teejijVtrNLjn1WUTwmqjLtuzrKC/ePoZyIRjpoUxyEMJopAd4dJmAcCq/K\nk2eYX9GYRlqvIjLFoGNgy2R4dWwAKwljyh6pdnPUgyO/WjRDrqUBRFrLQJorR2kD\nc4seZUbmpZZfp4MjmWMDgyGM1ZnR0XvNLtYeWAyt0KkSvFoOMjZUeVK/4xR74F8e\n8ToPqLmZEg9ZUx+4z2KjVK00LpdRkH9Uxhh03RQ0FabHW6UCAwEAAaNXMFUwHQYD\nVR0OBBYEFJDbe6uSmYQScxpVJhmt7PsCG4IeMDQGA1UdEQQtMCuCC3NhbWx0ZXN0\nLmlkhhxodHRwczovL3NhbWx0ZXN0LmlkL3NhbWwvaWRwMA0GCSqGSIb3DQEBCwUA\nA4IBAQBNcF3zkw/g51q26uxgyuy4gQwnSr01Mhvix3Dj/Gak4tc4XwvxUdLQq+jC\ncxr2Pie96klWhY/v/JiHDU2FJo9/VWxmc/YOk83whvNd7mWaNMUsX3xGv6AlZtCO\nL3JhCpHjiN+kBcMgS5jrtGgV1Lz3/1zpGxykdvS0B4sPnFOcaCwHe2B9SOCWbDAN\nJXpTjz1DmJO4ImyWPJpN1xsYKtm67Pefxmn0ax0uE2uuzq25h0xbTkqIQgJzyoE/\nDPkBFK1vDkMfAW11dQ0BXatEnW7Gtkc0lh2/PIbHWj4AzxYMyBf5Gy6HSVOftwjC\nvoQR2qr2xJBixsg+MIORKtmKHLfU,MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0\nThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE\njj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl\nbN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF\n/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n\nspXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G\nA1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn\n7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT\nTNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl\nD1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU\nZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu\n3kXPjhSfj1AJGR1l9JGvJrHki1iHTA=="));
         assertThat(config.get("postBindingLogout"), is("true"));
         assertThat(config.get("nameIDPolicyFormat"), is("urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"));
         assertThat(config.get("postBindingResponse"), is("true"));
@@ -96,7 +101,10 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         assertThat(config.get("singleSignOnServiceUrl"), is("https://samltest.id/idp/profile/SAML2/POST/SSO"));
         assertThat(config.get("wantAuthnRequestsSigned"), is("false"));
         assertThat(config.get("addExtensionsElementWithKeyInfo"), is("false"));
-        assertThat(config.get("encryptionPublicKey"), is("MIIDEjCCAfqgAwIBAgIVAPVbodo8Su7/BaHXUHykx0Pi5CFaMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCQb+1a7uDdTTBBFfwOUun3IQ9nEuKM98SmJDWa\nMwM877elswKUTIBVh5gB2RIXAPZt7J/KGqypmgw9UNXFnoslpeZbA9fcAqqu28Z4\nsSb2YSajV1ZgEYPUKvXwQEmLWN6aDhkn8HnEZNrmeXihTFdyr7wjsLj0JpQ+VUlc\n4/J+hNuU7rGYZ1rKY8AA34qDVd4DiJ+DXW2PESfOu8lJSOteEaNtbmnvH8KlwkDs\n1NvPTsI0W/m4SK0UdXo6LLaV8saIpJfnkVC/FwpBolBrRC/Em64UlBsRZm2T89ca\nuzDee2yPUvbBd5kLErw+sC7i4xXa2rGmsQLYcBPhsRwnmBmlAgMBAAGjVzBVMB0G\nA1UdDgQWBBRZ3exEu6rCwRe5C7f5QrPcAKRPUjA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEABZDFRNtcbvIRmblnZItoWCFhVUlq81ceSQddLYs8DqK340//hWNAbYdj\nWcP85HhIZnrw6NGCO4bUipxZXhiqTA/A9d1BUll0vYB8qckYDEdPDduYCOYemKkD\ndmnHMQWs9Y6zWiYuNKEJ9mf3+1N8knN/PK0TYVjVjXAf2CnOETDbLtlj6Nqb8La3\nsQkYmU+aUdopbjd5JFFwbZRaj6KiHXHtnIRgu8sUXNPrgipUgZUOVhP0C0N5OfE4\nJW8ZBrKgQC/6vJ2rSa9TlzI6JAa5Ww7gMXMP9M+cJUNQklcq+SBnTK8G+uBHgPKR\nzBDsMIEzRtQZm4GIoHJae4zmnCekkQ=="));
+        assertThat(
+                config.get("encryptionPublicKey"),
+                is(
+                        "MIIDEjCCAfqgAwIBAgIVAPVbodo8Su7/BaHXUHykx0Pi5CFaMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCQb+1a7uDdTTBBFfwOUun3IQ9nEuKM98SmJDWa\nMwM877elswKUTIBVh5gB2RIXAPZt7J/KGqypmgw9UNXFnoslpeZbA9fcAqqu28Z4\nsSb2YSajV1ZgEYPUKvXwQEmLWN6aDhkn8HnEZNrmeXihTFdyr7wjsLj0JpQ+VUlc\n4/J+hNuU7rGYZ1rKY8AA34qDVd4DiJ+DXW2PESfOu8lJSOteEaNtbmnvH8KlwkDs\n1NvPTsI0W/m4SK0UdXo6LLaV8saIpJfnkVC/FwpBolBrRC/Em64UlBsRZm2T89ca\nuzDee2yPUvbBd5kLErw+sC7i4xXa2rGmsQLYcBPhsRwnmBmlAgMBAAGjVzBVMB0G\nA1UdDgQWBBRZ3exEu6rCwRe5C7f5QrPcAKRPUjA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEABZDFRNtcbvIRmblnZItoWCFhVUlq81ceSQddLYs8DqK340//hWNAbYdj\nWcP85HhIZnrw6NGCO4bUipxZXhiqTA/A9d1BUll0vYB8qckYDEdPDduYCOYemKkD\ndmnHMQWs9Y6zWiYuNKEJ9mf3+1N8knN/PK0TYVjVjXAf2CnOETDbLtlj6Nqb8La3\nsQkYmU+aUdopbjd5JFFwbZRaj6KiHXHtnIRgu8sUXNPrgipUgZUOVhP0C0N5OfE4\nJW8ZBrKgQC/6vJ2rSa9TlzI6JAa5Ww7gMXMP9M+cJUNQklcq+SBnTK8G+uBHgPKR\nzBDsMIEzRtQZm4GIoHJae4zmnCekkQ=="));
         assertThat(config.get("principalType"), is("SUBJECT"));
     }
 
@@ -105,7 +113,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldUpdateIdentityProvider() throws IOException {
         doImport("01_update_identity-provider.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -129,7 +138,10 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         assertThat(config.get("validateSignature"), is("true"));
         assertThat(config.get("samlXmlKeyNameTranformer"), is("KEY_ID"));
-        assertThat(config.get("signingCertificate"), is("MIIDETCCAfmgAwIBAgIUZRpDhkNKl5eWtJqk0Bu1BgTTargwDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwHhcNMTgwODI0MjExNDEwWhcNMzgw\nODI0MjExNDEwWjAWMRQwEgYDVQQDDAtzYW1sdGVzdC5pZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJrh9/PcDsiv3UeL8Iv9rf4WfLPxuOm9W6aCntEA\n8l6c1LQ1Zyrz+Xa/40ZgP29ENf3oKKbPCzDcc6zooHMji2fBmgXp6Li3fQUzu7yd\n+nIC2teejijVtrNLjn1WUTwmqjLtuzrKC/ePoZyIRjpoUxyEMJopAd4dJmAcCq/K\nk2eYX9GYRlqvIjLFoGNgy2R4dWwAKwljyh6pdnPUgyO/WjRDrqUBRFrLQJorR2kD\nc4seZUbmpZZfp4MjmWMDgyGM1ZnR0XvNLtYeWAyt0KkSvFoOMjZUeVK/4xR74F8e\n8ToPqLmZEg9ZUx+4z2KjVK00LpdRkH9Uxhh03RQ0FabHW6UCAwEAAaNXMFUwHQYD\nVR0OBBYEFJDbe6uSmYQScxpVJhmt7PsCG4IeMDQGA1UdEQQtMCuCC3NhbWx0ZXN0\nLmlkhhxodHRwczovL3NhbWx0ZXN0LmlkL3NhbWwvaWRwMA0GCSqGSIb3DQEBCwUA\nA4IBAQBNcF3zkw/g51q26uxgyuy4gQwnSr01Mhvix3Dj/Gak4tc4XwvxUdLQq+jC\ncxr2Pie96klWhY/v/JiHDU2FJo9/VWxmc/YOk83whvNd7mWaNMUsX3xGv6AlZtCO\nL3JhCpHjiN+kBcMgS5jrtGgV1Lz3/1zpGxykdvS0B4sPnFOcaCwHe2B9SOCWbDAN\nJXpTjz1DmJO4ImyWPJpN1xsYKtm67Pefxmn0ax0uE2uuzq25h0xbTkqIQgJzyoE/\nDPkBFK1vDkMfAW11dQ0BXatEnW7Gtkc0lh2/PIbHWj4AzxYMyBf5Gy6HSVOftwjC\nvoQR2qr2xJBixsg+MIORKtmKHLfU,MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0\nThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE\njj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl\nbN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF\n/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n\nspXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G\nA1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn\n7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT\nTNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl\nD1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU\nZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu\n3kXPjhSfj1AJGR1l9JGvJrHki1iHTA=="));
+        assertThat(
+                config.get("signingCertificate"),
+                is(
+                        "MIIDETCCAfmgAwIBAgIUZRpDhkNKl5eWtJqk0Bu1BgTTargwDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwHhcNMTgwODI0MjExNDEwWhcNMzgw\nODI0MjExNDEwWjAWMRQwEgYDVQQDDAtzYW1sdGVzdC5pZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJrh9/PcDsiv3UeL8Iv9rf4WfLPxuOm9W6aCntEA\n8l6c1LQ1Zyrz+Xa/40ZgP29ENf3oKKbPCzDcc6zooHMji2fBmgXp6Li3fQUzu7yd\n+nIC2teejijVtrNLjn1WUTwmqjLtuzrKC/ePoZyIRjpoUxyEMJopAd4dJmAcCq/K\nk2eYX9GYRlqvIjLFoGNgy2R4dWwAKwljyh6pdnPUgyO/WjRDrqUBRFrLQJorR2kD\nc4seZUbmpZZfp4MjmWMDgyGM1ZnR0XvNLtYeWAyt0KkSvFoOMjZUeVK/4xR74F8e\n8ToPqLmZEg9ZUx+4z2KjVK00LpdRkH9Uxhh03RQ0FabHW6UCAwEAAaNXMFUwHQYD\nVR0OBBYEFJDbe6uSmYQScxpVJhmt7PsCG4IeMDQGA1UdEQQtMCuCC3NhbWx0ZXN0\nLmlkhhxodHRwczovL3NhbWx0ZXN0LmlkL3NhbWwvaWRwMA0GCSqGSIb3DQEBCwUA\nA4IBAQBNcF3zkw/g51q26uxgyuy4gQwnSr01Mhvix3Dj/Gak4tc4XwvxUdLQq+jC\ncxr2Pie96klWhY/v/JiHDU2FJo9/VWxmc/YOk83whvNd7mWaNMUsX3xGv6AlZtCO\nL3JhCpHjiN+kBcMgS5jrtGgV1Lz3/1zpGxykdvS0B4sPnFOcaCwHe2B9SOCWbDAN\nJXpTjz1DmJO4ImyWPJpN1xsYKtm67Pefxmn0ax0uE2uuzq25h0xbTkqIQgJzyoE/\nDPkBFK1vDkMfAW11dQ0BXatEnW7Gtkc0lh2/PIbHWj4AzxYMyBf5Gy6HSVOftwjC\nvoQR2qr2xJBixsg+MIORKtmKHLfU,MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0\nThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE\njj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl\nbN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF\n/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n\nspXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G\nA1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn\n7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT\nTNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl\nD1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU\nZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu\n3kXPjhSfj1AJGR1l9JGvJrHki1iHTA=="));
         assertThat(config.get("postBindingLogout"), is("true"));
         assertThat(config.get("nameIDPolicyFormat"), is("urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"));
         assertThat(config.get("postBindingResponse"), is("true"));
@@ -140,7 +152,10 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         assertThat(config.get("singleSignOnServiceUrl"), is("https://samltest.id/idp/profile/SAML2/POST/SSO"));
         assertThat(config.get("wantAuthnRequestsSigned"), is("false"));
         assertThat(config.get("addExtensionsElementWithKeyInfo"), is("false"));
-        assertThat(config.get("encryptionPublicKey"), is("MIIDEjCCAfqgAwIBAgIVAPVbodo8Su7/BaHXUHykx0Pi5CFaMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCQb+1a7uDdTTBBFfwOUun3IQ9nEuKM98SmJDWa\nMwM877elswKUTIBVh5gB2RIXAPZt7J/KGqypmgw9UNXFnoslpeZbA9fcAqqu28Z4\nsSb2YSajV1ZgEYPUKvXwQEmLWN6aDhkn8HnEZNrmeXihTFdyr7wjsLj0JpQ+VUlc\n4/J+hNuU7rGYZ1rKY8AA34qDVd4DiJ+DXW2PESfOu8lJSOteEaNtbmnvH8KlwkDs\n1NvPTsI0W/m4SK0UdXo6LLaV8saIpJfnkVC/FwpBolBrRC/Em64UlBsRZm2T89ca\nuzDee2yPUvbBd5kLErw+sC7i4xXa2rGmsQLYcBPhsRwnmBmlAgMBAAGjVzBVMB0G\nA1UdDgQWBBRZ3exEu6rCwRe5C7f5QrPcAKRPUjA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEABZDFRNtcbvIRmblnZItoWCFhVUlq81ceSQddLYs8DqK340//hWNAbYdj\nWcP85HhIZnrw6NGCO4bUipxZXhiqTA/A9d1BUll0vYB8qckYDEdPDduYCOYemKkD\ndmnHMQWs9Y6zWiYuNKEJ9mf3+1N8knN/PK0TYVjVjXAf2CnOETDbLtlj6Nqb8La3\nsQkYmU+aUdopbjd5JFFwbZRaj6KiHXHtnIRgu8sUXNPrgipUgZUOVhP0C0N5OfE4\nJW8ZBrKgQC/6vJ2rSa9TlzI6JAa5Ww7gMXMP9M+cJUNQklcq+SBnTK8G+uBHgPKR\nzBDsMIEzRtQZm4GIoHJae4zmnCekkQ=="));
+        assertThat(
+                config.get("encryptionPublicKey"),
+                is(
+                        "MIIDEjCCAfqgAwIBAgIVAPVbodo8Su7/BaHXUHykx0Pi5CFaMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCQb+1a7uDdTTBBFfwOUun3IQ9nEuKM98SmJDWa\nMwM877elswKUTIBVh5gB2RIXAPZt7J/KGqypmgw9UNXFnoslpeZbA9fcAqqu28Z4\nsSb2YSajV1ZgEYPUKvXwQEmLWN6aDhkn8HnEZNrmeXihTFdyr7wjsLj0JpQ+VUlc\n4/J+hNuU7rGYZ1rKY8AA34qDVd4DiJ+DXW2PESfOu8lJSOteEaNtbmnvH8KlwkDs\n1NvPTsI0W/m4SK0UdXo6LLaV8saIpJfnkVC/FwpBolBrRC/Em64UlBsRZm2T89ca\nuzDee2yPUvbBd5kLErw+sC7i4xXa2rGmsQLYcBPhsRwnmBmlAgMBAAGjVzBVMB0G\nA1UdDgQWBBRZ3exEu6rCwRe5C7f5QrPcAKRPUjA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEABZDFRNtcbvIRmblnZItoWCFhVUlq81ceSQddLYs8DqK340//hWNAbYdj\nWcP85HhIZnrw6NGCO4bUipxZXhiqTA/A9d1BUll0vYB8qckYDEdPDduYCOYemKkD\ndmnHMQWs9Y6zWiYuNKEJ9mf3+1N8knN/PK0TYVjVjXAf2CnOETDbLtlj6Nqb8La3\nsQkYmU+aUdopbjd5JFFwbZRaj6KiHXHtnIRgu8sUXNPrgipUgZUOVhP0C0N5OfE4\nJW8ZBrKgQC/6vJ2rSa9TlzI6JAa5Ww7gMXMP9M+cJUNQklcq+SBnTK8G+uBHgPKR\nzBDsMIEzRtQZm4GIoHJae4zmnCekkQ=="));
         assertThat(config.get("principalType"), is("SUBJECT"));
     }
 
@@ -149,7 +164,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldCreateOtherIdentityProvider() throws IOException {
         doImport("02_create_other_identity-provider.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -177,18 +193,30 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         assertThat(updatedIdentityProviderConfig.get("validateSignature"), is("true"));
         assertThat(updatedIdentityProviderConfig.get("samlXmlKeyNameTranformer"), is("KEY_ID"));
-        assertThat(updatedIdentityProviderConfig.get("signingCertificate"), is("MIIDETCCAfmgAwIBAgIUZRpDhkNKl5eWtJqk0Bu1BgTTargwDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwHhcNMTgwODI0MjExNDEwWhcNMzgw\nODI0MjExNDEwWjAWMRQwEgYDVQQDDAtzYW1sdGVzdC5pZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJrh9/PcDsiv3UeL8Iv9rf4WfLPxuOm9W6aCntEA\n8l6c1LQ1Zyrz+Xa/40ZgP29ENf3oKKbPCzDcc6zooHMji2fBmgXp6Li3fQUzu7yd\n+nIC2teejijVtrNLjn1WUTwmqjLtuzrKC/ePoZyIRjpoUxyEMJopAd4dJmAcCq/K\nk2eYX9GYRlqvIjLFoGNgy2R4dWwAKwljyh6pdnPUgyO/WjRDrqUBRFrLQJorR2kD\nc4seZUbmpZZfp4MjmWMDgyGM1ZnR0XvNLtYeWAyt0KkSvFoOMjZUeVK/4xR74F8e\n8ToPqLmZEg9ZUx+4z2KjVK00LpdRkH9Uxhh03RQ0FabHW6UCAwEAAaNXMFUwHQYD\nVR0OBBYEFJDbe6uSmYQScxpVJhmt7PsCG4IeMDQGA1UdEQQtMCuCC3NhbWx0ZXN0\nLmlkhhxodHRwczovL3NhbWx0ZXN0LmlkL3NhbWwvaWRwMA0GCSqGSIb3DQEBCwUA\nA4IBAQBNcF3zkw/g51q26uxgyuy4gQwnSr01Mhvix3Dj/Gak4tc4XwvxUdLQq+jC\ncxr2Pie96klWhY/v/JiHDU2FJo9/VWxmc/YOk83whvNd7mWaNMUsX3xGv6AlZtCO\nL3JhCpHjiN+kBcMgS5jrtGgV1Lz3/1zpGxykdvS0B4sPnFOcaCwHe2B9SOCWbDAN\nJXpTjz1DmJO4ImyWPJpN1xsYKtm67Pefxmn0ax0uE2uuzq25h0xbTkqIQgJzyoE/\nDPkBFK1vDkMfAW11dQ0BXatEnW7Gtkc0lh2/PIbHWj4AzxYMyBf5Gy6HSVOftwjC\nvoQR2qr2xJBixsg+MIORKtmKHLfU,MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0\nThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE\njj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl\nbN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF\n/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n\nspXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G\nA1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn\n7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT\nTNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl\nD1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU\nZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu\n3kXPjhSfj1AJGR1l9JGvJrHki1iHTA=="));
+        assertThat(
+                updatedIdentityProviderConfig.get("signingCertificate"),
+                is(
+                        "MIIDETCCAfmgAwIBAgIUZRpDhkNKl5eWtJqk0Bu1BgTTargwDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwHhcNMTgwODI0MjExNDEwWhcNMzgw\nODI0MjExNDEwWjAWMRQwEgYDVQQDDAtzYW1sdGVzdC5pZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJrh9/PcDsiv3UeL8Iv9rf4WfLPxuOm9W6aCntEA\n8l6c1LQ1Zyrz+Xa/40ZgP29ENf3oKKbPCzDcc6zooHMji2fBmgXp6Li3fQUzu7yd\n+nIC2teejijVtrNLjn1WUTwmqjLtuzrKC/ePoZyIRjpoUxyEMJopAd4dJmAcCq/K\nk2eYX9GYRlqvIjLFoGNgy2R4dWwAKwljyh6pdnPUgyO/WjRDrqUBRFrLQJorR2kD\nc4seZUbmpZZfp4MjmWMDgyGM1ZnR0XvNLtYeWAyt0KkSvFoOMjZUeVK/4xR74F8e\n8ToPqLmZEg9ZUx+4z2KjVK00LpdRkH9Uxhh03RQ0FabHW6UCAwEAAaNXMFUwHQYD\nVR0OBBYEFJDbe6uSmYQScxpVJhmt7PsCG4IeMDQGA1UdEQQtMCuCC3NhbWx0ZXN0\nLmlkhhxodHRwczovL3NhbWx0ZXN0LmlkL3NhbWwvaWRwMA0GCSqGSIb3DQEBCwUA\nA4IBAQBNcF3zkw/g51q26uxgyuy4gQwnSr01Mhvix3Dj/Gak4tc4XwvxUdLQq+jC\ncxr2Pie96klWhY/v/JiHDU2FJo9/VWxmc/YOk83whvNd7mWaNMUsX3xGv6AlZtCO\nL3JhCpHjiN+kBcMgS5jrtGgV1Lz3/1zpGxykdvS0B4sPnFOcaCwHe2B9SOCWbDAN\nJXpTjz1DmJO4ImyWPJpN1xsYKtm67Pefxmn0ax0uE2uuzq25h0xbTkqIQgJzyoE/\nDPkBFK1vDkMfAW11dQ0BXatEnW7Gtkc0lh2/PIbHWj4AzxYMyBf5Gy6HSVOftwjC\nvoQR2qr2xJBixsg+MIORKtmKHLfU,MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0\nThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE\njj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl\nbN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF\n/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n\nspXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G\nA1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn\n7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT\nTNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl\nD1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU\nZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu\n3kXPjhSfj1AJGR1l9JGvJrHki1iHTA=="));
         assertThat(updatedIdentityProviderConfig.get("postBindingLogout"), is("true"));
-        assertThat(updatedIdentityProviderConfig.get("nameIDPolicyFormat"), is("urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"));
+        assertThat(
+                updatedIdentityProviderConfig.get("nameIDPolicyFormat"),
+                is("urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"));
         assertThat(updatedIdentityProviderConfig.get("postBindingResponse"), is("true"));
-        assertThat(updatedIdentityProviderConfig.get("singleLogoutServiceUrl"), is("https://samltest.id/idp/profile/SAML2/POST/SLO"));
+        assertThat(
+                updatedIdentityProviderConfig.get("singleLogoutServiceUrl"),
+                is("https://samltest.id/idp/profile/SAML2/POST/SLO"));
         assertThat(updatedIdentityProviderConfig.get("signatureAlgorithm"), is("RSA_SHA256"));
         assertThat(updatedIdentityProviderConfig.get("useJwksUrl"), is("true"));
         assertThat(updatedIdentityProviderConfig.get("postBindingAuthnRequest"), is("true"));
-        assertThat(updatedIdentityProviderConfig.get("singleSignOnServiceUrl"), is("https://samltest.id/idp/profile/SAML2/POST/SSO"));
+        assertThat(
+                updatedIdentityProviderConfig.get("singleSignOnServiceUrl"),
+                is("https://samltest.id/idp/profile/SAML2/POST/SSO"));
         assertThat(updatedIdentityProviderConfig.get("wantAuthnRequestsSigned"), is("false"));
         assertThat(updatedIdentityProviderConfig.get("addExtensionsElementWithKeyInfo"), is("false"));
-        assertThat(updatedIdentityProviderConfig.get("encryptionPublicKey"), is("MIIDEjCCAfqgAwIBAgIVAPVbodo8Su7/BaHXUHykx0Pi5CFaMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCQb+1a7uDdTTBBFfwOUun3IQ9nEuKM98SmJDWa\nMwM877elswKUTIBVh5gB2RIXAPZt7J/KGqypmgw9UNXFnoslpeZbA9fcAqqu28Z4\nsSb2YSajV1ZgEYPUKvXwQEmLWN6aDhkn8HnEZNrmeXihTFdyr7wjsLj0JpQ+VUlc\n4/J+hNuU7rGYZ1rKY8AA34qDVd4DiJ+DXW2PESfOu8lJSOteEaNtbmnvH8KlwkDs\n1NvPTsI0W/m4SK0UdXo6LLaV8saIpJfnkVC/FwpBolBrRC/Em64UlBsRZm2T89ca\nuzDee2yPUvbBd5kLErw+sC7i4xXa2rGmsQLYcBPhsRwnmBmlAgMBAAGjVzBVMB0G\nA1UdDgQWBBRZ3exEu6rCwRe5C7f5QrPcAKRPUjA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEABZDFRNtcbvIRmblnZItoWCFhVUlq81ceSQddLYs8DqK340//hWNAbYdj\nWcP85HhIZnrw6NGCO4bUipxZXhiqTA/A9d1BUll0vYB8qckYDEdPDduYCOYemKkD\ndmnHMQWs9Y6zWiYuNKEJ9mf3+1N8knN/PK0TYVjVjXAf2CnOETDbLtlj6Nqb8La3\nsQkYmU+aUdopbjd5JFFwbZRaj6KiHXHtnIRgu8sUXNPrgipUgZUOVhP0C0N5OfE4\nJW8ZBrKgQC/6vJ2rSa9TlzI6JAa5Ww7gMXMP9M+cJUNQklcq+SBnTK8G+uBHgPKR\nzBDsMIEzRtQZm4GIoHJae4zmnCekkQ=="));
+        assertThat(
+                updatedIdentityProviderConfig.get("encryptionPublicKey"),
+                is(
+                        "MIIDEjCCAfqgAwIBAgIVAPVbodo8Su7/BaHXUHykx0Pi5CFaMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCQb+1a7uDdTTBBFfwOUun3IQ9nEuKM98SmJDWa\nMwM877elswKUTIBVh5gB2RIXAPZt7J/KGqypmgw9UNXFnoslpeZbA9fcAqqu28Z4\nsSb2YSajV1ZgEYPUKvXwQEmLWN6aDhkn8HnEZNrmeXihTFdyr7wjsLj0JpQ+VUlc\n4/J+hNuU7rGYZ1rKY8AA34qDVd4DiJ+DXW2PESfOu8lJSOteEaNtbmnvH8KlwkDs\n1NvPTsI0W/m4SK0UdXo6LLaV8saIpJfnkVC/FwpBolBrRC/Em64UlBsRZm2T89ca\nuzDee2yPUvbBd5kLErw+sC7i4xXa2rGmsQLYcBPhsRwnmBmlAgMBAAGjVzBVMB0G\nA1UdDgQWBBRZ3exEu6rCwRe5C7f5QrPcAKRPUjA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEABZDFRNtcbvIRmblnZItoWCFhVUlq81ceSQddLYs8DqK340//hWNAbYdj\nWcP85HhIZnrw6NGCO4bUipxZXhiqTA/A9d1BUll0vYB8qckYDEdPDduYCOYemKkD\ndmnHMQWs9Y6zWiYuNKEJ9mf3+1N8knN/PK0TYVjVjXAf2CnOETDbLtlj6Nqb8La3\nsQkYmU+aUdopbjd5JFFwbZRaj6KiHXHtnIRgu8sUXNPrgipUgZUOVhP0C0N5OfE4\nJW8ZBrKgQC/6vJ2rSa9TlzI6JAa5Ww7gMXMP9M+cJUNQklcq+SBnTK8G+uBHgPKR\nzBDsMIEzRtQZm4GIoHJae4zmnCekkQ=="));
         assertThat(updatedIdentityProviderConfig.get("principalType"), is("SUBJECT"));
 
         IdentityProviderRepresentation createdIdentityProvider = identityProviders.stream()
@@ -211,18 +239,30 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         assertThat(createdIdentityProviderConfig.get("validateSignature"), is("false"));
         assertThat(createdIdentityProviderConfig.get("samlXmlKeyNameTranformer"), is("KEY_ID"));
-        assertThat(createdIdentityProviderConfig.get("signingCertificate"), is("MIIDETCCAfmgAwIBAgIUZRpDhkNKl5eWtJqk0Bu1BgTTargwDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwHhcNMTgwODI0MjExNDEwWhcNMzgw\nODI0MjExNDEwWjAWMRQwEgYDVQQDDAtzYW1sdGVzdC5pZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJrh9/PcDsiv3UeL8Iv9rf4WfLPxuOm9W6aCntEA\n8l6c1LQ1Zyrz+Xa/40ZgP29ENf3oKKbPCzDcc6zooHMji2fBmgXp6Li3fQUzu7yd\n+nIC2teejijVtrNLjn1WUTwmqjLtuzrKC/ePoZyIRjpoUxyEMJopAd4dJmAcCq/K\nk2eYX9GYRlqvIjLFoGNgy2R4dWwAKwljyh6pdnPUgyO/WjRDrqUBRFrLQJorR2kD\nc4seZUbmpZZfp4MjmWMDgyGM1ZnR0XvNLtYeWAyt0KkSvFoOMjZUeVK/4xR74F8e\n8ToPqLmZEg9ZUx+4z2KjVK00LpdRkH9Uxhh03RQ0FabHW6UCAwEAAaNXMFUwHQYD\nVR0OBBYEFJDbe6uSmYQScxpVJhmt7PsCG4IeMDQGA1UdEQQtMCuCC3NhbWx0ZXN0\nLmlkhhxodHRwczovL3NhbWx0ZXN0LmlkL3NhbWwvaWRwMA0GCSqGSIb3DQEBCwUA\nA4IBAQBNcF3zkw/g51q26uxgyuy4gQwnSr01Mhvix3Dj/Gak4tc4XwvxUdLQq+jC\ncxr2Pie96klWhY/v/JiHDU2FJo9/VWxmc/YOk83whvNd7mWaNMUsX3xGv6AlZtCO\nL3JhCpHjiN+kBcMgS5jrtGgV1Lz3/1zpGxykdvS0B4sPnFOcaCwHe2B9SOCWbDAN\nJXpTjz1DmJO4ImyWPJpN1xsYKtm67Pefxmn0ax0uE2uuzq25h0xbTkqIQgJzyoE/\nDPkBFK1vDkMfAW11dQ0BXatEnW7Gtkc0lh2/PIbHWj4AzxYMyBf5Gy6HSVOftwjC\nvoQR2qr2xJBixsg+MIORKtmKHLfU,MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0\nThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE\njj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl\nbN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF\n/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n\nspXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G\nA1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn\n7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT\nTNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl\nD1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU\nZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu\n3kXPjhSfj1AJGR1l9JGvJrHki1iHTA=="));
+        assertThat(
+                createdIdentityProviderConfig.get("signingCertificate"),
+                is(
+                        "MIIDETCCAfmgAwIBAgIUZRpDhkNKl5eWtJqk0Bu1BgTTargwDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwHhcNMTgwODI0MjExNDEwWhcNMzgw\nODI0MjExNDEwWjAWMRQwEgYDVQQDDAtzYW1sdGVzdC5pZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJrh9/PcDsiv3UeL8Iv9rf4WfLPxuOm9W6aCntEA\n8l6c1LQ1Zyrz+Xa/40ZgP29ENf3oKKbPCzDcc6zooHMji2fBmgXp6Li3fQUzu7yd\n+nIC2teejijVtrNLjn1WUTwmqjLtuzrKC/ePoZyIRjpoUxyEMJopAd4dJmAcCq/K\nk2eYX9GYRlqvIjLFoGNgy2R4dWwAKwljyh6pdnPUgyO/WjRDrqUBRFrLQJorR2kD\nc4seZUbmpZZfp4MjmWMDgyGM1ZnR0XvNLtYeWAyt0KkSvFoOMjZUeVK/4xR74F8e\n8ToPqLmZEg9ZUx+4z2KjVK00LpdRkH9Uxhh03RQ0FabHW6UCAwEAAaNXMFUwHQYD\nVR0OBBYEFJDbe6uSmYQScxpVJhmt7PsCG4IeMDQGA1UdEQQtMCuCC3NhbWx0ZXN0\nLmlkhhxodHRwczovL3NhbWx0ZXN0LmlkL3NhbWwvaWRwMA0GCSqGSIb3DQEBCwUA\nA4IBAQBNcF3zkw/g51q26uxgyuy4gQwnSr01Mhvix3Dj/Gak4tc4XwvxUdLQq+jC\ncxr2Pie96klWhY/v/JiHDU2FJo9/VWxmc/YOk83whvNd7mWaNMUsX3xGv6AlZtCO\nL3JhCpHjiN+kBcMgS5jrtGgV1Lz3/1zpGxykdvS0B4sPnFOcaCwHe2B9SOCWbDAN\nJXpTjz1DmJO4ImyWPJpN1xsYKtm67Pefxmn0ax0uE2uuzq25h0xbTkqIQgJzyoE/\nDPkBFK1vDkMfAW11dQ0BXatEnW7Gtkc0lh2/PIbHWj4AzxYMyBf5Gy6HSVOftwjC\nvoQR2qr2xJBixsg+MIORKtmKHLfU,MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0\nThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE\njj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl\nbN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF\n/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n\nspXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G\nA1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn\n7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT\nTNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl\nD1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU\nZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu\n3kXPjhSfj1AJGR1l9JGvJrHki1iHTA=="));
         assertThat(createdIdentityProviderConfig.get("postBindingLogout"), is("true"));
-        assertThat(createdIdentityProviderConfig.get("nameIDPolicyFormat"), is("urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"));
+        assertThat(
+                createdIdentityProviderConfig.get("nameIDPolicyFormat"),
+                is("urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"));
         assertThat(createdIdentityProviderConfig.get("postBindingResponse"), is("true"));
-        assertThat(createdIdentityProviderConfig.get("singleLogoutServiceUrl"), is("https://samltest.id/idp/profile/SAML2/POST/SLO"));
+        assertThat(
+                createdIdentityProviderConfig.get("singleLogoutServiceUrl"),
+                is("https://samltest.id/idp/profile/SAML2/POST/SLO"));
         assertThat(createdIdentityProviderConfig.get("signatureAlgorithm"), is("RSA_SHA256"));
         assertThat(createdIdentityProviderConfig.get("useJwksUrl"), is("true"));
         assertThat(createdIdentityProviderConfig.get("postBindingAuthnRequest"), is("true"));
-        assertThat(createdIdentityProviderConfig.get("singleSignOnServiceUrl"), is("https://samltest.id/idp/profile/SAML2/POST/SSO"));
+        assertThat(
+                createdIdentityProviderConfig.get("singleSignOnServiceUrl"),
+                is("https://samltest.id/idp/profile/SAML2/POST/SSO"));
         assertThat(createdIdentityProviderConfig.get("wantAuthnRequestsSigned"), is("false"));
         assertThat(createdIdentityProviderConfig.get("addExtensionsElementWithKeyInfo"), is("false"));
-        assertThat(createdIdentityProviderConfig.get("encryptionPublicKey"), is("MIIDEjCCAfqgAwIBAgIVAPVbodo8Su7/BaHXUHykx0Pi5CFaMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCQb+1a7uDdTTBBFfwOUun3IQ9nEuKM98SmJDWa\nMwM877elswKUTIBVh5gB2RIXAPZt7J/KGqypmgw9UNXFnoslpeZbA9fcAqqu28Z4\nsSb2YSajV1ZgEYPUKvXwQEmLWN6aDhkn8HnEZNrmeXihTFdyr7wjsLj0JpQ+VUlc\n4/J+hNuU7rGYZ1rKY8AA34qDVd4DiJ+DXW2PESfOu8lJSOteEaNtbmnvH8KlwkDs\n1NvPTsI0W/m4SK0UdXo6LLaV8saIpJfnkVC/FwpBolBrRC/Em64UlBsRZm2T89ca\nuzDee2yPUvbBd5kLErw+sC7i4xXa2rGmsQLYcBPhsRwnmBmlAgMBAAGjVzBVMB0G\nA1UdDgQWBBRZ3exEu6rCwRe5C7f5QrPcAKRPUjA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEABZDFRNtcbvIRmblnZItoWCFhVUlq81ceSQddLYs8DqK340//hWNAbYdj\nWcP85HhIZnrw6NGCO4bUipxZXhiqTA/A9d1BUll0vYB8qckYDEdPDduYCOYemKkD\ndmnHMQWs9Y6zWiYuNKEJ9mf3+1N8knN/PK0TYVjVjXAf2CnOETDbLtlj6Nqb8La3\nsQkYmU+aUdopbjd5JFFwbZRaj6KiHXHtnIRgu8sUXNPrgipUgZUOVhP0C0N5OfE4\nJW8ZBrKgQC/6vJ2rSa9TlzI6JAa5Ww7gMXMP9M+cJUNQklcq+SBnTK8G+uBHgPKR\nzBDsMIEzRtQZm4GIoHJae4zmnCekkQ=="));
+        assertThat(
+                createdIdentityProviderConfig.get("encryptionPublicKey"),
+                is(
+                        "MIIDEjCCAfqgAwIBAgIVAPVbodo8Su7/BaHXUHykx0Pi5CFaMA0GCSqGSIb3DQEB\nCwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4\nMDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCQb+1a7uDdTTBBFfwOUun3IQ9nEuKM98SmJDWa\nMwM877elswKUTIBVh5gB2RIXAPZt7J/KGqypmgw9UNXFnoslpeZbA9fcAqqu28Z4\nsSb2YSajV1ZgEYPUKvXwQEmLWN6aDhkn8HnEZNrmeXihTFdyr7wjsLj0JpQ+VUlc\n4/J+hNuU7rGYZ1rKY8AA34qDVd4DiJ+DXW2PESfOu8lJSOteEaNtbmnvH8KlwkDs\n1NvPTsI0W/m4SK0UdXo6LLaV8saIpJfnkVC/FwpBolBrRC/Em64UlBsRZm2T89ca\nuzDee2yPUvbBd5kLErw+sC7i4xXa2rGmsQLYcBPhsRwnmBmlAgMBAAGjVzBVMB0G\nA1UdDgQWBBRZ3exEu6rCwRe5C7f5QrPcAKRPUjA0BgNVHREELTArggtzYW1sdGVz\ndC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF\nAAOCAQEABZDFRNtcbvIRmblnZItoWCFhVUlq81ceSQddLYs8DqK340//hWNAbYdj\nWcP85HhIZnrw6NGCO4bUipxZXhiqTA/A9d1BUll0vYB8qckYDEdPDduYCOYemKkD\ndmnHMQWs9Y6zWiYuNKEJ9mf3+1N8knN/PK0TYVjVjXAf2CnOETDbLtlj6Nqb8La3\nsQkYmU+aUdopbjd5JFFwbZRaj6KiHXHtnIRgu8sUXNPrgipUgZUOVhP0C0N5OfE4\nJW8ZBrKgQC/6vJ2rSa9TlzI6JAa5Ww7gMXMP9M+cJUNQklcq+SBnTK8G+uBHgPKR\nzBDsMIEzRtQZm4GIoHJae4zmnCekkQ=="));
         assertThat(createdIdentityProviderConfig.get("principalType"), is("SUBJECT"));
     }
 
@@ -231,7 +271,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldCreateOidcIdentityProvider() throws IOException {
         doImport("03_create_identity-provider_for_keycloak-oidc.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -257,10 +298,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         Map<String, String> updatedIdentityProviderConfig = oidcIdentityProvider.getConfig();
 
-        assertThat(updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
-        assertThat(updatedIdentityProviderConfig.get("authorizationUrl"), is("https://example.com/protocol/openid-connect/auth"));
+        assertThat(
+                updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
+        assertThat(
+                updatedIdentityProviderConfig.get("authorizationUrl"),
+                is("https://example.com/protocol/openid-connect/auth"));
         assertThat(updatedIdentityProviderConfig.get("clientAuthMethod"), is("client_secret_post"));
-        assertThat(updatedIdentityProviderConfig.get("logoutUrl"), is("https://example.com/protocol/openid-connect/logout"));
+        assertThat(
+                updatedIdentityProviderConfig.get("logoutUrl"),
+                is("https://example.com/protocol/openid-connect/logout"));
         assertThat(updatedIdentityProviderConfig.get("syncMode"), is("FORCE"));
         assertThat(updatedIdentityProviderConfig.get("clientId"), is("example-client-id"));
         assertThat(updatedIdentityProviderConfig.get("backchannelSupported"), is("true"));
@@ -280,7 +326,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldUpdateOidcIdentityProvider() throws IOException {
         doImport("04_update_identity-provider_for_keycloak-oidc.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -306,10 +353,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         Map<String, String> updatedIdentityProviderConfig = oidcIdentityProvider.getConfig();
 
-        assertThat(updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
-        assertThat(updatedIdentityProviderConfig.get("authorizationUrl"), is("https://example.com/protocol/openid-connect/auth"));
+        assertThat(
+                updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
+        assertThat(
+                updatedIdentityProviderConfig.get("authorizationUrl"),
+                is("https://example.com/protocol/openid-connect/auth"));
         assertThat(updatedIdentityProviderConfig.get("clientAuthMethod"), is("client_secret_post"));
-        assertThat(updatedIdentityProviderConfig.get("logoutUrl"), is("https://example.com/protocol/openid-connect/logout"));
+        assertThat(
+                updatedIdentityProviderConfig.get("logoutUrl"),
+                is("https://example.com/protocol/openid-connect/logout"));
         assertThat(updatedIdentityProviderConfig.get("syncMode"), is("FORCE"));
         assertThat(updatedIdentityProviderConfig.get("clientId"), is("changed-example-client-id"));
         assertThat(updatedIdentityProviderConfig.get("backchannelSupported"), is("true"));
@@ -329,7 +381,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldUpdateOidcIdentityProviderWithMapper() throws IOException {
         doImport("05_update_identity-provider_for_keycloak-oidc_with_mapper.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -355,10 +408,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         Map<String, String> updatedIdentityProviderConfig = oidcIdentityProvider.getConfig();
 
-        assertThat(updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
-        assertThat(updatedIdentityProviderConfig.get("authorizationUrl"), is("https://example.com/protocol/openid-connect/auth"));
+        assertThat(
+                updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
+        assertThat(
+                updatedIdentityProviderConfig.get("authorizationUrl"),
+                is("https://example.com/protocol/openid-connect/auth"));
         assertThat(updatedIdentityProviderConfig.get("clientAuthMethod"), is("client_secret_post"));
-        assertThat(updatedIdentityProviderConfig.get("logoutUrl"), is("https://example.com/protocol/openid-connect/logout"));
+        assertThat(
+                updatedIdentityProviderConfig.get("logoutUrl"),
+                is("https://example.com/protocol/openid-connect/logout"));
         assertThat(updatedIdentityProviderConfig.get("syncMode"), is("FORCE"));
         assertThat(updatedIdentityProviderConfig.get("clientId"), is("example-client-id"));
         assertThat(updatedIdentityProviderConfig.get("backchannelSupported"), is("true"));
@@ -372,11 +430,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
             assertThat(updatedIdentityProviderConfig.get("clientSecret"), is("example-client-secret"));
         }
 
-        List<IdentityProviderMapperRepresentation> identityProviderMappers = identityProviderMapperRepository.getAll(createdRealm.getRealm());
+        List<IdentityProviderMapperRepresentation> identityProviderMappers =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm());
         assertThat(identityProviderMappers.size(), is(1));
 
-        IdentityProviderMapperRepresentation myUsernameMapper = identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
-                .filter(m -> m.getName().equals("my-username-mapper")).findFirst().orElse(null);
+        IdentityProviderMapperRepresentation myUsernameMapper =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                        .filter(m -> m.getName().equals("my-username-mapper"))
+                        .findFirst()
+                        .orElse(null);
 
         assertThat(myUsernameMapper, notNullValue());
         assertThat(myUsernameMapper.getIdentityProviderAlias(), is("keycloak-oidc"));
@@ -393,7 +455,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldUpdateOidcIdentityProviderWithUpdatedMapper() throws IOException {
         doImport("06_update_identity-provider_for_keycloak-oidc_with_updated_mapper.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -419,10 +482,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         Map<String, String> updatedIdentityProviderConfig = oidcIdentityProvider.getConfig();
 
-        assertThat(updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
-        assertThat(updatedIdentityProviderConfig.get("authorizationUrl"), is("https://example.com/protocol/openid-connect/auth"));
+        assertThat(
+                updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
+        assertThat(
+                updatedIdentityProviderConfig.get("authorizationUrl"),
+                is("https://example.com/protocol/openid-connect/auth"));
         assertThat(updatedIdentityProviderConfig.get("clientAuthMethod"), is("client_secret_post"));
-        assertThat(updatedIdentityProviderConfig.get("logoutUrl"), is("https://example.com/protocol/openid-connect/logout"));
+        assertThat(
+                updatedIdentityProviderConfig.get("logoutUrl"),
+                is("https://example.com/protocol/openid-connect/logout"));
         assertThat(updatedIdentityProviderConfig.get("syncMode"), is("FORCE"));
         assertThat(updatedIdentityProviderConfig.get("clientId"), is("example-client-id"));
         assertThat(updatedIdentityProviderConfig.get("backchannelSupported"), is("true"));
@@ -436,11 +504,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
             assertThat(updatedIdentityProviderConfig.get("clientSecret"), is("example-client-secret"));
         }
 
-        List<IdentityProviderMapperRepresentation> identityProviderMappers = identityProviderMapperRepository.getAll(createdRealm.getRealm());
+        List<IdentityProviderMapperRepresentation> identityProviderMappers =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm());
         assertThat(identityProviderMappers.size(), is(1));
 
-        IdentityProviderMapperRepresentation myUsernameMapper = identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
-                .filter(m -> m.getName().equals("my-username-mapper")).findFirst().orElse(null);
+        IdentityProviderMapperRepresentation myUsernameMapper =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                        .filter(m -> m.getName().equals("my-username-mapper"))
+                        .findFirst()
+                        .orElse(null);
 
         assertThat(myUsernameMapper, notNullValue());
         assertThat(myUsernameMapper.getIdentityProviderAlias(), is("keycloak-oidc"));
@@ -457,7 +529,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldUpdateOidcIdentityProviderWithUpdatedMapperWithPseudoId() throws IOException {
         doImport("07_update_identity-provider_for_keycloak-oidc_with_updated_mapper_with_pseudo_id.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -483,10 +556,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         Map<String, String> updatedIdentityProviderConfig = oidcIdentityProvider.getConfig();
 
-        assertThat(updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
-        assertThat(updatedIdentityProviderConfig.get("authorizationUrl"), is("https://example.com/protocol/openid-connect/auth"));
+        assertThat(
+                updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
+        assertThat(
+                updatedIdentityProviderConfig.get("authorizationUrl"),
+                is("https://example.com/protocol/openid-connect/auth"));
         assertThat(updatedIdentityProviderConfig.get("clientAuthMethod"), is("client_secret_post"));
-        assertThat(updatedIdentityProviderConfig.get("logoutUrl"), is("https://example.com/protocol/openid-connect/logout"));
+        assertThat(
+                updatedIdentityProviderConfig.get("logoutUrl"),
+                is("https://example.com/protocol/openid-connect/logout"));
         assertThat(updatedIdentityProviderConfig.get("syncMode"), is("FORCE"));
         assertThat(updatedIdentityProviderConfig.get("clientId"), is("example-client-id"));
         assertThat(updatedIdentityProviderConfig.get("backchannelSupported"), is("true"));
@@ -500,11 +578,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
             assertThat(updatedIdentityProviderConfig.get("clientSecret"), is("example-client-secret"));
         }
 
-        List<IdentityProviderMapperRepresentation> identityProviderMappers = identityProviderMapperRepository.getAll(createdRealm.getRealm());
+        List<IdentityProviderMapperRepresentation> identityProviderMappers =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm());
         assertThat(identityProviderMappers.size(), is(1));
 
-        IdentityProviderMapperRepresentation myUsernameMapper = identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
-                .filter(m -> m.getName().equals("my-username-mapper")).findFirst().orElse(null);
+        IdentityProviderMapperRepresentation myUsernameMapper =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                        .filter(m -> m.getName().equals("my-username-mapper"))
+                        .findFirst()
+                        .orElse(null);
 
         assertThat(myUsernameMapper, notNullValue());
         assertThat(myUsernameMapper.getIdentityProviderAlias(), is("keycloak-oidc"));
@@ -521,7 +603,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldUpdateOidcIdentityProviderWithReplacedMapper() throws IOException {
         doImport("08_update_identity-provider_for_keycloak-oidc_with_replaced_mapper.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -547,10 +630,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         Map<String, String> updatedIdentityProviderConfig = oidcIdentityProvider.getConfig();
 
-        assertThat(updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
-        assertThat(updatedIdentityProviderConfig.get("authorizationUrl"), is("https://example.com/protocol/openid-connect/auth"));
+        assertThat(
+                updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
+        assertThat(
+                updatedIdentityProviderConfig.get("authorizationUrl"),
+                is("https://example.com/protocol/openid-connect/auth"));
         assertThat(updatedIdentityProviderConfig.get("clientAuthMethod"), is("client_secret_post"));
-        assertThat(updatedIdentityProviderConfig.get("logoutUrl"), is("https://example.com/protocol/openid-connect/logout"));
+        assertThat(
+                updatedIdentityProviderConfig.get("logoutUrl"),
+                is("https://example.com/protocol/openid-connect/logout"));
         assertThat(updatedIdentityProviderConfig.get("syncMode"), is("FORCE"));
         assertThat(updatedIdentityProviderConfig.get("clientId"), is("example-client-id"));
         assertThat(updatedIdentityProviderConfig.get("backchannelSupported"), is("true"));
@@ -564,11 +652,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
             assertThat(updatedIdentityProviderConfig.get("clientSecret"), is("example-client-secret"));
         }
 
-        List<IdentityProviderMapperRepresentation> identityProviderMappers = identityProviderMapperRepository.getAll(createdRealm.getRealm());
+        List<IdentityProviderMapperRepresentation> identityProviderMappers =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm());
         assertThat(identityProviderMappers.size(), is(1));
 
-        IdentityProviderMapperRepresentation myUsernameMapper = identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
-                .filter(m -> m.getName().equals("my-changed-username-mapper")).findFirst().orElse(null);
+        IdentityProviderMapperRepresentation myUsernameMapper =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                        .filter(m -> m.getName().equals("my-changed-username-mapper"))
+                        .findFirst()
+                        .orElse(null);
 
         assertThat(myUsernameMapper, notNullValue());
         assertThat(myUsernameMapper.getIdentityProviderAlias(), is("keycloak-oidc"));
@@ -585,7 +677,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldUpdateOidcIdentityProviderWithDeleteAllMappers() throws IOException {
         doImport("09_update_identity-provider_for_keycloak-oidc_with_deleted_mapper.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -611,10 +704,15 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         Map<String, String> updatedIdentityProviderConfig = oidcIdentityProvider.getConfig();
 
-        assertThat(updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
-        assertThat(updatedIdentityProviderConfig.get("authorizationUrl"), is("https://example.com/protocol/openid-connect/auth"));
+        assertThat(
+                updatedIdentityProviderConfig.get("tokenUrl"), is("https://example.com/protocol/openid-connect/token"));
+        assertThat(
+                updatedIdentityProviderConfig.get("authorizationUrl"),
+                is("https://example.com/protocol/openid-connect/auth"));
         assertThat(updatedIdentityProviderConfig.get("clientAuthMethod"), is("client_secret_post"));
-        assertThat(updatedIdentityProviderConfig.get("logoutUrl"), is("https://example.com/protocol/openid-connect/logout"));
+        assertThat(
+                updatedIdentityProviderConfig.get("logoutUrl"),
+                is("https://example.com/protocol/openid-connect/logout"));
         assertThat(updatedIdentityProviderConfig.get("syncMode"), is("FORCE"));
         assertThat(updatedIdentityProviderConfig.get("clientId"), is("example-client-id"));
         assertThat(updatedIdentityProviderConfig.get("backchannelSupported"), is("true"));
@@ -628,7 +726,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
             assertThat(updatedIdentityProviderConfig.get("clientSecret"), is("example-client-secret"));
         }
 
-        List<IdentityProviderMapperRepresentation> identityProviderMappers = identityProviderMapperRepository.getAll(createdRealm.getRealm());
+        List<IdentityProviderMapperRepresentation> identityProviderMappers =
+                identityProviderMapperRepository.getAll(createdRealm.getRealm());
         assertThat(identityProviderMappers, empty());
     }
 
@@ -637,7 +736,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     void shouldDeleteOidcIdentityProvider() throws IOException {
         doImport("10_delete_identity-provider_for_keycloak-oidc.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -654,7 +754,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         final String OTHER_REALM_NAME = "otherRealmWithIdentityProviders";
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(OTHER_REALM_NAME).partialExport(true, true);
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(OTHER_REALM_NAME).partialExport(true, true);
 
         assertThat(createdRealm.getRealm(), is(OTHER_REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -672,7 +773,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         assertThat(customAuthFlow.isBuiltIn(), is(false));
         assertThat(customAuthFlow.isTopLevel(), is(true));
 
-        List<AuthenticationExecutionExportRepresentation> importedExecutions = customAuthFlow.getAuthenticationExecutions();
+        List<AuthenticationExecutionExportRepresentation> importedExecutions =
+                customAuthFlow.getAuthenticationExecutions();
         assertThat(importedExecutions, hasSize(1));
 
         AuthenticationExecutionExportRepresentation importedExecution = importedExecutions.get(0);
@@ -707,7 +809,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
         final String OTHER_REALM_NAME = "otherRealmWithIdentityProvidersTwoBrokerFlows";
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(OTHER_REALM_NAME).partialExport(true, true);
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(OTHER_REALM_NAME).partialExport(true, true);
 
         assertThat(createdRealm.getRealm(), is(OTHER_REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -725,7 +828,8 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         assertThat(firstLoginFlow.isBuiltIn(), is(false));
         assertThat(firstLoginFlow.isTopLevel(), is(true));
 
-        List<AuthenticationExecutionExportRepresentation> importedExecutions = firstLoginFlow.getAuthenticationExecutions();
+        List<AuthenticationExecutionExportRepresentation> importedExecutions =
+                firstLoginFlow.getAuthenticationExecutions();
         assertThat(importedExecutions, hasSize(1));
 
         AuthenticationExecutionExportRepresentation importedExecution = importedExecutions.get(0);
@@ -744,7 +848,6 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         assertThat(postLoginFlow.getProviderId(), is("basic-flow"));
         assertThat(postLoginFlow.isBuiltIn(), is(false));
         assertThat(postLoginFlow.isTopLevel(), is(true));
-
 
         IdentityProviderRepresentation createdIdentityProvider = identityProviders.stream()
                 .filter(e -> e.getAlias().equals("saml-with-custom-idp-flows"))

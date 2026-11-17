@@ -20,16 +20,16 @@
 
 package io.github.doriangrelu.keycloak.config.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.github.doriangrelu.keycloak.config.assets.OtherTestObject;
 import io.github.doriangrelu.keycloak.config.assets.TestObject;
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(GithubActionsExtension.class)
 class CloneUtilTest {
@@ -42,16 +42,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
-
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         TestObject cloned = CloneUtil.deepClone(object);
 
@@ -67,16 +59,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
-
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         TestObject cloned = CloneUtil.deepClone(object);
 
@@ -94,16 +78,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
-
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         TestObject cloned = CloneUtil.deepClone(object);
 
@@ -121,16 +97,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
-
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         OtherTestObject cloned = CloneUtil.deepClone(object, OtherTestObject.class);
 
@@ -159,16 +127,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
-
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         TestObject cloned = CloneUtil.deepClone(object, "stringProperty");
 
@@ -184,15 +144,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         TestObject patch = new TestObject(
                 "my string 1",
@@ -201,15 +154,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string 1",
-                        4322,
-                        null,
-                        null,
-                        null
-                ),
-                null
-        );
+                new TestObject.InnerTestObject("my other string 1", 4322, null, null, null),
+                null);
 
         TestObject cloned = CloneUtil.deepClone(origin);
 
@@ -234,15 +180,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         TestObject other = new TestObject(
                 "my string",
@@ -251,15 +190,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         assertTrue(CloneUtil.deepEquals(origin, other));
     }
@@ -273,15 +205,8 @@ class CloneUtilTest {
                 1234L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         TestObject other = new TestObject(
                 "my string",
@@ -290,15 +215,8 @@ class CloneUtilTest {
                 1235L,
                 null,
                 null,
-                new TestObject.InnerTestObject(
-                        "my other string",
-                        4321,
-                        52.72,
-                        null,
-                        null
-                ),
-                null
-        );
+                new TestObject.InnerTestObject("my other string", 4321, 52.72, null, null),
+                null);
 
         assertFalse(CloneUtil.deepEquals(origin, other));
     }

@@ -20,10 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.service.clientauthorization;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.Objects;
 import java.util.StringJoiner;
+import org.apache.commons.lang3.StringUtils;
 
 public final class PermissionTypeAndId {
     public final String type;
@@ -75,7 +74,8 @@ public final class PermissionTypeAndId {
     public static PermissionTypeAndId fromPolicyName(String policyName) {
         String typeAndId = StringUtils.substringAfter(policyName, ".permission.");
 
-        // policies for roles have a different format, they skip the type segment and instead have 'map-role' in the scope
+        // policies for roles have a different format, they skip the type segment and instead have 'map-role' in the
+        // scope
         if (StringUtils.startsWith(policyName, "map-role") && canBeIdOrPlaceholder(typeAndId)) {
             return new PermissionTypeAndId("role", typeAndId);
         }

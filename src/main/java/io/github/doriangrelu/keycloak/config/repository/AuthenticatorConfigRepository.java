@@ -20,15 +20,14 @@
 
 package io.github.doriangrelu.keycloak.config.repository;
 
+import java.util.List;
+import java.util.Objects;
 import org.keycloak.admin.client.resource.AuthenticationManagementResource;
 import org.keycloak.representations.idm.AuthenticatorConfigRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Objects;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -38,17 +37,14 @@ public class AuthenticatorConfigRepository {
 
     @Autowired
     public AuthenticatorConfigRepository(
-            AuthenticationFlowRepository authenticationFlowRepository,
-            RealmRepository realmRepository
-    ) {
+            AuthenticationFlowRepository authenticationFlowRepository, RealmRepository realmRepository) {
         this.authenticationFlowRepository = authenticationFlowRepository;
         this.realmRepository = realmRepository;
     }
 
     public List<AuthenticatorConfigRepresentation> getConfigsByAlias(String realmName, String alias) {
         RealmRepresentation realmExport = realmRepository.partialExport(realmName, false, false);
-        return realmExport.getAuthenticatorConfig()
-                .stream()
+        return realmExport.getAuthenticatorConfig().stream()
                 .filter(flow -> Objects.equals(flow.getAlias(), alias))
                 .toList();
     }
@@ -59,20 +55,15 @@ public class AuthenticatorConfigRepository {
     }
 
     public void create(
-            String realmName,
-            String executionId,
-            AuthenticatorConfigRepresentation authenticatorConfigRepresentation
-    ) {
+            String realmName, String executionId, AuthenticatorConfigRepresentation authenticatorConfigRepresentation) {
         AuthenticationManagementResource flowsResource = authenticationFlowRepository.getFlowResources(realmName);
         flowsResource.newExecutionConfig(executionId, authenticatorConfigRepresentation);
     }
 
-    public void update(
-            String realmName,
-            AuthenticatorConfigRepresentation authenticatorConfigRepresentation
-    ) {
+    public void update(String realmName, AuthenticatorConfigRepresentation authenticatorConfigRepresentation) {
         AuthenticationManagementResource flowsResource = authenticationFlowRepository.getFlowResources(realmName);
-        flowsResource.updateAuthenticatorConfig(authenticatorConfigRepresentation.getId(), authenticatorConfigRepresentation);
+        flowsResource.updateAuthenticatorConfig(
+                authenticatorConfigRepresentation.getId(), authenticatorConfigRepresentation);
     }
 
     public List<AuthenticatorConfigRepresentation> getAll(String realmName) {

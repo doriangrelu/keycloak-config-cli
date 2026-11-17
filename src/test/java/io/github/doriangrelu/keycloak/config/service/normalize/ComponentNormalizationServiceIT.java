@@ -20,18 +20,17 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentExportRepresentation;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 public class ComponentNormalizationServiceIT {
 
@@ -61,7 +60,8 @@ public class ComponentNormalizationServiceIT {
         when(diff.hasChanges()).thenReturn(true);
         when(javers.compare(any(), any())).thenReturn(diff);
 
-        MultivaluedHashMap<String, ComponentExportRepresentation> result = service.normalizeComponents(exportedComponents, baselineComponents);
+        MultivaluedHashMap<String, ComponentExportRepresentation> result =
+                service.normalizeComponents(exportedComponents, baselineComponents);
 
         assertThat(result).isNotEmpty();
     }
@@ -83,7 +83,8 @@ public class ComponentNormalizationServiceIT {
         when(diff.hasChanges()).thenReturn(true);
         when(javers.compare(any(), any())).thenReturn(diff);
 
-        List<ComponentExportRepresentation> result = service.normalizeList(exportedComponents, baselineComponents, "class1");
+        List<ComponentExportRepresentation> result =
+                service.normalizeList(exportedComponents, baselineComponents, "class1");
 
         assertThat(result).isNotEmpty();
     }

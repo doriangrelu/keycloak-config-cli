@@ -20,16 +20,15 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
-import org.javers.core.Javers;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.*;
+import org.javers.core.Javers;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -41,7 +40,8 @@ public class AttributeNormalizationService {
         this.unOrderedJavers = unOrderedJavers;
     }
 
-    public Map<String, String> normalizeStringAttributes(Map<String, String> exportedAttributes, Map<String, String> baselineAttributes) {
+    public Map<String, String> normalizeStringAttributes(
+            Map<String, String> exportedAttributes, Map<String, String> baselineAttributes) {
         var exportedOrEmpty = getNonNull(exportedAttributes);
         var baselineOrEmpty = getNonNull(baselineAttributes);
         var normalizedAttributes = new HashMap<String, String>();
@@ -58,8 +58,8 @@ public class AttributeNormalizationService {
         return normalizedAttributes.isEmpty() ? null : normalizedAttributes;
     }
 
-    public Map<String, List<String>> normalizeListAttributes(Map<String, List<String>> exportedAttributes,
-                                                             Map<String, List<String>> baselineAttributes) {
+    public Map<String, List<String>> normalizeListAttributes(
+            Map<String, List<String>> exportedAttributes, Map<String, List<String>> baselineAttributes) {
         var exportedOrEmpty = getNonNull(exportedAttributes);
         var baselineOrEmpty = getNonNull(baselineAttributes);
         var normalizedAttributes = new HashMap<String, List<String>>();
@@ -68,7 +68,9 @@ public class AttributeNormalizationService {
             var baselineAttribute = entry.getValue();
             var exportedAttribute = exportedOrEmpty.remove(attributeName);
 
-            if (unOrderedJavers.compareCollections(baselineAttribute, exportedAttribute, String.class).hasChanges()) {
+            if (unOrderedJavers
+                    .compareCollections(baselineAttribute, exportedAttribute, String.class)
+                    .hasChanges()) {
                 normalizedAttributes.put(attributeName, exportedAttribute);
             }
         }
@@ -76,7 +78,8 @@ public class AttributeNormalizationService {
         return normalizedAttributes.isEmpty() ? null : normalizedAttributes;
     }
 
-    public boolean listAttributesChanged(Map<String, List<String>> exportedAttributes, Map<String, List<String>> baselineAttributes) {
+    public boolean listAttributesChanged(
+            Map<String, List<String>> exportedAttributes, Map<String, List<String>> baselineAttributes) {
         var exportedOrEmpty = getNonNull(exportedAttributes);
         var baselineOrEmpty = getNonNull(baselineAttributes);
 
@@ -85,12 +88,12 @@ public class AttributeNormalizationService {
         }
 
         for (var entry : baselineOrEmpty.entrySet()) {
-            if (unOrderedJavers.compareCollections(entry.getValue(),
-                    exportedOrEmpty.get(entry.getKey()), String.class).hasChanges()) {
+            if (unOrderedJavers
+                    .compareCollections(entry.getValue(), exportedOrEmpty.get(entry.getKey()), String.class)
+                    .hasChanges()) {
                 return true;
             }
         }
         return false;
     }
-
 }

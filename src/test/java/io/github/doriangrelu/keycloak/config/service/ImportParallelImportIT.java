@@ -20,25 +20,25 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.core.Is.is;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import java.io.IOException;
+import java.util.List;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.keycloak.representations.idm.*;
 import org.springframework.test.context.TestPropertySource;
 
-import java.io.IOException;
-import java.util.List;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.Is.is;
-
-@TestPropertySource(properties = {
-        "import.cache.enabled=false",
-        "import.parallel=true",
-        "import.behaviors.skip-attributes-for-federated-user=true",
-})
+@TestPropertySource(
+        properties = {
+            "import.cache.enabled=false",
+            "import.parallel=true",
+            "import.behaviors.skip-attributes-for-federated-user=true",
+        })
 class ImportParallelImportIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithParallelImport";
 
@@ -56,7 +56,11 @@ class ImportParallelImportIT extends AbstractImportIT {
 
     @Test
     @Order(1)
-    @DisabledIfSystemProperty(named = "keycloak.version", matches = "25\\.0\\.1", disabledReason = "Keycloak 25.0.1 has known issues with parallel imports causing HTTP 500 errors. See https://github.com/keycloak/keycloak/issues/40689")
+    @DisabledIfSystemProperty(
+            named = "keycloak.version",
+            matches = "25\\.0\\.1",
+            disabledReason =
+                    "Keycloak 25.0.1 has known issues with parallel imports causing HTTP 500 errors. See https://github.com/keycloak/keycloak/issues/40689")
     void shouldUpdateRealm() throws IOException {
         doImport("1_update_realm.json");
 
@@ -64,30 +68,31 @@ class ImportParallelImportIT extends AbstractImportIT {
     }
 
     private void assertRealm() {
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
 
-        List<ClientRepresentation> createdClients = createdRealm.getClients()
-                .stream().filter(client -> client.getName().startsWith("client"))
+        List<ClientRepresentation> createdClients = createdRealm.getClients().stream()
+                .filter(client -> client.getName().startsWith("client"))
                 .toList();
         assertThat(createdClients, hasSize(10));
 
-        List<ClientScopeRepresentation> createdClientScopes = createdRealm.getClientScopes()
-                .stream().filter(clientScope -> clientScope.getName().startsWith("clientScope"))
+        List<ClientScopeRepresentation> createdClientScopes = createdRealm.getClientScopes().stream()
+                .filter(clientScope -> clientScope.getName().startsWith("clientScope"))
                 .toList();
         assertThat(createdClientScopes, hasSize(10));
 
         List<GroupRepresentation> createdGroup = createdRealm.getGroups();
         assertThat(createdGroup, hasSize(10));
 
-        List<RoleRepresentation> createdRoles = createdRealm.getRoles().getRealm()
-                .stream().filter(group -> group.getName().startsWith("role"))
+        List<RoleRepresentation> createdRoles = createdRealm.getRoles().getRealm().stream()
+                .filter(group -> group.getName().startsWith("role"))
                 .toList();
         assertThat(createdRoles, hasSize(10));
 
-        List<UserRepresentation> createdUsers = keycloakProvider.getInstance().realm(REALM_NAME).users().list()
-                .stream().filter(u -> u.getUsername().startsWith("user"))
+        List<UserRepresentation> createdUsers = keycloakProvider.getInstance().realm(REALM_NAME).users().list().stream()
+                .filter(u -> u.getUsername().startsWith("user"))
                 .toList();
         assertThat(createdUsers, hasSize(10));
     }

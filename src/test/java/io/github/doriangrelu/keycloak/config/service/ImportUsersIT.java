@@ -20,11 +20,20 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import jakarta.ws.rs.NotAuthorizedException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -34,16 +43,6 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings({"java:S5961"})
 class ImportUsersIT extends AbstractImportIT {
@@ -58,7 +57,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldCreateRealmWithUser() throws IOException {
         doImport("00_create_realm_with_user.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -80,7 +80,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldUpdateRealmWithAddingClientUser() throws IOException {
         doImport("01_update_realm_add_clientuser.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -105,12 +106,7 @@ class ImportUsersIT extends AbstractImportIT {
 
         // check if login with password is successful
         AccessTokenResponse token = keycloakAuthentication.login(
-                REALM_NAME,
-                "moped-client",
-                "my-special-client-secret",
-                "myclientuser",
-                "myclientuser123"
-        );
+                REALM_NAME, "moped-client", "my-special-client-secret", "myclientuser", "myclientuser123");
 
         assertThat(token.getToken(), notNullValue());
         assertThat(token.getRefreshToken(), notNullValue());
@@ -124,7 +120,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldUpdateRealmWithChangedClientUserPassword() throws IOException {
         doImport("02.1_update_realm_change_clientusers_password.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -149,25 +146,15 @@ class ImportUsersIT extends AbstractImportIT {
         assertThat(user.getLastName(), is("My clientuser's lastname"));
 
         // check if login with old password fails
-        assertThrows(NotAuthorizedException.class, () ->
-                keycloakAuthentication.login(
-                        REALM_NAME,
-                        "moped-client",
-                        "my-special-client-secret",
-                        "myclientuser",
-                        "myclientuser123"
-                )
-        );
+        assertThrows(
+                NotAuthorizedException.class,
+                () -> keycloakAuthentication.login(
+                        REALM_NAME, "moped-client", "my-special-client-secret", "myclientuser", "myclientuser123"));
 
         // check if login with new password is successful
         AccessTokenResponse token;
         token = keycloakAuthentication.login(
-                REALM_NAME,
-                "moped-client",
-                "my-special-client-secret",
-                "myclientuser",
-                "changedclientuser123"
-        );
+                REALM_NAME, "moped-client", "my-special-client-secret", "myclientuser", "changedclientuser123");
 
         assertThat(token.getToken(), notNullValue());
         assertThat(token.getRefreshToken(), notNullValue());
@@ -180,8 +167,7 @@ class ImportUsersIT extends AbstractImportIT {
                 "moped-client",
                 "my-special-client-secret",
                 "myinitialclientuser",
-                "initialchangedclientuser123"
-        );
+                "initialchangedclientuser123");
 
         assertThat(token.getToken(), notNullValue());
         assertThat(token.getRefreshToken(), notNullValue());
@@ -192,12 +178,7 @@ class ImportUsersIT extends AbstractImportIT {
         doImport("02.2_update_realm_change_clientusers_password.json");
 
         token = keycloakAuthentication.login(
-                REALM_NAME,
-                "moped-client",
-                "my-special-client-secret",
-                "myclientuser",
-                "changedclientuser321"
-        );
+                REALM_NAME, "moped-client", "my-special-client-secret", "myclientuser", "changedclientuser321");
 
         assertThat(token.getToken(), notNullValue());
         assertThat(token.getRefreshToken(), notNullValue());
@@ -205,25 +186,22 @@ class ImportUsersIT extends AbstractImportIT {
         assertThat(token.getRefreshExpiresIn(), greaterThan(0L));
         assertThat(token.getTokenType(), equalToIgnoringCase("Bearer"));
 
-
         // check if login with new password fails
-        assertThrows(NotAuthorizedException.class, () ->
-                keycloakAuthentication.login(
+        assertThrows(
+                NotAuthorizedException.class,
+                () -> keycloakAuthentication.login(
                         REALM_NAME,
                         "moped-client",
                         "my-special-client-secret",
                         "myinitialclientuser",
-                        "initialchangedclientuser321"
-                )
-        );
+                        "initialchangedclientuser321"));
 
         token = keycloakAuthentication.login(
                 REALM_NAME,
                 "moped-client",
                 "my-special-client-secret",
                 "myinitialclientuser",
-                "initialchangedclientuser123"
-        );
+                "initialchangedclientuser123");
 
         assertThat(token.getToken(), notNullValue());
         assertThat(token.getRefreshToken(), notNullValue());
@@ -235,13 +213,13 @@ class ImportUsersIT extends AbstractImportIT {
     /**
      * https://github.com/adorsys/keycloak-config-cli/issues/51
      */
-
     @Test
     @Order(3)
     void shouldUpdateRealmWithUserThatUsernameMatchExisting() throws IOException {
         doImport("03_update_realm_with_new_user.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -266,7 +244,6 @@ class ImportUsersIT extends AbstractImportIT {
     /**
      * https://github.com/adorsys/keycloak-config-cli/issues/51
      */
-
     @Test
     @Order(4)
     void shouldCreateRealmWithUsersAndUpdateSingleUserCorrect() throws IOException {
@@ -305,7 +282,6 @@ class ImportUsersIT extends AbstractImportIT {
     /**
      * https://github.com/adorsys/keycloak-config-cli/issues/68
      */
-
     @Test
     @Order(5)
     void coverGitHubIssue68() throws IOException {
@@ -338,7 +314,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldNotUpdateRealmUserWithNonExistsRole() throws IOException {
         RealmImport foundImport = getFirstImport("07_update_realm_try_to_create_user_invalid_role.json");
 
-        ImportProcessingException thrown = assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        ImportProcessingException thrown =
+                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
 
         assertThat(thrown.getMessage(), is("Could not find role 'not_exists' in realm 'realmWithUsers'!"));
     }
@@ -348,7 +325,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldNotUpdateRealmUserWithNonExistsGroup() throws IOException {
         RealmImport foundImport = getFirstImport("08_update_realm_try_to_create_user_invalid_group.json");
 
-        ImportProcessingException thrown = assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        ImportProcessingException thrown =
+                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
 
         assertThat(thrown.getMessage(), is("Could not find group '/not_exists' in realm 'realmWithUsers'!"));
     }
@@ -359,7 +337,8 @@ class ImportUsersIT extends AbstractImportIT {
         // Create Users
         doImport("09_update_realm_update_user_add_group.json");
 
-        final RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        final RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
@@ -381,7 +360,8 @@ class ImportUsersIT extends AbstractImportIT {
         // Create Users
         doImport("10_update_realm_update_user_change_group.json");
 
-        final RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        final RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
@@ -406,7 +386,8 @@ class ImportUsersIT extends AbstractImportIT {
         // Create Users
         doImport("11_update_realm_update_user_remove_group.json");
 
-        final RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        final RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
@@ -431,7 +412,8 @@ class ImportUsersIT extends AbstractImportIT {
         // Create Users
         doImport("12_update_realm_update_user_add_subgroup.json");
 
-        final RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        final RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
@@ -453,7 +435,8 @@ class ImportUsersIT extends AbstractImportIT {
         // Create Users
         doImport("13_update_realm_update_user_change_subgroup.json");
 
-        final RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        final RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
@@ -477,7 +460,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldUpdateRealmUpdateUserRemoveSubGroup() throws IOException {
         doImport("14_update_realm_update_user_remove_subgroup.json");
 
-        final RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        final RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
@@ -522,8 +506,7 @@ class ImportUsersIT extends AbstractImportIT {
                 "moped-client",
                 "my-special-client-secret",
                 "myinitialclientuser",
-                "initialchangedclientuser123"
-        );
+                "initialchangedclientuser123");
 
         assertThat(token.getToken(), notNullValue());
     }
@@ -536,7 +519,8 @@ class ImportUsersIT extends AbstractImportIT {
         // Re-import the same configuration to check if UPDATE USER event is not triggered
         doImport("60.2_update_realm_add_clientl_with_service_account.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
         assertThat(realm.isRegistrationAllowed(), is(true));
@@ -545,7 +529,9 @@ class ImportUsersIT extends AbstractImportIT {
         final ClientRepresentation client = keycloakRepository.getClient(REALM_NAME, "technical-client");
         assertThat(client.getClientId(), is("technical-client"));
 
-        UserRepresentation user = keycloakProvider.getInstance().realm(REALM_NAME)
+        UserRepresentation user = keycloakProvider
+                .getInstance()
+                .realm(REALM_NAME)
                 .clients()
                 .get(client.getId())
                 .getServiceAccountUser();
@@ -558,14 +544,14 @@ class ImportUsersIT extends AbstractImportIT {
         List<String> keycloakNativeClientLevelRoles = keycloakRepository.getServiceAccountUserClientLevelRoles(
                 REALM_NAME, client.getClientId(), "realm-management");
         assertThat(keycloakNativeClientLevelRoles, contains("view-realm"));
-
     }
 
     @Test
     @Order(50)
     void shouldUpdateUserWithEmailAsRegistration() throws IOException {
         doImport("50.1_create_realm_with_email_as_username_without_username.json");
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
         assertThat(realm.isRegistrationAllowed(), is(true));
@@ -584,9 +570,13 @@ class ImportUsersIT extends AbstractImportIT {
         assertThat(user.getFirstName(), is("My firstname 1"));
         assertThat(user.getLastName(), is("My lastname 1"));
 
-
-        InvalidImportException thrown = assertThrows(InvalidImportException.class, () -> doImport("50.3_update_realm_with_email_as_username_with_invalid_username.json"));
-        assertThat(thrown.getMessage(), is("Invalid user 'otheruser' in realm 'realmWithUsers': username (otheruser) and email (otheruser@mail.de) is different while 'email as username' is enabled on realm."));
+        InvalidImportException thrown = assertThrows(
+                InvalidImportException.class,
+                () -> doImport("50.3_update_realm_with_email_as_username_with_invalid_username.json"));
+        assertThat(
+                thrown.getMessage(),
+                is(
+                        "Invalid user 'otheruser' in realm 'realmWithUsers': username (otheruser) and email (otheruser@mail.de) is different while 'email as username' is enabled on realm."));
 
         doImport("50.4_update_realm_with_email_as_username_with_correct_username.json");
         user = keycloakRepository.getUser(REALM_NAME, "otheruser@mail.de");
@@ -595,12 +585,14 @@ class ImportUsersIT extends AbstractImportIT {
         assertThat(user.getFirstName(), is("My firstname 2"));
         assertThat(user.getLastName(), is("My lastname 2"));
     }
+
     @Test
     @Order(70)
     void shouldUpdateUserWithNewUsername() throws IOException {
         doImport("16.1_update_realm_change_users_username.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -614,20 +606,20 @@ class ImportUsersIT extends AbstractImportIT {
         assertThat(user.getLastName(), is("My lastname"));
 
         doImport("16.2_update_realm_change_users_username.json");
-        UserRepresentation updatedUser= keycloakRepository.getUser(REALM_NAME, "john123");
+        UserRepresentation updatedUser = keycloakRepository.getUser(REALM_NAME, "john123");
         assertThat(updatedUser.getUsername(), is("john123"));
         assertThat(updatedUser.getEmail(), is("myuser@mail.de"));
         assertThat(updatedUser.isEnabled(), is(true));
         assertThat(updatedUser.getFirstName(), is("My firstname"));
         assertThat(updatedUser.getLastName(), is("My lastname"));
-
     }
 
     @Test
     @Order(80)
     void shouldAddClientWithServiceAccount() throws IOException {
         doImport("60.1_update_realm_add_clientl_with_service_account.json");
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
         assertThat(realm.isRegistrationAllowed(), is(true));
@@ -636,7 +628,9 @@ class ImportUsersIT extends AbstractImportIT {
         ClientRepresentation client = keycloakRepository.getClient(REALM_NAME, "technical-client");
         assertThat(client.getClientId(), is("technical-client"));
 
-        UserRepresentation user = keycloakProvider.getInstance().realm(REALM_NAME)
+        UserRepresentation user = keycloakProvider
+                .getInstance()
+                .realm(REALM_NAME)
                 .clients()
                 .get(client.getId())
                 .getServiceAccountUser();
@@ -658,7 +652,8 @@ class ImportUsersIT extends AbstractImportIT {
     @Order(90)
     void shouldRemoveClientLevelRolesFromExistingServiceAccount() throws IOException {
         doImport("60.2_update_realm_remove_client_role_from_service_account.json");
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
         assertThat(realm.isRegistrationAllowed(), is(true));
@@ -667,7 +662,9 @@ class ImportUsersIT extends AbstractImportIT {
         ClientRepresentation client = keycloakRepository.getClient(REALM_NAME, "technical-client");
         assertThat(client.getClientId(), is("technical-client"));
 
-        UserRepresentation user = keycloakProvider.getInstance().realm(REALM_NAME)
+        UserRepresentation user = keycloakProvider
+                .getInstance()
+                .realm(REALM_NAME)
                 .clients()
                 .get(client.getId())
                 .getServiceAccountUser();
@@ -689,7 +686,8 @@ class ImportUsersIT extends AbstractImportIT {
     @Order(100)
     void shouldRemoveKeycloakDefaultClientLevelRolesFromExistingServiceAccount() throws IOException {
         doImport("60.3_update_realm_explicitly_remove_keycloak_client_role_from_service_account.json");
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
         assertThat(realm.isRegistrationAllowed(), is(true));
@@ -698,7 +696,9 @@ class ImportUsersIT extends AbstractImportIT {
         ClientRepresentation client = keycloakRepository.getClient(REALM_NAME, "technical-client");
         assertThat(client.getClientId(), is("technical-client"));
 
-        UserRepresentation user = keycloakProvider.getInstance().realm(REALM_NAME)
+        UserRepresentation user = keycloakProvider
+                .getInstance()
+                .realm(REALM_NAME)
                 .clients()
                 .get(client.getId())
                 .getServiceAccountUser();
@@ -716,7 +716,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldUpdateAttributeOfUserWithoutAttributes() throws IOException {
         doImport("61.1_create_realm_with_user_without_attributes.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -741,10 +742,18 @@ class ImportUsersIT extends AbstractImportIT {
     }
 
     private List<GroupRepresentation> getGroupsByUser(UserRepresentation user) {
-        return keycloakProvider.getInstance().realm(REALM_NAME).users().get(user.getId()).groups();
+        return keycloakProvider
+                .getInstance()
+                .realm(REALM_NAME)
+                .users()
+                .get(user.getId())
+                .groups();
     }
 
     private GroupRepresentation getGroupsByPath(List<GroupRepresentation> groups, String groupPath) {
-        return groups.stream().filter(group -> group.getPath().equals(groupPath)).findFirst().orElse(null);
+        return groups.stream()
+                .filter(group -> group.getPath().equals(groupPath))
+                .findFirst()
+                .orElse(null);
     }
 }

@@ -20,6 +20,9 @@
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
 import io.github.doriangrelu.keycloak.config.normalize.AbstractNormalizeTest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
@@ -27,10 +30,6 @@ import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
 import org.keycloak.representations.idm.AuthenticatorConfigRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 class AuthFlowNormalizationServiceConfigIT extends AbstractNormalizeTest {
 
@@ -50,11 +49,14 @@ class AuthFlowNormalizationServiceConfigIT extends AbstractNormalizeTest {
 
         AuthenticationFlowRepresentation authenticationFlowRepresentation = new AuthenticationFlowRepresentation();
 
-        AuthenticationExecutionExportRepresentation authenticationExecutionExportRepresentation = new AuthenticationExecutionExportRepresentation();
+        AuthenticationExecutionExportRepresentation authenticationExecutionExportRepresentation =
+                new AuthenticationExecutionExportRepresentation();
         authenticationExecutionExportRepresentation.setAuthenticatorConfig("config1");
-        authenticationFlowRepresentation.setAuthenticationExecutions(List.of(authenticationExecutionExportRepresentation));
+        authenticationFlowRepresentation.setAuthenticationExecutions(
+                List.of(authenticationExecutionExportRepresentation));
 
-        var resultingAuthConfig = service.normalizeAuthConfig(List.of(authenticatorConfigRepresentation), List.of(authenticationFlowRepresentation));
+        var resultingAuthConfig = service.normalizeAuthConfig(
+                List.of(authenticatorConfigRepresentation), List.of(authenticationFlowRepresentation));
 
         Assertions.assertThat(resultingAuthConfig).isNull();
         Assertions.assertThat(output.getOut()).contains("Some authenticator configs are unused.");
@@ -67,11 +69,14 @@ class AuthFlowNormalizationServiceConfigIT extends AbstractNormalizeTest {
 
         AuthenticationFlowRepresentation authenticationFlowRepresentation = new AuthenticationFlowRepresentation();
 
-        AuthenticationExecutionExportRepresentation authenticationExecutionExportRepresentation = new AuthenticationExecutionExportRepresentation();
+        AuthenticationExecutionExportRepresentation authenticationExecutionExportRepresentation =
+                new AuthenticationExecutionExportRepresentation();
         authenticationExecutionExportRepresentation.setAuthenticatorConfig("config1");
-        authenticationFlowRepresentation.setAuthenticationExecutions(List.of(authenticationExecutionExportRepresentation));
+        authenticationFlowRepresentation.setAuthenticationExecutions(
+                List.of(authenticationExecutionExportRepresentation));
 
-        var resultingAuthConfig = service.normalizeAuthConfig(List.of(authenticatorConfigRepresentation), List.of(authenticationFlowRepresentation));
+        var resultingAuthConfig = service.normalizeAuthConfig(
+                List.of(authenticatorConfigRepresentation), List.of(authenticationFlowRepresentation));
 
         Assertions.assertThat(resultingAuthConfig).containsExactlyInAnyOrder(authenticatorConfigRepresentation);
     }
@@ -88,13 +93,19 @@ class AuthFlowNormalizationServiceConfigIT extends AbstractNormalizeTest {
 
         AuthenticationFlowRepresentation authenticationFlowRepresentation = new AuthenticationFlowRepresentation();
 
-        AuthenticationExecutionExportRepresentation authenticationExecutionExportRepresentation = new AuthenticationExecutionExportRepresentation();
+        AuthenticationExecutionExportRepresentation authenticationExecutionExportRepresentation =
+                new AuthenticationExecutionExportRepresentation();
         authenticationExecutionExportRepresentation.setAuthenticatorConfig("config1");
-        authenticationFlowRepresentation.setAuthenticationExecutions(List.of(authenticationExecutionExportRepresentation));
+        authenticationFlowRepresentation.setAuthenticationExecutions(
+                List.of(authenticationExecutionExportRepresentation));
 
-        var resultingAuthConfig = service.normalizeAuthConfig(List.of(authenticatorConfigRepresentation1, authenticatorConfigRepresentation2), List.of(authenticationFlowRepresentation));
+        var resultingAuthConfig = service.normalizeAuthConfig(
+                List.of(authenticatorConfigRepresentation1, authenticatorConfigRepresentation2),
+                List.of(authenticationFlowRepresentation));
 
-        Assertions.assertThat(resultingAuthConfig).containsExactlyInAnyOrder(authenticatorConfigRepresentation1, authenticatorConfigRepresentation2);
-        Assertions.assertThat(output.getOut()).contains("The following authenticator configs are duplicates: [config1]");
+        Assertions.assertThat(resultingAuthConfig)
+                .containsExactlyInAnyOrder(authenticatorConfigRepresentation1, authenticatorConfigRepresentation2);
+        Assertions.assertThat(output.getOut())
+                .contains("The following authenticator configs are duplicates: [config1]");
     }
 }

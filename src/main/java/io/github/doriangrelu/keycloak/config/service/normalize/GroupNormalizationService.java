@@ -20,20 +20,19 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
-import org.javers.core.Javers;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+import org.javers.core.Javers;
+import org.keycloak.representations.idm.GroupRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -44,34 +43,40 @@ public class GroupNormalizationService {
     private final Javers unOrderedJavers;
     private final AttributeNormalizationService attributeNormalizationService;
 
-    public GroupNormalizationService(Javers unOrderedJavers,
-                                     AttributeNormalizationService attributeNormalizationService) {
+    public GroupNormalizationService(
+            Javers unOrderedJavers, AttributeNormalizationService attributeNormalizationService) {
         this.unOrderedJavers = unOrderedJavers;
         this.attributeNormalizationService = attributeNormalizationService;
     }
 
-    public List<GroupRepresentation> normalizeGroups(List<GroupRepresentation> exportedGroups, List<GroupRepresentation> baselineGroups) {
+    public List<GroupRepresentation> normalizeGroups(
+            List<GroupRepresentation> exportedGroups, List<GroupRepresentation> baselineGroups) {
         var exportedOrEmpty = getNonNull(exportedGroups);
         var baselineOrEmpty = getNonNull(baselineGroups);
-        var exportedGroupsMap = exportedOrEmpty.stream()
-                .collect(Collectors.toMap(GroupRepresentation::getPath, Function.identity()));
-        var baselineGroupsMap = baselineOrEmpty.stream()
-                .collect(Collectors.toMap(GroupRepresentation::getPath, Function.identity()));
+        var exportedGroupsMap =
+                exportedOrEmpty.stream().collect(Collectors.toMap(GroupRepresentation::getPath, Function.identity()));
+        var baselineGroupsMap =
+                baselineOrEmpty.stream().collect(Collectors.toMap(GroupRepresentation::getPath, Function.identity()));
 
         var normalizedGroups = new ArrayList<GroupRepresentation>();
         for (var entry : baselineGroupsMap.entrySet()) {
             var groupPath = entry.getKey();
             var exportedGroup = exportedGroupsMap.remove(groupPath);
             if (exportedGroup == null) {
-                logger.warn("Default realm group '{}' was deleted in exported realm. It may be reintroduced during import", groupPath);
+                logger.warn(
+                        "Default realm group '{}' was deleted in exported realm. It may be reintroduced during import",
+                        groupPath);
                 continue;
             }
             var baselineGroup = entry.getValue();
             var diff = unOrderedJavers.compare(baselineGroup, exportedGroup);
 
-            if (diff.hasChanges() || subGroupsChanged(exportedGroup, baselineGroup)
-                    || attributeNormalizationService.listAttributesChanged(exportedGroup.getAttributes(), baselineGroup.getAttributes())
-                    || attributeNormalizationService.listAttributesChanged(exportedGroup.getClientRoles(), baselineGroup.getClientRoles())) {
+            if (diff.hasChanges()
+                    || subGroupsChanged(exportedGroup, baselineGroup)
+                    || attributeNormalizationService.listAttributesChanged(
+                            exportedGroup.getAttributes(), baselineGroup.getAttributes())
+                    || attributeNormalizationService.listAttributesChanged(
+                            exportedGroup.getClientRoles(), baselineGroup.getClientRoles())) {
                 normalizedGroups.add(exportedGroup);
             }
         }

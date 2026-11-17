@@ -20,18 +20,17 @@
 
 package io.github.doriangrelu.keycloak.config.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.NullNode;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.NullNode;
+import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
 
 class JsonUtilTest {
 
@@ -42,8 +41,7 @@ class JsonUtilTest {
 
     @Test
     void fromJson_shouldWrapJsonProcessingException() {
-        var exception =
-            assertThrows(ImportProcessingException.class, () -> JsonUtil.fromJson("{4"));
+        var exception = assertThrows(ImportProcessingException.class, () -> JsonUtil.fromJson("{4"));
 
         assertThat(exception.getCause(), instanceOf(JsonProcessingException.class));
     }
@@ -52,8 +50,7 @@ class JsonUtilTest {
     void toJson_shouldWrapIOException() {
         var object = new FailingStringSerialization();
 
-        var exception =
-            assertThrows(ImportProcessingException.class, () -> JsonUtil.toJson(object));
+        var exception = assertThrows(ImportProcessingException.class, () -> JsonUtil.toJson(object));
 
         assertThat(exception.getCause(), instanceOf(IOException.class));
     }
@@ -65,8 +62,7 @@ class JsonUtilTest {
 
     @Test
     void getJsonOrNullNode_shouldWrapJsonProcessingException() {
-        var exception =
-            assertThrows(ImportProcessingException.class, () -> JsonUtil.getJsonOrNullNode("{5"));
+        var exception = assertThrows(ImportProcessingException.class, () -> JsonUtil.getJsonOrNullNode("{5"));
 
         assertThat(exception.getCause(), instanceOf(JsonProcessingException.class));
     }
@@ -83,8 +79,7 @@ class JsonUtilTest {
 
     @Test
     void readValue_shouldWrapJsonProcessingException() {
-        var exception =
-                assertThrows(ImportProcessingException.class, () -> JsonUtil.readValue("{6", Object.class));
+        var exception = assertThrows(ImportProcessingException.class, () -> JsonUtil.readValue("{6", Object.class));
 
         assertThat(exception.getCause(), instanceOf(JsonProcessingException.class));
     }
@@ -95,6 +90,5 @@ class JsonUtilTest {
         public String toString() {
             throw new RuntimeException();
         }
-
     }
 }

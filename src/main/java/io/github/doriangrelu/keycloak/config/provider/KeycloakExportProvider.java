@@ -25,6 +25,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.model.ImportResource;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -39,15 +47,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.PathMatcher;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.stream.Collectors;
-
 /*
  * This class heavily copy pastes code from KeycloakImportProvider. This can probably be reduced quite a bit by moving some code out to a shared class
  */
@@ -57,16 +56,17 @@ public class KeycloakExportProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(KeycloakExportProvider.class);
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    private static final ObjectMapper OBJECT_MAPPER =
+            new ObjectMapper().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     private final PathMatchingResourcePatternResolver patternResolver;
 
     private final NormalizationConfigProperties normalizationConfigProperties;
 
     @Autowired
-    public KeycloakExportProvider(PathMatchingResourcePatternResolver patternResolver,
-                                  NormalizationConfigProperties normalizationConfigProperties) {
+    public KeycloakExportProvider(
+            PathMatchingResourcePatternResolver patternResolver,
+            NormalizationConfigProperties normalizationConfigProperties) {
         this.patternResolver = patternResolver;
         this.normalizationConfigProperties = normalizationConfigProperties;
     }
@@ -85,7 +85,9 @@ public class KeycloakExportProvider {
                 throw new InvalidImportException("Unable to proceed location '" + location + "': " + e.getMessage(), e);
             }
 
-            resources = Arrays.stream(resources).filter(this::filterExcludedResources).toArray(Resource[]::new);
+            resources = Arrays.stream(resources)
+                    .filter(this::filterExcludedResources)
+                    .toArray(Resource[]::new);
 
             if (resources.length == 0) {
                 throw new InvalidImportException("No files matching '" + location + "'!");
@@ -96,8 +98,11 @@ public class KeycloakExportProvider {
                     .filter(this::filterEmptyResources)
                     .sorted(Map.Entry.comparingByKey())
                     .map(this::readRealms)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-                            (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (oldValue, newValue) -> oldValue,
+                            LinkedHashMap::new));
             files.put(location, exports);
         }
         return files;
@@ -167,8 +172,7 @@ public class KeycloakExportProvider {
         }
 
         PathMatcher pathMatcher = patternResolver.getPathMatcher();
-        return normalizationConfigProperties.getFiles().getExcludes()
-                .stream()
+        return normalizationConfigProperties.getFiles().getExcludes().stream()
                 .map(pattern -> pattern.startsWith("**") ? "/" + pattern : pattern)
                 .map(pattern -> !pattern.startsWith("/**") ? "/**" + pattern : pattern)
                 .map(pattern -> !pattern.startsWith("/") ? "/" + pattern : pattern)
@@ -188,7 +192,8 @@ public class KeycloakExportProvider {
         try {
             resource = setupAuthentication(resource);
             try (InputStream inputStream = resource.getInputStream()) {
-                return new ImportResource(resource.getURI().toString(), new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
+                return new ImportResource(
+                        resource.getURI().toString(), new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
             }
         } catch (IOException e) {
             throw new InvalidImportException("Unable to proceed resource '" + resource + "': " + e.getMessage(), e);
@@ -227,6 +232,4 @@ public class KeycloakExportProvider {
     protected boolean filterEmptyResources(ImportResource resource) {
         return !resource.getValue().isEmpty();
     }
-
-
 }

@@ -20,8 +20,16 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+
 import io.github.doriangrelu.keycloak.config.provider.BaselineProvider;
 import io.github.doriangrelu.keycloak.config.util.JaversUtil;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.javers.core.Javers;
 import org.javers.core.diff.changetype.PropertyChange;
 import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
@@ -34,24 +42,30 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
-
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
 public class ClientNormalizationService {
 
-    private static final Set<String> SAML_ATTRIBUTES = Set.of("saml_signature_canonicalization_method", "saml.onetimeuse.condition",
-            "saml_name_id_format", "saml.authnstatement", "saml.server.signature.keyinfo$xmlSigKeyInfoKeyNameTransformer",
-            "saml_force_name_id_format", "saml.artifact.binding", "saml.artifact.binding.identifier", "saml.server.signature", "saml.encrypt",
-            "saml.assertion.signature", "saml.allow.ecp.flow", "saml.signing.private.key", "saml.force.name.id.format", "saml.client.signature",
-            "saml.signature.algorithm", "saml.signing.certificate", "saml.server.signature.keyinfo.ext", "saml.multivalued.roles",
+    private static final Set<String> SAML_ATTRIBUTES = Set.of(
+            "saml_signature_canonicalization_method",
+            "saml.onetimeuse.condition",
+            "saml_name_id_format",
+            "saml.authnstatement",
+            "saml.server.signature.keyinfo$xmlSigKeyInfoKeyNameTransformer",
+            "saml_force_name_id_format",
+            "saml.artifact.binding",
+            "saml.artifact.binding.identifier",
+            "saml.server.signature",
+            "saml.encrypt",
+            "saml.assertion.signature",
+            "saml.allow.ecp.flow",
+            "saml.signing.private.key",
+            "saml.force.name.id.format",
+            "saml.client.signature",
+            "saml.signature.algorithm",
+            "saml.signing.certificate",
+            "saml.server.signature.keyinfo.ext",
+            "saml.multivalued.roles",
             "saml.force.post.binding");
 
     private static final Logger logger = LoggerFactory.getLogger(ClientNormalizationService.class);
@@ -59,15 +73,15 @@ public class ClientNormalizationService {
     private final BaselineProvider baselineProvider;
     private final JaversUtil javersUtil;
 
-    public ClientNormalizationService(Javers unOrderedJavers,
-                                      BaselineProvider baselineProvider,
-                                      JaversUtil javersUtil) {
+    public ClientNormalizationService(
+            Javers unOrderedJavers, BaselineProvider baselineProvider, JaversUtil javersUtil) {
         this.unOrderedJavers = unOrderedJavers;
         this.baselineProvider = baselineProvider;
         this.javersUtil = javersUtil;
     }
 
-    public List<ClientRepresentation> normalizeClients(RealmRepresentation exportedRealm, RealmRepresentation baselineRealm) {
+    public List<ClientRepresentation> normalizeClients(
+            RealmRepresentation exportedRealm, RealmRepresentation baselineRealm) {
         var exportedOrEmpty = getNonNull(exportedRealm.getClients());
         var baselineOrEmpty = getNonNull(baselineRealm.getClients());
         var exportedClientMap = new HashMap<String, ClientRepresentation>();
@@ -82,7 +96,9 @@ public class ClientNormalizationService {
             baselineClientMap.put(clientId, baselineRealmClient);
             var exportedClient = exportedClientMap.get(clientId);
             if (exportedClient == null) {
-                logger.warn("Default realm client '{}' was deleted in exported realm. It may be reintroduced during import!", clientId);
+                logger.warn(
+                        "Default realm client '{}' was deleted in exported realm. It may be reintroduced during import!",
+                        clientId);
                 /*
                  * Here we need to define a configuration parameter: If we want the import *not* to reintroduce default clients that were
                  * deleted, we need to add *all* clients, not just default clients to the dump. Then during import, set the mode that
@@ -105,7 +121,8 @@ public class ClientNormalizationService {
         return clients;
     }
 
-    public ClientRepresentation normalizeClient(ClientRepresentation client, String keycloakVersion, RealmRepresentation exportedRealm) {
+    public ClientRepresentation normalizeClient(
+            ClientRepresentation client, String keycloakVersion, RealmRepresentation exportedRealm) {
         var clientId = client.getClientId();
         var baselineClient = baselineProvider.getClient(keycloakVersion, clientId);
         var diff = unOrderedJavers.compare(baselineClient, client);
@@ -134,8 +151,10 @@ public class ClientNormalizationService {
         if (normalizedClient.getAuthenticationFlowBindingOverrides() != null) {
             var overrides = new HashMap<String, String>();
             var flows = exportedRealm.getAuthenticationFlows().stream()
-                    .collect(Collectors.toMap(AuthenticationFlowRepresentation::getId, AuthenticationFlowRepresentation::getAlias));
-            for (var entry : normalizedClient.getAuthenticationFlowBindingOverrides().entrySet()) {
+                    .collect(Collectors.toMap(
+                            AuthenticationFlowRepresentation::getId, AuthenticationFlowRepresentation::getAlias));
+            for (var entry :
+                    normalizedClient.getAuthenticationFlowBindingOverrides().entrySet()) {
                 var id = entry.getValue();
                 overrides.put(entry.getKey(), flows.get(id));
             }
@@ -153,17 +172,21 @@ public class ClientNormalizationService {
         if (protocolMappersChanged(exportedClient.getProtocolMappers(), baselineClient.getProtocolMappers())) {
             return true;
         }
-        return authorizationSettingsChanged(exportedClient.getAuthorizationSettings(), baselineClient.getAuthorizationSettings());
+        return authorizationSettingsChanged(
+                exportedClient.getAuthorizationSettings(), baselineClient.getAuthorizationSettings());
     }
 
-    public boolean protocolMappersChanged(List<ProtocolMapperRepresentation> exportedMappers, List<ProtocolMapperRepresentation> baselineMappers) {
+    public boolean protocolMappersChanged(
+            List<ProtocolMapperRepresentation> exportedMappers, List<ProtocolMapperRepresentation> baselineMappers) {
         // CompareCollections doesn't handle nulls gracefully
-        return unOrderedJavers.compareCollections(getNonNull(baselineMappers), getNonNull(exportedMappers), ProtocolMapperRepresentation.class)
+        return unOrderedJavers
+                .compareCollections(
+                        getNonNull(baselineMappers), getNonNull(exportedMappers), ProtocolMapperRepresentation.class)
                 .hasChanges();
     }
 
-    public boolean authorizationSettingsChanged(ResourceServerRepresentation exportedSettings, ResourceServerRepresentation baselineSettings) {
+    public boolean authorizationSettingsChanged(
+            ResourceServerRepresentation exportedSettings, ResourceServerRepresentation baselineSettings) {
         return unOrderedJavers.compare(baselineSettings, exportedSettings).hasChanges();
     }
-
 }

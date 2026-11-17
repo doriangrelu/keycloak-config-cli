@@ -23,6 +23,11 @@ package io.github.doriangrelu.keycloak.config.service.normalize;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationKeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.BaselineProvider;
 import io.github.doriangrelu.keycloak.config.util.JaversUtil;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.javers.core.Javers;
 import org.javers.core.diff.changetype.PropertyChange;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -31,12 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -62,22 +61,23 @@ public class RealmNormalizationService {
     private final JaversUtil javersUtil;
 
     @Autowired
-    public RealmNormalizationService(NormalizationKeycloakConfigProperties keycloakConfigProperties,
-                                     Javers javers,
-                                     BaselineProvider baselineProvider,
-                                     ClientNormalizationService clientNormalizationService,
-                                     ScopeMappingNormalizationService scopeMappingNormalizationService,
-                                     ProtocolMapperNormalizationService protocolMapperNormalizationService,
-                                     ClientScopeNormalizationService clientScopeNormalizationService,
-                                     RoleNormalizationService roleNormalizationService,
-                                     AttributeNormalizationService attributeNormalizationService,
-                                     GroupNormalizationService groupNormalizationService,
-                                     AuthFlowNormalizationService authFlowNormalizationService,
-                                     IdentityProviderNormalizationService identityProviderNormalizationService,
-                                     RequiredActionNormalizationService requiredActionNormalizationService,
-                                     UserFederationNormalizationService userFederationNormalizationService,
-                                     ClientPolicyNormalizationService clientPolicyNormalizationService,
-                                     JaversUtil javersUtil) {
+    public RealmNormalizationService(
+            NormalizationKeycloakConfigProperties keycloakConfigProperties,
+            Javers javers,
+            BaselineProvider baselineProvider,
+            ClientNormalizationService clientNormalizationService,
+            ScopeMappingNormalizationService scopeMappingNormalizationService,
+            ProtocolMapperNormalizationService protocolMapperNormalizationService,
+            ClientScopeNormalizationService clientScopeNormalizationService,
+            RoleNormalizationService roleNormalizationService,
+            AttributeNormalizationService attributeNormalizationService,
+            GroupNormalizationService groupNormalizationService,
+            AuthFlowNormalizationService authFlowNormalizationService,
+            IdentityProviderNormalizationService identityProviderNormalizationService,
+            RequiredActionNormalizationService requiredActionNormalizationService,
+            UserFederationNormalizationService userFederationNormalizationService,
+            ClientPolicyNormalizationService clientPolicyNormalizationService,
+            JaversUtil javersUtil) {
         this.keycloakConfigProperties = keycloakConfigProperties;
         this.javers = javers;
         this.baselineProvider = baselineProvider;
@@ -104,10 +104,12 @@ public class RealmNormalizationService {
         var keycloakConfigVersion = keycloakConfigProperties.getVersion();
         var exportVersion = exportedRealm.getKeycloakVersion();
         if (!exportVersion.equals(keycloakConfigVersion)) {
-            logger.warn("Keycloak-Config-CLI keycloak version {} and export keycloak version {} are not equal."
+            logger.warn(
+                    "Keycloak-Config-CLI keycloak version {} and export keycloak version {} are not equal."
                             + " This may cause problems if the API changed."
                             + " Please compile keycloak-config-cli with a matching keycloak version!",
-                    keycloakConfigVersion, exportVersion);
+                    keycloakConfigVersion,
+                    exportVersion);
         }
         var exportedRealmRealm = exportedRealm.getRealm();
         logger.info("Exporting realm {}", exportedRealmRealm);
@@ -129,7 +131,8 @@ public class RealmNormalizationService {
         }
 
         // No setter for some reason...
-        var minimizedScopeMappings = scopeMappingNormalizationService.normalizeScopeMappings(exportedRealm, baselineRealm);
+        var minimizedScopeMappings =
+                scopeMappingNormalizationService.normalizeScopeMappings(exportedRealm, baselineRealm);
         if (!minimizedScopeMappings.isEmpty()) {
             var scopeMappings = minimizedRealm.getScopeMappings();
             if (scopeMappings == null) {
@@ -140,49 +143,54 @@ public class RealmNormalizationService {
             scopeMappings.addAll(minimizedScopeMappings);
         }
 
-        var clientScopeMappings = scopeMappingNormalizationService.normalizeClientScopeMappings(exportedRealm, baselineRealm);
+        var clientScopeMappings =
+                scopeMappingNormalizationService.normalizeClientScopeMappings(exportedRealm, baselineRealm);
         if (!clientScopeMappings.isEmpty()) {
             minimizedRealm.setClientScopeMappings(clientScopeMappings);
         }
 
-        minimizedRealm.setAttributes(attributeNormalizationService.normalizeStringAttributes(exportedRealm.getAttributes(),
-                baselineRealm.getAttributes()));
+        minimizedRealm.setAttributes(attributeNormalizationService.normalizeStringAttributes(
+                exportedRealm.getAttributes(), baselineRealm.getAttributes()));
 
-        minimizedRealm.setProtocolMappers(protocolMapperNormalizationService.normalizeProtocolMappers(exportedRealm.getProtocolMappers(),
-                baselineRealm.getProtocolMappers()));
+        minimizedRealm.setProtocolMappers(protocolMapperNormalizationService.normalizeProtocolMappers(
+                exportedRealm.getProtocolMappers(), baselineRealm.getProtocolMappers()));
 
-        minimizedRealm.setClientScopes(clientScopeNormalizationService.normalizeClientScopes(exportedRealm.getClientScopes(),
-                baselineRealm.getClientScopes()));
+        minimizedRealm.setClientScopes(clientScopeNormalizationService.normalizeClientScopes(
+                exportedRealm.getClientScopes(), baselineRealm.getClientScopes()));
 
-        minimizedRealm.setRoles(roleNormalizationService.normalizeRoles(exportedRealm.getRoles(), baselineRealm.getRoles()));
+        minimizedRealm.setRoles(
+                roleNormalizationService.normalizeRoles(exportedRealm.getRoles(), baselineRealm.getRoles()));
 
-        minimizedRealm.setGroups(groupNormalizationService.normalizeGroups(exportedRealm.getGroups(), baselineRealm.getGroups()));
+        minimizedRealm.setGroups(
+                groupNormalizationService.normalizeGroups(exportedRealm.getGroups(), baselineRealm.getGroups()));
 
-        var authFlows = authFlowNormalizationService.normalizeAuthFlows(exportedRealm.getAuthenticationFlows(),
-                baselineRealm.getAuthenticationFlows());
+        var authFlows = authFlowNormalizationService.normalizeAuthFlows(
+                exportedRealm.getAuthenticationFlows(), baselineRealm.getAuthenticationFlows());
         minimizedRealm.setAuthenticationFlows(authFlows);
-        minimizedRealm.setAuthenticatorConfig(authFlowNormalizationService.normalizeAuthConfig(exportedRealm.getAuthenticatorConfig(), authFlows));
+        minimizedRealm.setAuthenticatorConfig(
+                authFlowNormalizationService.normalizeAuthConfig(exportedRealm.getAuthenticatorConfig(), authFlows));
 
-        minimizedRealm.setIdentityProviders(identityProviderNormalizationService.normalizeProviders(exportedRealm.getIdentityProviders(),
-                baselineRealm.getIdentityProviders()));
-        minimizedRealm.setIdentityProviderMappers(identityProviderNormalizationService.normalizeMappers(exportedRealm.getIdentityProviderMappers(),
-                baselineRealm.getIdentityProviderMappers()));
+        minimizedRealm.setIdentityProviders(identityProviderNormalizationService.normalizeProviders(
+                exportedRealm.getIdentityProviders(), baselineRealm.getIdentityProviders()));
+        minimizedRealm.setIdentityProviderMappers(identityProviderNormalizationService.normalizeMappers(
+                exportedRealm.getIdentityProviderMappers(), baselineRealm.getIdentityProviderMappers()));
 
-        minimizedRealm.setRequiredActions(requiredActionNormalizationService.normalizeRequiredActions(exportedRealm.getRequiredActions(),
-                baselineRealm.getRequiredActions()));
-        minimizedRealm.setUserFederationProviders(userFederationNormalizationService.normalizeProviders(exportedRealm.getUserFederationProviders(),
-                baselineRealm.getUserFederationProviders()));
-        minimizedRealm.setUserFederationMappers(userFederationNormalizationService.normalizeMappers(exportedRealm.getUserFederationMappers(),
-                baselineRealm.getUserFederationMappers()));
+        minimizedRealm.setRequiredActions(requiredActionNormalizationService.normalizeRequiredActions(
+                exportedRealm.getRequiredActions(), baselineRealm.getRequiredActions()));
+        minimizedRealm.setUserFederationProviders(userFederationNormalizationService.normalizeProviders(
+                exportedRealm.getUserFederationProviders(), baselineRealm.getUserFederationProviders()));
+        minimizedRealm.setUserFederationMappers(userFederationNormalizationService.normalizeMappers(
+                exportedRealm.getUserFederationMappers(), baselineRealm.getUserFederationMappers()));
 
-        minimizedRealm.setParsedClientPolicies(clientPolicyNormalizationService.normalizePolicies(exportedRealm.getParsedClientPolicies(),
-                baselineRealm.getParsedClientPolicies()));
-        minimizedRealm.setParsedClientProfiles(clientPolicyNormalizationService.normalizeProfiles(exportedRealm.getParsedClientProfiles(),
-                baselineRealm.getParsedClientProfiles()));
+        minimizedRealm.setParsedClientPolicies(clientPolicyNormalizationService.normalizePolicies(
+                exportedRealm.getParsedClientPolicies(), baselineRealm.getParsedClientPolicies()));
+        minimizedRealm.setParsedClientProfiles(clientPolicyNormalizationService.normalizeProfiles(
+                exportedRealm.getParsedClientProfiles(), baselineRealm.getParsedClientProfiles()));
         return minimizedRealm;
     }
 
-    void handleBaseRealm(RealmRepresentation exportedRealm, RealmRepresentation baselineRealm, RealmRepresentation minimizedRealm) {
+    void handleBaseRealm(
+            RealmRepresentation exportedRealm, RealmRepresentation baselineRealm, RealmRepresentation minimizedRealm) {
         var diff = javers.compare(baselineRealm, exportedRealm);
         for (var change : diff.getChangesByType(PropertyChange.class)) {
             javersUtil.applyChange(minimizedRealm, change);
@@ -199,7 +207,6 @@ public class RealmNormalizationService {
             minimizedRealm.setId(exportedRealm.getId());
         }
     }
-
 
     public static <K, V> Map<K, V> getNonNull(Map<K, V> in) {
         return in == null ? new HashMap<>() : in;

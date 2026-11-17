@@ -20,6 +20,12 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.javers.core.Javers;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.ScopeMappingRepresentation;
@@ -27,13 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -47,7 +46,8 @@ public class ScopeMappingNormalizationService {
         this.javers = javers;
     }
 
-    public List<ScopeMappingRepresentation> normalizeScopeMappings(RealmRepresentation exportedRealm, RealmRepresentation baselineRealm) {
+    public List<ScopeMappingRepresentation> normalizeScopeMappings(
+            RealmRepresentation exportedRealm, RealmRepresentation baselineRealm) {
         /*
          * TODO: are the mappings in scopeMappings always clientScope/role? If not, this breaks
          */
@@ -65,10 +65,13 @@ public class ScopeMappingNormalizationService {
             baselineMappingsMap.put(clientScope, baselineRealmMapping);
             var exportedMapping = exportedMappingsMap.get(clientScope);
             if (exportedMapping == null) {
-                logger.warn("Default realm scopeMapping '{}' was deleted in exported realm. It may be reintroduced during import!", clientScope);
+                logger.warn(
+                        "Default realm scopeMapping '{}' was deleted in exported realm. It may be reintroduced during import!",
+                        clientScope);
                 continue;
             }
-            // If the exported scopeMapping is different from the one that is present in the baseline realm, export it in the yml
+            // If the exported scopeMapping is different from the one that is present in the baseline realm, export it
+            // in the yml
             if (scopeMappingChanged(exportedMapping, baselineRealmMapping)) {
                 mappings.add(exportedMapping);
             }
@@ -83,8 +86,8 @@ public class ScopeMappingNormalizationService {
         return mappings;
     }
 
-    public Map<String, List<ScopeMappingRepresentation>> normalizeClientScopeMappings(RealmRepresentation exportedRealm,
-                                                                                      RealmRepresentation baselineRealm) {
+    public Map<String, List<ScopeMappingRepresentation>> normalizeClientScopeMappings(
+            RealmRepresentation exportedRealm, RealmRepresentation baselineRealm) {
         var baselineOrEmpty = getNonNull(baselineRealm.getClientScopeMappings());
         var exportedOrEmpty = getNonNull(exportedRealm.getClientScopeMappings());
 
@@ -92,11 +95,14 @@ public class ScopeMappingNormalizationService {
         for (var e : baselineOrEmpty.entrySet()) {
             var key = e.getKey();
             if (!exportedOrEmpty.containsKey(key)) {
-                logger.warn("Default realm clientScopeMapping '{}' was deleted in exported realm. It may be reintroduced during import!", key);
+                logger.warn(
+                        "Default realm clientScopeMapping '{}' was deleted in exported realm. It may be reintroduced during import!",
+                        key);
                 continue;
             }
             var scopeMappings = exportedOrEmpty.get(key);
-            if (javers.compareCollections(e.getValue(), scopeMappings, ScopeMappingRepresentation.class).hasChanges()) {
+            if (javers.compareCollections(e.getValue(), scopeMappings, ScopeMappingRepresentation.class)
+                    .hasChanges()) {
                 mappings.put(key, scopeMappings);
             }
         }
@@ -110,8 +116,8 @@ public class ScopeMappingNormalizationService {
         return mappings;
     }
 
-    public boolean scopeMappingChanged(ScopeMappingRepresentation exportedMapping, ScopeMappingRepresentation baselineRealmMapping) {
+    public boolean scopeMappingChanged(
+            ScopeMappingRepresentation exportedMapping, ScopeMappingRepresentation baselineRealmMapping) {
         return javers.compare(baselineRealmMapping, exportedMapping).hasChanges();
     }
-
 }

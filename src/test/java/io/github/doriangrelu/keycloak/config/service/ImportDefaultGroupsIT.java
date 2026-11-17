@@ -20,20 +20,19 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.RealmRepresentation;
-
-import java.io.IOException;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import java.io.IOException;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.RealmRepresentation;
 
 @SuppressWarnings({"java:S5961", "java:S5976"})
 class ImportDefaultGroupsIT extends AbstractImportIT {
@@ -48,7 +47,8 @@ class ImportDefaultGroupsIT extends AbstractImportIT {
     void shouldCreateRealmWithDefaultGroups() throws IOException {
         doImport("00_create_realm_with_default_groups.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -60,7 +60,8 @@ class ImportDefaultGroupsIT extends AbstractImportIT {
     void shouldUpdateRealmRemoveAndAddDefaultGroup() throws IOException {
         doImport("01_update_realm_remove_and_add_default_group.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -72,11 +73,14 @@ class ImportDefaultGroupsIT extends AbstractImportIT {
     void shouldUpdateRealmAddDefaultSubGroup() throws IOException {
         doImport("02_update_realm_add_default_subgroup.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
-        assertThat(realm.getDefaultGroups(), containsInAnyOrder("/My Group", "/My Added Group", "/Group with subgroup/My SubGroup"));
+        assertThat(
+                realm.getDefaultGroups(),
+                containsInAnyOrder("/My Group", "/My Added Group", "/Group with subgroup/My SubGroup"));
     }
 
     @Test
@@ -84,7 +88,8 @@ class ImportDefaultGroupsIT extends AbstractImportIT {
     void shouldUpdateRealmAddNonExistSubGroup() throws IOException {
         RealmImport foundImport = getFirstImport("96_update_realm_add_non_exists_default_subgroup.json");
 
-        InvalidImportException thrown = assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
+        InvalidImportException thrown =
+                assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
 
         assertThat(thrown.getMessage(), is("Unable to add default group '/not-exist'. Does group exists?"));
     }
@@ -94,7 +99,8 @@ class ImportDefaultGroupsIT extends AbstractImportIT {
     void shouldUpdateRealmRemoveDefaultGroup() throws IOException {
         doImport("97_update_realm_remove_default_group.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -106,7 +112,8 @@ class ImportDefaultGroupsIT extends AbstractImportIT {
     void shouldUpdateRealmSkipDefaultGroup() throws IOException {
         doImport("98_update_realm_skip_default_group.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -118,7 +125,8 @@ class ImportDefaultGroupsIT extends AbstractImportIT {
     void shouldUpdateRealmRemoveAllDefaultGroup() throws IOException {
         doImport("99_update_realm_remove_all_default_group.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));

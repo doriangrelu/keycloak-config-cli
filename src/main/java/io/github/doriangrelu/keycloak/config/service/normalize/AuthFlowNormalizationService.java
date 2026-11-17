@@ -20,15 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
-import org.javers.core.Javers;
-import org.keycloak.representations.idm.AbstractAuthenticationExecutionRepresentation;
-import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
-import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
-import org.keycloak.representations.idm.AuthenticatorConfigRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+import static java.util.function.Predicate.not;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,9 +32,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
-import static java.util.function.Predicate.not;
+import org.javers.core.Javers;
+import org.keycloak.representations.idm.AbstractAuthenticationExecutionRepresentation;
+import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
+import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
+import org.keycloak.representations.idm.AuthenticatorConfigRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -55,8 +54,9 @@ public class AuthFlowNormalizationService {
         this.unOrderedJavers = unOrderedJavers;
     }
 
-    public List<AuthenticationFlowRepresentation> normalizeAuthFlows(List<AuthenticationFlowRepresentation> exportedAuthFlows,
-                                                                     List<AuthenticationFlowRepresentation> baselineAuthFlows) {
+    public List<AuthenticationFlowRepresentation> normalizeAuthFlows(
+            List<AuthenticationFlowRepresentation> exportedAuthFlows,
+            List<AuthenticationFlowRepresentation> baselineAuthFlows) {
         var exportedFiltered = filterBuiltIn(exportedAuthFlows);
         var baselineFiltered = filterBuiltIn(baselineAuthFlows);
 
@@ -70,13 +70,17 @@ public class AuthFlowNormalizationService {
             var alias = entry.getKey();
             var exportedFlow = exportedMap.remove(alias);
             if (exportedFlow == null) {
-                logger.warn("Default realm authentication flow '{}' was deleted in exported realm. It may be reintroduced during import", alias);
+                logger.warn(
+                        "Default realm authentication flow '{}' was deleted in exported realm. It may be reintroduced during import",
+                        alias);
                 continue;
             }
             var baselineFlow = entry.getValue();
             var diff = unOrderedJavers.compare(baselineFlow, exportedFlow);
 
-            if (diff.hasChanges() || executionsChanged(exportedFlow.getAuthenticationExecutions(), baselineFlow.getAuthenticationExecutions())) {
+            if (diff.hasChanges()
+                    || executionsChanged(
+                            exportedFlow.getAuthenticationExecutions(), baselineFlow.getAuthenticationExecutions())) {
                 normalizedFlows.add(exportedFlow);
             }
         }
@@ -90,7 +94,8 @@ public class AuthFlowNormalizationService {
     }
 
     public void detectBrokenAuthenticationFlows(List<AuthenticationFlowRepresentation> flows) {
-        var flowsByAlias = flows.stream().collect(Collectors.toMap(AuthenticationFlowRepresentation::getAlias, Function.identity()));
+        var flowsByAlias = flows.stream()
+                .collect(Collectors.toMap(AuthenticationFlowRepresentation::getAlias, Function.identity()));
         for (var flow : flows) {
             for (var execution : flow.getAuthenticationExecutions()) {
                 var flowAlias = execution.getFlowAlias();
@@ -99,35 +104,41 @@ public class AuthFlowNormalizationService {
                 if (flowAlias != null && authenticator != null) {
                     var referencedFlow = flowsByAlias.get(flowAlias);
                     if (referencedFlow == null) {
-                        logger.warn("Flow '{}' references missing sub-flow '{}'. This flow may not import correctly.",
-                                flow.getAlias(), flowAlias);
+                        logger.warn(
+                                "Flow '{}' references missing sub-flow '{}'. This flow may not import correctly.",
+                                flow.getAlias(),
+                                flowAlias);
                     } else if (!"form-flow".equals(referencedFlow.getProviderId())) {
-                        logger.error("An execution of flow '{}' defines an authenticator and references the sub-flow '{}'."
-                                + " This is only possible if the sub-flow is of type 'form-flow', but it is of type '{}'."
-                                + " keycloak-config-cli will refuse to import this flow. See NORMALIZE.md for more information.",
-                                flow.getAlias(), flowAlias, referencedFlow.getProviderId());
+                        logger.error(
+                                "An execution of flow '{}' defines an authenticator and references the sub-flow '{}'."
+                                        + " This is only possible if the sub-flow is of type 'form-flow', but it is of type '{}'."
+                                        + " keycloak-config-cli will refuse to import this flow. See NORMALIZE.md for more information.",
+                                flow.getAlias(),
+                                flowAlias,
+                                referencedFlow.getProviderId());
                     }
                 }
             }
         }
-
     }
 
-    public List<AuthenticatorConfigRepresentation> normalizeAuthConfig(List<AuthenticatorConfigRepresentation> configs,
-                                                                       List<AuthenticationFlowRepresentation> flows) {
+    public List<AuthenticatorConfigRepresentation> normalizeAuthConfig(
+            List<AuthenticatorConfigRepresentation> configs, List<AuthenticationFlowRepresentation> flows) {
         var flowsOrEmpty = getNonNull(flows);
         // Find out which configs are actually used by the normalized flows
         var usedConfigs = flowsOrEmpty.stream()
                 .map(AuthenticationFlowRepresentation::getAuthenticationExecutions)
                 .map(l -> l.stream()
                         .map(AbstractAuthenticationExecutionRepresentation::getAuthenticatorConfig)
-                        .collect(Collectors.toList())).flatMap(Collection::stream)
+                        .collect(Collectors.toList()))
+                .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
 
         var configOrEmpty = getNonNull(configs);
         // Only return configs that are used
         var filteredConfigs = configOrEmpty.stream()
-                .filter(acr -> usedConfigs.contains(acr.getAlias())).collect(Collectors.toList());
+                .filter(acr -> usedConfigs.contains(acr.getAlias()))
+                .collect(Collectors.toList());
 
         var duplicates = new HashSet<String>();
         var seen = new HashSet<String>();
@@ -141,12 +152,15 @@ public class AuthFlowNormalizationService {
         }
 
         if (!duplicates.isEmpty()) {
-            logger.warn("The following authenticator configs are duplicates: {}. "
-                    + "Check NORMALIZE.md for an SQL query to find the offending entries in your database!", duplicates);
+            logger.warn(
+                    "The following authenticator configs are duplicates: {}. "
+                            + "Check NORMALIZE.md for an SQL query to find the offending entries in your database!",
+                    duplicates);
         }
 
         if (getNonNull(configs).size() != filteredConfigs.size()) {
-            logger.warn("Some authenticator configs are unused. Check NORMALIZE.md for an SQL query to find the offending entries in your database!");
+            logger.warn(
+                    "Some authenticator configs are unused. Check NORMALIZE.md for an SQL query to find the offending entries in your database!");
         }
         return filteredConfigs.isEmpty() ? null : filteredConfigs;
     }
@@ -155,13 +169,19 @@ public class AuthFlowNormalizationService {
         if (flows == null) {
             return new ArrayList<>();
         }
-        return flows.stream().filter(not(AuthenticationFlowRepresentation::isBuiltIn)).collect(Collectors.toList());
+        return flows.stream()
+                .filter(not(AuthenticationFlowRepresentation::isBuiltIn))
+                .collect(Collectors.toList());
     }
 
-    private List<AuthenticationFlowRepresentation> filterUnusedNonTopLevel(List<AuthenticationFlowRepresentation> flows) {
+    private List<AuthenticationFlowRepresentation> filterUnusedNonTopLevel(
+            List<AuthenticationFlowRepresentation> flows) {
         // Assume all top level flows are used
-        var usedFlows = flows.stream().filter(AuthenticationFlowRepresentation::isTopLevel).collect(Collectors.toList());
-        var potentialUnused = flows.stream().filter(not(AuthenticationFlowRepresentation::isTopLevel))
+        var usedFlows = flows.stream()
+                .filter(AuthenticationFlowRepresentation::isTopLevel)
+                .collect(Collectors.toList());
+        var potentialUnused = flows.stream()
+                .filter(not(AuthenticationFlowRepresentation::isTopLevel))
                 .collect(Collectors.toMap(AuthenticationFlowRepresentation::getAlias, Function.identity()));
         var toCheck = new ArrayList<>(usedFlows);
         while (!toCheck.isEmpty()) {
@@ -181,14 +201,17 @@ public class AuthFlowNormalizationService {
             usedFlows.addAll(toCheck);
         }
         if (usedFlows.size() != flows.size()) {
-            logger.warn("The following authentication flows are unused: {}. "
-                    + "Check NORMALIZE.md for an SQL query to find the offending entries in your database!", potentialUnused.keySet());
+            logger.warn(
+                    "The following authentication flows are unused: {}. "
+                            + "Check NORMALIZE.md for an SQL query to find the offending entries in your database!",
+                    potentialUnused.keySet());
         }
         return usedFlows;
     }
 
-    public boolean executionsChanged(List<AuthenticationExecutionExportRepresentation> exportedExecutions,
-                                     List<AuthenticationExecutionExportRepresentation> baselineExecutions) {
+    public boolean executionsChanged(
+            List<AuthenticationExecutionExportRepresentation> exportedExecutions,
+            List<AuthenticationExecutionExportRepresentation> baselineExecutions) {
         if (exportedExecutions == null && baselineExecutions != null) {
             return true;
         }
@@ -216,8 +239,9 @@ public class AuthFlowNormalizationService {
         return false;
     }
 
-    public boolean executionChanged(AuthenticationExecutionExportRepresentation exportedExecution,
-                                    AuthenticationExecutionExportRepresentation baselineExecution) {
+    public boolean executionChanged(
+            AuthenticationExecutionExportRepresentation exportedExecution,
+            AuthenticationExecutionExportRepresentation baselineExecution) {
         if (!Objects.equals(exportedExecution.getAuthenticatorConfig(), baselineExecution.getAuthenticatorConfig())) {
             return true;
         }

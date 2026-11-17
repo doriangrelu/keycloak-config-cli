@@ -20,13 +20,12 @@
 
 package io.github.doriangrelu.keycloak.config.service.rolecomposites.realm;
 
+import java.util.List;
+import java.util.Optional;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Implements the update mechanism for role composites of realm-level roles
@@ -40,9 +39,7 @@ public class RealmRoleCompositeImportService {
 
     @Autowired
     public RealmRoleCompositeImportService(
-            RealmCompositeImport realmCompositeImport,
-            ClientCompositeImport clientCompositeImport
-    ) {
+            RealmCompositeImport realmCompositeImport, ClientCompositeImport clientCompositeImport) {
         this.clientCompositeImport = clientCompositeImport;
         this.realmCompositeImport = realmCompositeImport;
     }
@@ -69,10 +66,7 @@ public class RealmRoleCompositeImportService {
     private void updateRealmRoleClientCompositesIfNecessary(String realmName, RoleRepresentation realmRole) {
         Optional.ofNullable(realmRole.getComposites())
                 .flatMap(composites -> Optional.ofNullable(composites.getClient()))
-                .ifPresent(clientComposites -> clientCompositeImport.update(
-                        realmName,
-                        realmRole.getName(),
-                        clientComposites
-                ));
+                .ifPresent(clientComposites ->
+                        clientCompositeImport.update(realmName, realmRole.getName(), clientComposites));
     }
 }

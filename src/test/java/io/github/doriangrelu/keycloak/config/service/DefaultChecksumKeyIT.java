@@ -20,22 +20,22 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
-
 @ContextConfiguration()
-@TestPropertySource(properties = {
-        "import.behaviors.checksum-with-cache-key=true",
-        "import.behaviors.checksum-changed=continue"
-})
+@TestPropertySource(
+        properties = {"import.behaviors.checksum-with-cache-key=true", "import.behaviors.checksum-changed=continue"})
 public class DefaultChecksumKeyIT extends AbstractChecksumServiceIT {
 
     @Test
-    @DisabledIfSystemProperty(named = "keycloak.version", matches = "2[6-9]\\..*", disabledReason = "Keycloak 26.0+ requires cross-realm permissions that cannot be reliably granted in test setup")
+    @DisabledIfSystemProperty(
+            named = "keycloak.version",
+            matches = "2[6-9]\\..*",
+            disabledReason =
+                    "Keycloak 26.0+ requires cross-realm permissions that cannot be reliably granted in test setup")
     void hasToBeUpdated_with_single_file() throws Exception {
         this.resourcePath = "import-files/simple-realm";
 
@@ -46,7 +46,11 @@ public class DefaultChecksumKeyIT extends AbstractChecksumServiceIT {
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "keycloak.version", matches = "2[6-9]\\..*", disabledReason = "Keycloak 26.0+ requires cross-realm permissions that cannot be reliably granted in test setup")
+    @DisabledIfSystemProperty(
+            named = "keycloak.version",
+            matches = "2[6-9]\\..*",
+            disabledReason =
+                    "Keycloak 26.0+ requires cross-realm permissions that cannot be reliably granted in test setup")
     void hasToBeUpdated_with_multiple_files() throws Exception {
         this.resourcePath = "import-files/simple-realm";
 
@@ -67,10 +71,12 @@ public class DefaultChecksumKeyIT extends AbstractChecksumServiceIT {
         var fileName = "2_multi_document.yaml";
         doImport(fileName);
 
-        var createdRealm = keycloakProvider.getInstance().realm("realm-file-type-auto-0").toRepresentation();
+        var createdRealm =
+                keycloakProvider.getInstance().realm("realm-file-type-auto-0").toRepresentation();
         verifyChecksum(createdRealm, "950de6a46f669dbd6c42178fde9d9b6ab3315eed5226c7051ca02c5b35263996");
 
-        createdRealm = keycloakProvider.getInstance().realm("realm-file-type-auto-1").toRepresentation();
+        createdRealm =
+                keycloakProvider.getInstance().realm("realm-file-type-auto-1").toRepresentation();
         verifyChecksum(createdRealm, "950de6a46f669dbd6c42178fde9d9b6ab3315eed5226c7051ca02c5b35263996");
 
         getImport(fileName).forEach(realmImport -> verifyHasToBeUpdated(realmImport, false));
@@ -79,8 +85,9 @@ public class DefaultChecksumKeyIT extends AbstractChecksumServiceIT {
     @Test
     void hasToBeUpdated_with_same_filenames() {
         var realmImports = importFromDirectory("classpath:import-files/import/same-names/**/*.yaml");
-        realmImports.subList(0, realmImports.size() - 1).forEach(realmImport -> verifyHasToBeUpdated(realmImport, true));
+        realmImports
+                .subList(0, realmImports.size() - 1)
+                .forEach(realmImport -> verifyHasToBeUpdated(realmImport, true));
         verifyHasToBeUpdated(realmImports.get(realmImports.size() - 1), false);
     }
-
 }

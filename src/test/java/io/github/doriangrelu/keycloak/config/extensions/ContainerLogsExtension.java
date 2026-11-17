@@ -20,13 +20,14 @@
 
 package io.github.doriangrelu.keycloak.config.extensions;
 
+import static io.github.doriangrelu.keycloak.config.AbstractImportIT.KEYCLOAK_CONTAINER_LOGS;
+
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-import static io.github.doriangrelu.keycloak.config.AbstractImportIT.KEYCLOAK_CONTAINER_LOGS;
-
-public class ContainerLogsExtension implements TestWatcher, BeforeAllCallback, ExtensionContext.Store.CloseableResource {
+public class ContainerLogsExtension
+        implements TestWatcher, BeforeAllCallback, ExtensionContext.Store.CloseableResource {
     private static boolean outputLog = false;
     private static boolean started = false;
 

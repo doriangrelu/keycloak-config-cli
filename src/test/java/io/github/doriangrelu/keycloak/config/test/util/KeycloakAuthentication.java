@@ -33,38 +33,19 @@ public class KeycloakAuthentication {
     private final KeycloakConfigProperties keycloakConfigProperties;
 
     @Autowired
-    public KeycloakAuthentication(
-            KeycloakConfigProperties keycloakConfigProperties
-    ) {
+    public KeycloakAuthentication(KeycloakConfigProperties keycloakConfigProperties) {
         this.keycloakConfigProperties = keycloakConfigProperties;
     }
 
     public AccessTokenResponse login(
-            String realm,
-            String clientId,
-            String clientSecret,
-            String username,
-            String password
-    ) {
-        return login(
-                keycloakConfigProperties.getUrl(),
-                realm,
-                clientId,
-                clientSecret,
-                username,
-                password
-        );
+            String realm, String clientId, String clientSecret, String username, String password) {
+        return login(keycloakConfigProperties.getUrl(), realm, clientId, clientSecret, username, password);
     }
 
     public AccessTokenResponse login(
-            String url,
-            String realm,
-            String clientId,
-            String clientSecret,
-            String username,
-            String password
-    ) {
+            String url, String realm, String clientId, String clientSecret, String username, String password) {
         return Keycloak.getInstance(url, realm, username, password, clientId, clientSecret)
-                .tokenManager().getAccessToken();
+                .tokenManager()
+                .getAccessToken();
     }
 }

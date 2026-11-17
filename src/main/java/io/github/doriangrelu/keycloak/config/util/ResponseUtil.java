@@ -23,8 +23,7 @@ package io.github.doriangrelu.keycloak.config.util;
 import jakarta.ws.rs.WebApplicationException;
 
 public class ResponseUtil {
-    private ResponseUtil() {
-    }
+    private ResponseUtil() {}
 
     public static String getErrorMessage(WebApplicationException error) {
         String errorBody;

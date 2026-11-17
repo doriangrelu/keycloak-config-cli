@@ -22,6 +22,5 @@ package io.github.doriangrelu.keycloak.config.assets;
 
 @SuppressWarnings({"EmptyMethod", "unused"})
 public class ReflectionTestObject {
-    private void privateMethod() {
-    }
+    private void privateMethod() {}
 }

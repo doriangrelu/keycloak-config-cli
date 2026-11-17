@@ -21,6 +21,9 @@
 package io.github.doriangrelu.keycloak.config.repository;
 
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.Optional;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
@@ -30,11 +33,6 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
-
-import jakarta.ws.rs.core.Response;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -68,13 +66,15 @@ public class UserRepository {
         return user;
     }
 
-    public Optional<UserRepresentation> searchByAttributes(String realmName, String email, String firstname, String lastname) {
+    public Optional<UserRepresentation> searchByAttributes(
+            String realmName, String email, String firstname, String lastname) {
         UsersResource usersResource = realmRepository.getResource(realmName).users();
-        List<UserRepresentation> foundUsers = usersResource.search("", firstname, lastname, email,
-                null, null, null, 0, 100, null, null);
+        List<UserRepresentation> foundUsers =
+                usersResource.search("", firstname, lastname, email, null, null, null, 0, 100, null, null);
 
         for (UserRepresentation user : foundUsers) {
-            if (email.equalsIgnoreCase(user.getEmail()) && firstname.equalsIgnoreCase(user.getFirstName())
+            if (email.equalsIgnoreCase(user.getEmail())
+                    && firstname.equalsIgnoreCase(user.getFirstName())
                     && lastname.equalsIgnoreCase(user.getLastName())) {
                 return Optional.of(user);
             }
@@ -96,8 +96,7 @@ public class UserRepository {
         Optional<UserRepresentation> user = search(realmName, username);
 
         return user.orElseThrow(
-                () -> new KeycloakRepositoryException("Cannot find user '%s' in realm '%s'", username, realmName)
-        );
+                () -> new KeycloakRepositoryException("Cannot find user '%s' in realm '%s'", username, realmName));
     }
 
     public UserRepresentation get(String realmName, String username, String email, String firstname, String lastname) {
@@ -106,9 +105,8 @@ public class UserRepository {
             user = searchByAttributes(realmName, email, firstname, lastname);
         }
 
-        return user.orElseThrow(
-                () -> new KeycloakRepositoryException("Cannot find user '%s' or user with email '%s'  in realm '%s'", username, email, realmName)
-        );
+        return user.orElseThrow(() -> new KeycloakRepositoryException(
+                "Cannot find user '%s' or user with email '%s'  in realm '%s'", username, email, realmName));
     }
 
     public void create(String realmName, UserRepresentation user) {
@@ -121,7 +119,8 @@ public class UserRepository {
     }
 
     public void updateUser(String realmName, UserRepresentation user) {
-        UserResource userResource = getResource(realmName, user.getUsername(), user.getEmail(), user.getFirstName(), user.getLastName());
+        UserResource userResource =
+                getResource(realmName, user.getUsername(), user.getEmail(), user.getFirstName(), user.getLastName());
         userResource.update(user);
     }
 

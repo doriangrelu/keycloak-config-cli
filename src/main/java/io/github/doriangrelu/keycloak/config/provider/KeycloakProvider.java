@@ -34,6 +34,11 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.Form;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.MessageFormat;
+import java.time.Duration;
+import java.util.function.Supplier;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
@@ -47,12 +52,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.MessageFormat;
-import java.time.Duration;
-import java.util.function.Supplier;
 
 /**
  * This class exists because we need to create a single keycloak instance or to
@@ -99,8 +98,9 @@ public class KeycloakProvider implements AutoCloseable {
         if (version == null) {
             if (properties.isSkipServerInfo()) {
                 // Skip server info - use explicit version or default
-                version = (properties.getVersion() != null && !properties.getVersion().isEmpty()
-                        && !properties.getVersion().equals("@keycloak.version@"))
+                version = (properties.getVersion() != null
+                                && !properties.getVersion().isEmpty()
+                                && !properties.getVersion().equals("@keycloak.version@"))
                         ? properties.getVersion()
                         : "unknown";
                 logger.info("Server info unavailable. Using version: {}", version);
@@ -112,8 +112,9 @@ public class KeycloakProvider implements AutoCloseable {
                         logger.info("Server info available. Using version: {}", version);
                     } else {
                         // Fallback if systemInfo is null
-                        version = (properties.getVersion() != null && !properties.getVersion().isEmpty()
-                                && !properties.getVersion().equals("@keycloak.version@"))
+                        version = (properties.getVersion() != null
+                                        && !properties.getVersion().isEmpty()
+                                        && !properties.getVersion().equals("@keycloak.version@"))
                                 ? properties.getVersion()
                                 : "unknown";
                         logger.info("Server info unavailable. Using version: {}", version);
@@ -122,11 +123,14 @@ public class KeycloakProvider implements AutoCloseable {
                     if (e.getResponse().getStatus() == 401 || e.getResponse().getStatus() == 403) {
                         // Fallback on 401 Unauthorized or 403 Forbidden (typical for non-master realm
                         // access)
-                        version = (properties.getVersion() != null && !properties.getVersion().isEmpty()
-                                && !properties.getVersion().equals("@keycloak.version@"))
+                        version = (properties.getVersion() != null
+                                        && !properties.getVersion().isEmpty()
+                                        && !properties.getVersion().equals("@keycloak.version@"))
                                 ? properties.getVersion()
                                 : "unknown";
-                        logger.info("Server info unavailable ({}). Using version: {}", e.getResponse().getStatus(),
+                        logger.info(
+                                "Server info unavailable ({}). Using version: {}",
+                                e.getResponse().getStatus(),
                                 version);
                     } else {
                         throw e;
@@ -239,7 +243,9 @@ public class KeycloakProvider implements AutoCloseable {
                 .withDelay(retryDelay)
                 .withMaxDuration(timeout)
                 .withMaxRetries(-1)
-                .onRetry(e -> logger.debug("Attempt failure #{}: {}", e.getAttemptCount(),
+                .onRetry(e -> logger.debug(
+                        "Attempt failure #{}: {}",
+                        e.getAttemptCount(),
                         e.getLastException().getMessage()))
                 .build();
 
@@ -256,9 +262,11 @@ public class KeycloakProvider implements AutoCloseable {
                     try {
                         obj.serverInfo().getInfo();
                     } catch (WebApplicationException e) {
-                        if (e.getResponse().getStatus() == 401 || e.getResponse().getStatus() == 403) {
+                        if (e.getResponse().getStatus() == 401
+                                || e.getResponse().getStatus() == 403) {
                             // Fallback to alternative check if server info fails with 401/403
-                            logger.warn("Server info check failed with {}, using alternative health check",
+                            logger.warn(
+                                    "Server info check failed with {}, using alternative health check",
                                     e.getResponse().getStatus());
                             isKeycloakAvailableAlternative(obj);
                         } else {
@@ -270,8 +278,8 @@ public class KeycloakProvider implements AutoCloseable {
                 return obj;
             });
         } catch (Exception e) {
-            String message = MessageFormat.format("Could not connect to keycloak in {0} seconds: {1}",
-                    timeout.getSeconds(), e.getMessage());
+            String message = MessageFormat.format(
+                    "Could not connect to keycloak in {0} seconds: {1}", timeout.getSeconds(), e.getMessage());
             throw new KeycloakProviderException(message);
         }
     }

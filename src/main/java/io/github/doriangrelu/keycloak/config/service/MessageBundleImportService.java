@@ -25,16 +25,15 @@ import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.LocalizationUtil;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.keycloak.admin.client.resource.RealmLocalizationResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Creates and updates message bundles in your realm
@@ -49,8 +48,8 @@ public class MessageBundleImportService {
     private final StateService stateService;
 
     @Autowired
-    public MessageBundleImportService(RealmRepository realmRepository, ImportConfigProperties importConfigProperties,
-                                      StateService stateService) {
+    public MessageBundleImportService(
+            RealmRepository realmRepository, ImportConfigProperties importConfigProperties, StateService stateService) {
         this.realmRepository = realmRepository;
         this.importConfigProperties = importConfigProperties;
         this.stateService = stateService;
@@ -61,31 +60,35 @@ public class MessageBundleImportService {
         if (messageBundles == null) return;
 
         String realmName = realmImport.getRealm();
-        RealmLocalizationResource localizationResource = realmRepository.getResource(realmName).localization();
+        RealmLocalizationResource localizationResource =
+                realmRepository.getResource(realmName).localization();
         Set<Map.Entry<String, Map<String, String>>> locales = messageBundles.entrySet();
 
-        if (importConfigProperties.getManaged().getMessageBundles() == ImportConfigProperties
-                .ImportManagedProperties.ImportManagedPropertiesValues.FULL) {
+        if (importConfigProperties.getManaged().getMessageBundles()
+                == ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.FULL) {
             deleteMessageBundlesMissingOnImport(realmName, realmImport.getMessageBundles());
         }
 
         for (Map.Entry<String, Map<String, String>> localeEntry : locales) {
             String locale = localeEntry.getKey();
             Map<String, String> newMessageBundles = localeEntry.getValue();
-            Map<String, String> oldMessageBundles = LocalizationUtil
-                    .getRealmLocalizationTexts(localizationResource, locale);
+            Map<String, String> oldMessageBundles =
+                    LocalizationUtil.getRealmLocalizationTexts(localizationResource, locale);
 
             localizationResource.createOrUpdateRealmLocalizationTexts(locale, newMessageBundles);
 
             // clean up
             if (oldMessageBundles != null
-                    && importConfigProperties.getManaged().getMessageBundles() == ImportConfigProperties
-                            .ImportManagedProperties.ImportManagedPropertiesValues.FULL) {
+                    && importConfigProperties.getManaged().getMessageBundles()
+                            == ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.FULL) {
                 for (String oldMessageBundleKey : oldMessageBundles.keySet()) {
                     if (!newMessageBundles.containsKey(oldMessageBundleKey)) {
                         localizationResource.deleteRealmLocalizationText(locale, oldMessageBundleKey);
-                        logger.debug("Delete message bundle localization text with key '{}' for locale '{}' in realm '{}'",
-                                oldMessageBundleKey, locale, realmName);
+                        logger.debug(
+                                "Delete message bundle localization text with key '{}' for locale '{}' in realm '{}'",
+                                oldMessageBundleKey,
+                                locale,
+                                realmName);
                     }
                 }
             }
@@ -93,8 +96,7 @@ public class MessageBundleImportService {
     }
 
     private void deleteMessageBundlesMissingOnImport(
-            String realmName,
-            Map<String, Map<String, String>> importedMessageBundles) {
+            String realmName, Map<String, Map<String, String>> importedMessageBundles) {
         if (importConfigProperties.getRemoteState().isEnabled()) {
             // unknown message bundles are ignored always
             List<String> messageBundlesInState = stateService.getMessageBundles();
@@ -109,6 +111,4 @@ public class MessageBundleImportService {
             }
         }
     }
-
-
 }

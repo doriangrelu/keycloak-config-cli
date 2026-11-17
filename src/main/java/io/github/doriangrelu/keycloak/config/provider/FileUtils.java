@@ -20,14 +20,12 @@
 
 package io.github.doriangrelu.keycloak.config.provider;
 
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 final class FileUtils {
-    private FileUtils() {
-    }
+    private FileUtils() {}
 
     static final Path CWD = Paths.get(System.getProperty("user.dir"));
 
@@ -35,7 +33,8 @@ final class FileUtils {
         File absoluteFile;
 
         try {
-            absoluteFile = file.getAbsoluteFile().toPath().toAbsolutePath().normalize().toFile();
+            absoluteFile =
+                    file.getAbsoluteFile().toPath().toAbsolutePath().normalize().toFile();
         } catch (NullPointerException ignored) {
             return false;
         }

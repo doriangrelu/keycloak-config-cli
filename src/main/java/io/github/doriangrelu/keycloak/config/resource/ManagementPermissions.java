@@ -20,15 +20,14 @@
 
 package io.github.doriangrelu.keycloak.config.resource;
 
-import org.keycloak.representations.idm.ManagementPermissionReference;
-import org.keycloak.representations.idm.ManagementPermissionRepresentation;
-
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import org.keycloak.representations.idm.ManagementPermissionReference;
+import org.keycloak.representations.idm.ManagementPermissionRepresentation;
 
 /**
  * Routes which are somehow missing from the official Keycloak client library
@@ -41,8 +40,10 @@ public interface ManagementPermissions {
     @Path("/admin/realms/{realm}/identity-provider/instances/{alias}/management/permissions")
     @Consumes({"application/json"})
     @Produces({"application/json"})
-    ManagementPermissionReference setIdpPermissions(@PathParam("realm") String realm, @PathParam("alias") String alias,
-                                                    ManagementPermissionRepresentation var1);
+    ManagementPermissionReference setIdpPermissions(
+            @PathParam("realm") String realm,
+            @PathParam("alias") String alias,
+            ManagementPermissionRepresentation var1);
 
     @GET
     @Path("/admin/realms/{realm}/identity-provider/instances/{alias}/management/permissions")
@@ -53,8 +54,8 @@ public interface ManagementPermissions {
     @Path("/admin/realms/{realm}/roles-by-id/{id}/management/permissions")
     @Consumes({"application/json"})
     @Produces({"application/json"})
-    ManagementPermissionReference setRealmRolePermissions(@PathParam("realm") String realm, @PathParam("id") String id,
-                                                          ManagementPermissionRepresentation var1);
+    ManagementPermissionReference setRealmRolePermissions(
+            @PathParam("realm") String realm, @PathParam("id") String id, ManagementPermissionRepresentation var1);
 
     @GET
     @Path("/admin/realms/{realm}/roles-by-id/{id}/management/permissions")

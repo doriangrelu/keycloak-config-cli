@@ -21,7 +21,6 @@
 package io.github.doriangrelu.keycloak.config.assets;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -42,8 +41,7 @@ public class OtherTestObject {
             @JsonProperty("longProperty") Long longProperty,
             @JsonProperty("localDateProperty") LocalDate localDateProperty,
             @JsonProperty("localDateTimeProperty") LocalDateTime localDateTimeProperty,
-            @JsonProperty("innerTestObjectProperty") InnerTestObject innerTestObjectProperty
-    ) {
+            @JsonProperty("innerTestObjectProperty") InnerTestObject innerTestObjectProperty) {
         this.stringProperty = stringProperty;
         this.integerProperty = integerProperty;
         this.doubleProperty = doubleProperty;
@@ -88,18 +86,12 @@ public class OtherTestObject {
 
         OtherTestObject that = (OtherTestObject) o;
 
-        if (!Objects.equals(stringProperty, that.stringProperty))
-            return false;
-        if (!Objects.equals(integerProperty, that.integerProperty))
-            return false;
-        if (!Objects.equals(doubleProperty, that.doubleProperty))
-            return false;
-        if (!Objects.equals(longProperty, that.longProperty))
-            return false;
-        if (!Objects.equals(localDateProperty, that.localDateProperty))
-            return false;
-        if (!Objects.equals(localDateTimeProperty, that.localDateTimeProperty))
-            return false;
+        if (!Objects.equals(stringProperty, that.stringProperty)) return false;
+        if (!Objects.equals(integerProperty, that.integerProperty)) return false;
+        if (!Objects.equals(doubleProperty, that.doubleProperty)) return false;
+        if (!Objects.equals(longProperty, that.longProperty)) return false;
+        if (!Objects.equals(localDateProperty, that.localDateProperty)) return false;
+        if (!Objects.equals(localDateTimeProperty, that.localDateTimeProperty)) return false;
         return Objects.equals(innerTestObjectProperty, that.innerTestObjectProperty);
     }
 
@@ -116,17 +108,15 @@ public class OtherTestObject {
     }
 
     @SuppressWarnings("unused")
-    static public class InnerTestObject {
+    public static class InnerTestObject {
         private final String stringProperty;
         private final Integer integerProperty;
         private final Double doubleProperty;
 
-
         public InnerTestObject(
                 @JsonProperty("stringProperty") String stringProperty,
                 @JsonProperty("integerProperty") Integer integerProperty,
-                @JsonProperty("doubleProperty") Double doubleProperty
-        ) {
+                @JsonProperty("doubleProperty") Double doubleProperty) {
             this.stringProperty = stringProperty;
             this.integerProperty = integerProperty;
             this.doubleProperty = doubleProperty;
@@ -151,10 +141,8 @@ public class OtherTestObject {
 
             InnerTestObject that = (InnerTestObject) o;
 
-            if (!Objects.equals(stringProperty, that.stringProperty))
-                return false;
-            if (!Objects.equals(integerProperty, that.integerProperty))
-                return false;
+            if (!Objects.equals(stringProperty, that.stringProperty)) return false;
+            if (!Objects.equals(integerProperty, that.integerProperty)) return false;
             return Objects.equals(doubleProperty, that.doubleProperty);
         }
 

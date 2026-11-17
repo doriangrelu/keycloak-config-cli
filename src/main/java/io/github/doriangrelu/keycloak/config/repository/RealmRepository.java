@@ -23,6 +23,10 @@ package io.github.doriangrelu.keycloak.config.repository;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.util.ResponseUtil;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
+import java.util.HashMap;
+import java.util.List;
 import org.apache.commons.lang3.ObjectUtils;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -31,13 +35,6 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.List;
-
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.WebApplicationException;
-
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -76,14 +73,13 @@ public class RealmRepository {
 
         // Pre-validate property lengths that may lead to DB constraint violations on some Keycloak versions
         if (realm.getRealm() != null && realm.getRealm().length() > 241) {
-            throw new KeycloakRepositoryException(
-                    String.format("Cannot create realm '%s': Property value too long for database column", realm.getRealm())
-            );
+            throw new KeycloakRepositoryException(String.format(
+                    "Cannot create realm '%s': Property value too long for database column", realm.getRealm()));
         }
         if (realm.getLoginTheme() != null && realm.getLoginTheme().length() > 241) {
-            throw new KeycloakRepositoryException(
-                    String.format("Cannot create realm '%s': Property 'loginTheme' value too long for database column", realm.getRealm())
-            );
+            throw new KeycloakRepositoryException(String.format(
+                    "Cannot create realm '%s': Property 'loginTheme' value too long for database column",
+                    realm.getRealm()));
         }
 
         try {
@@ -91,23 +87,20 @@ public class RealmRepository {
         } catch (WebApplicationException error) {
             String errorMessage = ResponseUtil.getErrorMessage(error);
             throw new KeycloakRepositoryException(
-                    String.format("Cannot create realm '%s': %s", realm.getRealm(), errorMessage),
-                    error
-            );
+                    String.format("Cannot create realm '%s': %s", realm.getRealm(), errorMessage), error);
         }
     }
 
     public void update(RealmRepresentation realm) {
         // Pre-validate property lengths that may lead to DB constraint violations on some Keycloak versions
         if (realm.getRealm() != null && realm.getRealm().length() > 241) {
-            throw new KeycloakRepositoryException(
-                    String.format("Cannot update realm '%s': Property value too long for database column", realm.getRealm())
-            );
+            throw new KeycloakRepositoryException(String.format(
+                    "Cannot update realm '%s': Property value too long for database column", realm.getRealm()));
         }
         if (realm.getLoginTheme() != null && realm.getLoginTheme().length() > 241) {
-            throw new KeycloakRepositoryException(
-                    String.format("Cannot update realm '%s': Property 'loginTheme' value too long for database column", realm.getRealm())
-            );
+            throw new KeycloakRepositoryException(String.format(
+                    "Cannot update realm '%s': Property 'loginTheme' value too long for database column",
+                    realm.getRealm()));
         }
 
         try {
@@ -118,9 +111,7 @@ public class RealmRepository {
                     : error.getMessage();
 
             throw new KeycloakRepositoryException(
-                    String.format("Cannot update realm '%s': %s", realm.getRealm(), errorMessage),
-                    error
-            );
+                    String.format("Cannot update realm '%s': %s", realm.getRealm(), errorMessage), error);
         }
     }
 

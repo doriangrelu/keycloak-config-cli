@@ -20,17 +20,16 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 public class RequiredActionNormalizationServiceTest {
 
@@ -60,7 +59,8 @@ public class RequiredActionNormalizationServiceTest {
         when(diff.hasChanges()).thenReturn(true);
         when(javers.compare(any(), any())).thenReturn(diff);
 
-        List<RequiredActionProviderRepresentation> result = service.normalizeRequiredActions(exportedActions, baselineActions);
+        List<RequiredActionProviderRepresentation> result =
+                service.normalizeRequiredActions(exportedActions, baselineActions);
 
         assertThat(result).isNotEmpty();
     }

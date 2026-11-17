@@ -20,17 +20,15 @@
 
 package io.github.doriangrelu.keycloak.config.util;
 
-import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(GithubActionsExtension.class)
 class ClientScopeUtilTest {

@@ -23,8 +23,7 @@ package io.github.doriangrelu.keycloak.config.util;
 import org.springframework.security.crypto.encrypt.Encryptors;
 
 public class CryptoUtil {
-    private CryptoUtil() {
-    }
+    private CryptoUtil() {}
 
     public static String encrypt(String data, String key, String salt) {
         return Encryptors.text(key, salt).encrypt(data);

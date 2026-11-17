@@ -25,13 +25,10 @@ import java.util.List;
 import java.util.Objects;
 
 public class ClientScopeUtil {
-    private ClientScopeUtil() {
-    }
+    private ClientScopeUtil() {}
 
     public static List<String> estimateClientScopesToRemove(
-            List<String> clientScopes,
-            List<String> existingClientScopes
-    ) {
+            List<String> clientScopes, List<String> existingClientScopes) {
         if (clientScopes == null) {
             return new ArrayList<>();
         }
@@ -51,10 +48,7 @@ public class ClientScopeUtil {
         return clientScopesToRemove;
     }
 
-    public static List<String> estimateClientScopesToAdd(
-            List<String> clientScopes,
-            List<String> existingClientScopes
-    ) {
+    public static List<String> estimateClientScopesToAdd(List<String> clientScopes, List<String> existingClientScopes) {
         if (clientScopes == null) {
             return new ArrayList<>();
         }

@@ -20,22 +20,22 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import java.io.IOException;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.test.context.TestPropertySource;
 
-import java.io.IOException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
-
-@TestPropertySource(properties = {
-        "keycloak.availability-check.enabled=true",
-        "import.cache.key=custom",
-})
+@TestPropertySource(
+        properties = {
+            "keycloak.availability-check.enabled=true",
+            "import.cache.key=custom",
+        })
 class ImportRealmCustomImportKeyIT extends AbstractImportIT {
     private static final String REALM_NAME = "realm-custom-import-key";
 
@@ -48,7 +48,8 @@ class ImportRealmCustomImportKeyIT extends AbstractImportIT {
     void shouldCreateSimpleRealm() throws IOException {
         doImport("00_create_simple-realm.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));

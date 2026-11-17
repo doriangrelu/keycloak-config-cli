@@ -20,14 +20,13 @@
 
 package io.github.doriangrelu.keycloak.config.util.resteasy;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 // By default, the RESTeasy cookie handling is very limited. There is no access to the underlying httpEngine.
 // The underlying httpEngine uses an old CookieSpec by default which is going to refuse valid cookie today.
@@ -44,15 +43,22 @@ public class CookieClientFilter implements ClientRequestFilter, ClientResponseFi
 
     @Override
     public void filter(ClientRequestContext clientRequestContext) {
-        clientRequestContext.getHeaders().put("Cookie", new ArrayList<>(cookies.get().values()));
+        clientRequestContext
+                .getHeaders()
+                .put("Cookie", new ArrayList<>(cookies.get().values()));
     }
 
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
         cookies.remove();
-        responseContext.getCookies().forEach((name, cookie) -> cookies.get().put(name, String.format("%s=%s",
-                cookie.toCookie().getName(),
-                cookie.toCookie().getValue()
-        )));
+        responseContext
+                .getCookies()
+                .forEach((name, cookie) -> cookies.get()
+                        .put(
+                                name,
+                                String.format(
+                                        "%s=%s",
+                                        cookie.toCookie().getName(),
+                                        cookie.toCookie().getValue())));
     }
 }

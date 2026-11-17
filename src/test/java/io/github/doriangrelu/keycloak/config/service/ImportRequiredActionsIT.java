@@ -20,20 +20,19 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
-
-import java.io.IOException;
-import java.util.Optional;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.core.Is.is;
+
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import java.io.IOException;
+import java.util.Optional;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
 
 class ImportRequiredActionsIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithRequiredActions";
@@ -47,7 +46,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldCreateRealmWithRequiredActions() throws IOException {
         doImport("00_create_realm_with_required-action.json");
 
-        RealmRepresentation createdRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation createdRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(createdRealm.getRealm(), is(REALM_NAME));
         assertThat(createdRealm.isEnabled(), is(true));
@@ -68,12 +68,14 @@ class ImportRequiredActionsIT extends AbstractImportIT {
 
         realmImportService.doImport(foundImport);
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
 
-        RequiredActionProviderRepresentation unchangedRequiredAction = getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
+        RequiredActionProviderRepresentation unchangedRequiredAction =
+                getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
         assertThat(unchangedRequiredAction.getAlias(), is("CONFIGURE_TOTP"));
         assertThat(unchangedRequiredAction.getName(), is("Configure OTP"));
         assertThat(unchangedRequiredAction.getProviderId(), is("CONFIGURE_TOTP"));
@@ -81,7 +83,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
         assertThat(unchangedRequiredAction.isDefaultAction(), is(false));
         assertThat(unchangedRequiredAction.getPriority(), is(0));
 
-        RequiredActionProviderRepresentation addedRequiredAction = getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
+        RequiredActionProviderRepresentation addedRequiredAction =
+                getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
         assertThat(addedRequiredAction.getAlias(), is("TERMS_AND_CONDITIONS"));
         assertThat(addedRequiredAction.getName(), is("Invalid: alias and provider-id have to be equal"));
         assertThat(addedRequiredAction.getProviderId(), is("TERMS_AND_CONDITIONS"));
@@ -95,12 +98,14 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldAddDefaultRequiredAction() throws IOException {
         doImport("02_update_realm__add_default_required-action.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
 
-        RequiredActionProviderRepresentation unchangedRequiredAction = getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
+        RequiredActionProviderRepresentation unchangedRequiredAction =
+                getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
         assertThat(unchangedRequiredAction.getAlias(), is("CONFIGURE_TOTP"));
         assertThat(unchangedRequiredAction.getName(), is("Configure OTP"));
         assertThat(unchangedRequiredAction.getProviderId(), is("CONFIGURE_TOTP"));
@@ -108,7 +113,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
         assertThat(unchangedRequiredAction.isDefaultAction(), is(false));
         assertThat(unchangedRequiredAction.getPriority(), is(0));
 
-        RequiredActionProviderRepresentation addedRequiredAction = getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
+        RequiredActionProviderRepresentation addedRequiredAction =
+                getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
         assertThat(addedRequiredAction.getAlias(), is("TERMS_AND_CONDITIONS"));
         assertThat(addedRequiredAction.getName(), is("Terms and Conditions"));
         assertThat(addedRequiredAction.getProviderId(), is("TERMS_AND_CONDITIONS"));
@@ -122,12 +128,14 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldChangeRequiredActionName() throws IOException {
         doImport("03_update_realm__change_name_of_required-action.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
 
-        RequiredActionProviderRepresentation unchangedRequiredAction = getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
+        RequiredActionProviderRepresentation unchangedRequiredAction =
+                getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
         assertThat(unchangedRequiredAction.getAlias(), is("CONFIGURE_TOTP"));
         assertThat(unchangedRequiredAction.getName(), is("Configure OTP"));
         assertThat(unchangedRequiredAction.getProviderId(), is("CONFIGURE_TOTP"));
@@ -135,7 +143,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
         assertThat(unchangedRequiredAction.isDefaultAction(), is(false));
         assertThat(unchangedRequiredAction.getPriority(), is(0));
 
-        RequiredActionProviderRepresentation changedRequiredAction = getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
+        RequiredActionProviderRepresentation changedRequiredAction =
+                getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
         assertThat(changedRequiredAction.getAlias(), is("TERMS_AND_CONDITIONS"));
         assertThat(changedRequiredAction.getName(), is("Changed: Terms and Conditions"));
         assertThat(changedRequiredAction.getProviderId(), is("TERMS_AND_CONDITIONS"));
@@ -149,12 +158,14 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldEnableRequiredAction() throws IOException {
         doImport("04_update_realm__enable_required-action.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
 
-        RequiredActionProviderRepresentation unchangedRequiredAction = getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
+        RequiredActionProviderRepresentation unchangedRequiredAction =
+                getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
         assertThat(unchangedRequiredAction.getAlias(), is("CONFIGURE_TOTP"));
         assertThat(unchangedRequiredAction.getName(), is("Configure OTP"));
         assertThat(unchangedRequiredAction.getProviderId(), is("CONFIGURE_TOTP"));
@@ -162,7 +173,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
         assertThat(unchangedRequiredAction.isDefaultAction(), is(false));
         assertThat(unchangedRequiredAction.getPriority(), is(0));
 
-        RequiredActionProviderRepresentation changedRequiredAction = getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
+        RequiredActionProviderRepresentation changedRequiredAction =
+                getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
         assertThat(changedRequiredAction.getAlias(), is("TERMS_AND_CONDITIONS"));
         assertThat(changedRequiredAction.getName(), is("Changed: Terms and Conditions"));
         assertThat(changedRequiredAction.getProviderId(), is("TERMS_AND_CONDITIONS"));
@@ -176,12 +188,14 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldChangePriorities() throws IOException {
         doImport("05_update_realm__change_priorities_required-action.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
 
-        RequiredActionProviderRepresentation unchangedRequiredAction = getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
+        RequiredActionProviderRepresentation unchangedRequiredAction =
+                getRequiredAction(updatedRealm, "CONFIGURE_TOTP");
         assertThat(unchangedRequiredAction.getAlias(), is("CONFIGURE_TOTP"));
         assertThat(unchangedRequiredAction.getName(), is("Configure OTP"));
         assertThat(unchangedRequiredAction.getProviderId(), is("CONFIGURE_TOTP"));
@@ -189,7 +203,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
         assertThat(unchangedRequiredAction.isDefaultAction(), is(false));
         assertThat(unchangedRequiredAction.getPriority(), is(1));
 
-        RequiredActionProviderRepresentation changedRequiredAction = getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
+        RequiredActionProviderRepresentation changedRequiredAction =
+                getRequiredAction(updatedRealm, "TERMS_AND_CONDITIONS");
         assertThat(changedRequiredAction.getAlias(), is("TERMS_AND_CONDITIONS"));
         assertThat(changedRequiredAction.getName(), is("Changed: Terms and Conditions"));
         assertThat(changedRequiredAction.getProviderId(), is("TERMS_AND_CONDITIONS"));
@@ -203,7 +218,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldAddRequiredAction() throws IOException {
         doImport("06_update_realm__delete_and_add_required-action.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
@@ -233,7 +249,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldSkipRequiredAction() throws IOException {
         doImport("07_update_realm__skip_required-action.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
@@ -263,7 +280,8 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldDeleteRequiredAction() throws IOException {
         doImport("98_update_realm__delete_required-action.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
@@ -284,19 +302,23 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldDeleteAllRequiredAction() throws IOException {
         doImport("99_update_realm__delete_all_required-action.json");
 
-        RealmRepresentation updatedRealm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation updatedRealm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(updatedRealm.getRealm(), is(REALM_NAME));
         assertThat(updatedRealm.isEnabled(), is(true));
     }
 
-    private RequiredActionProviderRepresentation getRequiredAction(RealmRepresentation realm, String requiredActionAlias) {
-        Optional<RequiredActionProviderRepresentation> maybeRequiredAction = realm.getRequiredActions()
-                .stream()
+    private RequiredActionProviderRepresentation getRequiredAction(
+            RealmRepresentation realm, String requiredActionAlias) {
+        Optional<RequiredActionProviderRepresentation> maybeRequiredAction = realm.getRequiredActions().stream()
                 .filter(r -> r.getAlias().equals(requiredActionAlias))
                 .findFirst();
 
-        assertThat(String.format("Cannot find required-action: '%s'", requiredActionAlias), maybeRequiredAction.isPresent(), is(true));
+        assertThat(
+                String.format("Cannot find required-action: '%s'", requiredActionAlias),
+                maybeRequiredAction.isPresent(),
+                is(true));
 
         return maybeRequiredAction.orElse(null);
     }

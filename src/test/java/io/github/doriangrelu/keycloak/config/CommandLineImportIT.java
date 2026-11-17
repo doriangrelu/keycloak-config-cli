@@ -20,16 +20,6 @@
 
 package io.github.doriangrelu.keycloak.config;
 
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.mockito.MockedStatic;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
@@ -39,6 +29,16 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+
+import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.mockito.MockedStatic;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 
 class CommandLineImportIT extends AbstractImportIT {
 
@@ -53,11 +53,11 @@ class CommandLineImportIT extends AbstractImportIT {
                 runtimeUtil.when(Runtime::getRuntime).thenReturn(runtime);
                 doNothing().when(runtime).exit(anyInt());
 
-                KeycloakConfigApplication.main(new String[]{
-                        "--import.files.locations=src/test/resources/import-files/cli/file.json"
-                });
+                KeycloakConfigApplication.main(
+                        new String[] {"--import.files.locations=src/test/resources/import-files/cli/file.json"});
 
-                RealmRepresentation fileRealm = keycloakProvider.getInstance().realm("file").toRepresentation();
+                RealmRepresentation fileRealm =
+                        keycloakProvider.getInstance().realm("file").toRepresentation();
 
                 assertThat(fileRealm.getRealm(), is("file"));
                 assertThat(fileRealm.isEnabled(), is(true));
@@ -73,16 +73,17 @@ class CommandLineImportIT extends AbstractImportIT {
                 doNothing().when(runtime).exit(anyInt());
 
                 KeycloakConfigApplication.main(new String[] {
-                    "--keycloak.sslVerify=false",
-                    "--import.files.locations=src/test/resources/import-files/cli/dir/*"
+                    "--keycloak.sslVerify=false", "--import.files.locations=src/test/resources/import-files/cli/dir/*"
                 });
 
-                RealmRepresentation file1Realm = keycloakProvider.getInstance().realm("file1").toRepresentation();
+                RealmRepresentation file1Realm =
+                        keycloakProvider.getInstance().realm("file1").toRepresentation();
 
                 assertThat(file1Realm.getRealm(), is("file1"));
                 assertThat(file1Realm.isEnabled(), is(true));
 
-                RealmRepresentation file2Realm = keycloakProvider.getInstance().realm("file2").toRepresentation();
+                RealmRepresentation file2Realm =
+                        keycloakProvider.getInstance().realm("file2").toRepresentation();
 
                 assertThat(file2Realm.getRealm(), is("file2"));
                 assertThat(file2Realm.isEnabled(), is(true));
@@ -109,9 +110,10 @@ class CommandLineImportIT extends AbstractImportIT {
 
     @Nested
     @ContextConfiguration()
-    @TestPropertySource(properties = {
-            "import.files.locations=src/test/resources/application-IT.properties",
-    })
+    @TestPropertySource(
+            properties = {
+                "import.files.locations=src/test/resources/application-IT.properties",
+            })
     class CommandLineImportInvalidIT extends AbstractImportIT {
         @Autowired
         KeycloakConfigRunner runner;
@@ -120,15 +122,16 @@ class CommandLineImportIT extends AbstractImportIT {
         void testInvalidFileFormatException() {
             InvalidImportException thrown = assertThrows(InvalidImportException.class, runner::run);
 
-            assertThat(thrown.getMessage(), startsWith("Unable to parse file 'file:src/test/resources/application-IT.properties': Cannot construct instance of `io.github.doriangrelu.keycloak.config.model.RealmImport`"));
+            assertThat(
+                    thrown.getMessage(),
+                    startsWith(
+                            "Unable to parse file 'file:src/test/resources/application-IT.properties': Cannot construct instance of `io.github.doriangrelu.keycloak.config.model.RealmImport`"));
         }
     }
 
     @Nested
     @ContextConfiguration()
-    @TestPropertySource(properties = {
-            "import.files.locations=invalid"
-    })
+    @TestPropertySource(properties = {"import.files.locations=invalid"})
     class CommandLineImportNotExistsExceptionIT extends AbstractImportIT {
         @Autowired
         KeycloakConfigRunner runner;
@@ -137,7 +140,10 @@ class CommandLineImportIT extends AbstractImportIT {
         void testInvalidImportException() {
             InvalidImportException thrown = assertThrows(InvalidImportException.class, runner::run);
 
-            assertThat(thrown.getMessage(), Matchers.is("Unable to proceed resource 'URL [file:invalid]': invalid (No such file or directory)"));
+            assertThat(
+                    thrown.getMessage(),
+                    Matchers.is(
+                            "Unable to proceed resource 'URL [file:invalid]': invalid (No such file or directory)"));
         }
     }
 }

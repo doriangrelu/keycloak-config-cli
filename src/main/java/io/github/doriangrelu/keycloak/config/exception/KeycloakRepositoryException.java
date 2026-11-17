@@ -20,7 +20,6 @@
 
 package io.github.doriangrelu.keycloak.config.exception;
 
-
 public class KeycloakRepositoryException extends RuntimeException {
     public KeycloakRepositoryException(String format, Object... args) {
         super(String.format(format, args));

@@ -23,6 +23,9 @@ package io.github.doriangrelu.keycloak.config.service.state;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.repository.StateRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.*;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
@@ -31,10 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -92,10 +91,8 @@ public class StateService {
         List<RoleRepresentation> rolesRealm = roles.getRealm();
         if (rolesRealm == null) return;
 
-        List<String> state = rolesRealm
-                .stream()
-                .map(RoleRepresentation::getName)
-                .toList();
+        List<String> state =
+                rolesRealm.stream().map(RoleRepresentation::getName).toList();
 
         stateRepository.setState("roles-realm", state);
     }
@@ -108,10 +105,8 @@ public class StateService {
         if (clientRoles == null) return;
 
         for (Map.Entry<String, List<RoleRepresentation>> client : clientRoles.entrySet()) {
-            List<String> state = client.getValue()
-                    .stream()
-                    .map(RoleRepresentation::getName)
-                    .toList();
+            List<String> state =
+                    client.getValue().stream().map(RoleRepresentation::getName).toList();
 
             stateRepository.setState("roles-client-" + client.getKey(), state);
         }
@@ -122,12 +117,12 @@ public class StateService {
         if (clients == null) return;
 
         for (ClientRepresentation client : clients) {
-            if (client.getAuthorizationSettings() == null || client.getAuthorizationSettings().getResources() == null) continue;
+            if (client.getAuthorizationSettings() == null
+                    || client.getAuthorizationSettings().getResources() == null) continue;
 
             String clientKey = client.getClientId() != null ? client.getClientId() : "name:" + client.getName();
 
-            List<String> resourceNames = client.getAuthorizationSettings().getResources()
-                    .stream()
+            List<String> resourceNames = client.getAuthorizationSettings().getResources().stream()
                     .map(ResourceRepresentation::getName)
                     .toList();
 
@@ -178,7 +173,8 @@ public class StateService {
         stateRepository.setState("required-actions", state);
     }
 
-    public List<ComponentRepresentation> getComponents(List<ComponentRepresentation> components, String parentComponentName) {
+    public List<ComponentRepresentation> getComponents(
+            List<ComponentRepresentation> components, String parentComponentName) {
         List<String> componentsFromState = (parentComponentName != null)
                 ? stateRepository.getState("sub-components-" + parentComponentName)
                 : stateRepository.getState("components");
@@ -223,7 +219,6 @@ public class StateService {
 
         stateRepository.setState("sub-components-" + component.getName(), state);
     }
-
 
     private void setMessageBundles(RealmImport realmImport) {
         Map<String, Map<String, String>> messageBundles = realmImport.getMessageBundles();

@@ -20,26 +20,25 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.ScopeMappingRepresentation;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
+import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.ScopeMappingRepresentation;
 
 @SuppressWarnings({"java:S5961", "java:S5976"})
 class ImportScopeMappingsIT extends AbstractImportIT {
@@ -54,7 +53,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldCreateRealmWithScopeMappings() throws IOException {
         doImport("00_create-realm-with-scope-mappings.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -74,7 +74,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByAddingScopeMapping() throws IOException {
         doImport("01_update-realm__add-scope-mapping.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -95,7 +96,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByAddingRoleToScopeMapping() throws IOException {
         doImport("02_update-realm__add-role-to-scope-mapping.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -117,7 +119,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByAddingAnotherScopeMapping() throws IOException {
         doImport("03_update-realm__add-scope-mapping.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -149,7 +152,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByScopeMappingAdditions() throws IOException {
         doImport("04_update-realm__delete-role-from-scope-mapping.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -177,7 +181,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByDeletingScopeMappingForClient() throws IOException {
         doImport("05_update-realm__delete-scope-mapping-for-client.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -185,7 +190,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
         List<ScopeMappingRepresentation> scopeMappings = realm.getScopeMappings();
         assertThat(scopeMappings, hasSize(3));
 
-        Optional<ScopeMappingRepresentation> maybeExistingScopeMapping = tryToFindScopeMappingForClient(realm, "scope-mapping-client");
+        Optional<ScopeMappingRepresentation> maybeExistingScopeMapping =
+                tryToFindScopeMappingForClient(realm, "scope-mapping-client");
         assertThat(maybeExistingScopeMapping.isPresent(), is(true));
     }
 
@@ -194,7 +200,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByNotChangingScopeMappingsIfOmittedInImport() throws IOException {
         doImport("06_update-realm__do-not-change-scope-mappings.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -218,7 +225,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByDeletingAllExistingScopeMappings() throws IOException {
         doImport("07_update-realm__delete-all-scope-mappings.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -232,7 +240,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByAddingScopeMappingsForClientScope() throws IOException {
         doImport("08_update-realm__add-scope-mappings-for-client-scope.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -245,7 +254,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
 
         assertThat(offlineAccessMapping.isPresent(), is(true));
         if (offlineAccessMapping.isPresent()) {
-            assertThat(offlineAccessMapping.get().getRoles(), hasItems("scope-mapping-role", "added-scope-mapping-role"));
+            assertThat(
+                    offlineAccessMapping.get().getRoles(), hasItems("scope-mapping-role", "added-scope-mapping-role"));
         }
 
         Optional<ScopeMappingRepresentation> clientMapping = scopeMappings.stream()
@@ -263,7 +273,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldUpdateRealmByAddingRolesForClient() throws IOException {
         doImport("09_update-realm__update-role-for-client.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -294,7 +305,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldThrowOnUpdateRealmNonExistClientScope() throws IOException {
         RealmImport foundImport = getFirstImport("10_1_update-realm__throw-invalid-client-scope.json");
 
-        KeycloakRepositoryException thrown = assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
+        KeycloakRepositoryException thrown =
+                assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
 
         assertThat(thrown.getMessage(), is("Cannot find client-scope by name 'non-exists-client-scope'"));
     }
@@ -304,9 +316,12 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldThrowOnUpdateRealmClientScopeWithNonExistRoles() throws IOException {
         RealmImport foundImport = getFirstImport("10_2_update-realm__throw-invalid-client-scope-role.json");
 
-        KeycloakRepositoryException thrown = assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
+        KeycloakRepositoryException thrown =
+                assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
 
-        assertThat(thrown.getMessage(), is("Cannot find realm role 'non-exists-role' within realm 'realmWithScopeMappings'"));
+        assertThat(
+                thrown.getMessage(),
+                is("Cannot find realm role 'non-exists-role' within realm 'realmWithScopeMappings'"));
     }
 
     @Test
@@ -314,7 +329,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldThrowOnUpdateRealmNonExistClient() throws IOException {
         RealmImport foundImport = getFirstImport("10_3_update-realm__throw-invalid-client.json");
 
-        KeycloakRepositoryException thrown = assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
+        KeycloakRepositoryException thrown =
+                assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
 
         assertThat(thrown.getMessage(), is("Cannot find client by clientId 'non-exists-client'"));
     }
@@ -324,9 +340,12 @@ class ImportScopeMappingsIT extends AbstractImportIT {
     void shouldThrowOnUpdateRealmClientWithNonExistRoles() throws IOException {
         RealmImport foundImport = getFirstImport("10_4_update-realm__throw-invalid-client-role.json");
 
-        KeycloakRepositoryException thrown = assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
+        KeycloakRepositoryException thrown =
+                assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
 
-        assertThat(thrown.getMessage(), is("Cannot find realm role 'non-exists-role' within realm 'realmWithScopeMappings'"));
+        assertThat(
+                thrown.getMessage(),
+                is("Cannot find realm role 'non-exists-role' within realm 'realmWithScopeMappings'"));
     }
 
     @Test
@@ -336,7 +355,8 @@ class ImportScopeMappingsIT extends AbstractImportIT {
 
         doImport("70_create-realm-with-scope-mappings-and-client.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);
 
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
@@ -354,9 +374,9 @@ class ImportScopeMappingsIT extends AbstractImportIT {
                 .orElseThrow(() -> new RuntimeException("Cannot find scope-mapping for client" + client));
     }
 
-    private Optional<ScopeMappingRepresentation> tryToFindScopeMappingForClient(RealmRepresentation realm, String client) {
-        return realm.getScopeMappings()
-                .stream()
+    private Optional<ScopeMappingRepresentation> tryToFindScopeMappingForClient(
+            RealmRepresentation realm, String client) {
+        return realm.getScopeMappings().stream()
                 .filter(scopeMapping -> Objects.equals(scopeMapping.getClient(), client))
                 .findFirst();
     }

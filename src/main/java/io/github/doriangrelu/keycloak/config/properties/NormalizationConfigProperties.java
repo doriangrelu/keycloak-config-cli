@@ -20,14 +20,12 @@
 
 package io.github.doriangrelu.keycloak.config.properties;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import java.util.Collection;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
-
-import java.util.Collection;
-
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 
 @ConfigurationProperties(prefix = "normalization", ignoreUnknownFields = false)
 @Validated
@@ -40,9 +38,10 @@ public class NormalizationConfigProperties {
 
     private final String fallbackVersion;
 
-    public NormalizationConfigProperties(@DefaultValue NormalizationFilesProperties files,
-                                         @DefaultValue("yaml") OutputFormat outputFormat,
-                                         String fallbackVersion) {
+    public NormalizationConfigProperties(
+            @DefaultValue NormalizationFilesProperties files,
+            @DefaultValue("yaml") OutputFormat outputFormat,
+            String fallbackVersion) {
         this.files = files;
         this.outputFormat = outputFormat;
         this.fallbackVersion = fallbackVersion;
@@ -74,10 +73,11 @@ public class NormalizationConfigProperties {
         @NotNull
         private final String outputDirectory;
 
-        public NormalizationFilesProperties(Collection<String> inputLocations,
-                                            @DefaultValue Collection<String> excludes,
-                                            @DefaultValue("false") boolean includeHiddenFiles,
-                                            String outputDirectory) {
+        public NormalizationFilesProperties(
+                Collection<String> inputLocations,
+                @DefaultValue Collection<String> excludes,
+                @DefaultValue("false") boolean includeHiddenFiles,
+                String outputDirectory) {
             this.inputLocations = inputLocations;
             this.excludes = excludes;
             this.includeHiddenFiles = includeHiddenFiles;
@@ -102,6 +102,7 @@ public class NormalizationConfigProperties {
     }
 
     public enum OutputFormat {
-        JSON, YAML
+        JSON,
+        YAML
     }
 }

@@ -19,19 +19,18 @@
  */
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.ClientPolicyRepresentation;
 import org.keycloak.representations.idm.ClientProfileRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
-
-import java.io.IOException;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ImportClientPoliciesIT extends AbstractImportIT {
 
@@ -63,11 +62,17 @@ class ImportClientPoliciesIT extends AbstractImportIT {
 
         var parsedClientProfiles = realm.getParsedClientProfiles();
         assertThat(parsedClientProfiles.getProfiles()).hasSize(1);
-        assertThat(parsedClientProfiles.getProfiles()).first().extracting(ClientProfileRepresentation::getName).isEqualTo("acme-client-profile");
+        assertThat(parsedClientProfiles.getProfiles())
+                .first()
+                .extracting(ClientProfileRepresentation::getName)
+                .isEqualTo("acme-client-profile");
 
         var parsedClientPolicies = realm.getParsedClientPolicies();
         assertThat(parsedClientPolicies.getPolicies()).hasSize(1);
-        assertThat(parsedClientPolicies.getPolicies()).first().extracting(ClientPolicyRepresentation::getName).isEqualTo("acme-client-policy");
+        assertThat(parsedClientPolicies.getPolicies())
+                .first()
+                .extracting(ClientPolicyRepresentation::getName)
+                .isEqualTo("acme-client-policy");
     }
 
     @Test
@@ -79,7 +84,10 @@ class ImportClientPoliciesIT extends AbstractImportIT {
 
         var parsedClientProfiles = realm.getParsedClientProfiles();
         assertThat(parsedClientProfiles.getProfiles()).hasSize(1);
-        assertThat(parsedClientProfiles.getProfiles()).first().extracting(ClientProfileRepresentation::getName).isEqualTo("acme-client-profile");
+        assertThat(parsedClientProfiles.getProfiles())
+                .first()
+                .extracting(ClientProfileRepresentation::getName)
+                .isEqualTo("acme-client-profile");
     }
 
     @Test
@@ -91,8 +99,14 @@ class ImportClientPoliciesIT extends AbstractImportIT {
 
         var parsedClientProfiles = realm.getParsedClientProfiles();
         assertThat(parsedClientProfiles.getProfiles()).hasSize(2);
-        assertThat(parsedClientProfiles.getProfiles()).first().extracting(ClientProfileRepresentation::getName).isEqualTo("acme-client-profile-1");
-        assertThat(parsedClientProfiles.getProfiles()).element(1).extracting(ClientProfileRepresentation::getName).isEqualTo("acme-client-profile-2");
+        assertThat(parsedClientProfiles.getProfiles())
+                .first()
+                .extracting(ClientProfileRepresentation::getName)
+                .isEqualTo("acme-client-profile-1");
+        assertThat(parsedClientProfiles.getProfiles())
+                .element(1)
+                .extracting(ClientProfileRepresentation::getName)
+                .isEqualTo("acme-client-profile-2");
     }
 
     @Test
@@ -105,7 +119,10 @@ class ImportClientPoliciesIT extends AbstractImportIT {
         var parsedClientPolicies = realm.getParsedClientPolicies();
         assertThat(parsedClientPolicies.getPolicies()).hasSize(1);
         assertThat(parsedClientPolicies.getPolicies()).hasSize(1);
-        assertThat(parsedClientPolicies.getPolicies()).first().extracting(ClientPolicyRepresentation::getName).isEqualTo("acme-client-policy");
+        assertThat(parsedClientPolicies.getPolicies())
+                .first()
+                .extracting(ClientPolicyRepresentation::getName)
+                .isEqualTo("acme-client-policy");
     }
 
     private RealmRepresentation assertRealm() {

@@ -68,13 +68,15 @@ public class UserProfileRepository {
             return;
         }
 
-        var currentUserProfileEnabled = Boolean.parseBoolean(realmAttributes.getOrDefault(REALM_ATTRIBUTES_USER_PROFILE_ENABLED_STRING, "false"));
+        var currentUserProfileEnabled = Boolean.parseBoolean(
+                realmAttributes.getOrDefault(REALM_ATTRIBUTES_USER_PROFILE_ENABLED_STRING, "false"));
         if (!currentUserProfileEnabled) {
             logger.warn("UserProfile enabled attribute in realm differs from configuration. "
                     + "This is strange, because the attribute import should have done that already.");
         }
 
-        var userProfileConfigChanged = hasUserProfileConfigurationChanged(newUserProfileConfiguration, currentUserProfileConfiguration);
+        var userProfileConfigChanged =
+                hasUserProfileConfigurationChanged(newUserProfileConfiguration, currentUserProfileConfiguration);
         if (!userProfileConfigChanged) {
             logger.trace("UserProfile did not change, skipping update.");
             return;
@@ -89,7 +91,8 @@ public class UserProfileRepository {
         logger.trace("UserProfile updated.");
     }
 
-    private boolean hasUserProfileConfigurationChanged(String newUserProfileConfiguration, String currentUserProfileConfiguration) {
+    private boolean hasUserProfileConfigurationChanged(
+            String newUserProfileConfiguration, String currentUserProfileConfiguration) {
         var newValue = JsonUtil.getJsonOrNullNode(newUserProfileConfiguration);
         var currentValue = JsonUtil.getJsonOrNullNode(currentUserProfileConfiguration);
         return !currentValue.equals(newValue);

@@ -23,10 +23,9 @@ package io.github.doriangrelu.keycloak.config.service.clientauthorization;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.repository.RoleRepository;
+import jakarta.ws.rs.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.ws.rs.NotFoundException;
 
 public class RolePermissionResolver implements PermissionResolver {
     private static final Logger logger = LoggerFactory.getLogger(RolePermissionResolver.class);
@@ -44,7 +43,8 @@ public class RolePermissionResolver implements PermissionResolver {
         try {
             return roleRepository.getRealmRole(realmName, roleName).getId();
         } catch (NotFoundException | KeycloakRepositoryException e) {
-            throw new ImportProcessingException("Cannot find realm role '%s' in realm '%s' for '%s'", roleName, realmName, authzName);
+            throw new ImportProcessingException(
+                    "Cannot find realm role '%s' in realm '%s' for '%s'", roleName, realmName, authzName);
         }
     }
 

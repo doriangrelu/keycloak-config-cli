@@ -20,20 +20,33 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
+import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.repository.ClientRepository;
 import io.github.doriangrelu.keycloak.config.repository.GroupRepository;
 import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
 import io.github.doriangrelu.keycloak.config.repository.RoleRepository;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
-import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.ServerErrorException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -45,20 +58,6 @@ import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.mockito.ArgumentCaptor;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.times;
 
 /**
  * Unit tests for ClientAuthorizationImportService focusing on FGAP V2 error handling.
@@ -80,23 +79,26 @@ class ClientAuthorizationImportServiceTest {
         StateService stateService = mock(StateService.class);
 
         // Mock the nested managed properties chain
-        ImportConfigProperties.ImportManagedProperties managedProperties = mock(ImportConfigProperties.ImportManagedProperties.class);
+        ImportConfigProperties.ImportManagedProperties managedProperties =
+                mock(ImportConfigProperties.ImportManagedProperties.class);
         when(importConfigProperties.getManaged()).thenReturn(managedProperties);
-        when(managedProperties.getClientAuthorizationResources()).thenReturn(ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.NO_DELETE);
-        when(managedProperties.getClientAuthorizationPolicies()).thenReturn(ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.NO_DELETE);
-        when(managedProperties.getClientAuthorizationScopes()).thenReturn(ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.NO_DELETE);
+        when(managedProperties.getClientAuthorizationResources())
+                .thenReturn(ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.NO_DELETE);
+        when(managedProperties.getClientAuthorizationPolicies())
+                .thenReturn(ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.NO_DELETE);
+        when(managedProperties.getClientAuthorizationScopes())
+                .thenReturn(ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.NO_DELETE);
 
-    KeycloakProvider keycloakProvider = mock(KeycloakProvider.class);
+        KeycloakProvider keycloakProvider = mock(KeycloakProvider.class);
 
-    service = new ClientAuthorizationImportService(
-        clientRepository,
-        identityProviderRepository,
-        roleRepository,
-        groupRepository,
-        importConfigProperties,
-        stateService,
-        keycloakProvider
-    );
+        service = new ClientAuthorizationImportService(
+                clientRepository,
+                identityProviderRepository,
+                roleRepository,
+                groupRepository,
+                importConfigProperties,
+                stateService,
+                keycloakProvider);
     }
 
     @Nested
@@ -139,7 +141,8 @@ class ClientAuthorizationImportServiceTest {
             existingAuth.setPolicyEnforcementMode(PolicyEnforcementMode.PERMISSIVE);
             existingAuth.setAllowRemoteResourceManagement(false);
             existingAuth.setDecisionStrategy(DecisionStrategy.AFFIRMATIVE);
-            when(clientRepository.getAuthorizationConfigById(anyString(), anyString())).thenReturn(existingAuth);
+            when(clientRepository.getAuthorizationConfigById(anyString(), anyString()))
+                    .thenReturn(existingAuth);
         }
 
         private Response createMockResponse(int status) {
@@ -148,11 +151,13 @@ class ClientAuthorizationImportServiceTest {
             when(response.getStatus()).thenReturn(status);
             when(response.getStatusInfo()).thenReturn(statusType);
             when(statusType.getStatusCode()).thenReturn(status);
-            when(statusType.getFamily()).thenReturn(
-                status >= 500 ? Response.Status.Family.SERVER_ERROR :
-                status >= 400 ? Response.Status.Family.CLIENT_ERROR :
-                Response.Status.Family.SUCCESSFUL
-            );
+            when(statusType.getFamily())
+                    .thenReturn(
+                            status >= 500
+                                    ? Response.Status.Family.SERVER_ERROR
+                                    : status >= 400
+                                            ? Response.Status.Family.CLIENT_ERROR
+                                            : Response.Status.Family.SUCCESSFUL);
             return response;
         }
 
@@ -164,8 +169,9 @@ class ClientAuthorizationImportServiceTest {
             authorizationSettings.setResources(List.of(resource));
 
             // And: Repository throws KeycloakRepositoryException with FGAP V2 message
-             doThrow(new KeycloakRepositoryException("Authorization API not supported (FGAP V2 active)"))
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(new KeycloakRepositoryException("Authorization API not supported (FGAP V2 active)"))
+                    .when(clientRepository)
+                    .createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -184,8 +190,7 @@ class ClientAuthorizationImportServiceTest {
             // And: Repository throws ServerErrorException with 501 status (Not Implemented)
             ServerErrorException exception = new ServerErrorException(createMockResponse(501));
 
-            doThrow(exception)
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -204,8 +209,7 @@ class ClientAuthorizationImportServiceTest {
             // And: Repository throws NotFoundException (404)
             NotFoundException exception = new NotFoundException(createMockResponse(404));
 
-            doThrow(exception)
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -224,8 +228,7 @@ class ClientAuthorizationImportServiceTest {
             // And: Repository throws WebApplicationException with 404 status
             WebApplicationException exception = new WebApplicationException(createMockResponse(404));
 
-            doThrow(exception)
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -245,8 +248,7 @@ class ClientAuthorizationImportServiceTest {
             // And: Repository throws NotFoundException (FGAP V2 active)
             NotFoundException exception = new NotFoundException(createMockResponse(404));
 
-            doThrow(exception)
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -266,8 +268,7 @@ class ClientAuthorizationImportServiceTest {
             // And: Repository throws ServerErrorException with 501
             ServerErrorException exception = new ServerErrorException(createMockResponse(501));
 
-            doThrow(exception)
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -285,8 +286,9 @@ class ClientAuthorizationImportServiceTest {
             authorizationSettings.setResources(List.of(clientsResource));
 
             // And: Repository throws KeycloakRepositoryException
-        doThrow(new KeycloakRepositoryException("Authorization API not supported (FGAP V2 active)"))
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(new KeycloakRepositoryException("Authorization API not supported (FGAP V2 active)"))
+                    .when(clientRepository)
+                    .createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -306,8 +308,7 @@ class ClientAuthorizationImportServiceTest {
             // And: Repository throws ServerErrorException
             ServerErrorException exception = new ServerErrorException(createMockResponse(501));
 
-            doThrow(exception)
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -328,7 +329,8 @@ class ClientAuthorizationImportServiceTest {
             existingAuth.setResources(List.of(existingResource));
             existingAuth.setScopes(new ArrayList<>());
             existingAuth.setPolicies(new ArrayList<>());
-            when(clientRepository.getAuthorizationConfigById(anyString(), anyString())).thenReturn(existingAuth);
+            when(clientRepository.getAuthorizationConfigById(anyString(), anyString()))
+                    .thenReturn(existingAuth);
 
             ResourceRepresentation updatedResource = new ResourceRepresentation();
             updatedResource.setName("test-resource");
@@ -339,8 +341,7 @@ class ClientAuthorizationImportServiceTest {
             // And: Repository throws NotFoundException on update
             NotFoundException exception = new NotFoundException(createMockResponse(404));
 
-            doThrow(exception)
-                    .when(clientRepository).updateAuthorizationResource(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).updateAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -360,8 +361,8 @@ class ClientAuthorizationImportServiceTest {
             ServerErrorException exception = new ServerErrorException(createMockResponse(501));
 
             when(clientRepository.getAuthorizationConfigById(anyString(), anyString()))
-                    .thenReturn(authorizationSettings)  // First call succeeds
-                    .thenThrow(exception);              // Second call (refresh) throws 501
+                    .thenReturn(authorizationSettings) // First call succeeds
+                    .thenThrow(exception); // Second call (refresh) throws 501
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -400,8 +401,9 @@ class ClientAuthorizationImportServiceTest {
             authorizationSettings.setResources(List.of(customResource));
 
             // And: Repository throws FGAP V2 error
-        doThrow(new KeycloakRepositoryException("Authorization API not supported (FGAP V2 active)"))
-                    .when(clientRepository).createAuthorizationResource(anyString(), anyString(), any());
+            doThrow(new KeycloakRepositoryException("Authorization API not supported (FGAP V2 active)"))
+                    .when(clientRepository)
+                    .createAuthorizationResource(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -417,8 +419,7 @@ class ClientAuthorizationImportServiceTest {
 
             // And: Repository throws BadRequestException when updating authorization settings
             BadRequestException exception = new BadRequestException(createMockResponse(400));
-            doThrow(exception)
-                    .when(clientRepository).updateAuthorizationSettings(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).updateAuthorizationSettings(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -434,8 +435,7 @@ class ClientAuthorizationImportServiceTest {
 
             // And: Repository throws BadRequestException when updating authorization settings
             BadRequestException exception = new BadRequestException(createMockResponse(400));
-            doThrow(exception)
-                    .when(clientRepository).updateAuthorizationSettings(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).updateAuthorizationSettings(anyString(), anyString(), any());
 
             // When/Then: Exception should be re-thrown for non-admin-permissions clients
             try {
@@ -452,8 +452,7 @@ class ClientAuthorizationImportServiceTest {
             // Given: Client with authorization settings
             // And: Repository throws ServerErrorException with 501 status
             ServerErrorException exception = new ServerErrorException(createMockResponse(501));
-            doThrow(exception)
-                    .when(clientRepository).updateAuthorizationSettings(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).updateAuthorizationSettings(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -467,8 +466,7 @@ class ClientAuthorizationImportServiceTest {
             // Given: Client with authorization settings
             // And: Repository throws NotFoundException with 404 status
             NotFoundException exception = new NotFoundException(createMockResponse(404));
-            doThrow(exception)
-                    .when(clientRepository).updateAuthorizationSettings(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).updateAuthorizationSettings(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -485,8 +483,9 @@ class ClientAuthorizationImportServiceTest {
             authorizationSettings.setScopes(List.of(scope));
 
             // And: Repository throws KeycloakRepositoryException with FGAP V2 message
-                doThrow(new KeycloakRepositoryException("Authorization API not supported (FGAP V2 active)"))
-                    .when(clientRepository).addAuthorizationScope(anyString(), anyString(), any());
+            doThrow(new KeycloakRepositoryException("Authorization API not supported (FGAP V2 active)"))
+                    .when(clientRepository)
+                    .addAuthorizationScope(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -504,8 +503,7 @@ class ClientAuthorizationImportServiceTest {
 
             // And: Repository throws NotFoundException
             NotFoundException exception = new NotFoundException(createMockResponse(404));
-            doThrow(exception)
-                    .when(clientRepository).addAuthorizationScope(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).addAuthorizationScope(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -523,8 +521,7 @@ class ClientAuthorizationImportServiceTest {
 
             // And: Repository throws ServerErrorException with 501
             ServerErrorException exception = new ServerErrorException(createMockResponse(501));
-            doThrow(exception)
-                    .when(clientRepository).addAuthorizationScope(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).addAuthorizationScope(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -545,7 +542,8 @@ class ClientAuthorizationImportServiceTest {
             existingAuth.setScopes(List.of(existingScope));
             existingAuth.setResources(new ArrayList<>());
             existingAuth.setPolicies(new ArrayList<>());
-            when(clientRepository.getAuthorizationConfigById(anyString(), anyString())).thenReturn(existingAuth);
+            when(clientRepository.getAuthorizationConfigById(anyString(), anyString()))
+                    .thenReturn(existingAuth);
 
             ScopeRepresentation updatedScope = new ScopeRepresentation();
             updatedScope.setName("test-scope");
@@ -555,8 +553,7 @@ class ClientAuthorizationImportServiceTest {
 
             // And: Repository throws NotFoundException on update
             NotFoundException exception = new NotFoundException(createMockResponse(404));
-            doThrow(exception)
-                    .when(clientRepository).updateAuthorizationScope(anyString(), anyString(), any());
+            doThrow(exception).when(clientRepository).updateAuthorizationScope(anyString(), anyString(), any());
 
             // When: Import is executed
             service.doImport(realmImport);
@@ -565,244 +562,258 @@ class ClientAuthorizationImportServiceTest {
             verify(clientRepository, times(1)).updateAuthorizationScope(eq("test-realm"), eq("client-id"), any());
         }
 
-    /**
-     * Tests for FGAP V1/V2 resource reference syntax transformation.
-     * These tests verify that placeholders like "$test-client" are correctly transformed
-     * to either full strings (V1) or IDs only (V2) based on FGAP version.
-     */
-    
-    @Nested
-    class ResourceReferenceSyntax {
-
-        // Test-specific fields for realm-management authorization testing
-        private RealmImport realmImport;
-        private ClientRepresentation realmManagementClient;
-        private ClientRepresentation testClient;
-        private ResourceServerRepresentation authorizationSettings;
-        private KeycloakProvider keycloakProvider;
-
-        @BeforeEach
-        void setUp() {
-            // Create service with mockable KeycloakProvider to control FGAP version detection
-            keycloakProvider = mock(KeycloakProvider.class);
-            service = new ClientAuthorizationImportService(
-                clientRepository,
-                mock(IdentityProviderRepository.class),
-                mock(RoleRepository.class),
-                mock(GroupRepository.class),
-                importConfigProperties,
-                mock(StateService.class),
-                keycloakProvider
-            );
-
-            // Setup realm with realm-management client and test client for reference
-            setupRealmImportWithClient("test-realm", "realm-management", "realm-mgmt-id",
-                                      "test-client", "abc-123-def");
-        }
-
         /**
-         * Helper method to setup realm import with clients for testing.
-         * Reduces duplication across test methods.
+         * Tests for FGAP V1/V2 resource reference syntax transformation.
+         * These tests verify that placeholders like "$test-client" are correctly transformed
+         * to either full strings (V1) or IDs only (V2) based on FGAP version.
          */
-        private void setupRealmImportWithClient(String realmName, String managementClientId,
-                                               String managementClientInternalId,
-                                               String testClientId, String testClientInternalId) {
-            realmImport = new RealmImport();
-            realmImport.setRealm(realmName);
+        @Nested
+        class ResourceReferenceSyntax {
 
-            // Create test client that will be referenced
-            testClient = new ClientRepresentation();
-            testClient.setId(testClientInternalId);
-            testClient.setClientId(testClientId);
+            // Test-specific fields for realm-management authorization testing
+            private RealmImport realmImport;
+            private ClientRepresentation realmManagementClient;
+            private ClientRepresentation testClient;
+            private ResourceServerRepresentation authorizationSettings;
+            private KeycloakProvider keycloakProvider;
 
-            // Create realm-management client with authorization settings
-            realmManagementClient = new ClientRepresentation();
-            realmManagementClient.setId(managementClientInternalId);
-            realmManagementClient.setClientId(managementClientId);
+            @BeforeEach
+            void setUp() {
+                // Create service with mockable KeycloakProvider to control FGAP version detection
+                keycloakProvider = mock(KeycloakProvider.class);
+                service = new ClientAuthorizationImportService(
+                        clientRepository,
+                        mock(IdentityProviderRepository.class),
+                        mock(RoleRepository.class),
+                        mock(GroupRepository.class),
+                        importConfigProperties,
+                        mock(StateService.class),
+                        keycloakProvider);
 
-            authorizationSettings = new ResourceServerRepresentation();
-            authorizationSettings.setResources(new ArrayList<>());
-            authorizationSettings.setScopes(new ArrayList<>());
-            authorizationSettings.setPolicies(new ArrayList<>());
+                // Setup realm with realm-management client and test client for reference
+                setupRealmImportWithClient(
+                        "test-realm", "realm-management", "realm-mgmt-id", "test-client", "abc-123-def");
+            }
 
-            realmManagementClient.setAuthorizationSettings(authorizationSettings);
-            realmImport.setClients(List.of(realmManagementClient));
+            /**
+             * Helper method to setup realm import with clients for testing.
+             * Reduces duplication across test methods.
+             */
+            private void setupRealmImportWithClient(
+                    String realmName,
+                    String managementClientId,
+                    String managementClientInternalId,
+                    String testClientId,
+                    String testClientInternalId) {
+                realmImport = new RealmImport();
+                realmImport.setRealm(realmName);
 
-            when(clientRepository.getByClientId(eq(realmName), eq(managementClientId))).thenReturn(realmManagementClient);
-            when(clientRepository.getByClientId(eq(realmName), eq(testClientId))).thenReturn(testClient);
+                // Create test client that will be referenced
+                testClient = new ClientRepresentation();
+                testClient.setId(testClientInternalId);
+                testClient.setClientId(testClientId);
 
-            ResourceServerRepresentation existingAuth = new ResourceServerRepresentation();
-            existingAuth.setResources(new ArrayList<>());
-            existingAuth.setScopes(new ArrayList<>());
-            existingAuth.setPolicies(new ArrayList<>());
-            when(clientRepository.getAuthorizationConfigById(anyString(), anyString())).thenReturn(existingAuth);
+                // Create realm-management client with authorization settings
+                realmManagementClient = new ClientRepresentation();
+                realmManagementClient.setId(managementClientInternalId);
+                realmManagementClient.setClientId(managementClientId);
+
+                authorizationSettings = new ResourceServerRepresentation();
+                authorizationSettings.setResources(new ArrayList<>());
+                authorizationSettings.setScopes(new ArrayList<>());
+                authorizationSettings.setPolicies(new ArrayList<>());
+
+                realmManagementClient.setAuthorizationSettings(authorizationSettings);
+                realmImport.setClients(List.of(realmManagementClient));
+
+                when(clientRepository.getByClientId(eq(realmName), eq(managementClientId)))
+                        .thenReturn(realmManagementClient);
+                when(clientRepository.getByClientId(eq(realmName), eq(testClientId)))
+                        .thenReturn(testClient);
+
+                ResourceServerRepresentation existingAuth = new ResourceServerRepresentation();
+                existingAuth.setResources(new ArrayList<>());
+                existingAuth.setScopes(new ArrayList<>());
+                existingAuth.setPolicies(new ArrayList<>());
+                when(clientRepository.getAuthorizationConfigById(anyString(), anyString()))
+                        .thenReturn(existingAuth);
+            }
+
+            /**
+             * Helper method to create a policy representation with common defaults.
+             */
+            private PolicyRepresentation createPolicy(String name, String resourcesConfig) {
+                PolicyRepresentation policy = new PolicyRepresentation();
+                policy.setName(name);
+                policy.setType("scope");
+                policy.setConfig(new HashMap<>());
+                policy.getConfig().put("resources", resourcesConfig);
+                policy.getConfig().put("scopes", "[\"view\"]");
+                return policy;
+            }
+
+            /**
+             * Helper method to create a policy with defaultResourceType.
+             */
+            private PolicyRepresentation createPolicyWithResourceType(
+                    String name, String resourceType, String resourcesConfig, String scopes) {
+                PolicyRepresentation policy = new PolicyRepresentation();
+                policy.setName(name);
+                policy.setType("scope");
+                policy.setConfig(new HashMap<>());
+                policy.getConfig().put("defaultResourceType", resourceType);
+                policy.getConfig().put("resources", resourcesConfig);
+                policy.getConfig().put("scopes", scopes);
+                return policy;
+            }
+
+            /**
+             * Helper method to verify policy creation and return resources config.
+             */
+            private String verifyPolicyCreationAndGetResources() {
+                ArgumentCaptor<PolicyRepresentation> policyCaptor = ArgumentCaptor.forClass(PolicyRepresentation.class);
+                verify(clientRepository)
+                        .createAuthorizationPolicy(eq("test-realm"), eq("realm-mgmt-id"), policyCaptor.capture());
+                return policyCaptor.getValue().getConfig().get("resources");
+            }
+
+            /**
+             * Helper method to verify policy creation and return policy name.
+             */
+            private String verifyPolicyCreationAndGetName() {
+                ArgumentCaptor<PolicyRepresentation> policyCaptor = ArgumentCaptor.forClass(PolicyRepresentation.class);
+                verify(clientRepository)
+                        .createAuthorizationPolicy(eq("test-realm"), eq("realm-mgmt-id"), policyCaptor.capture());
+                return policyCaptor.getValue().getName();
+            }
+
+            @Test
+            void shouldTransformPlaceholderToFullStringForFgapV1() {
+                // Given: FGAP V1 is active
+                when(keycloakProvider.isFgapV2Active()).thenReturn(false);
+
+                // And: Policy with placeholder resource reference
+                PolicyRepresentation policy = createPolicy("test-policy", "[\"client.resource.$test-client\"]");
+                authorizationSettings.setPolicies(List.of(policy));
+
+                // When: Import is executed
+                service.doImport(realmImport);
+
+                // Then: V1 format (full resource string) is used
+                String resourcesConfig = verifyPolicyCreationAndGetResources();
+                assertTrue(
+                        resourcesConfig.contains("client.resource.abc-123-def"),
+                        "V1 should use full resource string format");
+            }
+
+            @Test
+            void shouldTransformPlaceholderToIdOnlyForFgapV2() {
+                // Given: FGAP V2 is active
+                when(keycloakProvider.isFgapV2Active()).thenReturn(true);
+
+                // And: Policy with placeholder resource reference
+                PolicyRepresentation policy = createPolicy("test-policy", "[\"client.resource.$test-client\"]");
+                authorizationSettings.setPolicies(List.of(policy));
+
+                // When: Import is executed
+                service.doImport(realmImport);
+
+                // Then: V2 format (ID only) is used
+                String resourcesConfig = verifyPolicyCreationAndGetResources();
+                assertEquals("[\"abc-123-def\"]", resourcesConfig, "V2 should use ID only format");
+            }
+
+            @Test
+            void shouldHandleNonPlaceholderResourcesUnchanged() {
+                // Given: FGAP V2 is active
+                when(keycloakProvider.isFgapV2Active()).thenReturn(true);
+
+                // And: Policy with non-placeholder (fixed) resource reference
+                PolicyRepresentation policy = createPolicy("test-policy", "[\"client.resource.fixed-id-123\"]");
+                authorizationSettings.setPolicies(List.of(policy));
+
+                // When: Import is executed
+                service.doImport(realmImport);
+
+                // Then: Non-placeholder resource remains unchanged
+                String resourcesConfig = verifyPolicyCreationAndGetResources();
+                assertEquals(
+                        "[\"client.resource.fixed-id-123\"]",
+                        resourcesConfig,
+                        "Non-placeholder resources should remain unchanged");
+            }
+
+            @Test
+            void shouldTransformMultiplePlaceholdersInPolicyResources() {
+                // Given: FGAP V2 is active
+                when(keycloakProvider.isFgapV2Active()).thenReturn(true);
+
+                // And: Create second test client
+                ClientRepresentation testClient2 = new ClientRepresentation();
+                testClient2.setId("xyz-789-ghi");
+                testClient2.setClientId("test-client-2");
+                when(clientRepository.getByClientId(eq("test-realm"), eq("test-client-2")))
+                        .thenReturn(testClient2);
+
+                // And: Policy with multiple placeholder resource references
+                PolicyRepresentation policy = createPolicy(
+                        "test-policy", "[\"client.resource.$test-client\",\"client.resource.$test-client-2\"]");
+                authorizationSettings.setPolicies(List.of(policy));
+
+                // When: Import is executed
+                service.doImport(realmImport);
+
+                // Then: Both placeholders are transformed to IDs only
+                String resourcesConfig = verifyPolicyCreationAndGetResources();
+                assertTrue(resourcesConfig.contains("abc-123-def"), "First client ID should be present");
+                assertTrue(resourcesConfig.contains("xyz-789-ghi"), "Second client ID should be present");
+                assertFalse(
+                        resourcesConfig.contains("client.resource"),
+                        "V2 format should not contain 'client.resource' prefix");
+            }
+
+            @Test
+            void shouldTransformBarePlaceholderWithDefaultResourceTypeForFgapV2() {
+                // Given: FGAP V2 is active
+                when(keycloakProvider.isFgapV2Active()).thenReturn(true);
+
+                // And: Policy with bare placeholder (no "client.resource." prefix) and defaultResourceType
+                PolicyRepresentation policy =
+                        createPolicyWithResourceType("test-policy", "Clients", "[\"$test-client\"]", "[\"view\"]");
+                authorizationSettings.setPolicies(List.of(policy));
+
+                // When: Import is executed
+                service.doImport(realmImport);
+
+                // Then: Bare placeholder is transformed to ID only (using defaultResourceType to infer type)
+                String resourcesConfig = verifyPolicyCreationAndGetResources();
+                assertEquals(
+                        "[\"abc-123-def\"]",
+                        resourcesConfig,
+                        "Bare placeholder should be transformed to ID using defaultResourceType");
+            }
+
+            @Test
+            void shouldKeepPolicyNamesDescriptiveInFgapV2() {
+                // Given: FGAP V2 is active
+                when(keycloakProvider.isFgapV2Active()).thenReturn(true);
+
+                // And: Policy with placeholder in name
+                PolicyRepresentation policy = createPolicyWithResourceType(
+                        "manage.permission.client.$test-client", "Clients", "[\"$test-client\"]", "[\"manage\"]");
+                authorizationSettings.setPolicies(List.of(policy));
+
+                // When: Import is executed
+                service.doImport(realmImport);
+
+                // Then: Policy name uses V1-style (descriptive with full path) even in V2
+                String policyName = verifyPolicyCreationAndGetName();
+                assertEquals(
+                        "manage.permission.client.abc-123-def",
+                        policyName,
+                        "Policy name should remain descriptive (V1-style) even in FGAP V2");
+                assertFalse(policyName.equals("abc-123-def"), "Policy name should not be just the ID");
+            }
         }
-
-        /**
-         * Helper method to create a policy representation with common defaults.
-         */
-        private PolicyRepresentation createPolicy(String name, String resourcesConfig) {
-            PolicyRepresentation policy = new PolicyRepresentation();
-            policy.setName(name);
-            policy.setType("scope");
-            policy.setConfig(new HashMap<>());
-            policy.getConfig().put("resources", resourcesConfig);
-            policy.getConfig().put("scopes", "[\"view\"]");
-            return policy;
-        }
-
-        /**
-         * Helper method to create a policy with defaultResourceType.
-         */
-        private PolicyRepresentation createPolicyWithResourceType(String name, String resourceType, String resourcesConfig, String scopes) {
-            PolicyRepresentation policy = new PolicyRepresentation();
-            policy.setName(name);
-            policy.setType("scope");
-            policy.setConfig(new HashMap<>());
-            policy.getConfig().put("defaultResourceType", resourceType);
-            policy.getConfig().put("resources", resourcesConfig);
-            policy.getConfig().put("scopes", scopes);
-            return policy;
-        }
-
-        /**
-         * Helper method to verify policy creation and return resources config.
-         */
-        private String verifyPolicyCreationAndGetResources() {
-            ArgumentCaptor<PolicyRepresentation> policyCaptor = ArgumentCaptor.forClass(PolicyRepresentation.class);
-            verify(clientRepository).createAuthorizationPolicy(eq("test-realm"), eq("realm-mgmt-id"), policyCaptor.capture());
-            return policyCaptor.getValue().getConfig().get("resources");
-        }
-
-        /**
-         * Helper method to verify policy creation and return policy name.
-         */
-        private String verifyPolicyCreationAndGetName() {
-            ArgumentCaptor<PolicyRepresentation> policyCaptor = ArgumentCaptor.forClass(PolicyRepresentation.class);
-            verify(clientRepository).createAuthorizationPolicy(eq("test-realm"), eq("realm-mgmt-id"), policyCaptor.capture());
-            return policyCaptor.getValue().getName();
-        }
-
-        @Test
-        void shouldTransformPlaceholderToFullStringForFgapV1() {
-            // Given: FGAP V1 is active
-            when(keycloakProvider.isFgapV2Active()).thenReturn(false);
-
-            // And: Policy with placeholder resource reference
-            PolicyRepresentation policy = createPolicy("test-policy", "[\"client.resource.$test-client\"]");
-            authorizationSettings.setPolicies(List.of(policy));
-
-            // When: Import is executed
-            service.doImport(realmImport);
-
-            // Then: V1 format (full resource string) is used
-            String resourcesConfig = verifyPolicyCreationAndGetResources();
-            assertTrue(resourcesConfig.contains("client.resource.abc-123-def"),
-                "V1 should use full resource string format");
-        }
-
-        @Test
-        void shouldTransformPlaceholderToIdOnlyForFgapV2() {
-            // Given: FGAP V2 is active
-            when(keycloakProvider.isFgapV2Active()).thenReturn(true);
-
-            // And: Policy with placeholder resource reference
-            PolicyRepresentation policy = createPolicy("test-policy", "[\"client.resource.$test-client\"]");
-            authorizationSettings.setPolicies(List.of(policy));
-
-            // When: Import is executed
-            service.doImport(realmImport);
-
-            // Then: V2 format (ID only) is used
-            String resourcesConfig = verifyPolicyCreationAndGetResources();
-            assertEquals("[\"abc-123-def\"]", resourcesConfig,
-                "V2 should use ID only format");
-        }
-
-        @Test
-        void shouldHandleNonPlaceholderResourcesUnchanged() {
-            // Given: FGAP V2 is active
-            when(keycloakProvider.isFgapV2Active()).thenReturn(true);
-
-            // And: Policy with non-placeholder (fixed) resource reference
-            PolicyRepresentation policy = createPolicy("test-policy", "[\"client.resource.fixed-id-123\"]");
-            authorizationSettings.setPolicies(List.of(policy));
-
-            // When: Import is executed
-            service.doImport(realmImport);
-
-            // Then: Non-placeholder resource remains unchanged
-            String resourcesConfig = verifyPolicyCreationAndGetResources();
-            assertEquals("[\"client.resource.fixed-id-123\"]", resourcesConfig,
-                "Non-placeholder resources should remain unchanged");
-        }
-
-        @Test
-        void shouldTransformMultiplePlaceholdersInPolicyResources() {
-            // Given: FGAP V2 is active
-            when(keycloakProvider.isFgapV2Active()).thenReturn(true);
-
-            // And: Create second test client
-            ClientRepresentation testClient2 = new ClientRepresentation();
-            testClient2.setId("xyz-789-ghi");
-            testClient2.setClientId("test-client-2");
-            when(clientRepository.getByClientId(eq("test-realm"), eq("test-client-2"))).thenReturn(testClient2);
-
-            // And: Policy with multiple placeholder resource references
-            PolicyRepresentation policy = createPolicy("test-policy",
-                "[\"client.resource.$test-client\",\"client.resource.$test-client-2\"]");
-            authorizationSettings.setPolicies(List.of(policy));
-
-            // When: Import is executed
-            service.doImport(realmImport);
-
-            // Then: Both placeholders are transformed to IDs only
-            String resourcesConfig = verifyPolicyCreationAndGetResources();
-            assertTrue(resourcesConfig.contains("abc-123-def"), "First client ID should be present");
-            assertTrue(resourcesConfig.contains("xyz-789-ghi"), "Second client ID should be present");
-            assertFalse(resourcesConfig.contains("client.resource"),
-                "V2 format should not contain 'client.resource' prefix");
-        }
-
-        @Test
-        void shouldTransformBarePlaceholderWithDefaultResourceTypeForFgapV2() {
-            // Given: FGAP V2 is active
-            when(keycloakProvider.isFgapV2Active()).thenReturn(true);
-
-            // And: Policy with bare placeholder (no "client.resource." prefix) and defaultResourceType
-            PolicyRepresentation policy = createPolicyWithResourceType("test-policy", "Clients",
-                "[\"$test-client\"]", "[\"view\"]");
-            authorizationSettings.setPolicies(List.of(policy));
-
-            // When: Import is executed
-            service.doImport(realmImport);
-
-            // Then: Bare placeholder is transformed to ID only (using defaultResourceType to infer type)
-            String resourcesConfig = verifyPolicyCreationAndGetResources();
-            assertEquals("[\"abc-123-def\"]", resourcesConfig,
-                "Bare placeholder should be transformed to ID using defaultResourceType");
-        }
-
-        @Test
-        void shouldKeepPolicyNamesDescriptiveInFgapV2() {
-            // Given: FGAP V2 is active
-            when(keycloakProvider.isFgapV2Active()).thenReturn(true);
-
-            // And: Policy with placeholder in name
-            PolicyRepresentation policy = createPolicyWithResourceType("manage.permission.client.$test-client",
-                "Clients", "[\"$test-client\"]", "[\"manage\"]");
-            authorizationSettings.setPolicies(List.of(policy));
-
-            // When: Import is executed
-            service.doImport(realmImport);
-
-            // Then: Policy name uses V1-style (descriptive with full path) even in V2
-            String policyName = verifyPolicyCreationAndGetName();
-            assertEquals("manage.permission.client.abc-123-def", policyName,
-                "Policy name should remain descriptive (V1-style) even in FGAP V2");
-            assertFalse(policyName.equals("abc-123-def"),
-                "Policy name should not be just the ID");
-        }
-    }
     }
 }

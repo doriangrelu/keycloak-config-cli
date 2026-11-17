@@ -40,7 +40,6 @@ public class OtpPolicyRepository {
 
         existingRealm.setOtpPolicyAlgorithm(newRealmRepresentation.getOtpPolicyAlgorithm());
 
-
         realmRepository.update(existingRealm);
     }
 }

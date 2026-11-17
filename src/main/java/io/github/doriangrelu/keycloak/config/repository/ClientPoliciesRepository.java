@@ -110,5 +110,4 @@ public class ClientPoliciesRepository {
 
         profilesResource.updateProfiles(newClientProfiles);
     }
-
 }

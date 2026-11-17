@@ -20,9 +20,17 @@
 
 package io.github.doriangrelu.keycloak.config.provider;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.matchesPattern;
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakProviderException;
 import io.github.doriangrelu.keycloak.config.resource.ManagementPermissions;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.ProcessingException;
+import java.net.SocketTimeoutException;
+import java.net.URISyntaxException;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,24 +39,14 @@ import org.junitpioneer.jupiter.SetSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
-import java.net.SocketTimeoutException;
-import java.net.URISyntaxException;
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.ProcessingException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.matchesPattern;
-import static org.junit.jupiter.api.Assertions.*;
-
 class KeycloakProviderIT {
     @Nested
-    @TestPropertySource(properties = {
-            "keycloak.read-timeout=PT0.01S"
-    })
+    @TestPropertySource(properties = {"keycloak.read-timeout=PT0.01S"})
     class ResteasyReadTimeout extends AbstractImportIT {
         @Test
         void run() {
-            // very low read timeout leads inevitably to a read timeout, which in turn shows that the configuration is applied
+            // very low read timeout leads inevitably to a read timeout, which in turn shows that the configuration is
+            // applied
             ProcessingException thrown = assertThrows(ProcessingException.class, keycloakProvider::getInstance);
             assertNotNull(thrown.getCause());
             assertTrue(thrown.getCause() instanceof SocketTimeoutException);
@@ -57,10 +55,7 @@ class KeycloakProviderIT {
     }
 
     @Nested
-    @TestPropertySource(properties = {
-            "keycloak.url=https://10.255.255.1",
-            "keycloak.connect-timeout=PT0.01S"
-    })
+    @TestPropertySource(properties = {"keycloak.url=https://10.255.255.1", "keycloak.connect-timeout=PT0.01S"})
     class ResteasyConnectTimeout extends AbstractImportIT {
         @Test
         @Timeout(value = 2L)
@@ -75,28 +70,28 @@ class KeycloakProviderIT {
     }
 
     @Nested
-    @TestPropertySource(properties = {
-            "keycloak.url=https://localhost:1",
-            "keycloak.availability-check.enabled=true",
-            "keycloak.availability-check.timeout=300ms",
-            "keycloak.availability-check.retry-delay=100ms",
-    })
+    @TestPropertySource(
+            properties = {
+                "keycloak.url=https://localhost:1",
+                "keycloak.availability-check.enabled=true",
+                "keycloak.availability-check.timeout=300ms",
+                "keycloak.availability-check.retry-delay=100ms",
+            })
     class RaiseTimeout extends AbstractImportIT {
         @Autowired
         public KeycloakProvider keycloakProvider;
 
         @Test
         void run() {
-            KeycloakProviderException thrown = assertThrows(KeycloakProviderException.class, keycloakProvider::getInstance);
+            KeycloakProviderException thrown =
+                    assertThrows(KeycloakProviderException.class, keycloakProvider::getInstance);
 
             assertThat(thrown.getMessage(), matchesPattern("Could not connect to keycloak in 0 seconds: .*$"));
         }
     }
 
     @Nested
-    @TestPropertySource(properties = {
-            "keycloak.url=${keycloak.baseUrl}/z/"
-    })
+    @TestPropertySource(properties = {"keycloak.url=${keycloak.baseUrl}/z/"})
     class InvalidServerUrl extends AbstractImportIT {
         @Autowired
         public KeycloakProvider keycloakProvider;
@@ -110,9 +105,10 @@ class KeycloakProviderIT {
     @Nested
     @SetSystemProperty(key = "http.proxyHost", value = "localhost")
     @SetSystemProperty(key = "http.proxyPort", value = "2")
-    @TestPropertySource(properties = {
-            "keycloak.url=https://keycloak:8080/auth/",
-    })
+    @TestPropertySource(
+            properties = {
+                "keycloak.url=https://keycloak:8080/auth/",
+            })
     class HttpProxySystemProperties extends AbstractImportIT {
         @Autowired
         public KeycloakProvider keycloakProvider;
@@ -126,10 +122,11 @@ class KeycloakProviderIT {
     }
 
     @Nested
-    @TestPropertySource(properties = {
-            "keycloak.url=https://keycloak:8080/auth/",
-            "keycloak.http-proxy=http://localhost:2",
-    })
+    @TestPropertySource(
+            properties = {
+                "keycloak.url=https://keycloak:8080/auth/",
+                "keycloak.http-proxy=http://localhost:2",
+            })
     class HttpProxySpringProperties extends AbstractImportIT {
         @Test
         void run() {
@@ -149,13 +146,12 @@ class KeycloakProviderIT {
     }
 
     @Nested
-    @TestPropertySource(properties = {
-            "keycloak.url=http://crappy|url"
-    })
+    @TestPropertySource(properties = {"keycloak.url=http://crappy|url"})
     class GetCustomApiProxyInvalidUri extends AbstractImportIT {
         @Test
         void run() {
-            RuntimeException thrown = assertThrows(RuntimeException.class, () -> keycloakProvider.getCustomApiProxy(ManagementPermissions.class));
+            RuntimeException thrown = assertThrows(
+                    RuntimeException.class, () -> keycloakProvider.getCustomApiProxy(ManagementPermissions.class));
             assertNotNull(thrown.getCause());
             assertTrue(thrown.getCause() instanceof URISyntaxException);
         }

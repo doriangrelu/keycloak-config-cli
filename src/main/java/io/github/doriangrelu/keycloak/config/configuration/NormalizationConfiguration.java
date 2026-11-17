@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import java.util.ArrayList;
+import java.util.List;
 import org.javers.core.Javers;
 import org.javers.core.JaversBuilder;
 import org.javers.core.diff.ListCompareAlgorithm;
@@ -46,9 +48,6 @@ import org.keycloak.representations.idm.UserFederationProviderRepresentation;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Configuration
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -116,22 +115,33 @@ public class NormalizationConfiguration {
 
         return JaversBuilder.javers()
                 .registerEntity(new EntityDefinition(RealmRepresentation.class, "realm", realmIgnoredProperties))
-                .registerEntity(new EntityDefinition(ClientRepresentation.class, "clientId",
+                .registerEntity(new EntityDefinition(
+                        ClientRepresentation.class,
+                        "clientId",
                         List.of("id", "authorizationSettings", "protocolMappers")))
                 .registerEntity(new EntityDefinition(ProtocolMapperRepresentation.class, "name", List.of("id")))
-                .registerEntity(new EntityDefinition(ClientScopeRepresentation.class, "name", List.of("id", "protocolMappers")))
-                .registerEntity(new EntityDefinition(RoleRepresentation.class, "name", List.of("id", "containerId", "composites", "attributes")))
-                .registerEntity(new EntityDefinition(GroupRepresentation.class, "path", List.of("id", "subGroups", "attributes", "clientRoles")))
-                .registerEntity(new EntityDefinition(AuthenticationFlowRepresentation.class, "alias", List.of("id", "authenticationExecutions")))
-                .registerEntity(new EntityDefinition(IdentityProviderRepresentation.class, "alias", List.of("internalId")))
+                .registerEntity(
+                        new EntityDefinition(ClientScopeRepresentation.class, "name", List.of("id", "protocolMappers")))
+                .registerEntity(new EntityDefinition(
+                        RoleRepresentation.class, "name", List.of("id", "containerId", "composites", "attributes")))
+                .registerEntity(new EntityDefinition(
+                        GroupRepresentation.class, "path", List.of("id", "subGroups", "attributes", "clientRoles")))
+                .registerEntity(new EntityDefinition(
+                        AuthenticationFlowRepresentation.class, "alias", List.of("id", "authenticationExecutions")))
+                .registerEntity(
+                        new EntityDefinition(IdentityProviderRepresentation.class, "alias", List.of("internalId")))
                 .registerEntity(EntityDefinitionBuilder.entityDefinition(IdentityProviderMapperRepresentation.class)
                         .withIdPropertyNames("name", "identityProviderAlias")
-                        .withIgnoredProperties("id").build())
+                        .withIgnoredProperties("id")
+                        .build())
                 .registerEntity(new EntityDefinition(RequiredActionProviderRepresentation.class, "alias"))
-                .registerEntity(new EntityDefinition(UserFederationProviderRepresentation.class, "displayName", List.of("id")))
+                .registerEntity(
+                        new EntityDefinition(UserFederationProviderRepresentation.class, "displayName", List.of("id")))
                 .registerEntity(EntityDefinitionBuilder.entityDefinition(UserFederationMapperRepresentation.class)
                         .withIdPropertyNames("name", "federationProviderDisplayName")
-                        .withIgnoredProperties("id").build())
-                .registerEntity(new EntityDefinition(ComponentExportRepresentation.class, "name", List.of("id", "subComponents", "config")));
+                        .withIgnoredProperties("id")
+                        .build())
+                .registerEntity(new EntityDefinition(
+                        ComponentExportRepresentation.class, "name", List.of("id", "subComponents", "config")));
     }
 }

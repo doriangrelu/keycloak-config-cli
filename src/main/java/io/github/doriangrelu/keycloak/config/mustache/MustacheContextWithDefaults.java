@@ -71,5 +71,4 @@ public class MustacheContextWithDefaults extends AbstractMap<String, Object> {
                 .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), (Object) entry.getValue()))
                 .collect(Collectors.toSet());
     }
-
 }

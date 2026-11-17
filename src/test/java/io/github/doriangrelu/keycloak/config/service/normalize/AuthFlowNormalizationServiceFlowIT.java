@@ -20,25 +20,23 @@
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
 import io.github.doriangrelu.keycloak.config.normalize.AbstractNormalizeTest;
+import java.util.ArrayList;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 
-import java.util.ArrayList;
-import java.util.List;
-
 class AuthFlowNormalizationServiceFlowIT extends AbstractNormalizeTest {
 
     @Autowired
     AuthFlowNormalizationService service;
 
-
     @Test
     public void testNormalizeAuthFlows() {
-       var resultingAuthFlows = service.normalizeAuthFlows(new ArrayList<>(), new ArrayList<>());
-       Assertions.assertThat(resultingAuthFlows).isNull();
+        var resultingAuthFlows = service.normalizeAuthFlows(new ArrayList<>(), new ArrayList<>());
+        Assertions.assertThat(resultingAuthFlows).isNull();
     }
 
     @Test
@@ -46,27 +44,33 @@ class AuthFlowNormalizationServiceFlowIT extends AbstractNormalizeTest {
         AuthenticationFlowRepresentation authenticationFlowRepresentation = new AuthenticationFlowRepresentation();
         authenticationFlowRepresentation.setBuiltIn(true);
 
-        AuthenticationFlowRepresentation authenticationFlowRepresentationBaseline = new AuthenticationFlowRepresentation();
+        AuthenticationFlowRepresentation authenticationFlowRepresentationBaseline =
+                new AuthenticationFlowRepresentation();
         authenticationFlowRepresentationBaseline.setBuiltIn(true);
 
-        var resultingAuthFlows = service.normalizeAuthFlows(List.of(authenticationFlowRepresentation), List.of(authenticationFlowRepresentationBaseline));
+        var resultingAuthFlows = service.normalizeAuthFlows(
+                List.of(authenticationFlowRepresentation), List.of(authenticationFlowRepresentationBaseline));
 
         Assertions.assertThat(resultingAuthFlows).isNull();
     }
 
     @Test
-    public void testNormalizeAuthFlowsIgnoreBuiltInTrueButBaselineHasEntryCreatesRecreationWarning(CapturedOutput output) {
+    public void testNormalizeAuthFlowsIgnoreBuiltInTrueButBaselineHasEntryCreatesRecreationWarning(
+            CapturedOutput output) {
         AuthenticationFlowRepresentation authenticationFlowRepresentation = new AuthenticationFlowRepresentation();
         authenticationFlowRepresentation.setBuiltIn(true);
 
-        AuthenticationFlowRepresentation authenticationFlowRepresentationBaseline = new AuthenticationFlowRepresentation();
+        AuthenticationFlowRepresentation authenticationFlowRepresentationBaseline =
+                new AuthenticationFlowRepresentation();
         authenticationFlowRepresentationBaseline.setBuiltIn(false);
         authenticationFlowRepresentationBaseline.setAlias("flow1");
 
-        var resultingAuthFlows = service.normalizeAuthFlows(List.of(authenticationFlowRepresentation), List.of(authenticationFlowRepresentationBaseline));
+        var resultingAuthFlows = service.normalizeAuthFlows(
+                List.of(authenticationFlowRepresentation), List.of(authenticationFlowRepresentationBaseline));
 
         Assertions.assertThat(resultingAuthFlows).isNull();
-        Assertions.assertThat(output.getOut()).contains("Default realm authentication flow 'flow1' was deleted in exported realm. It may be reintroduced during import");
-
+        Assertions.assertThat(output.getOut())
+                .contains(
+                        "Default realm authentication flow 'flow1' was deleted in exported realm. It may be reintroduced during import");
     }
 }

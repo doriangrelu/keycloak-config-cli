@@ -22,6 +22,12 @@ package io.github.doriangrelu.keycloak.config.repository;
 
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.AuthenticationManagementResource;
 import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
@@ -33,14 +39,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -55,38 +53,31 @@ public class ExecutionFlowRepository {
     }
 
     public List<AuthenticationExecutionInfoRepresentation> getExecutionFlowsByAlias(
-            String realmName,
-            String topLevelFlowAlias,
-            AuthenticationExecutionExportRepresentation execution) {
+            String realmName, String topLevelFlowAlias, AuthenticationExecutionExportRepresentation execution) {
         List<AuthenticationExecutionInfoRepresentation> executions = searchByAlias(
-                realmName, topLevelFlowAlias, execution.getAuthenticator(),
-                execution.getFlowAlias(), execution.getAuthenticatorConfig());
+                realmName,
+                topLevelFlowAlias,
+                execution.getAuthenticator(),
+                execution.getFlowAlias(),
+                execution.getAuthenticatorConfig());
 
         if (executions.isEmpty()) {
-            String withSubFlow = execution.getFlowAlias() != null
-                    ? "' or flow by alias '" + execution.getFlowAlias()
-                    : "";
+            String withSubFlow =
+                    execution.getFlowAlias() != null ? "' or flow by alias '" + execution.getFlowAlias() : "";
 
             throw new KeycloakRepositoryException(
                     "Cannot find stored execution by authenticator '%s%s' in top-level flow '%s' in realm '%s'",
-                    execution.getAuthenticator(), withSubFlow, topLevelFlowAlias, realmName
-            );
+                    execution.getAuthenticator(), withSubFlow, topLevelFlowAlias, realmName);
         }
         return executions;
     }
 
     public List<AuthenticationExecutionInfoRepresentation> getExecutionsByAuthFlow(
-            String realmName,
-            String topLevelFlowAlias
-    ) {
+            String realmName, String topLevelFlowAlias) {
         return authenticationFlowRepository.getFlowResources(realmName).getExecutions(topLevelFlowAlias);
     }
 
-    public void createExecutionFlow(
-            String realmName,
-            String topLevelFlowAlias,
-            Map<String, String> executionFlowData
-    ) {
+    public void createExecutionFlow(String realmName, String topLevelFlowAlias, Map<String, String> executionFlowData) {
         logger.trace("Create non-top-level-flow in realm '{}' and top-level-flow '{}'", realmName, topLevelFlowAlias);
 
         AuthenticationManagementResource flowsResource = authenticationFlowRepository.getFlowResources(realmName);
@@ -94,56 +85,48 @@ public class ExecutionFlowRepository {
     }
 
     public void updateExecutionFlow(
-            String realmName,
-            String flowAlias,
-            AuthenticationExecutionInfoRepresentation executionFlowToUpdate
-    ) {
-        logger.trace("Update non-top-level-flow '{}' from realm '{}' and top-level-flow '{}'",
-                executionFlowToUpdate.getAlias(), realmName, flowAlias);
+            String realmName, String flowAlias, AuthenticationExecutionInfoRepresentation executionFlowToUpdate) {
+        logger.trace(
+                "Update non-top-level-flow '{}' from realm '{}' and top-level-flow '{}'",
+                executionFlowToUpdate.getAlias(),
+                realmName,
+                flowAlias);
 
         AuthenticationManagementResource flowsResource = authenticationFlowRepository.getFlowResources(realmName);
         flowsResource.updateExecutions(flowAlias, executionFlowToUpdate);
     }
 
     public String createTopLevelFlowExecution(
-            String realmName,
-            AuthenticationExecutionRepresentation executionToCreate
-    ) {
-        logger.trace("Create flow-execution '{}' in realm '{}' and top-level-flow '{}'...",
-                executionToCreate.getAuthenticator(), realmName, executionToCreate.getParentFlow());
+            String realmName, AuthenticationExecutionRepresentation executionToCreate) {
+        logger.trace(
+                "Create flow-execution '{}' in realm '{}' and top-level-flow '{}'...",
+                executionToCreate.getAuthenticator(),
+                realmName,
+                executionToCreate.getParentFlow());
 
-        AuthenticationManagementResource flowsResource = authenticationFlowRepository
-                .getFlowResources(realmName);
+        AuthenticationManagementResource flowsResource = authenticationFlowRepository.getFlowResources(realmName);
 
         try (Response response = flowsResource.addExecution(executionToCreate)) {
             return CreatedResponseUtil.getCreatedId(response);
         } catch (WebApplicationException error) {
-            AuthenticationFlowRepresentation parentFlow = authenticationFlowRepository
-                    .getFlowById(realmName, executionToCreate.getParentFlow());
+            AuthenticationFlowRepresentation parentFlow =
+                    authenticationFlowRepository.getFlowById(realmName, executionToCreate.getParentFlow());
 
             throw new ImportProcessingException(
                     String.format(
                             "Cannot create execution-flow '%s' for top-level-flow '%s' in realm '%s'",
-                            executionToCreate.getAuthenticator(), parentFlow.getAlias(), realmName
-                    ),
-                    error
-            );
+                            executionToCreate.getAuthenticator(), parentFlow.getAlias(), realmName),
+                    error);
         }
     }
 
-    public void createSubFlowExecution(
-            String realmName,
-            String subFlowAlias,
-            Map<String, String> executionData
-    ) {
-        logger.trace("Create flow-execution in realm '{}' and non-top-level-flow '{}'",
-                realmName, subFlowAlias);
+    public void createSubFlowExecution(String realmName, String subFlowAlias, Map<String, String> executionData) {
+        logger.trace("Create flow-execution in realm '{}' and non-top-level-flow '{}'", realmName, subFlowAlias);
 
         AuthenticationManagementResource flowsResource = authenticationFlowRepository.getFlowResources(realmName);
         flowsResource.addExecution(subFlowAlias, new HashMap<>(executionData));
 
-        logger.trace("Created flow-execution in realm '{}' and non-top-level-flow '{}'",
-                realmName, subFlowAlias);
+        logger.trace("Created flow-execution in realm '{}' and non-top-level-flow '{}'", realmName, subFlowAlias);
     }
 
     private List<AuthenticationExecutionInfoRepresentation> searchByAlias(
@@ -151,10 +134,8 @@ public class ExecutionFlowRepository {
             String topLevelFlowAlias,
             String executionProviderId,
             String subFlowAlias,
-            String authenticationConfig
-    ) {
-        return getExecutionsByAuthFlow(realmName, topLevelFlowAlias)
-                .stream()
+            String authenticationConfig) {
+        return getExecutionsByAuthFlow(realmName, topLevelFlowAlias).stream()
                 .filter(f -> Objects.equals(f.getProviderId(), executionProviderId))
                 .filter(f -> {
                     if (authenticationConfig != null && f.getAlias() != null) {

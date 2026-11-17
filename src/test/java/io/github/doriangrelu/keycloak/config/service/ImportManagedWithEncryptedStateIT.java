@@ -20,26 +20,22 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.core.Is.is;
+
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
+import java.io.IOException;
+import java.text.MessageFormat;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
-import java.io.IOException;
-import java.text.MessageFormat;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.core.Is.is;
-
-@TestPropertySource(properties = {
-        "import.remote-state.encryption-key=password",
-        "import.managed.role=full"
-})
+@TestPropertySource(properties = {"import.remote-state.encryption-key=password", "import.managed.role=full"})
 class ImportManagedWithEncryptedStateIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithManagedEncryptedSate";
 
@@ -55,15 +51,16 @@ class ImportManagedWithEncryptedStateIT extends AbstractImportIT {
     void shouldCreateEncryptedState() throws IOException {
         doImport("0_create_realm.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
         String attributeKey = MessageFormat.format(
-                ImportConfigProperties.REALM_STATE_ATTRIBUTE_PREFIX_KEY,
-                importConfigProperties.getCache().getKey(),
-                "roles-realm"
-        ) + "-0";
+                        ImportConfigProperties.REALM_STATE_ATTRIBUTE_PREFIX_KEY,
+                        importConfigProperties.getCache().getKey(),
+                        "roles-realm")
+                + "-0";
 
         assertThat(realm.getAttributes().get(attributeKey), not(containsString("role")));
     }
@@ -73,15 +70,16 @@ class ImportManagedWithEncryptedStateIT extends AbstractImportIT {
     void shouldUpdateEncryptedState() throws IOException {
         doImport("1_update_realm.json");
 
-        RealmRepresentation realm = keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
+        RealmRepresentation realm =
+                keycloakProvider.getInstance().realm(REALM_NAME).toRepresentation();
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
         String attributeKey = MessageFormat.format(
-                ImportConfigProperties.REALM_STATE_ATTRIBUTE_PREFIX_KEY,
-                importConfigProperties.getCache().getKey(),
-                "roles-realm"
-        ) + "-0";
+                        ImportConfigProperties.REALM_STATE_ATTRIBUTE_PREFIX_KEY,
+                        importConfigProperties.getCache().getKey(),
+                        "roles-realm")
+                + "-0";
 
         assertThat(realm.getAttributes().get(attributeKey), not(containsString("role")));
     }

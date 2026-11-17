@@ -20,19 +20,18 @@
 
 package io.github.doriangrelu.keycloak.config.provider;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import java.lang.reflect.Constructor;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.info.ProfileInfoRepresentation;
 import org.keycloak.representations.info.ServerInfoRepresentation;
-import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 import org.mockito.Mockito;
-
-import java.lang.reflect.Constructor;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class KeycloakProviderTest {
 
@@ -49,11 +48,12 @@ class KeycloakProviderTest {
         when(props.getHttpProxy()).thenReturn(null);
         when(props.getConnectTimeout()).thenReturn(java.time.Duration.ofSeconds(1));
         when(props.getReadTimeout()).thenReturn(java.time.Duration.ofSeconds(1));
-        when(props.getAvailabilityCheck()).thenReturn(new KeycloakConfigProperties.KeycloakAvailabilityCheck(false,
-                java.time.Duration.ofSeconds(1), java.time.Duration.ofSeconds(1)));
+        when(props.getAvailabilityCheck())
+                .thenReturn(new KeycloakConfigProperties.KeycloakAvailabilityCheck(
+                        false, java.time.Duration.ofSeconds(1), java.time.Duration.ofSeconds(1)));
 
-        Constructor<KeycloakProvider> ctor = KeycloakProvider.class
-                .getDeclaredConstructor(KeycloakConfigProperties.class);
+        Constructor<KeycloakProvider> ctor =
+                KeycloakProvider.class.getDeclaredConstructor(KeycloakConfigProperties.class);
         ctor.setAccessible(true);
         return ctor.newInstance(props);
     }
@@ -63,12 +63,12 @@ class KeycloakProviderTest {
         KeycloakProvider provider = createProvider();
 
         Keycloak kc = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource = mock(
-                org.keycloak.admin.client.resource.ServerInfoResource.class);
+        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource =
+                mock(org.keycloak.admin.client.resource.ServerInfoResource.class);
         ServerInfoRepresentation serverInfo = mock(ServerInfoRepresentation.class);
         ProfileInfoRepresentation profile = mock(ProfileInfoRepresentation.class);
-        org.keycloak.representations.info.SystemInfoRepresentation systemInfo = mock(
-                org.keycloak.representations.info.SystemInfoRepresentation.class);
+        org.keycloak.representations.info.SystemInfoRepresentation systemInfo =
+                mock(org.keycloak.representations.info.SystemInfoRepresentation.class);
 
         when(systemInfo.getVersion()).thenReturn("26.2.0");
         when(profile.getDisabledFeatures()).thenReturn(null);
@@ -91,12 +91,12 @@ class KeycloakProviderTest {
         KeycloakProvider provider = createProvider();
 
         Keycloak kc2 = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource2 = mock(
-                org.keycloak.admin.client.resource.ServerInfoResource.class);
+        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource2 =
+                mock(org.keycloak.admin.client.resource.ServerInfoResource.class);
         ServerInfoRepresentation serverInfo2 = mock(ServerInfoRepresentation.class);
         ProfileInfoRepresentation profile2 = mock(ProfileInfoRepresentation.class);
-        org.keycloak.representations.info.SystemInfoRepresentation systemInfo2 = mock(
-                org.keycloak.representations.info.SystemInfoRepresentation.class);
+        org.keycloak.representations.info.SystemInfoRepresentation systemInfo2 =
+                mock(org.keycloak.representations.info.SystemInfoRepresentation.class);
 
         when(systemInfo2.getVersion()).thenReturn("26.2.0");
         when(profile2.getDisabledFeatures()).thenReturn(java.util.List.of("admin-fine-grained-authz:v2"));
@@ -116,12 +116,12 @@ class KeycloakProviderTest {
         KeycloakProvider provider = createProvider();
 
         Keycloak kc3 = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource3 = mock(
-                org.keycloak.admin.client.resource.ServerInfoResource.class);
+        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource3 =
+                mock(org.keycloak.admin.client.resource.ServerInfoResource.class);
         ServerInfoRepresentation serverInfo3 = mock(ServerInfoRepresentation.class);
         ProfileInfoRepresentation profile3 = mock(ProfileInfoRepresentation.class);
-        org.keycloak.representations.info.SystemInfoRepresentation systemInfo3 = mock(
-                org.keycloak.representations.info.SystemInfoRepresentation.class);
+        org.keycloak.representations.info.SystemInfoRepresentation systemInfo3 =
+                mock(org.keycloak.representations.info.SystemInfoRepresentation.class);
 
         when(systemInfo3.getVersion()).thenReturn("26.2.0");
         when(profile3.getPreviewFeatures()).thenReturn(java.util.List.of("admin-fine-grained-authz:v1"));
@@ -141,12 +141,12 @@ class KeycloakProviderTest {
         KeycloakProvider provider = createProvider();
 
         Keycloak kc4 = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource4 = mock(
-                org.keycloak.admin.client.resource.ServerInfoResource.class);
+        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource4 =
+                mock(org.keycloak.admin.client.resource.ServerInfoResource.class);
         ServerInfoRepresentation serverInfo4 = mock(ServerInfoRepresentation.class);
         ProfileInfoRepresentation profile4 = mock(ProfileInfoRepresentation.class);
-        org.keycloak.representations.info.SystemInfoRepresentation systemInfo4 = mock(
-                org.keycloak.representations.info.SystemInfoRepresentation.class);
+        org.keycloak.representations.info.SystemInfoRepresentation systemInfo4 =
+                mock(org.keycloak.representations.info.SystemInfoRepresentation.class);
 
         when(systemInfo4.getVersion()).thenReturn("26.2.0");
         when(profile4.getDisabledFeatures()).thenReturn(null);
@@ -186,11 +186,11 @@ class KeycloakProviderTest {
         KeycloakProvider provider = createProvider();
 
         Keycloak kc = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource = mock(
-                org.keycloak.admin.client.resource.ServerInfoResource.class);
+        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource =
+                mock(org.keycloak.admin.client.resource.ServerInfoResource.class);
         ServerInfoRepresentation serverInfo = mock(ServerInfoRepresentation.class);
-        org.keycloak.representations.info.SystemInfoRepresentation systemInfo = mock(
-                org.keycloak.representations.info.SystemInfoRepresentation.class);
+        org.keycloak.representations.info.SystemInfoRepresentation systemInfo =
+                mock(org.keycloak.representations.info.SystemInfoRepresentation.class);
 
         when(systemInfo.getVersion()).thenReturn("23.0.7");
         when(serverInfo.getSystemInfo()).thenReturn(systemInfo);
@@ -208,11 +208,11 @@ class KeycloakProviderTest {
         KeycloakProvider provider = createProvider();
 
         Keycloak kc = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource = mock(
-                org.keycloak.admin.client.resource.ServerInfoResource.class);
+        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource =
+                mock(org.keycloak.admin.client.resource.ServerInfoResource.class);
         ServerInfoRepresentation serverInfo = mock(ServerInfoRepresentation.class);
-        org.keycloak.representations.info.SystemInfoRepresentation systemInfo = mock(
-                org.keycloak.representations.info.SystemInfoRepresentation.class);
+        org.keycloak.representations.info.SystemInfoRepresentation systemInfo =
+                mock(org.keycloak.representations.info.SystemInfoRepresentation.class);
 
         when(systemInfo.getVersion()).thenReturn("26.1.0");
         when(serverInfo.getSystemInfo()).thenReturn(systemInfo);
@@ -229,11 +229,11 @@ class KeycloakProviderTest {
     void testGetKeycloakVersion_WhenMasterRealm_ReturnsVersion() throws Exception {
         KeycloakProvider provider = createProvider();
         Keycloak kc = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource = mock(
-                org.keycloak.admin.client.resource.ServerInfoResource.class);
+        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource =
+                mock(org.keycloak.admin.client.resource.ServerInfoResource.class);
         ServerInfoRepresentation serverInfo = mock(ServerInfoRepresentation.class);
-        org.keycloak.representations.info.SystemInfoRepresentation systemInfo = mock(
-                org.keycloak.representations.info.SystemInfoRepresentation.class);
+        org.keycloak.representations.info.SystemInfoRepresentation systemInfo =
+                mock(org.keycloak.representations.info.SystemInfoRepresentation.class);
 
         when(systemInfo.getVersion()).thenReturn("26.2.0");
         when(serverInfo.getSystemInfo()).thenReturn(systemInfo);
@@ -252,8 +252,8 @@ class KeycloakProviderTest {
         when(props.isSkipServerInfo()).thenReturn(true);
         when(props.getVersion()).thenReturn("@keycloak.version@");
 
-        Constructor<KeycloakProvider> ctor = KeycloakProvider.class
-                .getDeclaredConstructor(KeycloakConfigProperties.class);
+        Constructor<KeycloakProvider> ctor =
+                KeycloakProvider.class.getDeclaredConstructor(KeycloakConfigProperties.class);
         ctor.setAccessible(true);
         KeycloakProvider provider = ctor.newInstance(props);
 
@@ -266,14 +266,14 @@ class KeycloakProviderTest {
         when(props.isSkipServerInfo()).thenReturn(false);
         when(props.getVersion()).thenReturn("@keycloak.version@");
 
-        Constructor<KeycloakProvider> ctor = KeycloakProvider.class
-                .getDeclaredConstructor(KeycloakConfigProperties.class);
+        Constructor<KeycloakProvider> ctor =
+                KeycloakProvider.class.getDeclaredConstructor(KeycloakConfigProperties.class);
         ctor.setAccessible(true);
         KeycloakProvider provider = ctor.newInstance(props);
 
         Keycloak kc = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource = mock(
-                org.keycloak.admin.client.resource.ServerInfoResource.class);
+        org.keycloak.admin.client.resource.ServerInfoResource serverInfoResource =
+                mock(org.keycloak.admin.client.resource.ServerInfoResource.class);
 
         Response response = Response.status(403).build();
         when(serverInfoResource.getInfo()).thenThrow(new WebApplicationException(response));
@@ -291,8 +291,8 @@ class KeycloakProviderTest {
         when(props.isSkipServerInfo()).thenReturn(true);
         when(props.getVersion()).thenReturn("24.0.0");
 
-        Constructor<KeycloakProvider> ctor = KeycloakProvider.class
-                .getDeclaredConstructor(KeycloakConfigProperties.class);
+        Constructor<KeycloakProvider> ctor =
+                KeycloakProvider.class.getDeclaredConstructor(KeycloakConfigProperties.class);
         ctor.setAccessible(true);
         KeycloakProvider provider = ctor.newInstance(props);
 
@@ -304,18 +304,18 @@ class KeycloakProviderTest {
         KeycloakConfigProperties props = mock(KeycloakConfigProperties.class);
         when(props.getLoginRealm()).thenReturn("master");
 
-        Constructor<KeycloakProvider> ctor = KeycloakProvider.class
-                .getDeclaredConstructor(KeycloakConfigProperties.class);
+        Constructor<KeycloakProvider> ctor =
+                KeycloakProvider.class.getDeclaredConstructor(KeycloakConfigProperties.class);
         ctor.setAccessible(true);
         KeycloakProvider provider = ctor.newInstance(props);
 
         Keycloak kc = mock(Keycloak.class);
-        org.keycloak.admin.client.resource.RealmResource realmResource = mock(
-                org.keycloak.admin.client.resource.RealmResource.class);
+        org.keycloak.admin.client.resource.RealmResource realmResource =
+                mock(org.keycloak.admin.client.resource.RealmResource.class);
         when(kc.realm("master")).thenReturn(realmResource);
 
-        java.lang.reflect.Method method = KeycloakProvider.class.getDeclaredMethod("isKeycloakAvailableAlternative",
-                Keycloak.class);
+        java.lang.reflect.Method method =
+                KeycloakProvider.class.getDeclaredMethod("isKeycloakAvailableAlternative", Keycloak.class);
         method.setAccessible(true);
         method.invoke(provider, kc);
 

@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import static io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.FULL;
+
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
@@ -36,35 +38,33 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import static io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.FULL;
-
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class RealmImportService {
-    static final String[] ignoredPropertiesForRealmImport = new String[]{
-            "authenticatorConfig",
-            "clients",
-            "roles",
-            "users",
-            "groups",
-            "defaultGroups",
-            "identityProviders",
-            "browserFlow",
-            "directGrantFlow",
-            "clientAuthenticationFlow",
-            "dockerAuthenticationFlow",
-            "registrationFlow",
-            "resetCredentialsFlow",
-            "components",
-            "authenticationFlows",
-            "scopeMappings",
-            "clientScopeMappings",
-            "clientScopes",
-            "requiredActions",
-            "defaultDefaultClientScopes",
-            "defaultOptionalClientScopes",
-            "clientProfiles",
-            "clientPolicies",
+    static final String[] ignoredPropertiesForRealmImport = new String[] {
+        "authenticatorConfig",
+        "clients",
+        "roles",
+        "users",
+        "groups",
+        "defaultGroups",
+        "identityProviders",
+        "browserFlow",
+        "directGrantFlow",
+        "clientAuthenticationFlow",
+        "dockerAuthenticationFlow",
+        "registrationFlow",
+        "resetCredentialsFlow",
+        "components",
+        "authenticationFlows",
+        "scopeMappings",
+        "clientScopeMappings",
+        "clientScopes",
+        "requiredActions",
+        "defaultDefaultClientScopes",
+        "defaultOptionalClientScopes",
+        "clientProfiles",
+        "clientPolicies",
     };
 
     private static final Logger logger = LoggerFactory.getLogger(RealmImportService.class);
@@ -148,7 +148,8 @@ public class RealmImportService {
     }
 
     public void doImport(RealmImport realmImport) {
-        ExecutionContextHolder.context().put(realmImport.getRealm(), ProtectedResource.class, realmImport.getProtectedResources());
+        ExecutionContextHolder.context()
+                .put(realmImport.getRealm(), ProtectedResource.class, realmImport.getProtectedResources());
 
         boolean realmExists = realmRepository.exists(realmImport.getRealm());
 
@@ -167,8 +168,7 @@ public class RealmImportService {
             logger.debug(
                     "No need to update realm '{}', import checksum same: '{}'",
                     realmImport.getRealm(),
-                    realmImport.getChecksum()
-            );
+                    realmImport.getChecksum());
         }
     }
 
@@ -176,14 +176,16 @@ public class RealmImportService {
         // https://github.com/adorsys/keycloak-config-cli/issues/338
         if (realmImport.isEventsEnabled() != null) return;
 
-        Boolean existingEventsEnabled = realmRepository.get(realmImport.getRealm()).isEventsEnabled();
+        Boolean existingEventsEnabled =
+                realmRepository.get(realmImport.getRealm()).isEventsEnabled();
         realmImport.setEventsEnabled(existingEventsEnabled);
     }
 
     private void createRealm(RealmImport realmImport) {
         logger.debug("Creating realm '{}' ...", realmImport.getRealm());
 
-        RealmRepresentation realm = CloneUtil.deepClone(realmImport, RealmRepresentation.class, ignoredPropertiesForRealmImport);
+        RealmRepresentation realm =
+                CloneUtil.deepClone(realmImport, RealmRepresentation.class, ignoredPropertiesForRealmImport);
         realmRepository.create(realm);
 
         // refresh the access token to update the scopes. See: https://github.com/adorsys/keycloak-config-cli/issues/339
@@ -196,7 +198,8 @@ public class RealmImportService {
     private void updateRealm(RealmImport realmImport) {
         logger.debug("Updating realm '{}'...", realmImport.getRealm());
 
-        RealmRepresentation realm = CloneUtil.deepClone(realmImport, RealmRepresentation.class, ignoredPropertiesForRealmImport);
+        RealmRepresentation realm =
+                CloneUtil.deepClone(realmImport, RealmRepresentation.class, ignoredPropertiesForRealmImport);
 
         RealmRepresentation existingRealm = realmRepository.get(realmImport.getRealm());
 
@@ -215,10 +218,7 @@ public class RealmImportService {
     private void importOtpPolicy(RealmImport realmImport) {
         RealmRepresentation realmConfig = realmRepository.get(realmImport.getRealm());
         if (realmConfig.getOtpPolicyAlgorithm() != null) {
-            otpPolicyImportService.updateOtpPolicy(
-                    realmImport.getRealm(),
-                    realmConfig
-            );
+            otpPolicyImportService.updateOtpPolicy(realmImport.getRealm(), realmConfig);
         }
     }
 
@@ -269,5 +269,4 @@ public class RealmImportService {
             this.groupImportService.deleteGroupsMissingInImport(realmImport);
         }
     }
-
 }

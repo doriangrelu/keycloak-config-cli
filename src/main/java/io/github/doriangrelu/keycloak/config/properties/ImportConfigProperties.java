@@ -23,20 +23,21 @@ package io.github.doriangrelu.keycloak.config.properties;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import java.util.Collection;
+import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
-
-import java.util.Collection;
-import java.util.Map;
 
 @ConfigurationProperties(prefix = "import", ignoreUnknownFields = false)
 @Validated
 @SuppressWarnings({"java:S107"})
 public class ImportConfigProperties {
     public static final String REALM_STATE_ATTRIBUTE_COMMON_PREFIX = "io.github.doriangrelu.keycloak.config";
-    public static final String REALM_CHECKSUM_ATTRIBUTE_PREFIX_KEY = REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".import-checksum-{0}";
-    public static final String REALM_STATE_ATTRIBUTE_PREFIX_KEY = REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".state-{0}-{1}";
+    public static final String REALM_CHECKSUM_ATTRIBUTE_PREFIX_KEY =
+            REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".import-checksum-{0}";
+    public static final String REALM_STATE_ATTRIBUTE_PREFIX_KEY =
+            REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".state-{0}-{1}";
 
     @NotNull
     private final boolean validate;
@@ -65,16 +66,16 @@ public class ImportConfigProperties {
     @Valid
     private final ImportRemoteStateProperties remoteState;
 
-    public ImportConfigProperties(@DefaultValue("true") final boolean validate,
-                                  @DefaultValue("false") final boolean parallel,
-                                  @DefaultValue final ImportFilesProperties files,
-                                  @DefaultValue final ImportVarSubstitutionProperties varSubstitution,
-                                  @DefaultValue final ImportMustacheProperties mustache,
-                                  @DefaultValue final ImportBehaviorsProperties behaviors,
-                                  @DefaultValue final ImportCacheProperties cache,
-                                  @DefaultValue final ImportManagedProperties managed,
-                                  @DefaultValue final ImportRemoteStateProperties remoteState
-    ) {
+    public ImportConfigProperties(
+            @DefaultValue("true") final boolean validate,
+            @DefaultValue("false") final boolean parallel,
+            @DefaultValue final ImportFilesProperties files,
+            @DefaultValue final ImportVarSubstitutionProperties varSubstitution,
+            @DefaultValue final ImportMustacheProperties mustache,
+            @DefaultValue final ImportBehaviorsProperties behaviors,
+            @DefaultValue final ImportCacheProperties cache,
+            @DefaultValue final ImportManagedProperties managed,
+            @DefaultValue final ImportRemoteStateProperties remoteState) {
         this.validate = validate;
         this.parallel = parallel;
         this.files = files;
@@ -172,22 +173,23 @@ public class ImportConfigProperties {
         @NotNull
         private final ImportManagedPropertiesValues messageBundles;
 
-        public ImportManagedProperties(@DefaultValue("FULL") final ImportManagedPropertiesValues requiredAction,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues group,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientScope,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues scopeMapping,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientScopeMapping,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues component,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues subComponent,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues authenticationFlow,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues identityProvider,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues identityProviderMapper,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues role,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues client,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationResources,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationPolicies,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationScopes,
-                                       @DefaultValue("FULL") final ImportManagedPropertiesValues messageBundles) {
+        public ImportManagedProperties(
+                @DefaultValue("FULL") final ImportManagedPropertiesValues requiredAction,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues group,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues clientScope,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues scopeMapping,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues clientScopeMapping,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues component,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues subComponent,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues authenticationFlow,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues identityProvider,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues identityProviderMapper,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues role,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues client,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationResources,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationPolicies,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationScopes,
+                @DefaultValue("FULL") final ImportManagedPropertiesValues messageBundles) {
             this.requiredAction = requiredAction;
             this.group = group;
             this.clientScope = clientScope;
@@ -271,7 +273,8 @@ public class ImportConfigProperties {
         }
 
         public enum ImportManagedPropertiesValues {
-            FULL, NO_DELETE
+            FULL,
+            NO_DELETE
         }
     }
 
@@ -286,9 +289,10 @@ public class ImportConfigProperties {
         @NotNull
         private final boolean includeHiddenFiles;
 
-        public ImportFilesProperties(final Collection<String> locations,
-                                     @DefaultValue final Collection<String> excludes,
-                                     @DefaultValue("false") final boolean includeHiddenFiles) {
+        public ImportFilesProperties(
+                final Collection<String> locations,
+                @DefaultValue final Collection<String> excludes,
+                @DefaultValue("false") final boolean includeHiddenFiles) {
             this.locations = locations;
             this.excludes = excludes;
             this.includeHiddenFiles = includeHiddenFiles;
@@ -324,11 +328,12 @@ public class ImportConfigProperties {
         @NotNull
         private final String suffix;
 
-        public ImportVarSubstitutionProperties(@DefaultValue("false") final boolean enabled,
-                                               @DefaultValue("true") final boolean nested,
-                                               @DefaultValue("true") final boolean undefinedIsError,
-                                               @DefaultValue("$(") final String prefix,
-                                               @DefaultValue(")") final String suffix) {
+        public ImportVarSubstitutionProperties(
+                @DefaultValue("false") final boolean enabled,
+                @DefaultValue("true") final boolean nested,
+                @DefaultValue("true") final boolean undefinedIsError,
+                @DefaultValue("$(") final String prefix,
+                @DefaultValue(")") final String suffix) {
             this.enabled = enabled;
             this.nested = nested;
             this.undefinedIsError = undefinedIsError;
@@ -365,8 +370,8 @@ public class ImportConfigProperties {
         @NotNull
         private final Map<String, String> variables;
 
-        public ImportMustacheProperties(@DefaultValue("false") final boolean enabled,
-                                        @DefaultValue final Map<String, String> variables) {
+        public ImportMustacheProperties(
+                @DefaultValue("false") final boolean enabled, @DefaultValue final Map<String, String> variables) {
             this.enabled = enabled;
             this.variables = variables;
         }
@@ -397,8 +402,12 @@ public class ImportConfigProperties {
         @NotNull
         private final ChecksumChangedOption checksumChanged;
 
-        public ImportBehaviorsProperties(final boolean syncUserFederation, final boolean removeDefaultRoleFromUser, final boolean skipAttributesForFederatedUser,
-                                         final boolean checksumWithCacheKey, final ChecksumChangedOption checksumChanged) {
+        public ImportBehaviorsProperties(
+                final boolean syncUserFederation,
+                final boolean removeDefaultRoleFromUser,
+                final boolean skipAttributesForFederatedUser,
+                final boolean checksumWithCacheKey,
+                final ChecksumChangedOption checksumChanged) {
             this.syncUserFederation = syncUserFederation;
             this.removeDefaultRoleFromUser = removeDefaultRoleFromUser;
             this.skipAttributesForFederatedUser = skipAttributesForFederatedUser;
@@ -427,7 +436,8 @@ public class ImportConfigProperties {
         }
 
         public enum ChecksumChangedOption {
-            CONTINUE, FAIL
+            CONTINUE,
+            FAIL
         }
     }
 
@@ -439,8 +449,8 @@ public class ImportConfigProperties {
         @NotNull
         private final String key;
 
-        public ImportCacheProperties(@DefaultValue("true") final boolean enabled,
-                                     @DefaultValue("default") final String key) {
+        public ImportCacheProperties(
+                @DefaultValue("true") final boolean enabled, @DefaultValue("default") final String key) {
             this.enabled = enabled;
             this.key = key;
         }
@@ -464,9 +474,10 @@ public class ImportConfigProperties {
         @Pattern(regexp = "^[A-Fa-f0-9]+$")
         private final String encryptionSalt;
 
-        public ImportRemoteStateProperties(@DefaultValue("true") final boolean enabled,
-                                           final String encryptionKey,
-                                           @DefaultValue("2B521C795FBE2F2425DB150CD3700BA9") final String encryptionSalt) {
+        public ImportRemoteStateProperties(
+                @DefaultValue("true") final boolean enabled,
+                final String encryptionKey,
+                @DefaultValue("2B521C795FBE2F2425DB150CD3700BA9") final String encryptionSalt) {
             this.enabled = enabled;
             this.encryptionKey = encryptionKey;
             this.encryptionSalt = encryptionSalt;

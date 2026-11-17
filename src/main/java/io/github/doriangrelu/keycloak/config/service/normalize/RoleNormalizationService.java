@@ -20,6 +20,14 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.javers.core.Javers;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
@@ -28,15 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -48,7 +47,8 @@ public class RoleNormalizationService {
     private final AttributeNormalizationService attributeNormalizationService;
 
     @Autowired
-    public RoleNormalizationService(Javers unOrderedJavers, AttributeNormalizationService attributeNormalizationService) {
+    public RoleNormalizationService(
+            Javers unOrderedJavers, AttributeNormalizationService attributeNormalizationService) {
         this.unOrderedJavers = unOrderedJavers;
         this.attributeNormalizationService = attributeNormalizationService;
     }
@@ -67,19 +67,22 @@ public class RoleNormalizationService {
         }
 
         // avoid generating an empty roles element
-        if (normalizedRoles.getRealm() == null || (normalizedRoles.getRealm().isEmpty() && normalizedRoles.getClient().isEmpty())) {
+        if (normalizedRoles.getRealm() == null
+                || (normalizedRoles.getRealm().isEmpty()
+                        && normalizedRoles.getClient().isEmpty())) {
             return null;
         }
 
         return normalizedRoles;
     }
 
-    public List<RoleRepresentation> normalizeRealmRoles(List<RoleRepresentation> exportedRoles, List<RoleRepresentation> baselineRoles) {
+    public List<RoleRepresentation> normalizeRealmRoles(
+            List<RoleRepresentation> exportedRoles, List<RoleRepresentation> baselineRoles) {
         return normalizeRoleList(exportedRoles, baselineRoles, null);
     }
 
-    public Map<String, List<RoleRepresentation>> normalizeClientRoles(Map<String, List<RoleRepresentation>> exportedRoles,
-                                                                      Map<String, List<RoleRepresentation>> baselineRoles) {
+    public Map<String, List<RoleRepresentation>> normalizeClientRoles(
+            Map<String, List<RoleRepresentation>> exportedRoles, Map<String, List<RoleRepresentation>> baselineRoles) {
         var exportedOrEmpty = getNonNull(exportedRoles);
         var baselineOrEmpty = getNonNull(baselineRoles);
 
@@ -107,25 +110,30 @@ public class RoleNormalizationService {
         return normalizedRoles;
     }
 
-    public List<RoleRepresentation> normalizeRoleList(List<RoleRepresentation> exportedRoles,
-                                                      List<RoleRepresentation> baselineRoles, String clientId) {
+    public List<RoleRepresentation> normalizeRoleList(
+            List<RoleRepresentation> exportedRoles, List<RoleRepresentation> baselineRoles, String clientId) {
         var exportedOrEmpty = getNonNull(exportedRoles);
         var baselineOrEmpty = getNonNull(baselineRoles);
 
-        var exportedMap = exportedOrEmpty.stream()
-                .collect(Collectors.toMap(RoleRepresentation::getName, Function.identity()));
-        var baselineMap = baselineOrEmpty.stream()
-                .collect(Collectors.toMap(RoleRepresentation::getName, Function.identity()));
+        var exportedMap =
+                exportedOrEmpty.stream().collect(Collectors.toMap(RoleRepresentation::getName, Function.identity()));
+        var baselineMap =
+                baselineOrEmpty.stream().collect(Collectors.toMap(RoleRepresentation::getName, Function.identity()));
         var normalizedRoles = new ArrayList<RoleRepresentation>();
         for (var entry : baselineMap.entrySet()) {
             var roleName = entry.getKey();
             var exportedRole = exportedMap.remove(roleName);
             if (exportedRole == null) {
                 if (clientId == null) {
-                    logger.warn("Default realm role '{}' was deleted in exported realm. It may be reintroduced during import!", roleName);
+                    logger.warn(
+                            "Default realm role '{}' was deleted in exported realm. It may be reintroduced during import!",
+                            roleName);
                 } else {
-                    logger.warn("Default realm client-role '{}' for client '{}' was deleted in the exported realm. "
-                            + "It may be reintroduced during import!", roleName, clientId);
+                    logger.warn(
+                            "Default realm client-role '{}' for client '{}' was deleted in the exported realm. "
+                                    + "It may be reintroduced during import!",
+                            roleName,
+                            clientId);
                 }
                 continue;
             }
@@ -136,7 +144,8 @@ public class RoleNormalizationService {
 
             if (diff.hasChanges()
                     || compositesChanged(exportedRole.getComposites(), baselineRole.getComposites())
-                    || attributeNormalizationService.listAttributesChanged(exportedRole.getAttributes(), baselineRole.getAttributes())) {
+                    || attributeNormalizationService.listAttributesChanged(
+                            exportedRole.getAttributes(), baselineRole.getAttributes())) {
                 normalizedRoles.add(exportedRole);
             }
         }
@@ -154,8 +163,8 @@ public class RoleNormalizationService {
         return roles;
     }
 
-    public boolean compositesChanged(RoleRepresentation.Composites exportedComposites, RoleRepresentation.Composites baselineComposites) {
-        return unOrderedJavers.compare(baselineComposites, exportedComposites)
-                .hasChanges();
+    public boolean compositesChanged(
+            RoleRepresentation.Composites exportedComposites, RoleRepresentation.Composites baselineComposites) {
+        return unOrderedJavers.compare(baselineComposites, exportedComposites).hasChanges();
     }
 }

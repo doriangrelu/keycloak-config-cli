@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import io.github.doriangrelu.keycloak.config.configuration.TestConfiguration;
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
@@ -27,6 +29,8 @@ import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakAuthentication;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakRepository;
+import java.io.IOException;
+import java.util.List;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,22 +39,16 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.IOException;
-import java.util.List;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 @ExtendWith(SpringExtension.class)
 @ExtendWith(GithubActionsExtension.class)
 @ContextConfiguration(
         classes = {TestConfiguration.class},
-        initializers = {ConfigDataApplicationContextInitializer.class}
-)
+        initializers = {ConfigDataApplicationContextInitializer.class})
 @ActiveProfiles("IT")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @Timeout(value = 30, unit = SECONDS)
-abstract public class AbstractImportTest {
+public abstract class AbstractImportTest {
     @Autowired
     public RealmImportService realmImportService;
 
@@ -83,12 +81,7 @@ abstract public class AbstractImportTest {
 
     public List<RealmImport> getImport(String fileName) {
         String location = "classpath:" + this.resourcePath + '/' + fileName;
-        return keycloakImportProvider
-                .readFromLocations(location)
-                .getRealmImports()
-                .get(location)
-                .entrySet()
-                .stream()
+        return keycloakImportProvider.readFromLocations(location).getRealmImports().get(location).entrySet().stream()
                 .findFirst()
                 .orElseThrow()
                 .getValue();

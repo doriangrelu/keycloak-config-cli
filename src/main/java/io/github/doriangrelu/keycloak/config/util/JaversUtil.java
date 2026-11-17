@@ -35,8 +35,11 @@ public class JaversUtil {
             field.setAccessible(true);
             field.set(object, change.getRight());
         } catch (NoSuchFieldException | IllegalAccessException ex) {
-            throw new NormalizationException(String.format("Failed to set property %s on object of type %s",
-                    change.getPropertyName(), object.getClass().getName()), ex);
+            throw new NormalizationException(
+                    String.format(
+                            "Failed to set property %s on object of type %s",
+                            change.getPropertyName(), object.getClass().getName()),
+                    ex);
         }
     }
 }

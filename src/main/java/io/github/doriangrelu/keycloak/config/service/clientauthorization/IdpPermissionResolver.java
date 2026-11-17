@@ -22,13 +22,12 @@ package io.github.doriangrelu.keycloak.config.service.clientauthorization;
 
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
-import org.keycloak.representations.idm.IdentityProviderRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
+import org.keycloak.representations.idm.IdentityProviderRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class IdpPermissionResolver implements PermissionResolver {
     private static final Logger logger = LoggerFactory.getLogger(IdpPermissionResolver.class);
@@ -49,7 +48,8 @@ public class IdpPermissionResolver implements PermissionResolver {
                 .map(IdentityProviderRepresentation::getInternalId)
                 .findAny()
                 .orElseThrow(() -> new ImportProcessingException(
-                        "Cannot find identity provider with alias '%s' in realm '%s' for '%s'", alias, realmName, authzName));
+                        "Cannot find identity provider with alias '%s' in realm '%s' for '%s'",
+                        alias, realmName, authzName));
     }
 
     @Override

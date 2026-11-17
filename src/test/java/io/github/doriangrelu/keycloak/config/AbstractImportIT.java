@@ -23,6 +23,9 @@ package io.github.doriangrelu.keycloak.config;
 import io.github.doriangrelu.keycloak.config.extensions.ContainerLogsExtension;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.testcontainers.containers.GenericContainer;
@@ -31,12 +34,8 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-
 @ExtendWith(ContainerLogsExtension.class)
-abstract public class AbstractImportIT extends AbstractImportTest {
+public abstract class AbstractImportIT extends AbstractImportTest {
     public static final ToStringConsumer KEYCLOAK_CONTAINER_LOGS = new ToStringConsumer();
 
     @Container
@@ -46,12 +45,14 @@ abstract public class AbstractImportIT extends AbstractImportTest {
     public KeycloakProvider keycloakProvider;
 
     protected static final String KEYCLOAK_VERSION = System.getProperty("keycloak.version");
-    protected static final String KEYCLOAK_IMAGE = System.getProperty("keycloak.dockerImage", "quay.io/keycloak/keycloak");
+    protected static final String KEYCLOAK_IMAGE =
+            System.getProperty("keycloak.dockerImage", "quay.io/keycloak/keycloak");
     protected static final String KEYCLOAK_TAG_SUFFIX = System.getProperty("keycloak.dockerTagSuffix", "");
     protected static final String KEYCLOAK_LOG_LEVEL = System.getProperty("keycloak.loglevel", "INFO");
 
     static {
-        KEYCLOAK_CONTAINER = new GenericContainer<>(DockerImageName.parse(KEYCLOAK_IMAGE + ":" + KEYCLOAK_VERSION + KEYCLOAK_TAG_SUFFIX))
+        KEYCLOAK_CONTAINER = new GenericContainer<>(
+                        DockerImageName.parse(KEYCLOAK_IMAGE + ":" + KEYCLOAK_VERSION + KEYCLOAK_TAG_SUFFIX))
                 .withExposedPorts(8080)
                 .withEnv("KEYCLOAK_USER", "admin")
                 .withEnv("KEYCLOAK_PASSWORD", "admin123")
@@ -99,12 +100,16 @@ abstract public class AbstractImportIT extends AbstractImportTest {
             KEYCLOAK_CONTAINER.start();
             KEYCLOAK_CONTAINER.followOutput(KEYCLOAK_CONTAINER_LOGS);
 
-            // KEYCLOAK_CONTAINER.followOutput(new Slf4jLogConsumer(LoggerFactory.getLogger("\uD83D\uDC33 [" + KEYCLOAK_CONTAINER.getDockerImageName() + "]")));
+            // KEYCLOAK_CONTAINER.followOutput(new Slf4jLogConsumer(LoggerFactory.getLogger("\uD83D\uDC33 [" +
+            // KEYCLOAK_CONTAINER.getDockerImageName() + "]")));
             System.setProperty("keycloak.user", KEYCLOAK_CONTAINER.getEnvMap().get("KEYCLOAK_USER"));
-            System.setProperty("keycloak.password", KEYCLOAK_CONTAINER.getEnvMap().get("KEYCLOAK_PASSWORD"));
-            System.setProperty("keycloak.baseUrl", String.format(
-                    "http://%s:%d", KEYCLOAK_CONTAINER.getContainerIpAddress(), KEYCLOAK_CONTAINER.getMappedPort(8080)
-            ));
+            System.setProperty(
+                    "keycloak.password", KEYCLOAK_CONTAINER.getEnvMap().get("KEYCLOAK_PASSWORD"));
+            System.setProperty(
+                    "keycloak.baseUrl",
+                    String.format(
+                            "http://%s:%d",
+                            KEYCLOAK_CONTAINER.getContainerIpAddress(), KEYCLOAK_CONTAINER.getMappedPort(8080)));
 
             if (isLegacyDistribution) {
                 System.setProperty("keycloak.url", System.getProperty("keycloak.baseUrl") + "/auth/");

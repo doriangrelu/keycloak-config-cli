@@ -20,19 +20,18 @@
 
 package io.github.doriangrelu.keycloak.config.service.normalize;
 
+import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.javers.core.Javers;
 import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService.getNonNull;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
@@ -46,8 +45,9 @@ public class RequiredActionNormalizationService {
         this.javers = javers;
     }
 
-    public List<RequiredActionProviderRepresentation> normalizeRequiredActions(List<RequiredActionProviderRepresentation> exportedActions,
-                                                                               List<RequiredActionProviderRepresentation> baselineActions) {
+    public List<RequiredActionProviderRepresentation> normalizeRequiredActions(
+            List<RequiredActionProviderRepresentation> exportedActions,
+            List<RequiredActionProviderRepresentation> baselineActions) {
         var exportedOrEmpty = getNonNull(exportedActions);
         var baselineOrEmpty = getNonNull(baselineActions);
 
@@ -61,7 +61,9 @@ public class RequiredActionNormalizationService {
             var alias = entry.getKey();
             var exportedAction = exportedMap.remove(alias);
             if (exportedAction == null) {
-                logger.warn("Default realm requiredAction '{}' was deleted in exported realm. It may be reintroduced during import", alias);
+                logger.warn(
+                        "Default realm requiredAction '{}' was deleted in exported realm. It may be reintroduced during import",
+                        alias);
                 continue;
             }
             var baselineAction = entry.getValue();

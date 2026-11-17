@@ -20,21 +20,16 @@
 
 package io.github.doriangrelu.keycloak.config.provider;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.model.ImportResource;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties.NormalizationFilesProperties;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.util.PathMatcher;
-import org.keycloak.representations.idm.RealmRepresentation;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -45,12 +40,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.PathMatcher;
 
 @ExtendWith(MockitoExtension.class)
 class KeycloakExportProviderTest {
@@ -77,7 +76,7 @@ class KeycloakExportProviderTest {
         lenient().when(patternResolver.getPathMatcher()).thenReturn(pathMatcher);
         lenient().when(filesProperties.getExcludes()).thenReturn(Collections.emptyList());
         lenient().when(filesProperties.isIncludeHiddenFiles()).thenReturn(false);
-        
+
         exportProvider = new KeycloakExportProvider(patternResolver, normalizationConfigProperties);
     }
 
@@ -90,12 +89,12 @@ class KeycloakExportProviderTest {
         String yamlContent = "id: test-realm\nrealm: test";
 
         when(filesProperties.getInputLocations()).thenReturn(Collections.singletonList(location));
-        when(patternResolver.getResources(anyString())).thenReturn(new Resource[]{mockResource});
+        when(patternResolver.getResources(anyString())).thenReturn(new Resource[] {mockResource});
         when(mockResource.isFile()).thenReturn(true);
         when(mockResource.getFile()).thenReturn(mockFile);
         when(mockResource.getInputStream()).thenReturn(new ByteArrayInputStream(yamlContent.getBytes()));
-    when(mockResource.getURI()).thenReturn(new URI("file:/test/realm.yaml"));
-    when(mockResource.getURL()).thenReturn(new URI("file:/test/realm.yaml").toURL());
+        when(mockResource.getURI()).thenReturn(new URI("file:/test/realm.yaml"));
+        when(mockResource.getURL()).thenReturn(new URI("file:/test/realm.yaml").toURL());
         when(mockFile.isDirectory()).thenReturn(false);
         when(mockFile.isHidden()).thenReturn(false);
 
@@ -119,22 +118,22 @@ class KeycloakExportProviderTest {
         String yamlContent = "id: test-realm-1\nrealm: test1";
 
         when(filesProperties.getInputLocations()).thenReturn(locations);
-        when(patternResolver.getResources(locations.get(0))).thenReturn(new Resource[]{mockResource1});
-        when(patternResolver.getResources(locations.get(1))).thenReturn(new Resource[]{mockResource2});
-        
+        when(patternResolver.getResources(locations.get(0))).thenReturn(new Resource[] {mockResource1});
+        when(patternResolver.getResources(locations.get(1))).thenReturn(new Resource[] {mockResource2});
+
         when(mockResource1.isFile()).thenReturn(true);
         when(mockResource1.getFile()).thenReturn(mockFile1);
         when(mockResource1.getInputStream()).thenReturn(new ByteArrayInputStream(yamlContent.getBytes()));
-    when(mockResource1.getURI()).thenReturn(new URI("file:/test/realm1.yaml"));
-    when(mockResource1.getURL()).thenReturn(new URI("file:/test/realm1.yaml").toURL());
+        when(mockResource1.getURI()).thenReturn(new URI("file:/test/realm1.yaml"));
+        when(mockResource1.getURL()).thenReturn(new URI("file:/test/realm1.yaml").toURL());
         when(mockFile1.isDirectory()).thenReturn(false);
         when(mockFile1.isHidden()).thenReturn(false);
 
         when(mockResource2.isFile()).thenReturn(true);
         when(mockResource2.getFile()).thenReturn(mockFile2);
         when(mockResource2.getInputStream()).thenReturn(new ByteArrayInputStream(yamlContent.getBytes()));
-    when(mockResource2.getURI()).thenReturn(new URI("file:/test/realm2.json"));
-    when(mockResource2.getURL()).thenReturn(new URI("file:/test/realm2.json").toURL());
+        when(mockResource2.getURI()).thenReturn(new URI("file:/test/realm2.json"));
+        when(mockResource2.getURL()).thenReturn(new URI("file:/test/realm2.json").toURL());
         when(mockFile2.isDirectory()).thenReturn(false);
         when(mockFile2.isHidden()).thenReturn(false);
 
@@ -156,8 +155,8 @@ class KeycloakExportProviderTest {
 
         // Then
         assertThatThrownBy(() -> exportProvider.readFromLocations())
-            .isInstanceOf(InvalidImportException.class)
-            .hasMessageContaining("Unable to proceed location");
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageContaining("Unable to proceed location");
     }
 
     @Test
@@ -165,12 +164,12 @@ class KeycloakExportProviderTest {
         // Given
         String location = "classpath:import-files/*.yaml";
         when(filesProperties.getInputLocations()).thenReturn(Collections.singletonList(location));
-        when(patternResolver.getResources(anyString())).thenReturn(new Resource[]{});
+        when(patternResolver.getResources(anyString())).thenReturn(new Resource[] {});
 
         // Then
         assertThatThrownBy(() -> exportProvider.readFromLocations())
-            .isInstanceOf(InvalidImportException.class)
-            .hasMessageContaining("No files matching");
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageContaining("No files matching");
     }
 
     @Test
@@ -309,8 +308,8 @@ class KeycloakExportProviderTest {
 
         // Then
         assertThatThrownBy(() -> exportProvider.readResource(resource))
-            .isInstanceOf(InvalidImportException.class)
-            .hasMessageContaining("Unable to proceed resource 'test-resource'");
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageContaining("Unable to proceed resource 'test-resource'");
     }
 
     @Test
@@ -326,8 +325,8 @@ class KeycloakExportProviderTest {
 
         // Then
         assertThatThrownBy(() -> exportProvider.readResource(resource))
-            .isInstanceOf(InvalidImportException.class)
-            .hasMessageContaining("Unable to proceed resource 'test-resource'");
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageContaining("Unable to proceed resource 'test-resource'");
     }
 
     @Test
@@ -417,15 +416,15 @@ class KeycloakExportProviderTest {
         File mockFile = mock(File.class);
 
         when(filesProperties.getInputLocations()).thenReturn(Collections.singletonList(location));
-        when(patternResolver.getResources(anyString())).thenReturn(new Resource[]{mockResource});
+        when(patternResolver.getResources(anyString())).thenReturn(new Resource[] {mockResource});
         when(mockResource.isFile()).thenReturn(true);
         when(mockResource.getFile()).thenReturn(mockFile);
         when(mockFile.isDirectory()).thenReturn(true); // This will cause the resource to be filtered out
 
         // Then
         assertThatThrownBy(() -> exportProvider.readFromLocations())
-            .isInstanceOf(InvalidImportException.class)
-            .hasMessageContaining("No files matching");
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageContaining("No files matching");
     }
 
     @Test
@@ -505,7 +504,8 @@ class KeycloakExportProviderTest {
     @Test
     void testFilterExcludedResources_PatternWithoutLeadingSlash() throws IOException {
         // Given - testing "*.log" normalization to "/***.log"
-        // Normalization steps: "*.log" -> "*.log" (line 172) -> "/**" + "*.log" = "/***.log" (line 173) -> "/***.log" (line 174)
+        // Normalization steps: "*.log" -> "*.log" (line 172) -> "/**" + "*.log" = "/***.log" (line 173) -> "/***.log"
+        // (line 174)
         Resource resource = mock(Resource.class);
         File file = mock(File.class);
         when(resource.isFile()).thenReturn(true);
@@ -530,7 +530,8 @@ class KeycloakExportProviderTest {
     @Test
     void testFilterExcludedResources_PatternWithLeadingSlash() throws IOException {
         // Given - testing "/hidden/**" normalization to "/**hidden/**"
-        // Normalization steps: "/hidden/**" -> "/hidden/**" (line 172) -> "/**" + "/hidden/**" = "/**/hidden/**" (line 173) -> "/**/hidden/**" (line 174)
+        // Normalization steps: "/hidden/**" -> "/hidden/**" (line 172) -> "/**" + "/hidden/**" = "/**/hidden/**" (line
+        // 173) -> "/**/hidden/**" (line 174)
         Resource resource = mock(Resource.class);
         File file = mock(File.class);
         when(resource.isFile()).thenReturn(true);
@@ -579,7 +580,7 @@ class KeycloakExportProviderTest {
         String yamlWithContent = "id: test\nrealm: test";
 
         when(filesProperties.getInputLocations()).thenReturn(Collections.singletonList(location));
-        when(patternResolver.getResources(anyString())).thenReturn(new Resource[]{mockResource});
+        when(patternResolver.getResources(anyString())).thenReturn(new Resource[] {mockResource});
         when(mockResource.isFile()).thenReturn(true);
         when(mockResource.getFile()).thenReturn(mockFile);
         when(mockResource.getInputStream()).thenReturn(new ByteArrayInputStream(yamlWithContent.getBytes()));
@@ -602,8 +603,8 @@ class KeycloakExportProviderTest {
 
         // Then
         assertThatThrownBy(() -> exportProvider.readRealms(resource))
-            .isInstanceOf(InvalidImportException.class)
-            .hasMessageContaining("Unable to parse file");
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageContaining("Unable to parse file");
     }
 
     @Test
@@ -618,11 +619,9 @@ class KeycloakExportProviderTest {
         assertThat(result).hasSizeGreaterThanOrEqualTo(2);
         // Filter out any null entries that might result from empty YAML documents
         List<RealmRepresentation> nonNullRealms = result.stream()
-            .filter(r -> r != null && r.getRealm() != null)
-            .collect(java.util.stream.Collectors.toList());
-        assertThat(nonNullRealms)
-            .extracting(RealmRepresentation::getRealm)
-            .contains("test1", "test2");
+                .filter(r -> r != null && r.getRealm() != null)
+                .collect(java.util.stream.Collectors.toList());
+        assertThat(nonNullRealms).extracting(RealmRepresentation::getRealm).contains("test1", "test2");
     }
 
     @Test
@@ -636,11 +635,9 @@ class KeycloakExportProviderTest {
         // Then - should parse all documents including the empty one
         // Filter out null entries that result from empty YAML documents
         List<RealmRepresentation> nonNullRealms = result.stream()
-            .filter(r -> r != null && r.getRealm() != null)
-            .collect(java.util.stream.Collectors.toList());
+                .filter(r -> r != null && r.getRealm() != null)
+                .collect(java.util.stream.Collectors.toList());
         assertThat(nonNullRealms).hasSize(2);
-        assertThat(nonNullRealms)
-            .extracting(RealmRepresentation::getRealm)
-            .containsExactly("a", "b");
+        assertThat(nonNullRealms).extracting(RealmRepresentation::getRealm).containsExactly("a", "b");
     }
 }

@@ -34,6 +34,8 @@ import io.github.doriangrelu.keycloak.config.ThreadHelper;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.repository.GroupRepository;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,9 +43,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.mockito.stubbing.OngoingStubbing;
-
-import java.util.List;
-import java.util.Map;
 
 class GroupImportServiceTest {
 
@@ -54,7 +53,7 @@ class GroupImportServiceTest {
     private final ThreadHelper threadHelper = mock(ThreadHelper.class);
 
     private final GroupImportService groupImportService =
-        new GroupImportService(groupRepository, importConfigProperties, threadHelper);
+            new GroupImportService(groupRepository, importConfigProperties, threadHelper);
 
     @Nested
     class CreatingGroupIT {
@@ -76,8 +75,11 @@ class GroupImportServiceTest {
             group.setSubGroups(List.of(subGroup));
             subGroup.setName("someSubGroupName");
 
-            when(groupRepository.getGroupByName(realmName, groupName)).thenReturn(null).thenReturn(group);
-            when(groupRepository.getSubGroupByName(realmName, groupId, "someSubGroupName")).thenReturn(subGroup);
+            when(groupRepository.getGroupByName(realmName, groupName))
+                    .thenReturn(null)
+                    .thenReturn(group);
+            when(groupRepository.getSubGroupByName(realmName, groupId, "someSubGroupName"))
+                    .thenReturn(subGroup);
         }
 
         @Test
@@ -90,34 +92,36 @@ class GroupImportServiceTest {
         void createOrUpdateGroups_shouldAddRealmRoles() {
             groupImportService.createOrUpdateGroups(List.of(group), realmName);
 
-            verify(groupRepository).addRealmRoles(
-                    eq(realmName),
-                    eq(groupId),
-                    argThat(realmRoles -> realmRoles.size() == 1 && realmRoles.get(0).equals("someRealmRole"))
-            );
+            verify(groupRepository)
+                    .addRealmRoles(
+                            eq(realmName),
+                            eq(groupId),
+                            argThat(realmRoles ->
+                                    realmRoles.size() == 1 && realmRoles.get(0).equals("someRealmRole")));
         }
 
         @Test
         void createOrUpdateGroups_shouldAddClientRoles() {
             groupImportService.createOrUpdateGroups(List.of(group), realmName);
 
-            verify(groupRepository).addClientRoles(
-                    eq(realmName),
-                    eq(groupId),
-                    eq("someClientId"),
-                    argThat(clientRoleNames -> clientRoleNames.size() == 1 && clientRoleNames.get(0).equals("someClientRoleName"))
-            );
+            verify(groupRepository)
+                    .addClientRoles(
+                            eq(realmName),
+                            eq(groupId),
+                            eq("someClientId"),
+                            argThat(clientRoleNames -> clientRoleNames.size() == 1
+                                    && clientRoleNames.get(0).equals("someClientRoleName")));
         }
 
         @Test
         void createOrUpdateGroups_shouldAddSubGroups() {
             groupImportService.createOrUpdateGroups(List.of(group), realmName);
 
-            verify(groupRepository).addSubGroup(
-                    eq(realmName),
-                    eq(groupId),
-                    argThat(subGroup -> subGroup.getName().equals("someSubGroupName"))
-            );
+            verify(groupRepository)
+                    .addSubGroup(
+                            eq(realmName),
+                            eq(groupId),
+                            argThat(subGroup -> subGroup.getName().equals("someSubGroupName")));
         }
 
         @ParameterizedTest
@@ -152,9 +156,7 @@ class GroupImportServiceTest {
                     .thenReturn(group);
 
             ImportProcessingException exception = assertThrows(
-                    ImportProcessingException.class,
-                    () -> groupImportService.createOrUpdateGroups(groups, realmName)
-            );
+                    ImportProcessingException.class, () -> groupImportService.createOrUpdateGroups(groups, realmName));
 
             assertThat(exception)
                     .message()

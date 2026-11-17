@@ -20,20 +20,18 @@
 
 package io.github.doriangrelu.keycloak.config.properties;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.net.URL;
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
-import java.net.URL;
-import java.time.Duration;
-
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
 @ConfigurationProperties(prefix = "keycloak", ignoreUnknownFields = false)
 @Validated
-@SuppressWarnings({ "java:S107" })
+@SuppressWarnings({"java:S107"})
 public class KeycloakConfigProperties {
 
     @NotBlank
@@ -86,8 +84,7 @@ public class KeycloakConfigProperties {
             @DefaultValue("false") boolean skipServerInfo,
             @DefaultValue KeycloakAvailabilityCheck availabilityCheck,
             @DefaultValue("10s") Duration connectTimeout,
-            @DefaultValue("10s") Duration readTimeout
-    ) {
+            @DefaultValue("10s") Duration readTimeout) {
         this.loginRealm = loginRealm;
         this.clientId = clientId;
         this.version = version;
@@ -171,7 +168,8 @@ public class KeycloakConfigProperties {
         private final Duration retryDelay;
 
         @SuppressWarnings("unused")
-        public KeycloakAvailabilityCheck(@DefaultValue("false") boolean enabled,
+        public KeycloakAvailabilityCheck(
+                @DefaultValue("false") boolean enabled,
                 @DefaultValue("120s") Duration timeout,
                 @DefaultValue("2s") Duration retryDelay) {
             this.enabled = enabled;

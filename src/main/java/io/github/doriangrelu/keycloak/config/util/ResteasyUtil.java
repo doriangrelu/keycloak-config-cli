@@ -21,20 +21,19 @@
 package io.github.doriangrelu.keycloak.config.util;
 
 import io.github.doriangrelu.keycloak.config.util.resteasy.CookieClientFilter;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
-
 import java.net.URL;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 
 public class ResteasyUtil {
-    private ResteasyUtil() {
-    }
+    private ResteasyUtil() {}
 
-    public static ResteasyClient getClient(boolean sslVerification, URL httpProxy, Duration connectTimeout, Duration readTimeout) {
+    public static ResteasyClient getClient(
+            boolean sslVerification, URL httpProxy, Duration connectTimeout, Duration readTimeout) {
         ResteasyClientBuilder clientBuilder = new ResteasyClientBuilderImpl();
         clientBuilder
                 .connectionPoolSize(10)
@@ -48,16 +47,10 @@ public class ResteasyUtil {
         }
 
         if (httpProxy != null) {
-            clientBuilder.defaultProxy(
-                    httpProxy.getHost(),
-                    httpProxy.getPort(),
-                    httpProxy.getProtocol()
-            );
+            clientBuilder.defaultProxy(httpProxy.getHost(), httpProxy.getPort(), httpProxy.getProtocol());
         } else {
             clientBuilder.defaultProxy(
-                    System.getProperty("http.proxyHost"),
-                    Integer.parseInt(System.getProperty("http.proxyPort", "0"))
-            );
+                    System.getProperty("http.proxyHost"), Integer.parseInt(System.getProperty("http.proxyPort", "0")));
         }
 
         clientBuilder.register(CookieClientFilter.class);

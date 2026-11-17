@@ -22,6 +22,10 @@ package io.github.doriangrelu.keycloak.config.repository;
 
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.GroupResource;
 import org.keycloak.admin.client.resource.GroupsResource;
@@ -35,11 +39,6 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
@@ -63,8 +62,7 @@ public class GroupRepository {
     }
 
     public List<GroupRepresentation> getAll(String realmName) {
-        GroupsResource groupsResource = realmRepository.getResource(realmName)
-                .groups();
+        GroupsResource groupsResource = realmRepository.getResource(realmName).groups();
 
         return groupsResource.groups();
     }
@@ -78,8 +76,7 @@ public class GroupRepository {
                 groups.add(group);
             } catch (Exception e) {
                 throw new ImportProcessingException(
-                        String.format("Could not find group '%s' in realm '%s'!", groupPath, realmName)
-                );
+                        String.format("Could not find group '%s' in realm '%s'!", groupPath, realmName));
             }
         }
 
@@ -87,11 +84,9 @@ public class GroupRepository {
     }
 
     public Optional<GroupRepresentation> searchByName(String realmName, String groupName) {
-        GroupsResource groupsResource = realmRepository.getResource(realmName)
-                .groups();
+        GroupsResource groupsResource = realmRepository.getResource(realmName).groups();
 
-        return groupsResource.groups()
-                .stream()
+        return groupsResource.groups().stream()
                 .filter(g -> Objects.equals(g.getName(), groupName))
                 .findFirst();
     }
@@ -111,8 +106,7 @@ public class GroupRepository {
     }
 
     public GroupRepresentation getSubGroupByName(String realmName, String parentGroupId, String name) {
-        return getSubGroups(realmName, parentGroupId)
-                .stream()
+        return getSubGroups(realmName, parentGroupId).stream()
                 .filter(subgroup -> Objects.equals(subgroup.getName(), name))
                 .findFirst()
                 .orElse(null);
@@ -237,8 +231,6 @@ public class GroupRepository {
     }
 
     private GroupResource getResourceById(String realmName, String groupId) {
-        return realmRepository.getResource(realmName)
-                .groups()
-                .group(groupId);
+        return realmRepository.getResource(realmName).groups().group(groupId);
     }
 }

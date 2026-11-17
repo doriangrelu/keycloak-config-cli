@@ -21,17 +21,15 @@
 package io.github.doriangrelu.keycloak.config.repository;
 
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
+import jakarta.ws.rs.NotFoundException;
+import java.util.List;
+import java.util.Objects;
 import org.keycloak.admin.client.resource.AuthenticationManagementResource;
 import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
 import org.keycloak.representations.idm.RequiredActionProviderSimpleRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Objects;
-
-import jakarta.ws.rs.NotFoundException;
 
 /**
  * Provides methods to retrieve and store required-actions in your realm
@@ -47,11 +45,13 @@ public class RequiredActionRepository {
         this.authenticationFlowRepository = authenticationFlowRepository;
     }
 
-    public RequiredActionProviderRepresentation getNewlyCreated(String realmName, String name, String requiredActionProviderId) {
+    public RequiredActionProviderRepresentation getNewlyCreated(
+            String realmName, String name, String requiredActionProviderId) {
         RequiredActionProviderRepresentation requiredActions = getByAlias(realmName, requiredActionProviderId);
 
         if (requiredActions == null || !Objects.equals(requiredActions.getName(), name)) {
-            throw new KeycloakRepositoryException("Can't find newly created required action: %s", requiredActionProviderId);
+            throw new KeycloakRepositoryException(
+                    "Can't find newly created required action: %s", requiredActionProviderId);
         }
 
         return requiredActions;
@@ -77,7 +77,8 @@ public class RequiredActionRepository {
         flows.registerRequiredAction(requiredAction);
     }
 
-    public void update(String realmName, String requiredActionAlias, RequiredActionProviderRepresentation requiredAction) {
+    public void update(
+            String realmName, String requiredActionAlias, RequiredActionProviderRepresentation requiredAction) {
         AuthenticationManagementResource flows = authenticationFlowRepository.getFlowResources(realmName);
         flows.updateRequiredAction(requiredActionAlias, requiredAction);
     }

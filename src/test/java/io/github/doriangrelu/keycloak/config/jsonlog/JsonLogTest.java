@@ -20,6 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.jsonlog;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import org.junit.jupiter.api.Test;
@@ -31,18 +34,16 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 // From: https://tuhrig.de/testing-configurationproperties-in-spring-boot/
 @ExtendWith(SpringExtension.class)
 @ExtendWith(GithubActionsExtension.class)
 @SpringBootTest(classes = {JsonLogTest.TestConfiguration.class})
-@TestPropertySource(properties = {
-        "spring.main.log-startup-info=true",
-        "spring.profiles.active=json-log",
-        "import.files.locations=default",
-})
+@TestPropertySource(
+        properties = {
+            "spring.main.log-startup-info=true",
+            "spring.profiles.active=json-log",
+            "import.files.locations=default",
+        })
 class JsonLogTest {
 
     @Autowired
