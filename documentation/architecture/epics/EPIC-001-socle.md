@@ -11,13 +11,13 @@ La branche `feature/1-feature-interactive-cli-mode-with-spring-shell-for-realm-c
 
 ### US-001-01 — Outillage du build
 
-**Statut :** À faire
+**Statut :** Terminé
 Ajouter le wrapper Maven (`mvnw`), le formatage automatique (Spotless) vérifié par `mvn verify`, et une CI GitHub Actions : build, tests unitaires et d'intégration, analyse des dépendances.
 
 ### US-001-02 — Alignement des dépendances
 
-**Statut :** À faire
-Aligner `keycloak-admin-client` sur la version cible de Keycloak (26.5.x). Clarifier la cohabitation Jackson 2 (SDK Keycloak, RESTEasy) et Jackson 3 (Spring Boot 4), source des correctifs récents sur RESTEasy.
+**Statut :** Terminé (tests d'intégration à confirmer en CI)
+`keycloak-admin-client` monté à 26.0.13 (dernière version de la ligne qui sert les serveurs 26.x). Jackson 2 suit la version gérée par Spring Boot (2.20.2) au lieu d'être figé en 2.17.2. Testcontainers passe en 2.0.3, la version gérée par Spring Boot. Les BOM JUnit et Testcontainers sont importés avant celui de Keycloak, qui imposait sinon des versions plus anciennes.
 
 ### US-001-03 — Sel de chiffrement de l'état distant
 

@@ -22,6 +22,8 @@ package io.github.doriangrelu.keycloak.config.test.util;
 
 import static org.mockserver.model.HttpResponse.response;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.representations.AccessTokenResponse;
@@ -29,8 +31,6 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.info.ServerInfoRepresentation;
 import org.keycloak.representations.info.SystemInfoRepresentation;
 import org.mockserver.model.*;
-import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 public class KeycloakMock {
     static final Headers cookieHeader = new Headers(

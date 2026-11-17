@@ -65,4 +65,4 @@ Le message conserve le corps de la réponse Keycloak quand il existe (`errorMess
 
 - Les `repository/*` disparaissent au fil de la migration, remplacés par les `*Api` et `*Adapter`.
 - Un test par adapter vérifie la traduction des erreurs avec MockServer (déjà utilisé dans les tests).
-- La version de `keycloak-admin-client` est alignée sur la version cible de Keycloak (26.5.x) dans l'EPIC-001.
+- `keycloak-admin-client` est publié à part du serveur : la ligne 26.0.x sert tous les serveurs 26.x. L'EPIC-001 la monte à la dernière version (26.0.13).

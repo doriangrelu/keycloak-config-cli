@@ -53,12 +53,11 @@
 
         <!-- Keycloak -->
         <keycloak.version>26.5.3</keycloak.version>
-        <keycloak.client.version>26.0.8</keycloak.client.version>
+        <keycloak.client.version>26.0.13</keycloak.client.version>
 
         <!-- Dependencies -->
         <commons-text.version>1.12.0</commons-text.version>
         <failsafe.version>3.3.2</failsafe.version>
-        <jackson.version>2.17.2</jackson.version>
         <javers.version>7.6.3</javers.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
         <resteasy.version>6.2.10.Final</resteasy.version>
@@ -70,7 +69,6 @@
         <!-- Test Dependencies -->
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
         <mockserver.version>5.15.0</mockserver.version>
-        <testcontainers.version>1.20.3</testcontainers.version>
         <unboundid-ldapsdk.version>7.0.1</unboundid-ldapsdk.version>
 
         <argLine>
@@ -81,7 +79,8 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Must come before keycloak-parent, which would otherwise pin JUnit 5 over Spring Boot's JUnit 6 -->
+            <!-- Must come before keycloak-parent, which would otherwise pin older JUnit and Testcontainers versions
+                 over the ones managed by Spring Boot -->
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
@@ -91,9 +90,17 @@
             </dependency>
 
             <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>${jackson.version}</version>
+                <version>${jackson-2-bom.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -250,14 +257,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
 
