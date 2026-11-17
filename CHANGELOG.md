@@ -42,6 +42,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Enhanced FGAP V2 handling: `admin-permissions` client is now properly skipped during import and deletion
 - Updated README with prominent documentation links
 
+### Fixed
+
+- The clean phase only deletes resource types declared by at least one import file of the realm, follows the `import.managed.*` setting of each type, and with remote state enabled only deletes resources created by keycloak-config-cli.
+- Re-running an unchanged import (same checksum) no longer deletes its clients, roles and groups.
+- Clients are deleted regardless of FGAP v2, and only the `*-realm` clients of the `master` realm are spared.
+- Authentication flow binding overrides removed from the import are cleared in Keycloak again.
+
 ### Documentation
 
 - Added comprehensive JavaDoc to `GroupImportService` class
