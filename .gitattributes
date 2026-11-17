@@ -1,2 +1,5 @@
-mvnw text eol=lf
+# Keep LF everywhere (see .editorconfig): import file checksums are computed on raw content
+* text=auto eol=lf
 *.cmd text eol=crlf
+*.jar binary
+*.zip binary
