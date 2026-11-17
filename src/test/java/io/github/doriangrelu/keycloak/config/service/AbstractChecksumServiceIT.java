@@ -352,7 +352,7 @@ public class AbstractChecksumServiceIT extends AbstractImportIT {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-        realmImports.forEach(realmImport -> realmImportService.doImport(realmImport));
+        runImport(realmImports);
 
         return realmImports;
     }

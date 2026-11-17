@@ -27,10 +27,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockserver.model.HttpRequest.request;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportTest;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
+import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakMock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,7 +93,8 @@ class CookieMockIT extends AbstractImportTest {
             return KeycloakMock.serverInfo(request);
         });
 
-        RealmImport realmImport = getFirstImport("00_create_simple-realm.json");
-        realmImportService.doImport(realmImport);
+        // Import only: the clean phase would send requests this mock does not answer
+        ExecutionContextHolder.initializeEmptyContext();
+        realmImportService.doImport(getFirstImport("00_create_simple-realm.json"));
     }
 }
