@@ -31,8 +31,8 @@ Créer les packages `domain`, `application`, `infrastructure` et le test ArchUni
 
 ### US-001-05 — Couche SDK
 
-**Statut :** À faire
-Créer `AbstractAdapter`, `KeycloakAccessException` et `KeycloakClientFactory` (ADR-003), avec les tests de traduction des erreurs (MockServer). Le client Keycloak existant (`KeycloakProvider`) y est déplacé.
+**Statut :** Terminé
+`AbstractAdapter`, `KeycloakAccessException` et `KeycloakFailure` (ADR-003), avec les tests de traduction des erreurs. `KeycloakClientFactory` et le déplacement de `KeycloakProvider` sont reportés à l'US-002-03 : sans adapter concret, la factory serait vide.
 
 ### US-001-06 — Erreurs et codes de sortie
 

@@ -22,7 +22,7 @@ Décisions qui s'appliquent : champs non modélisés transportés dans `Unmodele
 ### US-002-03 — Rôles : BOs, accès Keycloak et conversions
 
 **Statut :** À faire
-BOs `RealmRole` et `ClientRole`, `RoleApi` et `RoleAdapter`, `RoleKeycloakGateway`, `RoleKeycloakMapper` (MapStruct). Remplace `RoleRepository`.
+BOs `RealmRole` et `ClientRole`, `RoleApi` et `RoleAdapter`, `RoleKeycloakGateway`, `RoleKeycloakMapper` (MapStruct). Remplace `RoleRepository`. Crée `KeycloakClientFactory`, qui instancie les adapters à partir du client fourni par `KeycloakProvider` (reporté de l'US-001-05).
 
 ### US-002-04 — Reconcilers des rôles
 
