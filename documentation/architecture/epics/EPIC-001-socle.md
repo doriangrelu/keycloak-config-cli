@@ -1,6 +1,6 @@
 # EPIC-001 — Socle
 
-**Statut :** À faire
+**Statut :** Terminé (tests d'intégration à confirmer en CI)
 **ADR :** [ADR-001](../ADR-001-architecture-en-couches.md), [ADR-003](../ADR-003-acces-keycloak-sdk.md), [ADR-005](../ADR-005-erreurs-et-codes-de-sortie.md)
 
 Poser l'outillage et les fondations de la nouvelle architecture, sans changer le comportement de l'import.
@@ -36,5 +36,5 @@ Créer les packages `domain`, `application`, `infrastructure` et le test ArchUni
 
 ### US-001-06 — Erreurs et codes de sortie
 
-**Statut :** À faire
+**Statut :** Terminé
 Introduire les trois familles d'exceptions et la traduction en codes de sortie dans les runners (ADR-005). Supprimer les `catch (Exception)` du runner.

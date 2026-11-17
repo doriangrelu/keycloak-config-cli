@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.service.checksum;
 
+import io.github.doriangrelu.keycloak.config.application.importation.ChecksumChangedException;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
@@ -89,9 +90,7 @@ public class ChecksumService {
             return true;
         } else if (ChecksumChangedOption.FAIL.equals(
                 importConfigProperties.getBehaviors().getChecksumChanged())) {
-            throw new InvalidImportException(String.format(
-                    "The checksum of import '%s' has changed from: '%s', to: '%s'",
-                    realmImport.getSource(), readChecksum, realmImport.getChecksum()));
+            throw new ChecksumChangedException(realmImport.getSource(), readChecksum, realmImport.getChecksum());
         } else {
             throw new IllegalStateException("Unknown behavior constant: "
                     + importConfigProperties.getBehaviors().getChecksumChanged());

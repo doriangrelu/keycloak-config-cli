@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config;
 
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
 import io.github.doriangrelu.keycloak.config.model.KeycloakImport;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
@@ -97,24 +98,9 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
                 }
             }
             importedRealm.forEach(realmImportService::cleanRealm);
-        } catch (NullPointerException e) {
-            throw e;
         } catch (Exception e) {
-            logger.error("Error during Keycloak import: {}", e.getMessage(), e);
-            if (e.getCause() instanceof Exception cause) {
-                try {
-                    String responseBody = cause.toString();
-                    logger.error("Error Response: {}", responseBody);
-                } catch (Exception ex) {
-                    logger.error("Failed to read error response", ex);
-                }
-            }
-
-            exitCode = 1;
-
-            if (logger.isDebugEnabled()) {
-                throw e;
-            }
+            // Single place where import failures are caught and turned into an exit code (ADR-005)
+            exitCode = FailureReporter.report(logger, "import", e).code();
         } finally {
             long totalTime = System.currentTimeMillis() - START_TIME;
             String formattedTime = new SimpleDateFormat("mm:ss.SSS").format(new Date(totalTime));

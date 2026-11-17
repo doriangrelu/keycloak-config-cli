@@ -27,6 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- **BREAKING**: Distinct exit codes per kind of failure (invalid configuration `2`, Keycloak unavailable `3`, Keycloak refused `4`, checksum changed `5`), instead of `1` for every failure. See [Exit Codes](documentation/reference/exit-codes.md).
+    - Failures are no longer re-thrown when debug logging is enabled: they are logged once and reported through the exit code.
+    - A changed checksum with `import.behaviors.checksum-changed=fail` now raises `ChecksumChangedException` instead of `InvalidImportException`.
 - **BREAKING**: No default value is shipped any more for `import.remote-state.encryption-salt`. It is now required when `import.remote-state.encryption-key` is set, and the tool refuses to start otherwise.
     - To keep reading a state encrypted by a previous version, set `import.remote-state.encryption-salt=2B521C795FBE2F2425DB150CD3700BA9` (the former default), or start over with a salt of your own.
 - **BREAKING**: Refactored `GroupImportService` to use functional programming with Java Streams

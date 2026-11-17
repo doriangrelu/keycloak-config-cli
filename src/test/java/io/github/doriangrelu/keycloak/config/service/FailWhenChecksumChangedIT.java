@@ -20,7 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.application.importation.ChecksumChangedException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -47,7 +47,7 @@ public class FailWhenChecksumChangedIT extends AbstractChecksumServiceIT {
         var realmImport = getFirstImport(fileName);
         realmImport.setChecksum("");
         Assertions.assertThatThrownBy(() -> checksumService.hasToBeUpdated(realmImport))
-                .isInstanceOf(InvalidImportException.class)
+                .isInstanceOf(ChecksumChangedException.class)
                 .hasMessageContaining("checksum", "changed");
     }
 

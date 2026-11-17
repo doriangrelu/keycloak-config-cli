@@ -43,6 +43,7 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 - [Normalization Technical Details](reference/normalization-details.md)
 - [Red Hat SSO Compatibility](reference/rhsso-compatibility.md)
 - [Skip Server Info](reference/skip-server-info.md)
+- [Exit Codes](reference/exit-codes.md)
 
 ---
 

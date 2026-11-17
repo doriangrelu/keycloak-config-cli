@@ -21,17 +21,14 @@
 package io.github.doriangrelu.keycloak.config;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
-import org.hamcrest.Matchers;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -103,7 +100,7 @@ class CommandLineImportIT extends AbstractImportIT {
                     "--logging.level.io.github.doriangrelu.keycloak.config.KeycloakConfigRunner=error",
                 });
 
-                verify(runtime).exit(1);
+                verify(runtime).exit(ExitCode.INVALID_CONFIGURATION.code());
             }
         }
     }
@@ -120,12 +117,9 @@ class CommandLineImportIT extends AbstractImportIT {
 
         @Test
         void testInvalidFileFormatException() {
-            InvalidImportException thrown = assertThrows(InvalidImportException.class, runner::run);
+            runner.run();
 
-            assertThat(
-                    thrown.getMessage(),
-                    startsWith(
-                            "Unable to parse file 'file:src/test/resources/application-IT.properties': Cannot construct instance of `io.github.doriangrelu.keycloak.config.model.RealmImport`"));
+            assertThat(runner.getExitCode(), is(ExitCode.INVALID_CONFIGURATION.code()));
         }
     }
 
@@ -138,12 +132,9 @@ class CommandLineImportIT extends AbstractImportIT {
 
         @Test
         void testInvalidImportException() {
-            InvalidImportException thrown = assertThrows(InvalidImportException.class, runner::run);
+            runner.run();
 
-            assertThat(
-                    thrown.getMessage(),
-                    Matchers.is(
-                            "Unable to proceed resource 'URL [file:invalid]': invalid (No such file or directory)"));
+            assertThat(runner.getExitCode(), is(ExitCode.INVALID_CONFIGURATION.code()));
         }
     }
 }

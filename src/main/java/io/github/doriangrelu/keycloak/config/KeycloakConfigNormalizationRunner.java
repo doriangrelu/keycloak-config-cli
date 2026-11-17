@@ -24,6 +24,8 @@ import static io.github.doriangrelu.keycloak.config.properties.NormalizationConf
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationKeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakExportProvider;
@@ -72,7 +74,7 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         try {
             var outputLocation =
                     Paths.get(normalizationConfigProperties.getFiles().getOutputDirectory());
@@ -82,7 +84,7 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
             }
             if (!Files.isDirectory(outputLocation)) {
                 logger.error("Output location '{}' is not a directory. Aborting", outputLocation);
-                exitCode = 1;
+                exitCode = ExitCode.INVALID_CONFIGURATION.code();
                 return;
             }
 
@@ -104,16 +106,9 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
                     }
                 }
             }
-        } catch (NullPointerException e) {
-            throw e;
         } catch (Exception e) {
-            logger.error(e.getMessage());
-
-            exitCode = 1;
-
-            if (logger.isDebugEnabled()) {
-                throw e;
-            }
+            // Single place where normalization failures are caught and turned into an exit code (ADR-005)
+            exitCode = FailureReporter.report(logger, "normalization", e).code();
         } finally {
             long totalTime = System.currentTimeMillis() - START_TIME;
             String formattedTime = new SimpleDateFormat("mm:ss.SSS").format(new Date(totalTime));

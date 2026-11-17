@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config;
 
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
 import io.github.doriangrelu.keycloak.config.properties.RunConfigProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -29,7 +30,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @EnableConfigurationProperties(RunConfigProperties.class)
 public class KeycloakConfigApplication {
     public static void main(String[] args) {
-        // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#boot-features-application-exit
-        Runtime.getRuntime().exit(SpringApplication.exit(SpringApplication.run(KeycloakConfigApplication.class, args)));
+        int exitCode;
+        try {
+            // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#boot-features-application-exit
+            exitCode = SpringApplication.exit(SpringApplication.run(KeycloakConfigApplication.class, args));
+        } catch (RuntimeException startupFailure) {
+            // Spring Boot already reported the failure (invalid properties, Keycloak unreachable...)
+            exitCode = ExitCodeResolver.resolve(startupFailure).code();
+        }
+        Runtime.getRuntime().exit(exitCode);
     }
 }

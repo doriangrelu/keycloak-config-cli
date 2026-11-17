@@ -6,7 +6,7 @@
 
 | EPIC | Sujet | Statut |
 |---|---|---|
-| [EPIC-001](documentation/architecture/epics/EPIC-001-socle.md) | Socle : outillage, dépendances, couches, couche SDK, codes de sortie | À faire |
+| [EPIC-001](documentation/architecture/epics/EPIC-001-socle.md) | Socle : outillage, dépendances, couches, couche SDK, codes de sortie | Terminé (tests d'intégration à confirmer en CI) |
 | [EPIC-002](documentation/architecture/epics/EPIC-002-moteur-et-roles.md) | Moteur de réconciliation et migration des rôles | À faire |
 | [EPIC-003](documentation/architecture/epics/EPIC-003-migration-ressources.md) | Migration des autres types de ressources | À faire |
 | [EPIC-004](documentation/architecture/epics/EPIC-004-dry-run.md) | Dry-run et rapport des changements | À faire |
