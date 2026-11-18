@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 
 import io.github.doriangrelu.keycloak.config.application.client.ClientReconciler;
+import io.github.doriangrelu.keycloak.config.application.component.ComponentReconciler;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
@@ -39,15 +40,18 @@ import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.domain.scopemapping.model.ScopeMapping;
 import io.github.doriangrelu.keycloak.config.domain.user.model.InvalidUserException;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
+import io.github.doriangrelu.keycloak.config.domain.userprofile.model.UserProfile;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientpolicy.ClientPolicyKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.component.ComponentKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.group.GroupKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.identityprovider.IdentityProviderKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user.UserKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.userprofile.UserProfileKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
@@ -89,6 +93,9 @@ public class LegacyReconciliationBridge {
 
     private static final Logger logger = LoggerFactory.getLogger(LegacyReconciliationBridge.class);
 
+    /** Realm attribute that enables the management of the user profile configuration. */
+    static final String USER_PROFILE_ENABLED = "userProfileEnabled";
+
     private final ReconciliationEngine engine;
     private final RoleKeycloakMapper roleMapper;
     private final ClientKeycloakMapper clientMapper;
@@ -96,6 +103,8 @@ public class LegacyReconciliationBridge {
     private final UserKeycloakMapper userMapper;
     private final IdentityProviderKeycloakMapper identityProviderMapper;
     private final ClientPolicyKeycloakMapper clientPolicyMapper;
+    private final ComponentKeycloakMapper componentMapper;
+    private final UserProfileKeycloakMapper userProfileMapper;
     private final ClientApi clientApi;
     private final KeycloakProvider keycloakProvider;
     private final ClientScopeKeycloakMapper clientScopeMapper;
@@ -111,6 +120,8 @@ public class LegacyReconciliationBridge {
             final UserKeycloakMapper userMapper,
             final IdentityProviderKeycloakMapper identityProviderMapper,
             final ClientPolicyKeycloakMapper clientPolicyMapper,
+            final ComponentKeycloakMapper componentMapper,
+            final UserProfileKeycloakMapper userProfileMapper,
             final ClientApi clientApi,
             final KeycloakProvider keycloakProvider,
             final ClientScopeKeycloakMapper clientScopeMapper,
@@ -124,6 +135,8 @@ public class LegacyReconciliationBridge {
         this.userMapper = userMapper;
         this.identityProviderMapper = identityProviderMapper;
         this.clientPolicyMapper = clientPolicyMapper;
+        this.componentMapper = componentMapper;
+        this.userProfileMapper = userProfileMapper;
         this.clientApi = clientApi;
         this.keycloakProvider = keycloakProvider;
         this.clientScopeMapper = clientScopeMapper;
@@ -154,6 +167,7 @@ public class LegacyReconciliationBridge {
             if (realmImport.getMessageBundles() != null) {
                 context.captureState(MessageBundleReconciler.STATE_SCOPE, this.stateService.getMessageBundles());
             }
+            captureComponentState(realmImport, context);
         }
         this.engine.register(context, desiredStateOf(realmImport, realmExists));
     }
@@ -202,7 +216,13 @@ public class LegacyReconciliationBridge {
                                             modeOf(this.properties.getManaged().getScopeMapping())),
                                     Map.entry(
                                             ResourceType.CLIENT_SCOPE_MAPPING,
-                                            modeOf(this.properties.getManaged().getClientScopeMapping()))));
+                                            modeOf(this.properties.getManaged().getClientScopeMapping())),
+                                    Map.entry(
+                                            ResourceType.COMPONENT,
+                                            modeOf(this.properties.getManaged().getComponent())),
+                                    Map.entry(
+                                            ResourceType.SUB_COMPONENT,
+                                            modeOf(this.properties.getManaged().getSubComponent()))));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
@@ -246,6 +266,18 @@ public class LegacyReconciliationBridge {
         return this.properties.getManaged().getRole() == ImportManagedPropertiesValues.FULL
                 ? ManagedMode.FULL
                 : ManagedMode.NO_DELETE;
+    }
+
+    private void captureComponentState(final RealmImport realmImport, final RealmContext context) {
+        if (realmImport.getComponents() == null) {
+            return;
+        }
+        context.captureState("components", this.stateService.getComponents(null));
+        this.componentMapper.flatten(realmImport.getComponents()).forEach(component -> {
+            String name = component.key().name();
+            context.captureState(
+                    ComponentReconciler.subComponentStateScope(name), this.stateService.getComponents(name));
+        });
     }
 
     private void captureRoleState(final RealmImport realmImport, final RealmContext context) {
@@ -319,6 +351,32 @@ public class LegacyReconciliationBridge {
                     realmImport.getIdentityProviderMappers().stream()
                             .map(this.identityProviderMapper::toMapper)
                             .toList());
+        }
+        if (realmImport.getComponents() != null) {
+            List<io.github.doriangrelu.keycloak.config.domain.component.model.Component> components =
+                    this.componentMapper.flatten(realmImport.getComponents());
+            desired.declare(
+                    ResourceType.COMPONENT,
+                    components.stream()
+                            .filter(component -> component.key().isTopLevel())
+                            .toList());
+            // The sub-components of every declared component are managed, even when it declares none
+            desired.declare(
+                    ResourceType.SUB_COMPONENT,
+                    components.stream()
+                            .filter(component -> !component.key().isTopLevel())
+                            .toList(),
+                    components.stream().map(component -> component.key().path()).collect(Collectors.toSet()));
+        }
+        String userProfileEnabled = realmImport.getAttributesOrEmpty().get(USER_PROFILE_ENABLED);
+        if (userProfileEnabled != null) {
+            // As before, the configuration is only managed when the realm declares this attribute
+            desired.declare(
+                    ResourceType.USER_PROFILE,
+                    List.of(
+                            Boolean.parseBoolean(userProfileEnabled)
+                                    ? this.userProfileMapper.toUserProfile(realmImport.getUserProfile())
+                                    : UserProfile.byDefault()));
         }
         if (realmImport.getUsers() != null && !realmImport.getUsers().isEmpty()) {
             desired.declare(ResourceType.USER, usersOf(realmImport, realmExists));

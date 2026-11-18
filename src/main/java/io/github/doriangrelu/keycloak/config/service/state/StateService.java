@@ -173,15 +173,11 @@ public class StateService {
         stateRepository.setState("required-actions", state);
     }
 
-    public List<ComponentRepresentation> getComponents(
-            List<ComponentRepresentation> components, String parentComponentName) {
-        List<String> componentsFromState = (parentComponentName != null)
+    /** Names of the components, or of the sub-components of a component, created by keycloak-config-cli. */
+    public List<String> getComponents(String parentComponentName) {
+        return (parentComponentName != null)
                 ? stateRepository.getState("sub-components-" + parentComponentName)
                 : stateRepository.getState("components");
-
-        return components.stream()
-                .filter(component -> componentsFromState.contains(component.getName()))
-                .toList();
     }
 
     private void setComponents(RealmImport realmImport) {

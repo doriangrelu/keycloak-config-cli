@@ -36,7 +36,10 @@ public enum ResourceType {
     CLIENT_PROFILE("Client profile"),
     CLIENT_POLICY("Client policy"),
     SCOPE_MAPPING("Scope mapping"),
-    CLIENT_SCOPE_MAPPING("Client scope mapping");
+    CLIENT_SCOPE_MAPPING("Client scope mapping"),
+    COMPONENT("Component"),
+    SUB_COMPONENT("Sub-component"),
+    USER_PROFILE("User profile");
 
     private final String label;
 

@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
+import io.github.doriangrelu.keycloak.config.application.component.port.ComponentGateway;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy.LegacyReconciliationBridge;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
@@ -73,13 +74,11 @@ public class RealmImportService {
     private final RealmRepository realmRepository;
     private final OtpPolicyImportService otpPolicyImportService;
 
-    private final UserProfileImportService userProfileImportService;
-
     private final LegacyReconciliationBridge reconciliationBridge;
     private final ClientImportService clientImportService;
     private final ClientScopeImportService clientScopeImportService;
     private final DefaultGroupsImportService defaultGroupsImportService;
-    private final ComponentImportService componentImportService;
+    private final ComponentGateway componentGateway;
     private final AuthenticationFlowsImportService authenticationFlowsImportService;
     private final AuthenticatorConfigImportService authenticatorConfigImportService;
     private final ClientAuthorizationImportService clientAuthorizationImportService;
@@ -94,12 +93,11 @@ public class RealmImportService {
             ImportConfigProperties importProperties,
             KeycloakProvider keycloakProvider,
             RealmRepository realmRepository,
-            UserProfileImportService userProfileImportService,
             LegacyReconciliationBridge reconciliationBridge,
             ClientImportService clientImportService,
             ClientScopeImportService clientScopeImportService,
             DefaultGroupsImportService defaultGroupsImportService,
-            ComponentImportService componentImportService,
+            ComponentGateway componentGateway,
             AuthenticationFlowsImportService authenticationFlowsImportService,
             AuthenticatorConfigImportService authenticatorConfigImportService,
             ClientAuthorizationImportService clientAuthorizationImportService,
@@ -109,12 +107,11 @@ public class RealmImportService {
         this.importProperties = importProperties;
         this.keycloakProvider = keycloakProvider;
         this.realmRepository = realmRepository;
-        this.userProfileImportService = userProfileImportService;
         this.reconciliationBridge = reconciliationBridge;
         this.clientImportService = clientImportService;
         this.clientScopeImportService = clientScopeImportService;
         this.defaultGroupsImportService = defaultGroupsImportService;
-        this.componentImportService = componentImportService;
+        this.componentGateway = componentGateway;
         this.authenticationFlowsImportService = authenticationFlowsImportService;
         this.authenticatorConfigImportService = authenticatorConfigImportService;
         this.clientAuthorizationImportService = clientAuthorizationImportService;
@@ -229,8 +226,9 @@ public class RealmImportService {
                         ResourceType.MESSAGE_BUNDLE,
                         ResourceType.GROUP));
         defaultGroupsImportService.doImport(realmImport);
-        componentImportService.doImport(realmImport);
-        userProfileImportService.doImport(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.COMPONENT, ResourceType.SUB_COMPONENT));
+        syncUserFederationIfNecessary(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.USER_PROFILE));
         if (realmImport.getUsers() != null && realmImport.getUsers().isEmpty()) {
             logger.warn("Purging users isn't supported in keycloak-config-cli!");
         }
@@ -246,6 +244,14 @@ public class RealmImportService {
 
         stateService.doImport(realmImport);
         checksumService.doImport(realmImport);
+    }
+
+    private void syncUserFederationIfNecessary(RealmImport realmImport) {
+        if (importProperties.getBehaviors().isSyncUserFederation()
+                && realmImport.getComponents() != null
+                && realmImport.getComponents().containsKey("org.keycloak.storage.UserStorageProvider")) {
+            componentGateway.syncImportingUserStorages(realmImport.getRealm());
+        }
     }
 
     /**

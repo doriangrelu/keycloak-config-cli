@@ -26,7 +26,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
+import io.github.doriangrelu.keycloak.config.application.component.ComponentRejectedException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import java.io.IOException;
 import java.util.List;
@@ -626,8 +626,8 @@ class ImportComponentsIT extends AbstractImportIT {
     void shouldNotCreateComponents() throws IOException {
         RealmImport foundImport = getFirstImport("12_update_realm__try-to-create-component.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        ComponentRejectedException thrown =
+                assertThrows(ComponentRejectedException.class, () -> realmImportService.doImport(foundImport));
 
         assertThat(
                 thrown.getMessage(),

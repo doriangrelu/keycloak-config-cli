@@ -27,6 +27,8 @@ import io.github.doriangrelu.keycloak.config.application.clientpolicy.ClientProf
 import io.github.doriangrelu.keycloak.config.application.clientpolicy.port.ClientPolicyGateway;
 import io.github.doriangrelu.keycloak.config.application.clientscope.ClientScopeReconciler;
 import io.github.doriangrelu.keycloak.config.application.clientscope.port.ClientScopeGateway;
+import io.github.doriangrelu.keycloak.config.application.component.ComponentReconciler;
+import io.github.doriangrelu.keycloak.config.application.component.port.ComponentGateway;
 import io.github.doriangrelu.keycloak.config.application.group.GroupReconciler;
 import io.github.doriangrelu.keycloak.config.application.group.port.GroupGateway;
 import io.github.doriangrelu.keycloak.config.application.identityprovider.IdentityProviderMapperReconciler;
@@ -46,6 +48,8 @@ import io.github.doriangrelu.keycloak.config.application.scopemapping.port.Scope
 import io.github.doriangrelu.keycloak.config.application.user.UserImportRules;
 import io.github.doriangrelu.keycloak.config.application.user.UserReconciler;
 import io.github.doriangrelu.keycloak.config.application.user.port.UserGateway;
+import io.github.doriangrelu.keycloak.config.application.userprofile.UserProfileReconciler;
+import io.github.doriangrelu.keycloak.config.application.userprofile.port.UserProfileGateway;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -69,6 +73,8 @@ public class ReconciliationConfiguration {
             final IdentityProviderGateway identityProviderGateway,
             final ClientPolicyGateway clientPolicyGateway,
             final ScopeMappingGateway scopeMappingGateway,
+            final ComponentGateway componentGateway,
+            final UserProfileGateway userProfileGateway,
             final ImportConfigProperties properties) {
         return new ReconciliationEngine(List.of(
                 new RealmRoleReconciler(roleGateway),
@@ -89,6 +95,9 @@ public class ReconciliationConfiguration {
                 new ClientProfileReconciler(clientPolicyGateway),
                 new ClientPolicyReconciler(clientPolicyGateway),
                 ScopeMappingReconciler.ofRealmRoles(scopeMappingGateway),
-                ScopeMappingReconciler.ofClientRoles(scopeMappingGateway)));
+                ScopeMappingReconciler.ofClientRoles(scopeMappingGateway),
+                ComponentReconciler.ofComponents(componentGateway),
+                ComponentReconciler.ofSubComponents(componentGateway),
+                new UserProfileReconciler(userProfileGateway)));
     }
 }
