@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,6 +54,7 @@ public final class RealmContext {
     private final List<ProtectionRule> protections = Collections.synchronizedList(new ArrayList<>());
     private final Map<String, Set<String>> previousState = new ConcurrentHashMap<>();
     private final Map<ResourceType, Map<Object, Resource<?>>> desired = new EnumMap<>(ResourceType.class);
+    private final Map<ResourceType, Set<String>> scopes = new EnumMap<>(ResourceType.class);
     private final List<PlannedChange> plan = Collections.synchronizedList(new ArrayList<>());
     private boolean pruned;
 
@@ -104,6 +106,15 @@ public final class RealmContext {
      * @throws ConflictingDefinitionException when a key is already declared with a different content
      */
     public synchronized void declare(final ResourceType type, final Collection<? extends Resource<?>> resources) {
+        declare(type, resources, Set.of());
+    }
+
+    /** Same as {@link #declare(ResourceType, Collection)}, with the scopes the file declares for a scoped type. */
+    public synchronized void declare(
+            final ResourceType type,
+            final Collection<? extends Resource<?>> resources,
+            final Set<String> declaredScopes) {
+        this.scopes.computeIfAbsent(type, unused -> new LinkedHashSet<>()).addAll(declaredScopes);
         Map<Object, Resource<?>> declared = this.desired.computeIfAbsent(type, unused -> new LinkedHashMap<>());
         for (Resource<?> resource : resources) {
             Resource<?> previous = declared.putIfAbsent(resource.key(), resource);
@@ -111,6 +122,11 @@ public final class RealmContext {
                 throw new ConflictingDefinitionException(this.realm, type.label(), resource.key());
             }
         }
+    }
+
+    /** Scopes declared by the import files for a scoped type, such as the clients of the client roles. */
+    public synchronized Set<String> scopes(final ResourceType type) {
+        return Set.copyOf(this.scopes.getOrDefault(type, Set.of()));
     }
 
     public synchronized boolean isDeclared(final ResourceType type) {

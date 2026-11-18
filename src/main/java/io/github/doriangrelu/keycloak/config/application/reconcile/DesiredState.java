@@ -26,6 +26,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Resources declared by one import file, per type. A type absent from the state is not declared by the file; a type
@@ -34,12 +35,27 @@ import java.util.Optional;
 public final class DesiredState {
 
     private final Map<ResourceType, List<? extends Resource<?>>> resources = new EnumMap<>(ResourceType.class);
+    private final Map<ResourceType, Set<String>> scopes = new EnumMap<>(ResourceType.class);
 
     public DesiredState declare(final ResourceType type, final List<? extends Resource<?>> declared) {
+        return declare(type, declared, Set.of());
+    }
+
+    /**
+     * @param declaredScopes scopes the file declares for a scoped type, even without resources: the clients of the
+     *     client roles, for instance. An empty scope asks to remove every managed resource of that scope.
+     */
+    public DesiredState declare(
+            final ResourceType type, final List<? extends Resource<?>> declared, final Set<String> declaredScopes) {
         this.resources.merge(type, List.copyOf(declared), (first, second) -> {
             throw new IllegalArgumentException(type + " is declared twice in the same desired state");
         });
+        this.scopes.put(type, Set.copyOf(declaredScopes));
         return this;
+    }
+
+    public Set<String> scopes(final ResourceType type) {
+        return this.scopes.getOrDefault(type, Set.of());
     }
 
     public Optional<List<? extends Resource<?>>> resources(final ResourceType type) {

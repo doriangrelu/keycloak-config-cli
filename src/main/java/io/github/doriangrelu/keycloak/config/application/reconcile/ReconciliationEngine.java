@@ -30,6 +30,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -57,7 +58,8 @@ public final class ReconciliationEngine {
 
     public void apply(final RealmContext context, final DesiredState part) {
         for (Reconciler<?, ?> reconciler : this.ordered) {
-            part.resources(reconciler.type()).ifPresent(declared -> applyType(context, reconciler, declared));
+            part.resources(reconciler.type())
+                    .ifPresent(declared -> applyType(context, reconciler, declared, part.scopes(reconciler.type())));
         }
     }
 
@@ -74,9 +76,12 @@ public final class ReconciliationEngine {
 
     @SuppressWarnings("unchecked")
     private static <K, T extends Resource<K>> void applyType(
-            final RealmContext context, final Reconciler<K, T> reconciler, final List<? extends Resource<?>> declared) {
+            final RealmContext context,
+            final Reconciler<K, T> reconciler,
+            final List<? extends Resource<?>> declared,
+            final Set<String> scopes) {
         List<T> desired = (List<T>) declared;
-        context.declare(reconciler.type(), desired);
+        context.declare(reconciler.type(), desired, scopes);
 
         List<T> current = reconciler.read(context, desired);
         List<Change<T>> changes = Changes.toApply(desired, current, reconciler::merge);

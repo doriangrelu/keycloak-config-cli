@@ -59,6 +59,7 @@
         <commons-text.version>1.12.0</commons-text.version>
         <failsafe.version>3.3.2</failsafe.version>
         <javers.version>7.6.3</javers.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
         <resteasy.version>6.2.10.Final</resteasy.version>
 
@@ -151,6 +152,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
         </dependency>
 
         <dependency>
@@ -313,6 +320,19 @@
                     <compilerArgs>
                         <arg>-Xlint</arg>
                     </compilerArgs>
+                    <!-- Since Java 23, processors are no longer discovered on the classpath: declare them -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-configuration-processor</artifactId>
+                            <version>${project.parent.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
 
