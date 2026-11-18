@@ -44,6 +44,13 @@ public class KeycloakRepository {
         this.keycloakProvider = keycloakProvider;
     }
 
+    public List<IdentityProviderMapperRepresentation> getIdentityProviderMappers(String realmName) {
+        var identityProviders = keycloakProvider.getInstance().realm(realmName).identityProviders();
+        return identityProviders.findAll().stream()
+                .flatMap(identityProvider -> identityProviders.get(identityProvider.getAlias()).getMappers().stream())
+                .toList();
+    }
+
     public UserRepresentation getUser(String realmName, String username) {
         List<UserRepresentation> foundUsers = keycloakProvider.getInstance().realm(realmName).users().list().stream()
                 .filter(u -> u.getUsername().equals(username))

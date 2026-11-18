@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - **BREAKING**: Realm roles, client roles and their composites are imported by the new reconciliation engine. When several files target the same realm, a role defined twice with different content is now rejected (exit code `2`) instead of the last file winning.
+- Identity providers and their mappers are imported by the new reconciliation engine. Those missing from the import are deleted in the clean phase, after the other resources, instead of before the import of identity providers.
 - **BREAKING**: Users are imported by the new reconciliation engine. A user referring to a missing role, client or group raises `UnknownUserReferenceException`, and a username differing from the email while the realm uses the email as username raises `InvalidUserException`, instead of `ImportProcessingException`, `KeycloakRepositoryException` and `InvalidImportException`; messages are unchanged (exit code `2`).
 - **BREAKING**: Groups are imported by the new reconciliation engine. A group mapped to a missing realm or client role raises `UnknownGroupRoleException` (exit code `2`), and a group defined twice with different content across the files of a realm is rejected.
 - **BREAKING**: A client refused by Keycloak raises `ClientRejectedException`, and an invalid client (no client id nor name, unsupported authorization settings) raises `InvalidClientException`, instead of `ImportProcessingException`; messages are unchanged (exit code `2`).

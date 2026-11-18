@@ -25,7 +25,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.repository.IdentityProviderMapperRepository;
 import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
@@ -65,9 +64,6 @@ class ImportManagedNoDeleteIT extends AbstractImportIT {
 
     @Autowired
     private IdentityProviderRepository identityProviderRepository;
-
-    @Autowired
-    private IdentityProviderMapperRepository identityProviderMapperRepository;
 
     @Test
     @Order(0)
@@ -158,7 +154,7 @@ class ImportManagedNoDeleteIT extends AbstractImportIT {
 
         List<String> identityProviderMapperList = Arrays.asList("my-first-idp-mapper", "my-second-idp-mapper");
         List<IdentityProviderMapperRepresentation> createdIdentityProviderMappers =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm()).stream()
                         .filter((identityProviderMapper) ->
                                 identityProviderMapperList.contains(identityProviderMapper.getName()))
                         .toList();

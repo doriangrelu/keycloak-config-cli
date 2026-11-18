@@ -41,6 +41,7 @@ import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.group.GroupKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.identityprovider.IdentityProviderKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
@@ -87,6 +88,7 @@ public class LegacyReconciliationBridge {
     private final ClientKeycloakMapper clientMapper;
     private final GroupKeycloakMapper groupMapper;
     private final UserKeycloakMapper userMapper;
+    private final IdentityProviderKeycloakMapper identityProviderMapper;
     private final ClientApi clientApi;
     private final KeycloakProvider keycloakProvider;
     private final ClientScopeKeycloakMapper clientScopeMapper;
@@ -100,6 +102,7 @@ public class LegacyReconciliationBridge {
             final ClientKeycloakMapper clientMapper,
             final GroupKeycloakMapper groupMapper,
             final UserKeycloakMapper userMapper,
+            final IdentityProviderKeycloakMapper identityProviderMapper,
             final ClientApi clientApi,
             final KeycloakProvider keycloakProvider,
             final ClientScopeKeycloakMapper clientScopeMapper,
@@ -111,6 +114,7 @@ public class LegacyReconciliationBridge {
         this.clientMapper = clientMapper;
         this.groupMapper = groupMapper;
         this.userMapper = userMapper;
+        this.identityProviderMapper = identityProviderMapper;
         this.clientApi = clientApi;
         this.keycloakProvider = keycloakProvider;
         this.clientScopeMapper = clientScopeMapper;
@@ -167,17 +171,27 @@ public class LegacyReconciliationBridge {
                             realm,
                             this.properties.isParallel(),
                             this.properties.getRemoteState().isEnabled(),
-                            Map.of(
-                                    ResourceType.REALM_ROLE, roleMode(),
-                                    ResourceType.CLIENT_ROLE, roleMode(),
-                                    ResourceType.REQUIRED_ACTION, requiredActionMode(),
-                                    ResourceType.MESSAGE_BUNDLE, messageBundleMode(),
-                                    ResourceType.CLIENT_SCOPE, clientScopeMode(),
-                                    ResourceType.CLIENT, clientMode(),
-                                    ResourceType.GROUP, groupMode()));
+                            Map.ofEntries(
+                                    Map.entry(ResourceType.REALM_ROLE, roleMode()),
+                                    Map.entry(ResourceType.CLIENT_ROLE, roleMode()),
+                                    Map.entry(ResourceType.REQUIRED_ACTION, requiredActionMode()),
+                                    Map.entry(ResourceType.MESSAGE_BUNDLE, messageBundleMode()),
+                                    Map.entry(ResourceType.CLIENT_SCOPE, clientScopeMode()),
+                                    Map.entry(ResourceType.CLIENT, clientMode()),
+                                    Map.entry(ResourceType.GROUP, groupMode()),
+                                    Map.entry(
+                                            ResourceType.IDENTITY_PROVIDER,
+                                            modeOf(this.properties.getManaged().getIdentityProvider())),
+                                    Map.entry(
+                                            ResourceType.IDENTITY_PROVIDER_MAPPER,
+                                            modeOf(this.properties.getManaged().getIdentityProviderMapper()))));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
+    }
+
+    private static ManagedMode modeOf(final ImportManagedPropertiesValues value) {
+        return value == ImportManagedPropertiesValues.FULL ? ManagedMode.FULL : ManagedMode.NO_DELETE;
     }
 
     private ManagedMode groupMode() {
@@ -236,6 +250,20 @@ public class LegacyReconciliationBridge {
         DesiredState desired = new DesiredState();
         if (realmImport.getClients() != null) {
             desired.declare(ResourceType.CLIENT, clientsOf(realmImport, realmExists));
+        }
+        if (realmImport.getIdentityProviders() != null) {
+            desired.declare(
+                    ResourceType.IDENTITY_PROVIDER,
+                    realmImport.getIdentityProviders().stream()
+                            .map(this.identityProviderMapper::toIdentityProvider)
+                            .toList());
+        }
+        if (realmImport.getIdentityProviderMappers() != null) {
+            desired.declare(
+                    ResourceType.IDENTITY_PROVIDER_MAPPER,
+                    realmImport.getIdentityProviderMappers().stream()
+                            .map(this.identityProviderMapper::toMapper)
+                            .toList());
         }
         if (realmImport.getUsers() != null && !realmImport.getUsers().isEmpty()) {
             desired.declare(ResourceType.USER, usersOf(realmImport, realmExists));

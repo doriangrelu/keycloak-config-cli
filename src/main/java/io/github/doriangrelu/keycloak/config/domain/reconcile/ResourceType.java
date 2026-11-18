@@ -30,7 +30,9 @@ public enum ResourceType {
     CLIENT_SCOPE("Client scope"),
     CLIENT("Client"),
     GROUP("Group"),
-    USER("User");
+    USER("User"),
+    IDENTITY_PROVIDER("Identity provider"),
+    IDENTITY_PROVIDER_MAPPER("Identity provider mapper");
 
     private final String label;
 

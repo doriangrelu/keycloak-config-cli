@@ -26,7 +26,6 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.repository.IdentityProviderMapperRepository;
 import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
@@ -43,9 +42,6 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
 
     @Autowired
     private IdentityProviderRepository identityProviderRepository;
-
-    @Autowired
-    public IdentityProviderMapperRepository identityProviderMapperRepository;
 
     ImportIdentityProvidersIT() {
         this.resourcePath = "import-files/identity-providers";
@@ -431,11 +427,11 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         }
 
         List<IdentityProviderMapperRepresentation> identityProviderMappers =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm());
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm());
         assertThat(identityProviderMappers.size(), is(1));
 
         IdentityProviderMapperRepresentation myUsernameMapper =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm()).stream()
                         .filter(m -> m.getName().equals("my-username-mapper"))
                         .findFirst()
                         .orElse(null);
@@ -505,11 +501,11 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         }
 
         List<IdentityProviderMapperRepresentation> identityProviderMappers =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm());
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm());
         assertThat(identityProviderMappers.size(), is(1));
 
         IdentityProviderMapperRepresentation myUsernameMapper =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm()).stream()
                         .filter(m -> m.getName().equals("my-username-mapper"))
                         .findFirst()
                         .orElse(null);
@@ -579,11 +575,11 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         }
 
         List<IdentityProviderMapperRepresentation> identityProviderMappers =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm());
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm());
         assertThat(identityProviderMappers.size(), is(1));
 
         IdentityProviderMapperRepresentation myUsernameMapper =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm()).stream()
                         .filter(m -> m.getName().equals("my-username-mapper"))
                         .findFirst()
                         .orElse(null);
@@ -653,11 +649,11 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         }
 
         List<IdentityProviderMapperRepresentation> identityProviderMappers =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm());
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm());
         assertThat(identityProviderMappers.size(), is(1));
 
         IdentityProviderMapperRepresentation myUsernameMapper =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm()).stream()
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm()).stream()
                         .filter(m -> m.getName().equals("my-changed-username-mapper"))
                         .findFirst()
                         .orElse(null);
@@ -727,7 +723,7 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
         }
 
         List<IdentityProviderMapperRepresentation> identityProviderMappers =
-                identityProviderMapperRepository.getAll(createdRealm.getRealm());
+                keycloakRepository.getIdentityProviderMappers(createdRealm.getRealm());
         assertThat(identityProviderMappers, empty());
     }
 

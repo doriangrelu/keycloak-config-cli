@@ -87,7 +87,6 @@ public class RealmImportService {
     private final ScopeMappingImportService scopeMappingImportService;
     private final ClientAuthorizationImportService clientAuthorizationImportService;
     private final ClientScopeMappingImportService clientScopeMappingImportService;
-    private final IdentityProviderImportService identityProviderImportService;
 
     private final ImportConfigProperties importProperties;
 
@@ -111,7 +110,6 @@ public class RealmImportService {
             ScopeMappingImportService scopeMappingImportService,
             ClientAuthorizationImportService clientAuthorizationImportService,
             ClientScopeMappingImportService clientScopeMappingImportService,
-            IdentityProviderImportService identityProviderImportService,
             OtpPolicyImportService otpPolicyImportService,
             ChecksumService checksumService,
             StateService stateService) {
@@ -130,7 +128,6 @@ public class RealmImportService {
         this.scopeMappingImportService = scopeMappingImportService;
         this.clientAuthorizationImportService = clientAuthorizationImportService;
         this.clientScopeMappingImportService = clientScopeMappingImportService;
-        this.identityProviderImportService = identityProviderImportService;
         this.otpPolicyImportService = otpPolicyImportService;
         this.checksumService = checksumService;
         this.stateService = stateService;
@@ -252,7 +249,8 @@ public class RealmImportService {
         authenticatorConfigImportService.doImport(realmImport);
         clientImportService.doImportDependencies(realmImport);
         clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
-        identityProviderImportService.doImport(realmImport);
+        reconciliationBridge.apply(
+                realmImport, Set.of(ResourceType.IDENTITY_PROVIDER, ResourceType.IDENTITY_PROVIDER_MAPPER));
         clientAuthorizationImportService.doImport(realmImport);
         scopeMappingImportService.doImport(realmImport);
         clientScopeMappingImportService.doImport(realmImport);

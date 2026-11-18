@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientScopeAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.GroupAdapter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.IdentityProviderAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.MessageBundleAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.RequiredActionAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.RoleAdapter;
@@ -30,6 +31,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientScopeApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.GroupApi;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.IdentityProviderApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.MessageBundleApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RequiredActionApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
@@ -65,6 +67,11 @@ public class KeycloakClientFactory {
     @Bean
     public UserApi userApi(final KeycloakProvider keycloakProvider) {
         return new UserAdapter(keycloakProvider::getInstance);
+    }
+
+    @Bean
+    public IdentityProviderApi identityProviderApi(final KeycloakProvider keycloakProvider) {
+        return new IdentityProviderAdapter(keycloakProvider::getInstance);
     }
 
     @Bean
