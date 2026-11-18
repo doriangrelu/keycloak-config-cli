@@ -73,4 +73,12 @@ public interface Reconciler<K, T extends Resource<K>> {
     default boolean prunesWithoutRemoteState() {
         return true;
     }
+
+    /**
+     * Whether the remote state limits the deletions of this type to the resources keycloak-config-cli created. Some
+     * types, such as client scopes, never used it: their deletions only follow the managed mode.
+     */
+    default boolean usesRemoteState() {
+        return true;
+    }
 }

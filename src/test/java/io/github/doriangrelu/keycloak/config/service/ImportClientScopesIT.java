@@ -26,7 +26,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
+import io.github.doriangrelu.keycloak.config.application.clientscope.ProtocolMapperRejectedException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -224,8 +224,8 @@ class ImportClientScopesIT extends AbstractImportIT {
         RealmImport foundImport =
                 getFirstImport("06_update_realm__try-to-change_clientScope_invalid_protocolMapper.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        ProtocolMapperRejectedException thrown =
+                assertThrows(ProtocolMapperRejectedException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),

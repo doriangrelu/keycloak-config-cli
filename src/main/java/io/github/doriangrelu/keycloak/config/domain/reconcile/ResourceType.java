@@ -26,7 +26,8 @@ public enum ResourceType {
     CLIENT_ROLE("Client role"),
     ROLE_COMPOSITE("Role composites"),
     REQUIRED_ACTION("Required action"),
-    MESSAGE_BUNDLE("Message bundle");
+    MESSAGE_BUNDLE("Message bundle"),
+    CLIENT_SCOPE("Client scope");
 
     private final String label;
 

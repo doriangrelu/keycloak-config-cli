@@ -101,7 +101,13 @@ public final class RealmContext {
     }
 
     public DeletionPolicy deletionPolicy(final ResourceType type, final String stateScope) {
-        Optional<Set<String>> managedState = this.remoteStateEnabled
+        return deletionPolicy(type, stateScope, true);
+    }
+
+    /** @param usesRemoteState whether the type limits its deletions to what the remote state records */
+    public DeletionPolicy deletionPolicy(
+            final ResourceType type, final String stateScope, final boolean usesRemoteState) {
+        Optional<Set<String>> managedState = this.remoteStateEnabled && usesRemoteState
                 ? Optional.of(this.previousState.getOrDefault(stateScope, Set.of()))
                 : Optional.empty();
         return new DeletionPolicy(mode(type), managedState, List.copyOf(this.protections));

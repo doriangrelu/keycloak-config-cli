@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.service;
 
 import static io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.FULL;
 
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy.LegacyReconciliationBridge;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
@@ -33,6 +34,7 @@ import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolde
 import io.github.doriangrelu.keycloak.config.service.state.ImportTracking;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
+import java.util.Set;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -240,11 +242,18 @@ public class RealmImportService {
 
     private void configureRealm(RealmImport realmImport, RealmRepresentation existingRealm) {
         importOtpPolicy(realmImport);
-        clientScopeImportService.doImport(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_SCOPE));
         clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
         clientPoliciesImportService.doImport(realmImport);
         clientImportService.doImport(realmImport);
-        reconciliationBridge.apply(realmImport);
+        reconciliationBridge.apply(
+                realmImport,
+                Set.of(
+                        ResourceType.REALM_ROLE,
+                        ResourceType.CLIENT_ROLE,
+                        ResourceType.ROLE_COMPOSITE,
+                        ResourceType.REQUIRED_ACTION,
+                        ResourceType.MESSAGE_BUNDLE));
         groupImportService.importGroups(realmImport);
         defaultGroupsImportService.doImport(realmImport);
         componentImportService.doImport(realmImport);
@@ -258,7 +267,6 @@ public class RealmImportService {
         clientAuthorizationImportService.doImport(realmImport);
         scopeMappingImportService.doImport(realmImport);
         clientScopeMappingImportService.doImport(realmImport);
-        clientScopeImportService.doRemoveOrphan(realmImport);
 
         stateService.doImport(realmImport);
         checksumService.doImport(realmImport);

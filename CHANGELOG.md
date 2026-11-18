@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - **BREAKING**: Realm roles, client roles and their composites are imported by the new reconciliation engine. When several files target the same realm, a role defined twice with different content is now rejected (exit code `2`) instead of the last file winning.
+- **BREAKING**: A protocol mapper of a client scope refused by Keycloak raises `ProtocolMapperRejectedException` instead of `ImportProcessingException`, with the same message (exit code `2`).
 - **BREAKING**: A role declared for a missing client raises `UnknownClientException`, and a composite including a missing role raises `UnknownRoleException`; the messages are unchanged and both exit with code `2`.
 - **BREAKING**: Distinct exit codes per kind of failure (invalid configuration `2`, Keycloak unavailable `3`, Keycloak refused `4`, checksum changed `5`), instead of `1` for every failure. See [Exit Codes](documentation/reference/exit-codes.md).
     - Failures are no longer re-thrown when debug logging is enabled: they are logged once and reported through the exit code.

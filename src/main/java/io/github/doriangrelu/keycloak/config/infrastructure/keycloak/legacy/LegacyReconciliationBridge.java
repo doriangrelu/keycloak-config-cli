@@ -33,6 +33,7 @@ import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageB
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
@@ -44,6 +45,7 @@ import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -62,6 +64,7 @@ public class LegacyReconciliationBridge {
 
     private final ReconciliationEngine engine;
     private final RoleKeycloakMapper roleMapper;
+    private final ClientScopeKeycloakMapper clientScopeMapper;
     private final RequiredActionKeycloakMapper requiredActionMapper;
     private final StateService stateService;
     private final ImportConfigProperties properties;
@@ -69,11 +72,13 @@ public class LegacyReconciliationBridge {
     public LegacyReconciliationBridge(
             final ReconciliationEngine engine,
             final RoleKeycloakMapper roleMapper,
+            final ClientScopeKeycloakMapper clientScopeMapper,
             final RequiredActionKeycloakMapper requiredActionMapper,
             final StateService stateService,
             final ImportConfigProperties properties) {
         this.engine = engine;
         this.roleMapper = roleMapper;
+        this.clientScopeMapper = clientScopeMapper;
         this.requiredActionMapper = requiredActionMapper;
         this.stateService = stateService;
         this.properties = properties;
@@ -102,11 +107,11 @@ public class LegacyReconciliationBridge {
     }
 
     /**
-     * Creates and updates what one file declares for the migrated types: roles and their composites, required
-     * actions, message bundles. Called at the place of the roles in the legacy import, so that groups and users can use them.
+     * Creates and updates what one file declares for some of the migrated types. The legacy import calls it at the
+     * place each type had, so that the types it still handles find what they rely on.
      */
-    public void apply(final RealmImport realmImport) {
-        this.engine.apply(contextOf(realmImport), desiredStateOf(realmImport));
+    public void apply(final RealmImport realmImport, final Set<ResourceType> types) {
+        this.engine.apply(contextOf(realmImport), desiredStateOf(realmImport), types);
     }
 
     /** Deletes, once per realm, the managed resources of the migrated types missing from every file of the realm. */
@@ -127,10 +132,17 @@ public class LegacyReconciliationBridge {
                                     ResourceType.REALM_ROLE, roleMode(),
                                     ResourceType.CLIENT_ROLE, roleMode(),
                                     ResourceType.REQUIRED_ACTION, requiredActionMode(),
-                                    ResourceType.MESSAGE_BUNDLE, messageBundleMode()));
+                                    ResourceType.MESSAGE_BUNDLE, messageBundleMode(),
+                                    ResourceType.CLIENT_SCOPE, clientScopeMode()));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
+    }
+
+    private ManagedMode clientScopeMode() {
+        return this.properties.getManaged().getClientScope() == ImportManagedPropertiesValues.FULL
+                ? ManagedMode.FULL
+                : ManagedMode.NO_DELETE;
     }
 
     private ManagedMode messageBundleMode() {
@@ -169,6 +181,13 @@ public class LegacyReconciliationBridge {
 
     private DesiredState desiredStateOf(final RealmImport realmImport) {
         DesiredState desired = new DesiredState();
+        if (realmImport.getClientScopes() != null) {
+            desired.declare(
+                    ResourceType.CLIENT_SCOPE,
+                    realmImport.getClientScopes().stream()
+                            .map(scope -> this.clientScopeMapper.toClientScope(scope, false))
+                            .toList());
+        }
         if (realmImport.getMessageBundles() != null) {
             desired.declare(
                     ResourceType.MESSAGE_BUNDLE,

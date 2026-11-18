@@ -11,7 +11,7 @@ Migrer chaque `*ImportService` restant vers un reconciler, du plus simple au plu
 |---|---|---|
 | 1 | Paramètres du realm, politique OTP, message bundles | `RealmImportService`, `OtpPolicyImportService`, `MessageBundleImportService` (message bundles migrés) |
 | 2 | Actions requises | `RequiredActionsImportService` (migré) |
-| 3 | Client scopes | `ClientScopeImportService` |
+| 3 | Client scopes | `ClientScopeImportService` (migré, sauf les scopes par défaut du realm) |
 | 4 | Clients | `ClientImportService` |
 | 5 | Groupes et groupes par défaut | `GroupImportService`, `DefaultGroupsImportService` |
 | 6 | Scope mappings et client scope mappings | `ScopeMappingImportService`, `ClientScopeMappingImportService` |
@@ -34,3 +34,4 @@ Quand tous les types sont migrés : suppression du reconciler « legacy », de `
 |---|---|---|
 | Actions requises | Terminé | Remplacement complet des champs comme avant, `config` gardé s'il n'est pas donné, recréation si le `providerId` change. Appliquées à la place des rôles dans l'import, donc avant les utilisateurs. |
 | Message bundles | Terminé | En mode `full`, les clés absentes d'une langue déclarée sont retirées ; en `no-delete`, gardées. Une langue entière n'est supprimée qu'avec l'état distant, comme avant. Le contrat des reconcilers reçoit le contexte à la fusion, et un type peut exiger l'état distant pour supprimer. |
+| Client scopes | Terminé | Appliqués avant les clients, comme avant. Champs non donnés gardés, attributs et configuration des mappers fusionnés clé par clé, mappers déclarés = ensemble exact. Suppressions selon le seul mode géré (sans état distant), scopes par défaut du realm épargnés. La gestion des scopes par défaut du realm reste dans `ClientScopeImportService` jusqu'aux paramètres du realm. Le moteur sait appliquer un sous-ensemble de types à différents endroits de l'import. |

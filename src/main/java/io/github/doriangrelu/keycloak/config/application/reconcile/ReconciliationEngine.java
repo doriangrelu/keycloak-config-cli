@@ -27,6 +27,7 @@ import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,18 @@ public final class ReconciliationEngine {
     }
 
     public void apply(final RealmContext context, final DesiredState part) {
+        apply(context, part, EnumSet.allOf(ResourceType.class));
+    }
+
+    /**
+     * Applies only some resource types of an import file, in dependency order: the legacy import calls the engine at
+     * several places, so that the types it still handles find what they rely on.
+     */
+    public void apply(final RealmContext context, final DesiredState part, final Set<ResourceType> types) {
         for (Reconciler<?, ?> reconciler : this.ordered) {
+            if (!types.contains(reconciler.type())) {
+                continue;
+            }
             part.resources(reconciler.type())
                     .ifPresent(declared -> applyType(context, reconciler, declared, part.scopes(reconciler.type())));
         }
@@ -116,7 +128,10 @@ public final class ReconciliationEngine {
                 desired,
                 current,
                 resource -> !reconciler.isOwnedByKeycloak(resource)
-                        && context.deletionPolicy(reconciler.type(), reconciler.stateScope(resource))
+                        && context.deletionPolicy(
+                                        reconciler.type(),
+                                        reconciler.stateScope(resource),
+                                        reconciler.usesRemoteState())
                                 .allowsDeletionOf(resource.stateName()));
         run(context, deletions, deletion -> {
             record(context, reconciler.type(), deletion);
