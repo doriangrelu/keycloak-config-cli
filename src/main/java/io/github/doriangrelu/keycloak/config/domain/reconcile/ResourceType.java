@@ -25,7 +25,8 @@ public enum ResourceType {
     REALM_ROLE("Realm role"),
     CLIENT_ROLE("Client role"),
     ROLE_COMPOSITE("Role composites"),
-    REQUIRED_ACTION("Required action");
+    REQUIRED_ACTION("Required action"),
+    MESSAGE_BUNDLE("Message bundle");
 
     private final String label;
 

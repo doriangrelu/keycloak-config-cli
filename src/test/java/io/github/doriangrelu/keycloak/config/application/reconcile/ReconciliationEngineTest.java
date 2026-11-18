@@ -80,7 +80,7 @@ class ReconciliationEngineTest {
         }
 
         @Override
-        public Item merge(Item current, Item desired) {
+        public Item merge(RealmContext context, Item current, Item desired) {
             return new Item(current.key(), desired.value() == null ? current.value() : desired.value());
         }
 

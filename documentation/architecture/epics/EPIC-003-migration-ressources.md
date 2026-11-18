@@ -9,7 +9,7 @@ Migrer chaque `*ImportService` restant vers un reconciler, du plus simple au plu
 
 | Ordre | Type de ressource | Service actuel |
 |---|---|---|
-| 1 | Paramètres du realm, politique OTP, message bundles | `RealmImportService`, `OtpPolicyImportService`, `MessageBundleImportService` |
+| 1 | Paramètres du realm, politique OTP, message bundles | `RealmImportService`, `OtpPolicyImportService`, `MessageBundleImportService` (message bundles migrés) |
 | 2 | Actions requises | `RequiredActionsImportService` (migré) |
 | 3 | Client scopes | `ClientScopeImportService` |
 | 4 | Clients | `ClientImportService` |
@@ -33,3 +33,4 @@ Quand tous les types sont migrés : suppression du reconciler « legacy », de `
 | Type | Statut | Remarques |
 |---|---|---|
 | Actions requises | Terminé | Remplacement complet des champs comme avant, `config` gardé s'il n'est pas donné, recréation si le `providerId` change. Appliquées à la place des rôles dans l'import, donc avant les utilisateurs. |
+| Message bundles | Terminé | En mode `full`, les clés absentes d'une langue déclarée sont retirées ; en `no-delete`, gardées. Une langue entière n'est supprimée qu'avec l'état distant, comme avant. Le contrat des reconcilers reçoit le contexte à la fusion, et un type peut exiger l'état distant pour supprimer. |

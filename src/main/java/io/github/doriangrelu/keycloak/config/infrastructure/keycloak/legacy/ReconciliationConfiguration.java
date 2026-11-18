@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 
+import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
+import io.github.doriangrelu.keycloak.config.application.messagebundle.port.MessageBundleGateway;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.application.requiredaction.RequiredActionReconciler;
 import io.github.doriangrelu.keycloak.config.application.requiredaction.port.RequiredActionGateway;
@@ -39,11 +41,14 @@ public class ReconciliationConfiguration {
 
     @Bean
     public ReconciliationEngine reconciliationEngine(
-            final RoleGateway roleGateway, final RequiredActionGateway requiredActionGateway) {
+            final RoleGateway roleGateway,
+            final RequiredActionGateway requiredActionGateway,
+            final MessageBundleGateway messageBundleGateway) {
         return new ReconciliationEngine(List.of(
                 new RealmRoleReconciler(roleGateway),
                 new ClientRoleReconciler(roleGateway),
                 new RoleCompositeReconciler(roleGateway),
-                new RequiredActionReconciler(requiredActionGateway)));
+                new RequiredActionReconciler(requiredActionGateway),
+                new MessageBundleReconciler(messageBundleGateway)));
     }
 }

@@ -40,8 +40,11 @@ public interface Reconciler<K, T extends Resource<K>> {
     /** Current resources in Keycloak, restricted to the scope of {@code desired} when the type is scoped. */
     List<T> read(RealmContext context, Collection<T> desired);
 
-    /** The resource as it should be after applying {@code desired}: fields omitted by the import keep their value. */
-    T merge(T current, T desired);
+    /**
+     * The resource as it should be after applying {@code desired}: fields omitted by the import keep their value. The
+     * context gives the managed mode, for types where it also governs the content of a resource.
+     */
+    T merge(RealmContext context, T current, T desired);
 
     void create(RealmContext context, T resource);
 
@@ -60,6 +63,14 @@ public interface Reconciler<K, T extends Resource<K>> {
      * composites of a role, is never pruned: it disappears with its owner.
      */
     default boolean prunes() {
+        return true;
+    }
+
+    /**
+     * Whether the clean phase deletes resources of this type when the remote state is disabled. Some types, such as
+     * message bundles, only delete what the remote state proves keycloak-config-cli created.
+     */
+    default boolean prunesWithoutRemoteState() {
         return true;
     }
 }

@@ -79,7 +79,7 @@ public final class ReconciliationEngine {
             return;
         }
         for (Reconciler<?, ?> reconciler : this.ordered.reversed()) {
-            if (reconciler.prunes() && context.isDeclared(reconciler.type())) {
+            if (prunes(context, reconciler) && context.isDeclared(reconciler.type())) {
                 pruneType(context, reconciler);
             }
         }
@@ -95,7 +95,8 @@ public final class ReconciliationEngine {
         context.declare(reconciler.type(), desired, scopes);
 
         List<T> current = reconciler.read(context, desired);
-        List<Change<T>> changes = Changes.toApply(desired, current, reconciler::merge);
+        List<Change<T>> changes =
+                Changes.toApply(desired, current, (actual, wanted) -> reconciler.merge(context, actual, wanted));
         run(context, changes, change -> {
             record(context, reconciler.type(), change);
             switch (change) {
@@ -121,6 +122,10 @@ public final class ReconciliationEngine {
             record(context, reconciler.type(), deletion);
             reconciler.delete(context, deletion.resource());
         });
+    }
+
+    private static boolean prunes(final RealmContext context, final Reconciler<?, ?> reconciler) {
+        return reconciler.prunes() && (context.isRemoteStateEnabled() || reconciler.prunesWithoutRemoteState());
     }
 
     private static <T extends Resource<?>> void run(

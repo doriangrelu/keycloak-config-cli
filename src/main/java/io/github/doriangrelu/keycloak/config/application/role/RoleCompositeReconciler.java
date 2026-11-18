@@ -64,7 +64,8 @@ public final class RoleCompositeReconciler implements Reconciler<RoleKey, RoleCo
     }
 
     @Override
-    public RoleComposites merge(final RoleComposites current, final RoleComposites desired) {
+    public RoleComposites merge(
+            final RealmContext context, final RoleComposites current, final RoleComposites desired) {
         return current.mergedWith(desired);
     }
 

@@ -80,6 +80,14 @@ public final class RealmContext {
         return this.parallel;
     }
 
+    public boolean isRemoteStateEnabled() {
+        return this.remoteStateEnabled;
+    }
+
+    public ManagedMode mode(final ResourceType type) {
+        return this.modes.getOrDefault(type, ManagedMode.FULL);
+    }
+
     public void addProtections(final Collection<ProtectionRule> rules) {
         this.protections.addAll(rules);
     }
@@ -96,8 +104,7 @@ public final class RealmContext {
         Optional<Set<String>> managedState = this.remoteStateEnabled
                 ? Optional.of(this.previousState.getOrDefault(stateScope, Set.of()))
                 : Optional.empty();
-        return new DeletionPolicy(
-                this.modes.getOrDefault(type, ManagedMode.FULL), managedState, List.copyOf(this.protections));
+        return new DeletionPolicy(mode(type), managedState, List.copyOf(this.protections));
     }
 
     /**

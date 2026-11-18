@@ -20,8 +20,10 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.MessageBundleAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.RequiredActionAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.RoleAdapter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.MessageBundleApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RequiredActionApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
@@ -36,6 +38,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class KeycloakClientFactory {
+
+    @Bean
+    public MessageBundleApi messageBundleApi(final KeycloakProvider keycloakProvider) {
+        return new MessageBundleAdapter(keycloakProvider::getInstance);
+    }
 
     @Bean
     public RequiredActionApi requiredActionApi(final KeycloakProvider keycloakProvider) {

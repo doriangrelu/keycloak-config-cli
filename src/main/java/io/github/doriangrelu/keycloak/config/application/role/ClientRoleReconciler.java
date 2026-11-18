@@ -77,7 +77,7 @@ public final class ClientRoleReconciler implements Reconciler<RoleKey, Role> {
     }
 
     @Override
-    public Role merge(final Role current, final Role desired) {
+    public Role merge(final RealmContext context, final Role current, final Role desired) {
         return current.mergedWith(desired);
     }
 

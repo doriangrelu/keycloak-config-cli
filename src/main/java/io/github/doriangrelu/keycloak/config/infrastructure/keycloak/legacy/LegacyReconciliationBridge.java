@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 
+import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
@@ -28,6 +29,7 @@ import io.github.doriangrelu.keycloak.config.application.role.ClientRoleReconcil
 import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconciler;
 import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
+import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
@@ -92,13 +94,16 @@ public class LegacyReconciliationBridge {
             if (realmImport.getRequiredActions() != null) {
                 context.captureState(RequiredActionReconciler.STATE_SCOPE, this.stateService.getRequiredActions());
             }
+            if (realmImport.getMessageBundles() != null) {
+                context.captureState(MessageBundleReconciler.STATE_SCOPE, this.stateService.getMessageBundles());
+            }
         }
         this.engine.register(context, desiredStateOf(realmImport));
     }
 
     /**
      * Creates and updates what one file declares for the migrated types: roles and their composites, required
-     * actions. Called at the place of the roles in the legacy import, so that groups and users can use them.
+     * actions, message bundles. Called at the place of the roles in the legacy import, so that groups and users can use them.
      */
     public void apply(final RealmImport realmImport) {
         this.engine.apply(contextOf(realmImport), desiredStateOf(realmImport));
@@ -121,10 +126,17 @@ public class LegacyReconciliationBridge {
                             Map.of(
                                     ResourceType.REALM_ROLE, roleMode(),
                                     ResourceType.CLIENT_ROLE, roleMode(),
-                                    ResourceType.REQUIRED_ACTION, requiredActionMode()));
+                                    ResourceType.REQUIRED_ACTION, requiredActionMode(),
+                                    ResourceType.MESSAGE_BUNDLE, messageBundleMode()));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
+    }
+
+    private ManagedMode messageBundleMode() {
+        return this.properties.getManaged().getMessageBundles() == ImportManagedPropertiesValues.FULL
+                ? ManagedMode.FULL
+                : ManagedMode.NO_DELETE;
     }
 
     private ManagedMode requiredActionMode() {
@@ -157,6 +169,13 @@ public class LegacyReconciliationBridge {
 
     private DesiredState desiredStateOf(final RealmImport realmImport) {
         DesiredState desired = new DesiredState();
+        if (realmImport.getMessageBundles() != null) {
+            desired.declare(
+                    ResourceType.MESSAGE_BUNDLE,
+                    realmImport.getMessageBundles().entrySet().stream()
+                            .map(locale -> new MessageBundle(locale.getKey(), locale.getValue()))
+                            .toList());
+        }
         if (realmImport.getRequiredActions() != null) {
             desired.declare(
                     ResourceType.REQUIRED_ACTION,

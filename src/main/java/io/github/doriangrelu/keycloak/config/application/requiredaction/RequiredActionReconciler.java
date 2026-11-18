@@ -58,7 +58,8 @@ public final class RequiredActionReconciler implements Reconciler<String, Requir
     }
 
     @Override
-    public RequiredAction merge(final RequiredAction current, final RequiredAction desired) {
+    public RequiredAction merge(
+            final RealmContext context, final RequiredAction current, final RequiredAction desired) {
         return current.mergedWith(desired);
     }
 
