@@ -36,6 +36,7 @@ import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageB
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
+import io.github.doriangrelu.keycloak.config.domain.scopemapping.model.ScopeMapping;
 import io.github.doriangrelu.keycloak.config.domain.user.model.InvalidUserException;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
@@ -59,6 +60,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.keycloak.representations.idm.ClientPoliciesRepresentation;
@@ -66,6 +68,7 @@ import org.keycloak.representations.idm.ClientProfilesRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
+import org.keycloak.representations.idm.ScopeMappingRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,7 +196,13 @@ public class LegacyReconciliationBridge {
                                             modeOf(this.properties.getManaged().getIdentityProviderMapper())),
                                     // The declared client profiles and policies are the exact ones, as before
                                     Map.entry(ResourceType.CLIENT_PROFILE, ManagedMode.FULL),
-                                    Map.entry(ResourceType.CLIENT_POLICY, ManagedMode.FULL)));
+                                    Map.entry(ResourceType.CLIENT_POLICY, ManagedMode.FULL),
+                                    Map.entry(
+                                            ResourceType.SCOPE_MAPPING,
+                                            modeOf(this.properties.getManaged().getScopeMapping())),
+                                    Map.entry(
+                                            ResourceType.CLIENT_SCOPE_MAPPING,
+                                            modeOf(this.properties.getManaged().getClientScopeMapping()))));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
@@ -278,6 +287,24 @@ public class LegacyReconciliationBridge {
                             : clientPolicies.getPolicies().stream()
                                     .map(this.clientPolicyMapper::toPolicy)
                                     .toList());
+        }
+        if (realmImport.getScopeMappings() != null) {
+            desired.declare(
+                    ResourceType.SCOPE_MAPPING,
+                    realmImport.getScopeMappings().stream()
+                            .map(mapping -> scopeMappingOf(mapping, null))
+                            .flatMap(Optional::stream)
+                            .toList());
+        }
+        if (realmImport.getClientScopeMappings() != null) {
+            List<ScopeMapping> clientScopeMappings = new ArrayList<>();
+            realmImport.getClientScopeMappings().forEach((roleClientId, mappings) -> {
+                if (mappings != null) {
+                    mappings.forEach(
+                            mapping -> scopeMappingOf(mapping, roleClientId).ifPresent(clientScopeMappings::add));
+                }
+            });
+            desired.declare(ResourceType.CLIENT_SCOPE_MAPPING, clientScopeMappings);
         }
         if (realmImport.getIdentityProviders() != null) {
             desired.declare(
@@ -431,6 +458,19 @@ public class LegacyReconciliationBridge {
             throw new InvalidUserException(String.format("Invalid user in realm '%s': no username", realm));
         }
         return user.getUsername();
+    }
+
+    private static Optional<ScopeMapping> scopeMappingOf(
+            final ScopeMappingRepresentation mapping, final String roleClientId) {
+        if (mapping.getClient() != null) {
+            return Optional.of(
+                    new ScopeMapping(ScopeMapping.Key.ofClient(mapping.getClient(), roleClientId), mapping.getRoles()));
+        }
+        if (mapping.getClientScope() != null) {
+            return Optional.of(new ScopeMapping(
+                    ScopeMapping.Key.ofClientScope(mapping.getClientScope(), roleClientId), mapping.getRoles()));
+        }
+        return Optional.empty();
     }
 
     /** Nested groups of a file, one per path, parents first. */

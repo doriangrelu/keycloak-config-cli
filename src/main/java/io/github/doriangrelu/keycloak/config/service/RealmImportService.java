@@ -82,9 +82,7 @@ public class RealmImportService {
     private final ComponentImportService componentImportService;
     private final AuthenticationFlowsImportService authenticationFlowsImportService;
     private final AuthenticatorConfigImportService authenticatorConfigImportService;
-    private final ScopeMappingImportService scopeMappingImportService;
     private final ClientAuthorizationImportService clientAuthorizationImportService;
-    private final ClientScopeMappingImportService clientScopeMappingImportService;
 
     private final ImportConfigProperties importProperties;
 
@@ -104,9 +102,7 @@ public class RealmImportService {
             ComponentImportService componentImportService,
             AuthenticationFlowsImportService authenticationFlowsImportService,
             AuthenticatorConfigImportService authenticatorConfigImportService,
-            ScopeMappingImportService scopeMappingImportService,
             ClientAuthorizationImportService clientAuthorizationImportService,
-            ClientScopeMappingImportService clientScopeMappingImportService,
             OtpPolicyImportService otpPolicyImportService,
             ChecksumService checksumService,
             StateService stateService) {
@@ -121,9 +117,7 @@ public class RealmImportService {
         this.componentImportService = componentImportService;
         this.authenticationFlowsImportService = authenticationFlowsImportService;
         this.authenticatorConfigImportService = authenticatorConfigImportService;
-        this.scopeMappingImportService = scopeMappingImportService;
         this.clientAuthorizationImportService = clientAuthorizationImportService;
-        this.clientScopeMappingImportService = clientScopeMappingImportService;
         this.otpPolicyImportService = otpPolicyImportService;
         this.checksumService = checksumService;
         this.stateService = stateService;
@@ -248,8 +242,7 @@ public class RealmImportService {
         reconciliationBridge.apply(
                 realmImport, Set.of(ResourceType.IDENTITY_PROVIDER, ResourceType.IDENTITY_PROVIDER_MAPPER));
         clientAuthorizationImportService.doImport(realmImport);
-        scopeMappingImportService.doImport(realmImport);
-        clientScopeMappingImportService.doImport(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.SCOPE_MAPPING, ResourceType.CLIENT_SCOPE_MAPPING));
 
         stateService.doImport(realmImport);
         checksumService.doImport(realmImport);

@@ -41,6 +41,8 @@ import io.github.doriangrelu.keycloak.config.application.role.ClientRoleReconcil
 import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.RoleCompositeReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.port.RoleGateway;
+import io.github.doriangrelu.keycloak.config.application.scopemapping.ScopeMappingReconciler;
+import io.github.doriangrelu.keycloak.config.application.scopemapping.port.ScopeMappingGateway;
 import io.github.doriangrelu.keycloak.config.application.user.UserImportRules;
 import io.github.doriangrelu.keycloak.config.application.user.UserReconciler;
 import io.github.doriangrelu.keycloak.config.application.user.port.UserGateway;
@@ -66,6 +68,7 @@ public class ReconciliationConfiguration {
             final UserGateway userGateway,
             final IdentityProviderGateway identityProviderGateway,
             final ClientPolicyGateway clientPolicyGateway,
+            final ScopeMappingGateway scopeMappingGateway,
             final ImportConfigProperties properties) {
         return new ReconciliationEngine(List.of(
                 new RealmRoleReconciler(roleGateway),
@@ -84,6 +87,8 @@ public class ReconciliationConfiguration {
                 new IdentityProviderReconciler(identityProviderGateway),
                 new IdentityProviderMapperReconciler(identityProviderGateway),
                 new ClientProfileReconciler(clientPolicyGateway),
-                new ClientPolicyReconciler(clientPolicyGateway)));
+                new ClientPolicyReconciler(clientPolicyGateway),
+                ScopeMappingReconciler.ofRealmRoles(scopeMappingGateway),
+                ScopeMappingReconciler.ofClientRoles(scopeMappingGateway)));
     }
 }

@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **BREAKING**: Realm roles, client roles and their composites are imported by the new reconciliation engine. When several files target the same realm, a role defined twice with different content is now rejected (exit code `2`) instead of the last file winning.
 - Client profiles and client policies are imported by the new reconciliation engine, one at a time.
 - Identity providers and their mappers are imported by the new reconciliation engine. Those missing from the import are deleted in the clean phase, after the other resources, instead of before the import of identity providers.
+- **BREAKING**: Scope mappings and client scope mappings are imported by the new reconciliation engine. A mapping referring to a missing client, client scope or role raises `UnknownScopeMappingReferenceException` instead of `KeycloakRepositoryException`; messages are unchanged (exit code `2`).
 - **BREAKING**: Users are imported by the new reconciliation engine. A user referring to a missing role, client or group raises `UnknownUserReferenceException`, and a username differing from the email while the realm uses the email as username raises `InvalidUserException`, instead of `ImportProcessingException`, `KeycloakRepositoryException` and `InvalidImportException`; messages are unchanged (exit code `2`).
 - **BREAKING**: Groups are imported by the new reconciliation engine. A group mapped to a missing realm or client role raises `UnknownGroupRoleException` (exit code `2`), and a group defined twice with different content across the files of a realm is rejected.
 - **BREAKING**: A client refused by Keycloak raises `ClientRejectedException`, and an invalid client (no client id nor name, unsupported authorization settings) raises `InvalidClientException`, instead of `ImportProcessingException`; messages are unchanged (exit code `2`).
@@ -54,6 +55,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - The clean phase only deletes resource types declared by at least one import file of the realm, follows the `import.managed.*` setting of each type, and with remote state enabled only deletes resources created by keycloak-config-cli.
 - Re-running an unchanged import (same checksum) no longer deletes its clients, roles and groups.
+- Removing the undeclared roles of a declared scope mapping follows `import.managed.scope-mapping` instead of `import.managed.client-scope`.
 - A file declaring neither client profiles nor client policies no longer resets those of the realm, which wiped the ones of the other files of the realm.
 - Clients are deleted regardless of FGAP v2, and only the `*-realm` clients of the `master` realm are spared.
 - Authentication flow binding overrides removed from the import are cleared in Keycloak again.

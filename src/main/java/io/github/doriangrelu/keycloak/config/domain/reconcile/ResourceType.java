@@ -34,7 +34,9 @@ public enum ResourceType {
     IDENTITY_PROVIDER("Identity provider"),
     IDENTITY_PROVIDER_MAPPER("Identity provider mapper"),
     CLIENT_PROFILE("Client profile"),
-    CLIENT_POLICY("Client policy");
+    CLIENT_POLICY("Client policy"),
+    SCOPE_MAPPING("Scope mapping"),
+    CLIENT_SCOPE_MAPPING("Client scope mapping");
 
     private final String label;
 

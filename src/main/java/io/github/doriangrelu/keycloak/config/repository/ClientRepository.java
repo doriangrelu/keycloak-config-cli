@@ -36,7 +36,6 @@ import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 import org.keycloak.representations.idm.ManagementPermissionRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
@@ -277,18 +276,6 @@ public class ClientRepository {
             return policyRepresentation.getId();
         }
         return null;
-    }
-
-    public void addScopeMapping(
-            String realmName, String clientId, String clientLevelId, List<RoleRepresentation> roles) {
-        ClientResource clientResource = getResourceByClientId(realmName, clientId);
-        clientResource.getScopeMappings().clientLevel(clientLevelId).add(roles);
-    }
-
-    public void removeScopeMapping(
-            String realmName, String clientId, String clientLevelId, List<RoleRepresentation> roles) {
-        ClientResource clientResource = getResourceByClientId(realmName, clientId);
-        clientResource.getScopeMappings().clientLevel(clientLevelId).remove(roles);
     }
 
     public void addDefaultClientScopes(
