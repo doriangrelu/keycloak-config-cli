@@ -176,6 +176,19 @@ class ReconciliationEngineTest {
     }
 
     @Test
+    void registeredFilesAreKeptWithoutBeingApplied() {
+        FakeReconciler realmRoles = new FakeReconciler(
+                REALM_ROLE, Set.of(), this.log, new Item("unchanged-file", "1"), new Item("orphan", "1"));
+        ReconciliationEngine engine = new ReconciliationEngine(List.of(realmRoles));
+        RealmContext context = context(false);
+
+        engine.register(context, new DesiredState().declare(REALM_ROLE, List.of(new Item("unchanged-file", "2"))));
+        engine.prune(context);
+
+        assertThat(this.log).containsExactly("REALM_ROLE delete orphan");
+    }
+
+    @Test
     void prunesInReverseDependencyOrder() {
         FakeReconciler realmRoles = new FakeReconciler(REALM_ROLE, Set.of(), this.log, new Item("r", "1"));
         FakeReconciler clientRoles = new FakeReconciler(CLIENT_ROLE, Set.of(REALM_ROLE), this.log, new Item("c", "1"));

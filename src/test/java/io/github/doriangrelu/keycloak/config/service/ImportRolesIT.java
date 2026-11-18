@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
+import io.github.doriangrelu.keycloak.config.application.role.UnknownClientException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import java.io.IOException;
@@ -867,8 +867,8 @@ class ImportRolesIT extends AbstractImportIT {
     void shouldThrowUpdateRealmAddClientRoleWithoutClient() throws IOException {
         RealmImport foundImport = getFirstImport("29_try-to_update_realm__add-client-role-without-client.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        UnknownClientException thrown =
+                assertThrows(UnknownClientException.class, () -> realmImportService.doImport(foundImport));
 
         assertThat(
                 thrown.getMessage(),

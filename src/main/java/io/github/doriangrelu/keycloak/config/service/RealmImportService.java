@@ -22,12 +22,15 @@ package io.github.doriangrelu.keycloak.config.service;
 
 import static io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.FULL;
 
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy.LegacyReconciliationBridge;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
 import io.github.doriangrelu.keycloak.config.service.checksum.ChecksumService;
+import io.github.doriangrelu.keycloak.config.service.rolecomposites.client.ClientRoleCompositeImportService;
+import io.github.doriangrelu.keycloak.config.service.rolecomposites.realm.RealmRoleCompositeImportService;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import io.github.doriangrelu.keycloak.config.service.state.ImportTracking;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
@@ -79,7 +82,9 @@ public class RealmImportService {
 
     private final ClientPoliciesImportService clientPoliciesImportService;
 
-    private final RoleImportService roleImportService;
+    private final LegacyReconciliationBridge reconciliationBridge;
+    private final RealmRoleCompositeImportService realmRoleCompositeImportService;
+    private final ClientRoleCompositeImportService clientRoleCompositeImportService;
     private final ClientImportService clientImportService;
     private final ClientScopeImportService clientScopeImportService;
     private final GroupImportService groupImportService;
@@ -107,7 +112,9 @@ public class RealmImportService {
             UserImportService userImportService,
             UserProfileImportService userProfileImportService,
             ClientPoliciesImportService clientPoliciesImportService,
-            RoleImportService roleImportService,
+            LegacyReconciliationBridge reconciliationBridge,
+            RealmRoleCompositeImportService realmRoleCompositeImportService,
+            ClientRoleCompositeImportService clientRoleCompositeImportService,
             ClientImportService clientImportService,
             GroupImportService groupImportService,
             ClientScopeImportService clientScopeImportService,
@@ -130,7 +137,9 @@ public class RealmImportService {
         this.userImportService = userImportService;
         this.userProfileImportService = userProfileImportService;
         this.clientPoliciesImportService = clientPoliciesImportService;
-        this.roleImportService = roleImportService;
+        this.reconciliationBridge = reconciliationBridge;
+        this.realmRoleCompositeImportService = realmRoleCompositeImportService;
+        this.clientRoleCompositeImportService = clientRoleCompositeImportService;
         this.clientImportService = clientImportService;
         this.groupImportService = groupImportService;
         this.clientScopeImportService = clientScopeImportService;
@@ -169,26 +178,16 @@ public class RealmImportService {
      */
     private void trackImport(RealmImport realmImport, boolean realmExists) {
         String realmName = realmImport.getRealm();
-        if (realmExists && importProperties.getRemoteState().isEnabled()) {
+        boolean remoteStateLoaded =
+                realmExists && importProperties.getRemoteState().isEnabled();
+        if (remoteStateLoaded) {
             stateService.loadState(realmImport);
             if (realmImport.getClients() != null) {
                 ImportTracking.captureState(realmName, ImportTracking.CLIENTS, stateService.getClients());
             }
-            RolesRepresentation roles = realmImport.getRoles();
-            if (roles != null && roles.getRealm() != null) {
-                ImportTracking.captureState(realmName, ImportTracking.REALM_ROLES, stateService.getRealmRoles());
-            }
-            if (roles != null && roles.getClient() != null) {
-                roles.getClient()
-                        .keySet()
-                        .forEach(clientId -> ImportTracking.captureState(
-                                realmName,
-                                ImportTracking.clientRoles(clientId),
-                                stateService.getClientRoles(clientId)));
-            }
         }
+        reconciliationBridge.startFile(realmImport, remoteStateLoaded);
         clientImportService.registerImported(realmImport);
-        roleImportService.registerImported(realmImport);
         groupImportService.registerImported(realmImport);
     }
 
@@ -247,6 +246,20 @@ public class RealmImportService {
         configureRealm(realmImport, realm);
     }
 
+    /** Role composites are not migrated to the reconciliation engine yet (US-002-05). */
+    private void importRoleComposites(RealmImport realmImport) {
+        RolesRepresentation roles = realmImport.getRoles();
+        if (roles == null) {
+            return;
+        }
+        if (roles.getRealm() != null) {
+            realmRoleCompositeImportService.update(realmImport.getRealm(), roles.getRealm());
+        }
+        if (roles.getClient() != null) {
+            clientRoleCompositeImportService.update(realmImport.getRealm(), roles.getClient());
+        }
+    }
+
     private void importOtpPolicy(RealmImport realmImport) {
         RealmRepresentation realmConfig = realmRepository.get(realmImport.getRealm());
         if (realmConfig.getOtpPolicyAlgorithm() != null) {
@@ -260,7 +273,8 @@ public class RealmImportService {
         clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
         clientPoliciesImportService.doImport(realmImport);
         clientImportService.doImport(realmImport);
-        roleImportService.doImport(realmImport);
+        reconciliationBridge.applyRoles(realmImport);
+        importRoleComposites(realmImport);
         groupImportService.importGroups(realmImport);
         defaultGroupsImportService.doImport(realmImport);
         componentImportService.doImport(realmImport);
@@ -296,10 +310,8 @@ public class RealmImportService {
         if (importProperties.getManaged().getClient() == FULL) {
             this.clientImportService.deleteClientsMissingInImport(realmImport);
         }
-        if (importProperties.getManaged().getRole() == FULL) {
-            this.roleImportService.deleteRealmRolesMissingInImport(realmImport);
-            this.roleImportService.deleteClientRolesMissingInImport(realmImport);
-        }
+        // Roles: managed mode, remote state and protections are applied by the reconciliation engine
+        this.reconciliationBridge.prune(realmImport);
         if (importProperties.getManaged().getGroup() == FULL) {
             this.groupImportService.deleteRoleMappingMissingOnImport(realmImport);
             this.groupImportService.deleteGroupsMissingInImport(realmImport);

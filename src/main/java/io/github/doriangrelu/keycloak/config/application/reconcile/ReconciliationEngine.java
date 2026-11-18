@@ -63,6 +63,17 @@ public final class ReconciliationEngine {
         }
     }
 
+    /**
+     * Adds the resources of an import file to the desired state of the realm without applying them: for a file whose
+     * import is skipped because it did not change, so that the clean phase keeps its resources.
+     */
+    public void register(final RealmContext context, final DesiredState part) {
+        for (Reconciler<?, ?> reconciler : this.ordered) {
+            ResourceType type = reconciler.type();
+            part.resources(type).ifPresent(declared -> context.declare(type, declared, part.scopes(type)));
+        }
+    }
+
     public void prune(final RealmContext context) {
         if (!context.startPruning()) {
             return;

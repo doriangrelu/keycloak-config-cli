@@ -35,12 +35,11 @@ import java.util.stream.Collectors;
  *       before the import, because the import overwrites it before the clean phase runs.
  * </ul>
  *
- * <p>Transitional: replaced by the reconciliation plan of ADR-004.
+ * <p>Transitional: roles already moved to the reconciliation engine (ADR-004); the other types follow.
  */
 public final class ImportTracking {
 
     public static final String CLIENTS = "clients";
-    public static final String REALM_ROLES = "roles-realm";
     public static final String GROUPS = "groups";
 
     private ImportTracking() {}
@@ -54,26 +53,12 @@ public final class ImportTracking {
     /** Marks that the remote state of a resource type was captured. */
     private record Captured(String type) {}
 
-    public static String clientRoles(final String clientId) {
-        return "roles-client-" + clientId;
-    }
-
     public static void declare(final String realm, final String type) {
         ExecutionContextHolder.context().put(realm, Declared.class, List.of(new Declared(type)));
     }
 
     public static boolean isDeclared(final String realm, final String type) {
         return ExecutionContextHolder.context().get(realm, Declared.class).contains(new Declared(type));
-    }
-
-    /** Client ids whose roles are declared by at least one import file of the realm. */
-    public static Set<String> clientsWithDeclaredRoles(final String realm) {
-        String prefix = clientRoles("");
-        return ExecutionContextHolder.context().get(realm, Declared.class).stream()
-                .map(Declared::type)
-                .filter(type -> type.startsWith(prefix))
-                .map(type -> type.substring(prefix.length()))
-                .collect(Collectors.toSet());
     }
 
     public static boolean isStateCaptured(final String realm, final String type) {
