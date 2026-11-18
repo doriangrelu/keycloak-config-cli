@@ -121,6 +121,10 @@ public class KeycloakImportProvider {
                 throw new InvalidImportException("Unable to proceed location '" + location + "': " + e.getMessage(), e);
             }
 
+            resources = Arrays.stream(resources)
+                    .filter(this::filterExcludedResources)
+                    .toArray(Resource[]::new);
+
             if (resources.length == 0) {
                 throw new InvalidImportException("No files matching '" + location + "'!");
             }
@@ -146,7 +150,8 @@ public class KeycloakImportProvider {
     }
 
     /**
-     * FIXME -> ISSUE FILE FILTERED
+     * Keeps the files to import: no directory, no hidden file unless {@code import.files.include-hidden-files}, and
+     * nothing matching {@code import.files.excludes}. Resources that are not files (classpath in a jar, URL) are kept.
      */
     private boolean filterExcludedResources(final Resource resource) {
         if (!resource.isFile()) {
@@ -166,7 +171,7 @@ public class KeycloakImportProvider {
         }
 
         if (!this.importConfigProperties.getFiles().isIncludeHiddenFiles()
-                && (file.isHidden() || FileUtils.hasHiddenAncestorDirectory(file))) {
+                && (FileUtils.isHidden(file) || FileUtils.hasHiddenAncestorDirectory(file))) {
             return false;
         }
 

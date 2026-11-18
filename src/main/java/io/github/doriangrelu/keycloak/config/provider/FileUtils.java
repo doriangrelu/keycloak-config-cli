@@ -29,9 +29,21 @@ final class FileUtils {
 
     static final Path CWD = Paths.get(System.getProperty("user.dir"));
 
+    /**
+     * A file is hidden when its name starts with a dot, on every operating system, or when the operating system says
+     * so (hidden attribute on Windows).
+     */
+    public static boolean isHidden(File file) {
+        return isDotName(file.getName()) || file.isHidden();
+    }
+
+    /**
+     * Whether a directory above the file, up to the working directory when the file is below it, has a name starting
+     * with a dot. The hidden attribute of the operating system is not used for directories: on Windows, the root of a
+     * drive carries it, and would hide every file below it.
+     */
     public static boolean hasHiddenAncestorDirectory(File file) {
         File absoluteFile;
-
         try {
             absoluteFile =
                     file.getAbsoluteFile().toPath().toAbsolutePath().normalize().toFile();
@@ -39,16 +51,18 @@ final class FileUtils {
             return false;
         }
 
-        File relativeFile = relativize(absoluteFile);
-
-        while (relativeFile != null) {
-            if (relativeFile.isHidden()) {
+        File ancestor = relativize(absoluteFile).getParentFile();
+        while (ancestor != null) {
+            if (isDotName(ancestor.getName())) {
                 return true;
             }
-
-            relativeFile = relativeFile.getParentFile();
+            ancestor = ancestor.getParentFile();
         }
         return false;
+    }
+
+    private static boolean isDotName(String name) {
+        return name.startsWith(".") && !name.equals(".") && !name.equals("..");
     }
 
     public static File relativize(File file) {
