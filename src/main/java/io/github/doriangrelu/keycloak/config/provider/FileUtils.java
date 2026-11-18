@@ -34,7 +34,11 @@ final class FileUtils {
      * so (hidden attribute on Windows).
      */
     public static boolean isHidden(File file) {
-        return isDotName(file.getName()) || file.isHidden();
+        String name = file.getName();
+        if (name.equals(".") || name.equals("..")) {
+            return false;
+        }
+        return isDotName(name) || file.isHidden();
     }
 
     /**
