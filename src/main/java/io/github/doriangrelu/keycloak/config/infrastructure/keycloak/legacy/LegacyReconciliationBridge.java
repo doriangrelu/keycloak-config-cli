@@ -29,6 +29,7 @@ import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
+import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
@@ -87,7 +88,7 @@ public class LegacyReconciliationBridge {
         this.engine.register(context, desiredStateOf(realmImport));
     }
 
-    /** Creates and updates the roles declared by one file. */
+    /** Creates and updates the roles declared by one file, then their composites. */
     public void applyRoles(final RealmImport realmImport) {
         this.engine.apply(contextOf(realmImport), desiredStateOf(realmImport));
     }
@@ -149,15 +150,26 @@ public class LegacyReconciliationBridge {
                             .map(role -> this.roleMapper.toRole(role, null))
                             .toList());
         }
+        List<RoleComposites> composites = new ArrayList<>();
+        if (roles.getRealm() != null) {
+            roles.getRealm()
+                    .forEach(role -> this.roleMapper.toComposites(role, null).ifPresent(composites::add));
+        }
         if (roles.getClient() != null) {
             List<Role> clientRoles = new ArrayList<>();
             roles.getClient().forEach((clientId, declared) -> {
                 if (declared != null) {
-                    declared.forEach(role -> clientRoles.add(this.roleMapper.toRole(role, clientId)));
+                    declared.forEach(role -> {
+                        clientRoles.add(this.roleMapper.toRole(role, clientId));
+                        this.roleMapper.toComposites(role, clientId).ifPresent(composites::add);
+                    });
                 }
             });
             desired.declare(
                     ResourceType.CLIENT_ROLE, clientRoles, roles.getClient().keySet());
+        }
+        if (!composites.isEmpty()) {
+            desired.declare(ResourceType.ROLE_COMPOSITE, composites);
         }
         return desired;
     }

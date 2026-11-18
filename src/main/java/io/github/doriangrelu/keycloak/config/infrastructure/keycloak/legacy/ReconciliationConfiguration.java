@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.application.role.ClientRoleReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconciler;
+import io.github.doriangrelu.keycloak.config.application.role.RoleCompositeReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.port.RoleGateway;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,7 +37,9 @@ public class ReconciliationConfiguration {
 
     @Bean
     public ReconciliationEngine reconciliationEngine(final RoleGateway roleGateway) {
-        return new ReconciliationEngine(
-                List.of(new RealmRoleReconciler(roleGateway), new ClientRoleReconciler(roleGateway)));
+        return new ReconciliationEngine(List.of(
+                new RealmRoleReconciler(roleGateway),
+                new ClientRoleReconciler(roleGateway),
+                new RoleCompositeReconciler(roleGateway)));
     }
 }

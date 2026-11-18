@@ -79,7 +79,7 @@ public final class ReconciliationEngine {
             return;
         }
         for (Reconciler<?, ?> reconciler : this.ordered.reversed()) {
-            if (context.isDeclared(reconciler.type())) {
+            if (reconciler.prunes() && context.isDeclared(reconciler.type())) {
                 pruneType(context, reconciler);
             }
         }

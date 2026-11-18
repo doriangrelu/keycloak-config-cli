@@ -22,8 +22,14 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role;
 
 import io.github.doriangrelu.keycloak.config.domain.common.UnmodeledAttributes;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
+import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleKey;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.UnmodeledAttributesConverter;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.mapstruct.AfterMapping;
@@ -68,6 +74,30 @@ public abstract class RoleKeycloakMapper {
                 ? RoleKey.realm(representation.getName())
                 : RoleKey.client(clientId, representation.getName());
         return toRole(representation, key, this.unmodeledAttributes.extract(representation, NOT_UNMODELED));
+    }
+
+    /**
+     * Composites declared by a role of an import file, or empty when the role declares none. A part of the composites
+     * missing from the file is left unspecified.
+     *
+     * @param clientId client of a client role, {@code null} for a realm role
+     */
+    public Optional<RoleComposites> toComposites(final RoleRepresentation representation, final String clientId) {
+        RoleRepresentation.Composites composites = representation.getComposites();
+        if (composites == null || composites.getRealm() == null && composites.getClient() == null) {
+            return Optional.empty();
+        }
+        RoleKey key = clientId == null
+                ? RoleKey.realm(representation.getName())
+                : RoleKey.client(clientId, representation.getName());
+        Map<String, Set<String>> client = null;
+        if (composites.getClient() != null) {
+            client = new LinkedHashMap<>();
+            for (Map.Entry<String, List<String>> entry : composites.getClient().entrySet()) {
+                client.put(entry.getKey(), entry.getValue() == null ? Set.of() : new LinkedHashSet<>(entry.getValue()));
+            }
+        }
+        return Optional.of(new RoleComposites(key, composites.getRealm(), client));
     }
 
     @Mapping(target = "key", source = "key")

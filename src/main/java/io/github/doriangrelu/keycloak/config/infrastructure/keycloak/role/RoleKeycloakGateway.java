@@ -21,12 +21,18 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role;
 
 import io.github.doriangrelu.keycloak.config.application.role.UnknownClientException;
+import io.github.doriangrelu.keycloak.config.application.role.UnknownRoleException;
 import io.github.doriangrelu.keycloak.config.application.role.port.RoleGateway;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
+import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleKey;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -87,6 +93,83 @@ public class RoleKeycloakGateway implements RoleGateway {
                 .findClientUuid(realm, role.key().clientId())
                 .orElseThrow(() -> new UnknownClientException(realm, role.key().clientId(), role.name()));
         this.roleApi.updateClientRole(realm, clientUuid, role.name(), representation);
+    }
+
+    @Override
+    public Optional<RoleComposites> findComposites(final String realm, final RoleKey role) {
+        Optional<Set<RoleRepresentation>> included = role.isClientRole()
+                ? this.roleApi
+                        .findClientUuid(realm, role.clientId())
+                        .flatMap(clientUuid -> this.roleApi.findClientRoleComposites(realm, clientUuid, role.name()))
+                : this.roleApi.findRealmRoleComposites(realm, role.name());
+        return included.map(composites -> toComposites(realm, role, composites));
+    }
+
+    @Override
+    public void addComposites(final String realm, final RoleKey role, final Set<RoleKey> included) {
+        List<RoleRepresentation> representations = included.stream()
+                .map(key -> findRole(realm, key).orElseThrow(() -> new UnknownRoleException(realm, role, key)))
+                .toList();
+        if (role.isClientRole()) {
+            this.roleApi.addClientRoleComposites(realm, clientUuid(realm, role), role.name(), representations);
+        } else {
+            this.roleApi.addRealmRoleComposites(realm, role.name(), representations);
+        }
+    }
+
+    @Override
+    public void removeComposites(final String realm, final RoleKey role, final Set<RoleKey> included) {
+        // A role deleted in the meantime is no longer included anyway
+        List<RoleRepresentation> representations = included.stream()
+                .map(key -> findRole(realm, key))
+                .flatMap(Optional::stream)
+                .toList();
+        if (representations.isEmpty()) {
+            return;
+        }
+        if (role.isClientRole()) {
+            this.roleApi.removeClientRoleComposites(realm, clientUuid(realm, role), role.name(), representations);
+        } else {
+            this.roleApi.removeRealmRoleComposites(realm, role.name(), representations);
+        }
+    }
+
+    private RoleComposites toComposites(
+            final String realm, final RoleKey role, final Set<RoleRepresentation> included) {
+        Set<String> realmNames = new LinkedHashSet<>();
+        Map<String, Set<String>> clientNames = new LinkedHashMap<>();
+        Map<String, String> clientIds = included.stream().anyMatch(RoleKeycloakGateway::isClientRole)
+                ? this.roleApi.clientIdsByUuid(realm)
+                : Map.of();
+        for (RoleRepresentation composite : included) {
+            if (isClientRole(composite)) {
+                clientNames
+                        .computeIfAbsent(clientIds.get(composite.getContainerId()), unused -> new LinkedHashSet<>())
+                        .add(composite.getName());
+            } else {
+                realmNames.add(composite.getName());
+            }
+        }
+        return new RoleComposites(role, realmNames, clientNames);
+    }
+
+    private static boolean isClientRole(final RoleRepresentation role) {
+        return Boolean.TRUE.equals(role.getClientRole());
+    }
+
+    private Optional<RoleRepresentation> findRole(final String realm, final RoleKey key) {
+        if (!key.isClientRole()) {
+            return this.roleApi.findRealmRole(realm, key.name());
+        }
+        return this.roleApi
+                .findClientUuid(realm, key.clientId())
+                .flatMap(clientUuid -> this.roleApi.findClientRole(realm, clientUuid, key.name()));
+    }
+
+    private String clientUuid(final String realm, final RoleKey role) {
+        return this.roleApi
+                .findClientUuid(realm, role.clientId())
+                .orElseThrow(() -> new UnknownClientException(realm, role.clientId(), role.name()));
     }
 
     @Override

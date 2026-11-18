@@ -22,8 +22,11 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapte
 
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -85,6 +88,56 @@ public class RoleAdapter extends AbstractAdapter implements RoleApi {
     @Override
     public void deleteClientRole(final String realm, final String clientUuid, final String name) {
         execute(() -> clientRoles(realm, clientUuid).deleteRole(name));
+    }
+
+    @Override
+    public Optional<RoleRepresentation> findRealmRole(final String realm, final String name) {
+        return find(() -> realmRoles(realm).get(name).toRepresentation());
+    }
+
+    @Override
+    public Optional<RoleRepresentation> findClientRole(final String realm, final String clientUuid, final String name) {
+        return find(() -> clientRoles(realm, clientUuid).get(name).toRepresentation());
+    }
+
+    @Override
+    public Optional<Set<RoleRepresentation>> findRealmRoleComposites(final String realm, final String name) {
+        return find(() -> realmRoles(realm).get(name).getRoleComposites());
+    }
+
+    @Override
+    public Optional<Set<RoleRepresentation>> findClientRoleComposites(
+            final String realm, final String clientUuid, final String name) {
+        return find(() -> clientRoles(realm, clientUuid).get(name).getRoleComposites());
+    }
+
+    @Override
+    public void addRealmRoleComposites(final String realm, final String name, final List<RoleRepresentation> included) {
+        execute(() -> realmRoles(realm).get(name).addComposites(included));
+    }
+
+    @Override
+    public void addClientRoleComposites(
+            final String realm, final String clientUuid, final String name, final List<RoleRepresentation> included) {
+        execute(() -> clientRoles(realm, clientUuid).get(name).addComposites(included));
+    }
+
+    @Override
+    public void removeRealmRoleComposites(
+            final String realm, final String name, final List<RoleRepresentation> included) {
+        execute(() -> realmRoles(realm).get(name).deleteComposites(included));
+    }
+
+    @Override
+    public void removeClientRoleComposites(
+            final String realm, final String clientUuid, final String name, final List<RoleRepresentation> included) {
+        execute(() -> clientRoles(realm, clientUuid).get(name).deleteComposites(included));
+    }
+
+    @Override
+    public Map<String, String> clientIdsByUuid(final String realm) {
+        return execute(() -> keycloak().realm(realm).clients().findAll().stream()
+                .collect(Collectors.toMap(ClientRepresentation::getId, ClientRepresentation::getClientId)));
     }
 
     private RolesResource realmRoles(final String realm) {

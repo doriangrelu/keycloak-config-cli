@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.role.UnknownClientException;
+import io.github.doriangrelu.keycloak.config.application.role.UnknownRoleException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import java.io.IOException;
@@ -455,8 +456,7 @@ class ImportRolesIT extends AbstractImportIT {
 
         RealmImport foundImport =
                 getFirstImport("15.2_update_realm__add_non_existing_composite_client_to_realm_role.json");
-        KeycloakRepositoryException thrown =
-                assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
+        UnknownRoleException thrown = assertThrows(UnknownRoleException.class, () -> runImport(List.of(foundImport)));
         assertThat(
                 thrown.getMessage(),
                 is(
@@ -570,8 +570,7 @@ class ImportRolesIT extends AbstractImportIT {
 
         RealmImport foundImport =
                 getFirstImport("19.2_update_realm__add_non_existing_client_role_composite_to_client_role.json");
-        KeycloakRepositoryException thrown =
-                assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
+        UnknownRoleException thrown = assertThrows(UnknownRoleException.class, () -> runImport(List.of(foundImport)));
         assertThat(
                 thrown.getMessage(),
                 is(
@@ -854,7 +853,7 @@ class ImportRolesIT extends AbstractImportIT {
         RealmImport foundImport = getFirstImport("28_try-to_update_realm__refer-non-exist-role.json");
 
         KeycloakRepositoryException thrown =
-                assertThrows(KeycloakRepositoryException.class, () -> realmImportService.doImport(foundImport));
+                assertThrows(KeycloakRepositoryException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -868,7 +867,7 @@ class ImportRolesIT extends AbstractImportIT {
         RealmImport foundImport = getFirstImport("29_try-to_update_realm__add-client-role-without-client.json");
 
         UnknownClientException thrown =
-                assertThrows(UnknownClientException.class, () -> realmImportService.doImport(foundImport));
+                assertThrows(UnknownClientException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -892,7 +891,7 @@ class ImportRolesIT extends AbstractImportIT {
 
         // client role 'USER' has been already created during client import
         // but client roles import should not fail on importing role with the same name
-        assertDoesNotThrow(() -> realmImportService.doImport(foundImport));
+        assertDoesNotThrow(() -> runImport(List.of(foundImport)));
     }
 
     @Test

@@ -1,6 +1,6 @@
 # EPIC-002 — Moteur de réconciliation et migration des rôles
 
-**Statut :** En cours
+**Statut :** Terminé
 **ADR :** [ADR-002](../ADR-002-business-objects-purs.md), [ADR-004](../ADR-004-moteur-de-reconciliation.md), [ADR-006](../ADR-006-conversions-mapstruct.md)
 
 Construire le moteur et le valider sur un premier type de ressource : les rôles de realm et de client. Après cet EPIC, les rôles ne passent plus par `RoleImportService`.
@@ -31,10 +31,11 @@ BOs `RealmRole` et `ClientRole`, `RoleApi` et `RoleAdapter`, `RoleKeycloakGatewa
 
 ### US-002-05 — Composites des rôles
 
-**Statut :** À faire
-Migrer les composites (aujourd'hui `rolecomposites/` et `RoleCompositeRepository`), qui dépendent des rôles et des clients.
+**Statut :** Terminé
+Migrer les composites (aujourd'hui `rolecomposites/` et `RoleCompositeRepository`), qui dépendent des rôles et des clients. Fait avec `RoleComposites` et `RoleCompositeReconciler`, appliqué une fois tous les rôles du fichier créés ; l'ancien code est supprimé. Une inclusion vers un rôle inexistant lève `UnknownRoleException` (même message).
 
 ## Points d'attention
 
 - **Passerelle transitoire** : `LegacyReconciliationBridge` relie l'import historique, fichier par fichier, au moteur. Les créations et mises à jour de rôles ont lieu à leur place habituelle dans l'import de chaque fichier ; les suppressions ont lieu une fois par realm, à la fin, sur l'état voulu fusionné. Elle disparaît avec l'EPIC-003.
 - **État distant des rôles** : il est encore écrit fichier par fichier par `StateService`. Avec plusieurs fichiers pour un même realm, il ne garde que les rôles du dernier fichier ; les rôles des autres fichiers ne sont alors plus supprimables (sens prudent). À corriger quand l'écriture de l'état passera au moteur.
+- **Tests d'intégration** : 43 appels importent directement par `realmImportService.doImport(...)`, sans démarrer un contexte neuf comme le fait l'outil. Ils réutilisent le contexte du test précédent ; ceux des rôles passent désormais par `runImport`. Les autres sont à aligner au fil de l'EPIC-003.

@@ -29,6 +29,7 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciliatio
 import io.github.doriangrelu.keycloak.config.application.role.port.RoleGateway;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
+import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleKey;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -90,6 +91,46 @@ class RoleReconcilersTest {
         @Override
         public void delete(String realm, RoleKey key) {
             this.roles.remove(key);
+            this.composites.remove(key);
+        }
+
+        final Map<RoleKey, Set<RoleKey>> composites = new LinkedHashMap<>();
+
+        @Override
+        public Optional<RoleComposites> findComposites(String realm, RoleKey role) {
+            if (!this.roles.containsKey(role)) {
+                return Optional.empty();
+            }
+            Set<String> realmNames = new java.util.LinkedHashSet<>();
+            Map<String, Set<String>> clientNames = new LinkedHashMap<>();
+            this.composites.getOrDefault(role, Set.of()).forEach(included -> {
+                if (included.isClientRole()) {
+                    clientNames
+                            .computeIfAbsent(included.clientId(), unused -> new java.util.LinkedHashSet<>())
+                            .add(included.name());
+                } else {
+                    realmNames.add(included.name());
+                }
+            });
+            return Optional.of(new RoleComposites(role, realmNames, clientNames));
+        }
+
+        @Override
+        public void addComposites(String realm, RoleKey role, Set<RoleKey> included) {
+            included.stream()
+                    .filter(key -> !this.roles.containsKey(key))
+                    .findFirst()
+                    .ifPresent(missing -> {
+                        throw new UnknownRoleException(realm, role, missing);
+                    });
+            this.composites
+                    .computeIfAbsent(role, unused -> new java.util.LinkedHashSet<>())
+                    .addAll(included);
+        }
+
+        @Override
+        public void removeComposites(String realm, RoleKey role, Set<RoleKey> included) {
+            this.composites.getOrDefault(role, new java.util.LinkedHashSet<>()).removeAll(included);
         }
     }
 
@@ -99,8 +140,10 @@ class RoleReconcilersTest {
     @BeforeEach
     void setUp() {
         this.keycloak = new InMemoryRoles(Set.of("app", "other-app", "realm-management"));
-        this.engine = new ReconciliationEngine(
-                List.of(new ClientRoleReconciler(this.keycloak), new RealmRoleReconciler(this.keycloak)));
+        this.engine = new ReconciliationEngine(List.of(
+                new RoleCompositeReconciler(this.keycloak),
+                new ClientRoleReconciler(this.keycloak),
+                new RealmRoleReconciler(this.keycloak)));
     }
 
     private static Role realmRole(String name, String description) {
@@ -206,5 +249,74 @@ class RoleReconcilersTest {
                         RoleKey.realm("created-by-hand"),
                         RoleKey.client("app", "created-by-tool"),
                         RoleKey.client("app", "created-by-hand"));
+    }
+
+    @Test
+    void compositesAreAppliedOnceTheirRolesExist() {
+        RealmContext context = context();
+
+        this.engine.apply(
+                context,
+                new DesiredState()
+                        .declare(
+                                ResourceType.ROLE_COMPOSITE,
+                                List.of(new RoleComposites(
+                                        RoleKey.realm("composite"), Set.of("reader"), Map.of("app", Set.of("writer")))))
+                        .declare(ResourceType.CLIENT_ROLE, List.of(clientRole("app", "writer")))
+                        .declare(
+                                ResourceType.REALM_ROLE,
+                                List.of(realmRole("composite", null), realmRole("reader", null))));
+
+        assertThat(this.keycloak.composites.get(RoleKey.realm("composite")))
+                .containsExactlyInAnyOrder(RoleKey.realm("reader"), RoleKey.client("app", "writer"));
+    }
+
+    @Test
+    void declaredCompositesReplaceTheCurrentOnes() {
+        this.keycloak.add(realmRole("composite", null));
+        this.keycloak.add(realmRole("old", null));
+        this.keycloak.add(realmRole("kept", null));
+        this.keycloak.add(clientRole("app", "dropped"));
+        this.keycloak.composites.put(
+                RoleKey.realm("composite"),
+                new java.util.LinkedHashSet<>(Set.of(RoleKey.realm("old"), RoleKey.client("app", "dropped"))));
+
+        this.engine.apply(
+                context(),
+                new DesiredState()
+                        .declare(
+                                ResourceType.ROLE_COMPOSITE,
+                                List.of(new RoleComposites(RoleKey.realm("composite"), Set.of("kept"), Map.of()))));
+
+        assertThat(this.keycloak.composites.get(RoleKey.realm("composite"))).containsExactly(RoleKey.realm("kept"));
+    }
+
+    @Test
+    void anUnknownIncludedRoleIsReported() {
+        this.keycloak.add(realmRole("composite", null));
+        DesiredState part = new DesiredState()
+                .declare(
+                        ResourceType.ROLE_COMPOSITE,
+                        List.of(new RoleComposites(
+                                RoleKey.realm("composite"), null, Map.of("app", Set.of("non_exists")))));
+
+        assertThatThrownBy(() -> this.engine.apply(context(), part))
+                .isInstanceOf(UnknownRoleException.class)
+                .hasMessage("Error adding composite roles to realm role 'composite': Cannot find client role"
+                        + " 'non_exists' within realm 'test'");
+    }
+
+    @Test
+    void compositesAreNeverPruned() {
+        this.keycloak.add(realmRole("composite", null));
+        this.keycloak.add(realmRole("reader", null));
+        this.keycloak.composites.put(
+                RoleKey.realm("composite"), new java.util.LinkedHashSet<>(Set.of(RoleKey.realm("reader"))));
+        RealmContext context = context();
+
+        this.engine.apply(context, new DesiredState().declare(ResourceType.ROLE_COMPOSITE, List.of()));
+        this.engine.prune(context);
+
+        assertThat(this.keycloak.composites.get(RoleKey.realm("composite"))).containsExactly(RoleKey.realm("reader"));
     }
 }

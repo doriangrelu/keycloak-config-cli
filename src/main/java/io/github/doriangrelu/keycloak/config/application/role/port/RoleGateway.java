@@ -21,9 +21,11 @@
 package io.github.doriangrelu.keycloak.config.application.role.port;
 
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
+import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleKey;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /** Access to the roles of a realm in Keycloak. */
 public interface RoleGateway {
@@ -39,4 +41,14 @@ public interface RoleGateway {
     void update(String realm, Role role);
 
     void delete(String realm, RoleKey key);
+
+    /** @return the composites of the role, or empty when the role does not exist */
+    Optional<RoleComposites> findComposites(String realm, RoleKey role);
+
+    /**
+     * @throws io.github.doriangrelu.keycloak.config.application.role.UnknownRoleException for a missing included role
+     */
+    void addComposites(String realm, RoleKey role, Set<RoleKey> included);
+
+    void removeComposites(String realm, RoleKey role, Set<RoleKey> included);
 }

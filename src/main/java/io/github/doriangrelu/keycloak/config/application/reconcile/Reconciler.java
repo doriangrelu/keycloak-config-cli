@@ -54,4 +54,12 @@ public interface Reconciler<K, T extends Resource<K>> {
 
     /** Resources created by Keycloak itself, such as default roles: never deleted. */
     boolean isOwnedByKeycloak(T resource);
+
+    /**
+     * Whether the clean phase deletes resources of this type. A type that only exists through another one, such as the
+     * composites of a role, is never pruned: it disappears with its owner.
+     */
+    default boolean prunes() {
+        return true;
+    }
 }

@@ -23,7 +23,8 @@ package io.github.doriangrelu.keycloak.config.domain.reconcile;
 /** Resource types handled by the reconciliation engine. Grows as resource types are migrated (EPIC-003). */
 public enum ResourceType {
     REALM_ROLE("Realm role"),
-    CLIENT_ROLE("Client role");
+    CLIENT_ROLE("Client role"),
+    ROLE_COMPOSITE("Role composites");
 
     private final String label;
 
