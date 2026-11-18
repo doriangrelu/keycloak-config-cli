@@ -39,6 +39,7 @@ import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.domain.user.model.InvalidUserException;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientpolicy.ClientPolicyKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.group.GroupKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.identityprovider.IdentityProviderKeycloakMapper;
@@ -60,6 +61,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.keycloak.representations.idm.ClientPoliciesRepresentation;
+import org.keycloak.representations.idm.ClientProfilesRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
@@ -89,6 +92,7 @@ public class LegacyReconciliationBridge {
     private final GroupKeycloakMapper groupMapper;
     private final UserKeycloakMapper userMapper;
     private final IdentityProviderKeycloakMapper identityProviderMapper;
+    private final ClientPolicyKeycloakMapper clientPolicyMapper;
     private final ClientApi clientApi;
     private final KeycloakProvider keycloakProvider;
     private final ClientScopeKeycloakMapper clientScopeMapper;
@@ -103,6 +107,7 @@ public class LegacyReconciliationBridge {
             final GroupKeycloakMapper groupMapper,
             final UserKeycloakMapper userMapper,
             final IdentityProviderKeycloakMapper identityProviderMapper,
+            final ClientPolicyKeycloakMapper clientPolicyMapper,
             final ClientApi clientApi,
             final KeycloakProvider keycloakProvider,
             final ClientScopeKeycloakMapper clientScopeMapper,
@@ -115,6 +120,7 @@ public class LegacyReconciliationBridge {
         this.groupMapper = groupMapper;
         this.userMapper = userMapper;
         this.identityProviderMapper = identityProviderMapper;
+        this.clientPolicyMapper = clientPolicyMapper;
         this.clientApi = clientApi;
         this.keycloakProvider = keycloakProvider;
         this.clientScopeMapper = clientScopeMapper;
@@ -184,7 +190,10 @@ public class LegacyReconciliationBridge {
                                             modeOf(this.properties.getManaged().getIdentityProvider())),
                                     Map.entry(
                                             ResourceType.IDENTITY_PROVIDER_MAPPER,
-                                            modeOf(this.properties.getManaged().getIdentityProviderMapper()))));
+                                            modeOf(this.properties.getManaged().getIdentityProviderMapper())),
+                                    // The declared client profiles and policies are the exact ones, as before
+                                    Map.entry(ResourceType.CLIENT_PROFILE, ManagedMode.FULL),
+                                    Map.entry(ResourceType.CLIENT_POLICY, ManagedMode.FULL)));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
@@ -250,6 +259,25 @@ public class LegacyReconciliationBridge {
         DesiredState desired = new DesiredState();
         if (realmImport.getClients() != null) {
             desired.declare(ResourceType.CLIENT, clientsOf(realmImport, realmExists));
+        }
+        ClientProfilesRepresentation clientProfiles = realmImport.getParsedClientProfiles();
+        ClientPoliciesRepresentation clientPolicies = realmImport.getParsedClientPolicies();
+        // Policies refer to profiles: a file declaring either declares both, the missing one as empty, as before
+        if (clientProfiles != null || clientPolicies != null) {
+            desired.declare(
+                    ResourceType.CLIENT_PROFILE,
+                    clientProfiles == null || clientProfiles.getProfiles() == null
+                            ? List.of()
+                            : clientProfiles.getProfiles().stream()
+                                    .map(this.clientPolicyMapper::toProfile)
+                                    .toList());
+            desired.declare(
+                    ResourceType.CLIENT_POLICY,
+                    clientPolicies == null || clientPolicies.getPolicies() == null
+                            ? List.of()
+                            : clientPolicies.getPolicies().stream()
+                                    .map(this.clientPolicyMapper::toPolicy)
+                                    .toList());
         }
         if (realmImport.getIdentityProviders() != null) {
             desired.declare(

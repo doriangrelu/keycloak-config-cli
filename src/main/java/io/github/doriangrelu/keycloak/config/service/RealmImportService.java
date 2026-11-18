@@ -75,8 +75,6 @@ public class RealmImportService {
 
     private final UserProfileImportService userProfileImportService;
 
-    private final ClientPoliciesImportService clientPoliciesImportService;
-
     private final LegacyReconciliationBridge reconciliationBridge;
     private final ClientImportService clientImportService;
     private final ClientScopeImportService clientScopeImportService;
@@ -99,7 +97,6 @@ public class RealmImportService {
             KeycloakProvider keycloakProvider,
             RealmRepository realmRepository,
             UserProfileImportService userProfileImportService,
-            ClientPoliciesImportService clientPoliciesImportService,
             LegacyReconciliationBridge reconciliationBridge,
             ClientImportService clientImportService,
             ClientScopeImportService clientScopeImportService,
@@ -117,7 +114,6 @@ public class RealmImportService {
         this.keycloakProvider = keycloakProvider;
         this.realmRepository = realmRepository;
         this.userProfileImportService = userProfileImportService;
-        this.clientPoliciesImportService = clientPoliciesImportService;
         this.reconciliationBridge = reconciliationBridge;
         this.clientImportService = clientImportService;
         this.clientScopeImportService = clientScopeImportService;
@@ -227,7 +223,7 @@ public class RealmImportService {
         importOtpPolicy(realmImport);
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_SCOPE));
         clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
-        clientPoliciesImportService.doImport(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_PROFILE, ResourceType.CLIENT_POLICY));
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT));
         reconciliationBridge.apply(
                 realmImport,

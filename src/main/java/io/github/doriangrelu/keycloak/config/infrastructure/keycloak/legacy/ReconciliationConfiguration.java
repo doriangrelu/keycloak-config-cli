@@ -22,6 +22,9 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 
 import io.github.doriangrelu.keycloak.config.application.client.ClientReconciler;
 import io.github.doriangrelu.keycloak.config.application.client.port.ClientGateway;
+import io.github.doriangrelu.keycloak.config.application.clientpolicy.ClientPolicyReconciler;
+import io.github.doriangrelu.keycloak.config.application.clientpolicy.ClientProfileReconciler;
+import io.github.doriangrelu.keycloak.config.application.clientpolicy.port.ClientPolicyGateway;
 import io.github.doriangrelu.keycloak.config.application.clientscope.ClientScopeReconciler;
 import io.github.doriangrelu.keycloak.config.application.clientscope.port.ClientScopeGateway;
 import io.github.doriangrelu.keycloak.config.application.group.GroupReconciler;
@@ -62,6 +65,7 @@ public class ReconciliationConfiguration {
             final GroupGateway groupGateway,
             final UserGateway userGateway,
             final IdentityProviderGateway identityProviderGateway,
+            final ClientPolicyGateway clientPolicyGateway,
             final ImportConfigProperties properties) {
         return new ReconciliationEngine(List.of(
                 new RealmRoleReconciler(roleGateway),
@@ -78,6 +82,8 @@ public class ReconciliationConfiguration {
                                 properties.getBehaviors().isRemoveDefaultRoleFromUser(),
                                 properties.getBehaviors().isSkipAttributesForFederatedUser())),
                 new IdentityProviderReconciler(identityProviderGateway),
-                new IdentityProviderMapperReconciler(identityProviderGateway)));
+                new IdentityProviderMapperReconciler(identityProviderGateway),
+                new ClientProfileReconciler(clientPolicyGateway),
+                new ClientPolicyReconciler(clientPolicyGateway)));
     }
 }
