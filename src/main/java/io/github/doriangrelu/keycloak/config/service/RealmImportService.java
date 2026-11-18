@@ -73,7 +73,6 @@ public class RealmImportService {
     private final RealmRepository realmRepository;
     private final OtpPolicyImportService otpPolicyImportService;
 
-    private final UserImportService userImportService;
     private final UserProfileImportService userProfileImportService;
 
     private final ClientPoliciesImportService clientPoliciesImportService;
@@ -100,7 +99,6 @@ public class RealmImportService {
             ImportConfigProperties importProperties,
             KeycloakProvider keycloakProvider,
             RealmRepository realmRepository,
-            UserImportService userImportService,
             UserProfileImportService userProfileImportService,
             ClientPoliciesImportService clientPoliciesImportService,
             LegacyReconciliationBridge reconciliationBridge,
@@ -120,7 +118,6 @@ public class RealmImportService {
         this.importProperties = importProperties;
         this.keycloakProvider = keycloakProvider;
         this.realmRepository = realmRepository;
-        this.userImportService = userImportService;
         this.userProfileImportService = userProfileImportService;
         this.clientPoliciesImportService = clientPoliciesImportService;
         this.reconciliationBridge = reconciliationBridge;
@@ -247,7 +244,10 @@ public class RealmImportService {
         defaultGroupsImportService.doImport(realmImport);
         componentImportService.doImport(realmImport);
         userProfileImportService.doImport(realmImport);
-        userImportService.doImport(realmImport);
+        if (realmImport.getUsers() != null && realmImport.getUsers().isEmpty()) {
+            logger.warn("Purging users isn't supported in keycloak-config-cli!");
+        }
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.USER));
         authenticationFlowsImportService.doImport(realmImport);
         authenticatorConfigImportService.doImport(realmImport);
         clientImportService.doImportDependencies(realmImport);

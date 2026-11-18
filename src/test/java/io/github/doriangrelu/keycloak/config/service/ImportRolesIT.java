@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.role.UnknownClientException;
 import io.github.doriangrelu.keycloak.config.application.role.UnknownRoleException;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
+import io.github.doriangrelu.keycloak.config.application.user.UnknownUserReferenceException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import java.io.IOException;
 import java.util.List;
@@ -852,8 +852,8 @@ class ImportRolesIT extends AbstractImportIT {
     void shouldThrowUpdateRealmAddReferNonExistClientRole() throws IOException {
         RealmImport foundImport = getFirstImport("28_try-to_update_realm__refer-non-exist-role.json");
 
-        KeycloakRepositoryException thrown =
-                assertThrows(KeycloakRepositoryException.class, () -> runImport(List.of(foundImport)));
+        UnknownUserReferenceException thrown =
+                assertThrows(UnknownUserReferenceException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),

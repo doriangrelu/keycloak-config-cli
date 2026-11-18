@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.application.user.UnknownUserReferenceException;
+import io.github.doriangrelu.keycloak.config.domain.user.model.InvalidUserException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import jakarta.ws.rs.NotAuthorizedException;
 import java.io.IOException;
@@ -314,8 +314,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldNotUpdateRealmUserWithNonExistsRole() throws IOException {
         RealmImport foundImport = getFirstImport("07_update_realm_try_to_create_user_invalid_role.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        UnknownUserReferenceException thrown =
+                assertThrows(UnknownUserReferenceException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(thrown.getMessage(), is("Could not find role 'not_exists' in realm 'realmWithUsers'!"));
     }
@@ -325,8 +325,8 @@ class ImportUsersIT extends AbstractImportIT {
     void shouldNotUpdateRealmUserWithNonExistsGroup() throws IOException {
         RealmImport foundImport = getFirstImport("08_update_realm_try_to_create_user_invalid_group.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        UnknownUserReferenceException thrown =
+                assertThrows(UnknownUserReferenceException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(thrown.getMessage(), is("Could not find group '/not_exists' in realm 'realmWithUsers'!"));
     }
@@ -570,8 +570,8 @@ class ImportUsersIT extends AbstractImportIT {
         assertThat(user.getFirstName(), is("My firstname 1"));
         assertThat(user.getLastName(), is("My lastname 1"));
 
-        InvalidImportException thrown = assertThrows(
-                InvalidImportException.class,
+        InvalidUserException thrown = assertThrows(
+                InvalidUserException.class,
                 () -> doImport("50.3_update_realm_with_email_as_username_with_invalid_username.json"));
         assertThat(
                 thrown.getMessage(),

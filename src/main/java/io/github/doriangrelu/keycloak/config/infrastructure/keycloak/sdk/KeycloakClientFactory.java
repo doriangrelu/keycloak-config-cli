@@ -26,12 +26,14 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.MessageBundleAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.RequiredActionAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.RoleAdapter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.UserAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientScopeApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.GroupApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.MessageBundleApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RequiredActionApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.UserApi;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -58,6 +60,11 @@ public class KeycloakClientFactory {
     @Bean
     public GroupApi groupApi(final KeycloakProvider keycloakProvider) {
         return new GroupAdapter(keycloakProvider::getInstance);
+    }
+
+    @Bean
+    public UserApi userApi(final KeycloakProvider keycloakProvider) {
+        return new UserAdapter(keycloakProvider::getInstance);
     }
 
     @Bean

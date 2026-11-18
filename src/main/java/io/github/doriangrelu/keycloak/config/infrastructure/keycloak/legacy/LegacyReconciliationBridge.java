@@ -36,12 +36,15 @@ import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageB
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
+import io.github.doriangrelu.keycloak.config.domain.user.model.InvalidUserException;
+import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.group.GroupKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user.UserKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
@@ -53,11 +56,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -81,6 +86,7 @@ public class LegacyReconciliationBridge {
     private final RoleKeycloakMapper roleMapper;
     private final ClientKeycloakMapper clientMapper;
     private final GroupKeycloakMapper groupMapper;
+    private final UserKeycloakMapper userMapper;
     private final ClientApi clientApi;
     private final KeycloakProvider keycloakProvider;
     private final ClientScopeKeycloakMapper clientScopeMapper;
@@ -93,6 +99,7 @@ public class LegacyReconciliationBridge {
             final RoleKeycloakMapper roleMapper,
             final ClientKeycloakMapper clientMapper,
             final GroupKeycloakMapper groupMapper,
+            final UserKeycloakMapper userMapper,
             final ClientApi clientApi,
             final KeycloakProvider keycloakProvider,
             final ClientScopeKeycloakMapper clientScopeMapper,
@@ -103,6 +110,7 @@ public class LegacyReconciliationBridge {
         this.roleMapper = roleMapper;
         this.clientMapper = clientMapper;
         this.groupMapper = groupMapper;
+        this.userMapper = userMapper;
         this.clientApi = clientApi;
         this.keycloakProvider = keycloakProvider;
         this.clientScopeMapper = clientScopeMapper;
@@ -229,6 +237,9 @@ public class LegacyReconciliationBridge {
         if (realmImport.getClients() != null) {
             desired.declare(ResourceType.CLIENT, clientsOf(realmImport, realmExists));
         }
+        if (realmImport.getUsers() != null && !realmImport.getUsers().isEmpty()) {
+            desired.declare(ResourceType.USER, usersOf(realmImport, realmExists));
+        }
         if (realmImport.getGroups() != null) {
             List<Group> groups = new ArrayList<>();
             flattenGroups(realmImport.getGroups(), null, groups);
@@ -323,6 +334,47 @@ public class LegacyReconciliationBridge {
             clients.add(client);
         }
         return clients;
+    }
+
+    /**
+     * Users of a file. When the realm uses the email as username, a user is identified by its email: a different
+     * username is refused. Service accounts keep their username.
+     */
+    private List<User> usersOf(final RealmImport realmImport, final boolean realmExists) {
+        String realm = realmImport.getRealm();
+        Boolean declared = realmImport.isRegistrationEmailAsUsername();
+        boolean emailAsUsername = declared != null
+                ? declared
+                : realmExists
+                        && realmImport.getUsers().stream().anyMatch(user -> user.getServiceAccountClientId() == null)
+                        && Boolean.TRUE.equals(this.keycloakProvider
+                                .getInstance()
+                                .realm(realm)
+                                .toRepresentation()
+                                .isRegistrationEmailAsUsername());
+        return realmImport.getUsers().stream()
+                .map(user -> this.userMapper.toUser(user, usernameOf(realm, user, emailAsUsername)))
+                .toList();
+    }
+
+    private static String usernameOf(final String realm, final UserRepresentation user, final boolean emailAsUsername) {
+        boolean serviceAccount = user.getServiceAccountClientId() != null
+                && !user.getServiceAccountClientId().isEmpty();
+        if (emailAsUsername && !serviceAccount) {
+            if (user.getUsername() != null && !Objects.equals(user.getUsername(), user.getEmail())) {
+                throw new InvalidUserException(String.format(
+                        "Invalid user '%s' in realm '%s': username (%s) and email (%s) "
+                                + "is different while 'email as username' is enabled on realm.",
+                        user.getUsername(), realm, user.getUsername(), user.getEmail()));
+            }
+            if (user.getEmail() != null) {
+                return user.getEmail();
+            }
+        }
+        if (user.getUsername() == null) {
+            throw new InvalidUserException(String.format("Invalid user in realm '%s': no username", realm));
+        }
+        return user.getUsername();
     }
 
     /** Nested groups of a file, one per path, parents first. */

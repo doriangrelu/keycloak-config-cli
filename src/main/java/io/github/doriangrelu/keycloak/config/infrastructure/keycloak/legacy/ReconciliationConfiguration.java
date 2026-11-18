@@ -35,6 +35,10 @@ import io.github.doriangrelu.keycloak.config.application.role.ClientRoleReconcil
 import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.RoleCompositeReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.port.RoleGateway;
+import io.github.doriangrelu.keycloak.config.application.user.UserImportRules;
+import io.github.doriangrelu.keycloak.config.application.user.UserReconciler;
+import io.github.doriangrelu.keycloak.config.application.user.port.UserGateway;
+import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -52,7 +56,9 @@ public class ReconciliationConfiguration {
             final MessageBundleGateway messageBundleGateway,
             final ClientScopeGateway clientScopeGateway,
             final ClientGateway clientGateway,
-            final GroupGateway groupGateway) {
+            final GroupGateway groupGateway,
+            final UserGateway userGateway,
+            final ImportConfigProperties properties) {
         return new ReconciliationEngine(List.of(
                 new RealmRoleReconciler(roleGateway),
                 new ClientRoleReconciler(roleGateway),
@@ -61,6 +67,11 @@ public class ReconciliationConfiguration {
                 new MessageBundleReconciler(messageBundleGateway),
                 new ClientScopeReconciler(clientScopeGateway),
                 new ClientReconciler(clientGateway),
-                new GroupReconciler(groupGateway)));
+                new GroupReconciler(groupGateway),
+                new UserReconciler(
+                        userGateway,
+                        new UserImportRules(
+                                properties.getBehaviors().isRemoveDefaultRoleFromUser(),
+                                properties.getBehaviors().isSkipAttributesForFederatedUser()))));
     }
 }

@@ -34,7 +34,8 @@ import java.util.Set;
  * A group of a realm, identified by its path ({@code /parent/child}). Import files nest subgroups; they are flattened
  * into one group per path, parents first.
  *
- * <p>In a desired group, a {@code null} field is not specified by the import file. Attributes are merged key by key.
+ * <p>In a desired group, a {@code null} field is not specified by the import file. Declared attributes replace the
+ * current ones.
  * Declared role mappings are the exact role mappings of the group; in {@code full} managed mode, a group declared
  * without them loses its role mappings. Declared subgroups are the exact children of the group.
  *

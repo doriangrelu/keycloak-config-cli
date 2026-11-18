@@ -29,7 +29,8 @@ public enum ResourceType {
     MESSAGE_BUNDLE("Message bundle"),
     CLIENT_SCOPE("Client scope"),
     CLIENT("Client"),
-    GROUP("Group");
+    GROUP("Group"),
+    USER("User");
 
     private final String label;
 
