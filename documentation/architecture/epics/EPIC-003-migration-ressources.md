@@ -1,6 +1,6 @@
 # EPIC-003 — Migration des autres types de ressources
 
-**Statut :** À faire
+**Statut :** En cours
 **ADR :** [ADR-002](../ADR-002-business-objects-purs.md), [ADR-003](../ADR-003-acces-keycloak-sdk.md), [ADR-004](../ADR-004-moteur-de-reconciliation.md)
 
 Migrer chaque `*ImportService` restant vers un reconciler, du plus simple au plus complexe. Une story par type : BOs, `*Api` et `*Adapter`, gateway et mapper, reconciler, puis suppression de l'ancien service et de son repository.
@@ -10,7 +10,7 @@ Migrer chaque `*ImportService` restant vers un reconciler, du plus simple au plu
 | Ordre | Type de ressource | Service actuel |
 |---|---|---|
 | 1 | Paramètres du realm, politique OTP, message bundles | `RealmImportService`, `OtpPolicyImportService`, `MessageBundleImportService` |
-| 2 | Actions requises | `RequiredActionsImportService` |
+| 2 | Actions requises | `RequiredActionsImportService` (migré) |
 | 3 | Client scopes | `ClientScopeImportService` |
 | 4 | Clients | `ClientImportService` |
 | 5 | Groupes et groupes par défaut | `GroupImportService`, `DefaultGroupsImportService` |
@@ -27,3 +27,9 @@ Les flux d'authentification (avec `UsedAuthenticationFlowWorkaroundFactory`) et 
 ## Fin de l'EPIC
 
 Quand tous les types sont migrés : suppression du reconciler « legacy », de `RealmImportService.cleanRealm`, d'`ExecutionContextHolder`, de `ThreadHelper` et des packages hérités ; l'exclusion d'`ArchitectureTest` est retirée.
+
+## Avancement
+
+| Type | Statut | Remarques |
+|---|---|---|
+| Actions requises | Terminé | Remplacement complet des champs comme avant, `config` gardé s'il n'est pas donné, recréation si le `providerId` change. Appliquées à la place des rôles dans l'import, donc avant les utilisateurs. |

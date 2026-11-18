@@ -24,7 +24,8 @@ package io.github.doriangrelu.keycloak.config.domain.reconcile;
 public enum ResourceType {
     REALM_ROLE("Realm role"),
     CLIENT_ROLE("Client role"),
-    ROLE_COMPOSITE("Role composites");
+    ROLE_COMPOSITE("Role composites"),
+    REQUIRED_ACTION("Required action");
 
     private final String label;
 

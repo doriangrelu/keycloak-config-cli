@@ -87,7 +87,6 @@ public class RealmImportService {
     private final ComponentImportService componentImportService;
     private final AuthenticationFlowsImportService authenticationFlowsImportService;
     private final AuthenticatorConfigImportService authenticatorConfigImportService;
-    private final RequiredActionsImportService requiredActionsImportService;
     private final ScopeMappingImportService scopeMappingImportService;
     private final ClientAuthorizationImportService clientAuthorizationImportService;
     private final ClientScopeMappingImportService clientScopeMappingImportService;
@@ -115,7 +114,6 @@ public class RealmImportService {
             ComponentImportService componentImportService,
             AuthenticationFlowsImportService authenticationFlowsImportService,
             AuthenticatorConfigImportService authenticatorConfigImportService,
-            RequiredActionsImportService requiredActionsImportService,
             ScopeMappingImportService scopeMappingImportService,
             ClientAuthorizationImportService clientAuthorizationImportService,
             ClientScopeMappingImportService clientScopeMappingImportService,
@@ -138,7 +136,6 @@ public class RealmImportService {
         this.componentImportService = componentImportService;
         this.authenticationFlowsImportService = authenticationFlowsImportService;
         this.authenticatorConfigImportService = authenticatorConfigImportService;
-        this.requiredActionsImportService = requiredActionsImportService;
         this.scopeMappingImportService = scopeMappingImportService;
         this.clientAuthorizationImportService = clientAuthorizationImportService;
         this.clientScopeMappingImportService = clientScopeMappingImportService;
@@ -250,13 +247,12 @@ public class RealmImportService {
         clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
         clientPoliciesImportService.doImport(realmImport);
         clientImportService.doImport(realmImport);
-        reconciliationBridge.applyRoles(realmImport);
+        reconciliationBridge.apply(realmImport);
         groupImportService.importGroups(realmImport);
         defaultGroupsImportService.doImport(realmImport);
         componentImportService.doImport(realmImport);
         userProfileImportService.doImport(realmImport);
         userImportService.doImport(realmImport);
-        requiredActionsImportService.doImport(realmImport);
         authenticationFlowsImportService.doImport(realmImport);
         authenticatorConfigImportService.doImport(realmImport);
         clientImportService.doImportDependencies(realmImport);

@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
+import io.github.doriangrelu.keycloak.config.application.requiredaction.RequiredActionReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.ClientRoleReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconciler;
 import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
@@ -30,6 +31,7 @@ import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
@@ -58,16 +60,19 @@ public class LegacyReconciliationBridge {
 
     private final ReconciliationEngine engine;
     private final RoleKeycloakMapper roleMapper;
+    private final RequiredActionKeycloakMapper requiredActionMapper;
     private final StateService stateService;
     private final ImportConfigProperties properties;
 
     public LegacyReconciliationBridge(
             final ReconciliationEngine engine,
             final RoleKeycloakMapper roleMapper,
+            final RequiredActionKeycloakMapper requiredActionMapper,
             final StateService stateService,
             final ImportConfigProperties properties) {
         this.engine = engine;
         this.roleMapper = roleMapper;
+        this.requiredActionMapper = requiredActionMapper;
         this.stateService = stateService;
         this.properties = properties;
     }
@@ -84,16 +89,22 @@ public class LegacyReconciliationBridge {
         context.addProtections(protectionsOf(realmImport));
         if (remoteStateLoaded) {
             captureRoleState(realmImport, context);
+            if (realmImport.getRequiredActions() != null) {
+                context.captureState(RequiredActionReconciler.STATE_SCOPE, this.stateService.getRequiredActions());
+            }
         }
         this.engine.register(context, desiredStateOf(realmImport));
     }
 
-    /** Creates and updates the roles declared by one file, then their composites. */
-    public void applyRoles(final RealmImport realmImport) {
+    /**
+     * Creates and updates what one file declares for the migrated types: roles and their composites, required
+     * actions. Called at the place of the roles in the legacy import, so that groups and users can use them.
+     */
+    public void apply(final RealmImport realmImport) {
         this.engine.apply(contextOf(realmImport), desiredStateOf(realmImport));
     }
 
-    /** Deletes, once per realm, the managed roles missing from every file of the realm. */
+    /** Deletes, once per realm, the managed resources of the migrated types missing from every file of the realm. */
     public void prune(final RealmImport realmImport) {
         this.engine.prune(contextOf(realmImport));
     }
@@ -109,10 +120,17 @@ public class LegacyReconciliationBridge {
                             this.properties.getRemoteState().isEnabled(),
                             Map.of(
                                     ResourceType.REALM_ROLE, roleMode(),
-                                    ResourceType.CLIENT_ROLE, roleMode()));
+                                    ResourceType.CLIENT_ROLE, roleMode(),
+                                    ResourceType.REQUIRED_ACTION, requiredActionMode()));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
+    }
+
+    private ManagedMode requiredActionMode() {
+        return this.properties.getManaged().getRequiredAction() == ImportManagedPropertiesValues.FULL
+                ? ManagedMode.FULL
+                : ManagedMode.NO_DELETE;
     }
 
     private ManagedMode roleMode() {
@@ -139,6 +157,13 @@ public class LegacyReconciliationBridge {
 
     private DesiredState desiredStateOf(final RealmImport realmImport) {
         DesiredState desired = new DesiredState();
+        if (realmImport.getRequiredActions() != null) {
+            desired.declare(
+                    ResourceType.REQUIRED_ACTION,
+                    realmImport.getRequiredActions().stream()
+                            .map(this.requiredActionMapper::toRequiredAction)
+                            .toList());
+        }
         RolesRepresentation roles = realmImport.getRoles();
         if (roles == null) {
             return desired;

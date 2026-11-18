@@ -20,7 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.RequiredActionAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.RoleAdapter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RequiredActionApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,6 +36,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class KeycloakClientFactory {
+
+    @Bean
+    public RequiredActionApi requiredActionApi(final KeycloakProvider keycloakProvider) {
+        return new RequiredActionAdapter(keycloakProvider::getInstance);
+    }
 
     @Bean
     public RoleApi roleApi(final KeycloakProvider keycloakProvider) {

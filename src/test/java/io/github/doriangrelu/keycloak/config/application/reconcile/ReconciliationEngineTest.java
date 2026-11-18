@@ -43,7 +43,7 @@ class ReconciliationEngineTest {
 
     record Item(String key, String value) implements Resource<String> {
         @Override
-        public String name() {
+        public String stateName() {
             return this.key;
         }
     }

@@ -29,6 +29,9 @@ public interface Resource<K> {
 
     K key();
 
-    /** Name used by the remote state and the protection rules. */
-    String name();
+    /**
+     * Name of the resource in the remote state and for the protection rules. Not called {@code name()}: resources
+     * such as required actions also have a display name.
+     */
+    String stateName();
 }
