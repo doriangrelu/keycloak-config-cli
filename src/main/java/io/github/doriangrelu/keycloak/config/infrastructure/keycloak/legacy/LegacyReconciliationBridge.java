@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 
+import io.github.doriangrelu.keycloak.config.application.client.ClientReconciler;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
@@ -27,26 +28,34 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciliatio
 import io.github.doriangrelu.keycloak.config.application.requiredaction.RequiredActionReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.ClientRoleReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconciler;
+import io.github.doriangrelu.keycloak.config.domain.client.model.Client;
 import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues;
+import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -62,8 +71,13 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class LegacyReconciliationBridge {
 
+    private static final Logger logger = LoggerFactory.getLogger(LegacyReconciliationBridge.class);
+
     private final ReconciliationEngine engine;
     private final RoleKeycloakMapper roleMapper;
+    private final ClientKeycloakMapper clientMapper;
+    private final ClientApi clientApi;
+    private final KeycloakProvider keycloakProvider;
     private final ClientScopeKeycloakMapper clientScopeMapper;
     private final RequiredActionKeycloakMapper requiredActionMapper;
     private final StateService stateService;
@@ -72,12 +86,18 @@ public class LegacyReconciliationBridge {
     public LegacyReconciliationBridge(
             final ReconciliationEngine engine,
             final RoleKeycloakMapper roleMapper,
+            final ClientKeycloakMapper clientMapper,
+            final ClientApi clientApi,
+            final KeycloakProvider keycloakProvider,
             final ClientScopeKeycloakMapper clientScopeMapper,
             final RequiredActionKeycloakMapper requiredActionMapper,
             final StateService stateService,
             final ImportConfigProperties properties) {
         this.engine = engine;
         this.roleMapper = roleMapper;
+        this.clientMapper = clientMapper;
+        this.clientApi = clientApi;
+        this.keycloakProvider = keycloakProvider;
         this.clientScopeMapper = clientScopeMapper;
         this.requiredActionMapper = requiredActionMapper;
         this.stateService = stateService;
@@ -89,12 +109,16 @@ public class LegacyReconciliationBridge {
      * file declares to the desired state of its realm. Called for every file, including those whose import is
      * skipped because their checksum did not change.
      *
+     * @param realmExists whether the realm already exists in Keycloak
      * @param remoteStateLoaded whether the remote state of the realm was loaded for this file
      */
-    public void startFile(final RealmImport realmImport, final boolean remoteStateLoaded) {
+    public void startFile(final RealmImport realmImport, final boolean realmExists, final boolean remoteStateLoaded) {
         RealmContext context = contextOf(realmImport);
         context.addProtections(protectionsOf(realmImport));
         if (remoteStateLoaded) {
+            if (realmImport.getClients() != null) {
+                context.captureState(ClientReconciler.STATE_SCOPE, this.stateService.getClients());
+            }
             captureRoleState(realmImport, context);
             if (realmImport.getRequiredActions() != null) {
                 context.captureState(RequiredActionReconciler.STATE_SCOPE, this.stateService.getRequiredActions());
@@ -103,7 +127,7 @@ public class LegacyReconciliationBridge {
                 context.captureState(MessageBundleReconciler.STATE_SCOPE, this.stateService.getMessageBundles());
             }
         }
-        this.engine.register(context, desiredStateOf(realmImport));
+        this.engine.register(context, desiredStateOf(realmImport, realmExists));
     }
 
     /**
@@ -111,7 +135,7 @@ public class LegacyReconciliationBridge {
      * place each type had, so that the types it still handles find what they rely on.
      */
     public void apply(final RealmImport realmImport, final Set<ResourceType> types) {
-        this.engine.apply(contextOf(realmImport), desiredStateOf(realmImport), types);
+        this.engine.apply(contextOf(realmImport), desiredStateOf(realmImport, true), types);
     }
 
     /** Deletes, once per realm, the managed resources of the migrated types missing from every file of the realm. */
@@ -133,10 +157,17 @@ public class LegacyReconciliationBridge {
                                     ResourceType.CLIENT_ROLE, roleMode(),
                                     ResourceType.REQUIRED_ACTION, requiredActionMode(),
                                     ResourceType.MESSAGE_BUNDLE, messageBundleMode(),
-                                    ResourceType.CLIENT_SCOPE, clientScopeMode()));
+                                    ResourceType.CLIENT_SCOPE, clientScopeMode(),
+                                    ResourceType.CLIENT, clientMode()));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
+    }
+
+    private ManagedMode clientMode() {
+        return this.properties.getManaged().getClient() == ImportManagedPropertiesValues.FULL
+                ? ManagedMode.FULL
+                : ManagedMode.NO_DELETE;
     }
 
     private ManagedMode clientScopeMode() {
@@ -179,8 +210,11 @@ public class LegacyReconciliationBridge {
         }
     }
 
-    private DesiredState desiredStateOf(final RealmImport realmImport) {
+    private DesiredState desiredStateOf(final RealmImport realmImport, final boolean realmExists) {
         DesiredState desired = new DesiredState();
+        if (realmImport.getClients() != null) {
+            desired.declare(ResourceType.CLIENT, clientsOf(realmImport, realmExists));
+        }
         if (realmImport.getClientScopes() != null) {
             desired.declare(
                     ResourceType.CLIENT_SCOPE,
@@ -235,6 +269,47 @@ public class LegacyReconciliationBridge {
             desired.declare(ResourceType.ROLE_COMPOSITE, composites);
         }
         return desired;
+    }
+
+    /**
+     * Clients of a file: authorization settings are checked on the client as written, a client only given by name is
+     * resolved to its client id, and the admin-permissions client is left to Keycloak with fine-grained admin
+     * permissions v2.
+     */
+    private List<Client> clientsOf(final RealmImport realmImport, final boolean realmExists) {
+        String realm = realmImport.getRealm();
+        Map<String, String> clientIdsByName = new HashMap<>();
+        if (realmExists && realmImport.getClients().stream().anyMatch(client -> client.getClientId() == null)) {
+            this.clientApi.listClients(realm).stream()
+                    .filter(client -> client.getName() != null)
+                    .forEach(client -> clientIdsByName.putIfAbsent(client.getName(), client.getClientId()));
+        }
+        List<Client> clients = new ArrayList<>();
+        for (ClientRepresentation representation : realmImport.getClients()) {
+            Client client = this.clientMapper.toClient(representation);
+            if (this.properties.isValidate() && representation.getAuthorizationSettings() != null) {
+                client.requireSupportForAuthorizationSettings(realm);
+            }
+            if (client.clientId() == null && clientIdsByName.containsKey(client.name())) {
+                client = client.withClientId(clientIdsByName.get(client.name()));
+            }
+            if (isManagedByKeycloak(client)) {
+                logger.info(
+                        "Skipping 'admin-permissions' client in realm '{}' - FGAP V2 is active and this client is"
+                                + " system-managed by Keycloak. Use 'adminPermissionsEnabled: true' at realm level"
+                                + " instead.",
+                        realm);
+                continue;
+            }
+            clients.add(client);
+        }
+        return clients;
+    }
+
+    private boolean isManagedByKeycloak(final Client client) {
+        boolean adminPermissions =
+                Client.ADMIN_PERMISSIONS.equals(client.clientId()) || Client.ADMIN_PERMISSIONS.equals(client.name());
+        return adminPermissions && this.keycloakProvider.isFgapV2Active();
     }
 
     private static List<ProtectionRule> protectionsOf(final RealmImport realmImport) {

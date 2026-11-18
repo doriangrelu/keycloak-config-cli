@@ -56,7 +56,7 @@ public interface Reconciler<K, T extends Resource<K>> {
     String stateScope(T resource);
 
     /** Resources created by Keycloak itself, such as default roles: never deleted. */
-    boolean isOwnedByKeycloak(T resource);
+    boolean isOwnedByKeycloak(RealmContext context, T resource);
 
     /**
      * Whether the clean phase deletes resources of this type. A type that only exists through another one, such as the

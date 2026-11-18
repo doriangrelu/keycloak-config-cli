@@ -84,7 +84,7 @@ public final class ClientScopeReconciler implements Reconciler<String, ClientSco
 
     /** The default and optional client scopes of the realm stay, as in the legacy import. */
     @Override
-    public boolean isOwnedByKeycloak(final ClientScope resource) {
+    public boolean isOwnedByKeycloak(final RealmContext context, final ClientScope resource) {
         return resource.realmDefault();
     }
 

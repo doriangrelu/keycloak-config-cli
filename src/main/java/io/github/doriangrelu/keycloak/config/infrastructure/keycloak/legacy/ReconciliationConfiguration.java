@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 
+import io.github.doriangrelu.keycloak.config.application.client.ClientReconciler;
+import io.github.doriangrelu.keycloak.config.application.client.port.ClientGateway;
 import io.github.doriangrelu.keycloak.config.application.clientscope.ClientScopeReconciler;
 import io.github.doriangrelu.keycloak.config.application.clientscope.port.ClientScopeGateway;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
@@ -46,13 +48,15 @@ public class ReconciliationConfiguration {
             final RoleGateway roleGateway,
             final RequiredActionGateway requiredActionGateway,
             final MessageBundleGateway messageBundleGateway,
-            final ClientScopeGateway clientScopeGateway) {
+            final ClientScopeGateway clientScopeGateway,
+            final ClientGateway clientGateway) {
         return new ReconciliationEngine(List.of(
                 new RealmRoleReconciler(roleGateway),
                 new ClientRoleReconciler(roleGateway),
                 new RoleCompositeReconciler(roleGateway),
                 new RequiredActionReconciler(requiredActionGateway),
                 new MessageBundleReconciler(messageBundleGateway),
-                new ClientScopeReconciler(clientScopeGateway)));
+                new ClientScopeReconciler(clientScopeGateway),
+                new ClientReconciler(clientGateway)));
     }
 }

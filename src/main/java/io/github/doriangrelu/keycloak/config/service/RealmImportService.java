@@ -31,7 +31,6 @@ import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
 import io.github.doriangrelu.keycloak.config.service.checksum.ChecksumService;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
-import io.github.doriangrelu.keycloak.config.service.state.ImportTracking;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import java.util.Set;
@@ -169,12 +168,8 @@ public class RealmImportService {
                 realmExists && importProperties.getRemoteState().isEnabled();
         if (remoteStateLoaded) {
             stateService.loadState(realmImport);
-            if (realmImport.getClients() != null) {
-                ImportTracking.captureState(realmName, ImportTracking.CLIENTS, stateService.getClients());
-            }
         }
-        reconciliationBridge.startFile(realmImport, remoteStateLoaded);
-        clientImportService.registerImported(realmImport);
+        reconciliationBridge.startFile(realmImport, realmExists, remoteStateLoaded);
         groupImportService.registerImported(realmImport);
     }
 
@@ -245,7 +240,7 @@ public class RealmImportService {
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_SCOPE));
         clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
         clientPoliciesImportService.doImport(realmImport);
-        clientImportService.doImport(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT));
         reconciliationBridge.apply(
                 realmImport,
                 Set.of(
@@ -283,9 +278,6 @@ public class RealmImportService {
      */
     public void cleanRealm(final RealmImport realmImport) {
         logger.debug("Start cleaning realm import for realm part '{}'", realmImport.getRealm());
-        if (importProperties.getManaged().getClient() == FULL) {
-            this.clientImportService.deleteClientsMissingInImport(realmImport);
-        }
         // Roles: managed mode, remote state and protections are applied by the reconciliation engine
         this.reconciliationBridge.prune(realmImport);
         if (importProperties.getManaged().getGroup() == FULL) {

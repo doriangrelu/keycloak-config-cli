@@ -96,7 +96,7 @@ public final class MessageBundleReconciler implements Reconciler<String, Message
     }
 
     @Override
-    public boolean isOwnedByKeycloak(final MessageBundle resource) {
+    public boolean isOwnedByKeycloak(final RealmContext context, final MessageBundle resource) {
         return false;
     }
 

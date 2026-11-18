@@ -100,7 +100,7 @@ public final class RoleCompositeReconciler implements Reconciler<RoleKey, RoleCo
     }
 
     @Override
-    public boolean isOwnedByKeycloak(final RoleComposites resource) {
+    public boolean isOwnedByKeycloak(final RealmContext context, final RoleComposites resource) {
         return false;
     }
 

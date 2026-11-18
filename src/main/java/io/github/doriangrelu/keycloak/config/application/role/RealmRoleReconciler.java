@@ -84,7 +84,7 @@ public final class RealmRoleReconciler implements Reconciler<RoleKey, Role> {
     }
 
     @Override
-    public boolean isOwnedByKeycloak(final Role resource) {
+    public boolean isOwnedByKeycloak(final RealmContext context, final Role resource) {
         return resource.isOwnedByKeycloak();
     }
 }

@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
  */
 public final class ImportTracking {
 
-    public static final String CLIENTS = "clients";
     public static final String GROUPS = "groups";
 
     private ImportTracking() {}

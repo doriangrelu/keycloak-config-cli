@@ -57,7 +57,7 @@ public final class ClientRoleReconciler implements Reconciler<RoleKey, Role> {
 
     @Override
     public Set<ResourceType> dependsOn() {
-        return Set.of(ResourceType.REALM_ROLE);
+        return Set.of(ResourceType.REALM_ROLE, ResourceType.CLIENT);
     }
 
     /**
@@ -102,7 +102,7 @@ public final class ClientRoleReconciler implements Reconciler<RoleKey, Role> {
     }
 
     @Override
-    public boolean isOwnedByKeycloak(final Role resource) {
+    public boolean isOwnedByKeycloak(final RealmContext context, final Role resource) {
         return resource.isOwnedByKeycloak();
     }
 }

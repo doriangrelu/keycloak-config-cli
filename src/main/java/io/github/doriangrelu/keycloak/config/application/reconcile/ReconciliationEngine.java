@@ -127,7 +127,7 @@ public final class ReconciliationEngine {
         List<Change<T>> deletions = Changes.toPrune(
                 desired,
                 current,
-                resource -> !reconciler.isOwnedByKeycloak(resource)
+                resource -> !reconciler.isOwnedByKeycloak(context, resource)
                         && context.deletionPolicy(
                                         reconciler.type(),
                                         reconciler.stateScope(resource),

@@ -108,7 +108,7 @@ class ReconciliationEngineTest {
         }
 
         @Override
-        public boolean isOwnedByKeycloak(Item resource) {
+        public boolean isOwnedByKeycloak(RealmContext context, Item resource) {
             return resource.key().startsWith("default-");
         }
     }
