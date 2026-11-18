@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - **BREAKING**: Realm roles, client roles and their composites are imported by the new reconciliation engine. When several files target the same realm, a role defined twice with different content is now rejected (exit code `2`) instead of the last file winning.
+- **BREAKING**: Groups are imported by the new reconciliation engine. A group mapped to a missing realm or client role raises `UnknownGroupRoleException` (exit code `2`), and a group defined twice with different content across the files of a realm is rejected.
 - **BREAKING**: A client refused by Keycloak raises `ClientRejectedException`, and an invalid client (no client id nor name, unsupported authorization settings) raises `InvalidClientException`, instead of `ImportProcessingException`; messages are unchanged (exit code `2`).
 - **BREAKING**: A protocol mapper of a client scope refused by Keycloak raises `ProtocolMapperRejectedException` instead of `ImportProcessingException`, with the same message (exit code `2`).
 - **BREAKING**: A role declared for a missing client raises `UnknownClientException`, and a composite including a missing role raises `UnknownRoleException`; the messages are unchanged and both exit with code `2`.

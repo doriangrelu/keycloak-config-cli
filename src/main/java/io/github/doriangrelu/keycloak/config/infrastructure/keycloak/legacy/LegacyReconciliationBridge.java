@@ -31,12 +31,14 @@ import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconcile
 import io.github.doriangrelu.keycloak.config.domain.client.model.Client;
 import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
+import io.github.doriangrelu.keycloak.config.domain.group.model.Group;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.group.GroupKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
@@ -52,7 +54,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +80,7 @@ public class LegacyReconciliationBridge {
     private final ReconciliationEngine engine;
     private final RoleKeycloakMapper roleMapper;
     private final ClientKeycloakMapper clientMapper;
+    private final GroupKeycloakMapper groupMapper;
     private final ClientApi clientApi;
     private final KeycloakProvider keycloakProvider;
     private final ClientScopeKeycloakMapper clientScopeMapper;
@@ -87,6 +92,7 @@ public class LegacyReconciliationBridge {
             final ReconciliationEngine engine,
             final RoleKeycloakMapper roleMapper,
             final ClientKeycloakMapper clientMapper,
+            final GroupKeycloakMapper groupMapper,
             final ClientApi clientApi,
             final KeycloakProvider keycloakProvider,
             final ClientScopeKeycloakMapper clientScopeMapper,
@@ -96,6 +102,7 @@ public class LegacyReconciliationBridge {
         this.engine = engine;
         this.roleMapper = roleMapper;
         this.clientMapper = clientMapper;
+        this.groupMapper = groupMapper;
         this.clientApi = clientApi;
         this.keycloakProvider = keycloakProvider;
         this.clientScopeMapper = clientScopeMapper;
@@ -158,10 +165,17 @@ public class LegacyReconciliationBridge {
                                     ResourceType.REQUIRED_ACTION, requiredActionMode(),
                                     ResourceType.MESSAGE_BUNDLE, messageBundleMode(),
                                     ResourceType.CLIENT_SCOPE, clientScopeMode(),
-                                    ResourceType.CLIENT, clientMode()));
+                                    ResourceType.CLIENT, clientMode(),
+                                    ResourceType.GROUP, groupMode()));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
+    }
+
+    private ManagedMode groupMode() {
+        return this.properties.getManaged().getGroup() == ImportManagedPropertiesValues.FULL
+                ? ManagedMode.FULL
+                : ManagedMode.NO_DELETE;
     }
 
     private ManagedMode clientMode() {
@@ -214,6 +228,11 @@ public class LegacyReconciliationBridge {
         DesiredState desired = new DesiredState();
         if (realmImport.getClients() != null) {
             desired.declare(ResourceType.CLIENT, clientsOf(realmImport, realmExists));
+        }
+        if (realmImport.getGroups() != null) {
+            List<Group> groups = new ArrayList<>();
+            flattenGroups(realmImport.getGroups(), null, groups);
+            desired.declare(ResourceType.GROUP, groups);
         }
         if (realmImport.getClientScopes() != null) {
             desired.declare(
@@ -304,6 +323,23 @@ public class LegacyReconciliationBridge {
             clients.add(client);
         }
         return clients;
+    }
+
+    /** Nested groups of a file, one per path, parents first. */
+    private void flattenGroups(
+            final List<GroupRepresentation> declared, final String parentPath, final List<Group> groups) {
+        for (GroupRepresentation group : declared) {
+            String path = Group.childPath(parentPath, group.getName());
+            Set<String> children = group.getSubGroups() == null
+                    ? null
+                    : group.getSubGroups().stream()
+                            .map(GroupRepresentation::getName)
+                            .collect(Collectors.toSet());
+            groups.add(this.groupMapper.toGroup(group, path, children));
+            if (group.getSubGroups() != null) {
+                flattenGroups(group.getSubGroups(), path, groups);
+            }
+        }
     }
 
     private boolean isManagedByKeycloak(final Client client) {

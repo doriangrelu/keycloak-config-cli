@@ -28,7 +28,8 @@ public enum ResourceType {
     REQUIRED_ACTION("Required action"),
     MESSAGE_BUNDLE("Message bundle"),
     CLIENT_SCOPE("Client scope"),
-    CLIENT("Client");
+    CLIENT("Client"),
+    GROUP("Group");
 
     private final String label;
 

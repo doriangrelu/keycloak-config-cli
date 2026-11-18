@@ -109,7 +109,7 @@ public final class ReconciliationEngine {
         List<T> current = reconciler.read(context, desired);
         List<Change<T>> changes =
                 Changes.toApply(desired, current, (actual, wanted) -> reconciler.merge(context, actual, wanted));
-        run(context, changes, change -> {
+        run(context, reconciler, changes, change -> {
             record(context, reconciler.type(), change);
             switch (change) {
                 case Change.Create<T> creation -> reconciler.create(context, creation.resource());
@@ -133,7 +133,7 @@ public final class ReconciliationEngine {
                                         reconciler.stateScope(resource),
                                         reconciler.usesRemoteState())
                                 .allowsDeletionOf(resource.stateName()));
-        run(context, deletions, deletion -> {
+        run(context, reconciler, deletions, deletion -> {
             record(context, reconciler.type(), deletion);
             reconciler.delete(context, deletion.resource());
         });
@@ -144,8 +144,11 @@ public final class ReconciliationEngine {
     }
 
     private static <T extends Resource<?>> void run(
-            final RealmContext context, final List<Change<T>> changes, final Consumer<Change<T>> action) {
-        if (context.isParallel()) {
+            final RealmContext context,
+            final Reconciler<?, ?> reconciler,
+            final List<Change<T>> changes,
+            final Consumer<Change<T>> action) {
+        if (context.isParallel() && reconciler.appliesInParallel()) {
             changes.parallelStream().forEach(action);
         } else {
             changes.forEach(action);

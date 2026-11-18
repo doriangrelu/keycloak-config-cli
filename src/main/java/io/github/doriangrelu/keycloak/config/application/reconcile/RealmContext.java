@@ -100,6 +100,13 @@ public final class RealmContext {
         this.previousState.putIfAbsent(scope, Set.copyOf(names));
     }
 
+    /** Whether a protection rule of the import files covers this name. */
+    public boolean isProtected(final String name) {
+        synchronized (this.protections) {
+            return this.protections.stream().anyMatch(rule -> rule.protects(name));
+        }
+    }
+
     public DeletionPolicy deletionPolicy(final ResourceType type, final String stateScope) {
         return deletionPolicy(type, stateScope, true);
     }

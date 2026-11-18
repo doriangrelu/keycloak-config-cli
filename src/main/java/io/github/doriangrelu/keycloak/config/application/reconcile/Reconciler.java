@@ -81,4 +81,12 @@ public interface Reconciler<K, T extends Resource<K>> {
     default boolean usesRemoteState() {
         return true;
     }
+
+    /**
+     * Whether the changes of this type may be applied in parallel when {@code import.parallel} is set. Groups may not:
+     * a subgroup is created once its parent exists.
+     */
+    default boolean appliesInParallel() {
+        return true;
+    }
 }

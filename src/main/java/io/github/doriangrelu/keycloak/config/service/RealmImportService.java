@@ -20,8 +20,6 @@
 
 package io.github.doriangrelu.keycloak.config.service;
 
-import static io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues.FULL;
-
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy.LegacyReconciliationBridge;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
@@ -83,7 +81,6 @@ public class RealmImportService {
     private final LegacyReconciliationBridge reconciliationBridge;
     private final ClientImportService clientImportService;
     private final ClientScopeImportService clientScopeImportService;
-    private final GroupImportService groupImportService;
     private final DefaultGroupsImportService defaultGroupsImportService;
     private final ComponentImportService componentImportService;
     private final AuthenticationFlowsImportService authenticationFlowsImportService;
@@ -108,7 +105,6 @@ public class RealmImportService {
             ClientPoliciesImportService clientPoliciesImportService,
             LegacyReconciliationBridge reconciliationBridge,
             ClientImportService clientImportService,
-            GroupImportService groupImportService,
             ClientScopeImportService clientScopeImportService,
             DefaultGroupsImportService defaultGroupsImportService,
             ComponentImportService componentImportService,
@@ -129,7 +125,6 @@ public class RealmImportService {
         this.clientPoliciesImportService = clientPoliciesImportService;
         this.reconciliationBridge = reconciliationBridge;
         this.clientImportService = clientImportService;
-        this.groupImportService = groupImportService;
         this.clientScopeImportService = clientScopeImportService;
         this.defaultGroupsImportService = defaultGroupsImportService;
         this.componentImportService = componentImportService;
@@ -170,7 +165,6 @@ public class RealmImportService {
             stateService.loadState(realmImport);
         }
         reconciliationBridge.startFile(realmImport, realmExists, remoteStateLoaded);
-        groupImportService.registerImported(realmImport);
     }
 
     private void updateRealmIfNecessary(RealmImport realmImport) {
@@ -248,8 +242,8 @@ public class RealmImportService {
                         ResourceType.CLIENT_ROLE,
                         ResourceType.ROLE_COMPOSITE,
                         ResourceType.REQUIRED_ACTION,
-                        ResourceType.MESSAGE_BUNDLE));
-        groupImportService.importGroups(realmImport);
+                        ResourceType.MESSAGE_BUNDLE,
+                        ResourceType.GROUP));
         defaultGroupsImportService.doImport(realmImport);
         componentImportService.doImport(realmImport);
         userProfileImportService.doImport(realmImport);
@@ -280,9 +274,5 @@ public class RealmImportService {
         logger.debug("Start cleaning realm import for realm part '{}'", realmImport.getRealm());
         // Roles: managed mode, remote state and protections are applied by the reconciliation engine
         this.reconciliationBridge.prune(realmImport);
-        if (importProperties.getManaged().getGroup() == FULL) {
-            this.groupImportService.deleteRoleMappingMissingOnImport(realmImport);
-            this.groupImportService.deleteGroupsMissingInImport(realmImport);
-        }
     }
 }
