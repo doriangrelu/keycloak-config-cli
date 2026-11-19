@@ -31,9 +31,8 @@ import java.util.function.Function;
  * Thread-safe container that holds typed collections of objects keyed by realm name and object type.
  *
  * <p>This context is used during the import execution to share state across import services.
- * For example, it allows the {@link io.github.doriangrelu.keycloak.config.service.ClientImportService}
- * to store the list of imported clients for a given realm, so that a later cleanup phase
- * can determine which clients should be removed.</p>
+ * For example, it holds the reconciliation context of each realm, so that the cleanup phase
+ * knows what every import file of the realm declared.</p>
  *
  * <p>Internally, elements are stored in a {@link ConcurrentHashMap} with composite keys
  * built from the realm name and the element type, ensuring thread safety for parallel imports.</p>

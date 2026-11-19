@@ -28,8 +28,8 @@ import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.application.authenticationflow.AuthenticationFlowRejectedException;
+import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.InvalidAuthenticationFlowException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
@@ -238,8 +238,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
     void shouldFailWhenTryAddFlowWithDefectiveExecutionFlow() throws IOException {
         RealmImport foundImport = getFirstImport("05_try_to_update_realm__add_flow_with_defective_execution_flow.json");
 
-        InvalidImportException thrown =
-                assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
+        InvalidAuthenticationFlowException thrown =
+                assertThrows(InvalidAuthenticationFlowException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -300,8 +300,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         RealmImport foundImport =
                 getFirstImport("06_try_to_update_realm__change_requirement_in_defective_flow_with_execution_flow.json");
 
-        InvalidImportException thrown =
-                assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
+        InvalidAuthenticationFlowException thrown =
+                assertThrows(InvalidAuthenticationFlowException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -315,8 +315,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         RealmImport foundImport = getFirstImport(
                 "07_try_to_update_realm__change_requirement_flow_with_execution_flow_with_not_existing_execution.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        AuthenticationFlowRejectedException thrown =
+                assertThrows(AuthenticationFlowRejectedException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -330,8 +330,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         RealmImport foundImport = getFirstImport(
                 "08_try_to_update_realm__change_requirement_flow_with_execution_flow_with_defective_execution.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        AuthenticationFlowRejectedException thrown =
+                assertThrows(AuthenticationFlowRejectedException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -345,8 +345,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         RealmImport foundImport =
                 getFirstImport("09_try_to_update_realm__change_requirement_flow_with_defective_execution_flow.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        AuthenticationFlowRejectedException thrown =
+                assertThrows(AuthenticationFlowRejectedException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -711,8 +711,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         RealmImport foundImport =
                 getFirstImport("27_update_realm__try-to-update-non-top-level-flow-with-pseudo-id.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        AuthenticationFlowRejectedException thrown =
+                assertThrows(AuthenticationFlowRejectedException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -749,8 +749,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
     void shouldNotUpdateInvalidTopLevelFlow() throws IOException {
         RealmImport foundImport = getFirstImport("29_update_realm__try-to-update-invalid-top-level-flow.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        AuthenticationFlowRejectedException thrown =
+                assertThrows(AuthenticationFlowRejectedException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -944,8 +944,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
     void shouldFailWhenTryingToUpdateBuiltInFlow() throws IOException {
         RealmImport foundImport = getFirstImport("40_update_realm__try-to-update-built-in-flow.json");
 
-        InvalidImportException thrown =
-                assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
+        InvalidAuthenticationFlowException thrown =
+                assertThrows(InvalidAuthenticationFlowException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -958,8 +958,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
     void shouldFailWhenTryingToUpdateWithNonExistingFlow() throws IOException {
         RealmImport foundImport = getFirstImport("41_update_realm__try-to-update-with-non-existing-flow.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        InvalidAuthenticationFlowException thrown =
+                assertThrows(InvalidAuthenticationFlowException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(thrown.getMessage(), is("Non-toplevel flow not found: non existing sub flow"));
     }
@@ -1014,8 +1014,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
     void shouldNotUpdateFlowWithBuiltInFalse() throws IOException {
         RealmImport foundImport = getFirstImport("44_update_realm__try-to-update-flow-set-builtin-false.json");
 
-        InvalidImportException thrown =
-                assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
+        InvalidAuthenticationFlowException thrown =
+                assertThrows(InvalidAuthenticationFlowException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -1028,8 +1028,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
     void shouldNotUpdateFlowWithBuiltInTrue() throws IOException {
         RealmImport foundImport = getFirstImport("45_update_realm__try-to-update-flow-set-builtin-true.json");
 
-        InvalidImportException thrown =
-                assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
+        InvalidAuthenticationFlowException thrown =
+                assertThrows(InvalidAuthenticationFlowException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -1049,8 +1049,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
     void shouldNotCreateBuiltInFlow() throws IOException {
         RealmImport foundImport = getFirstImport("46_update_realm__try-to-create-builtin-flow.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        AuthenticationFlowRejectedException thrown =
+                assertThrows(AuthenticationFlowRejectedException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(thrown.getMessage(), is("Cannot update top-level-flow 'saml ecp' in realm 'realmWithFlow'."));
     }
@@ -1314,8 +1314,8 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
     void shouldNotUpdateFlowWithAuthenticatorOnBasicFlow() throws IOException {
         RealmImport foundImport = getFirstImport("63_update-realm__try-to-set-authenticator-basic-flow.json");
 
-        InvalidImportException thrown =
-                assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
+        InvalidAuthenticationFlowException thrown =
+                assertThrows(InvalidAuthenticationFlowException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),
@@ -1352,10 +1352,10 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         assertThat(firstLoginFlow, is(not(nullValue())));
         assertThat(firstLoginFlow.getAlias(), is("my custom first login flow"));
 
+        // The import also stops using it as post login flow: no longer referenced, it is deleted in the clean phase
         AuthenticationFlowRepresentation postLoginFlow =
                 getAuthenticationFlow(updatedRealm, "my custom post login flow");
-        assertThat(postLoginFlow, is(not(nullValue())));
-        assertThat(postLoginFlow.getAlias(), is("my custom post login flow"));
+        assertThat(postLoginFlow, is(nullValue()));
 
         IdentityProviderRepresentation updatedIdentityProvider = identityProviderRepository.getAll(REALM_NAME).stream()
                 .filter(idp -> "saml-with-custom-flow".equals(idp.getAlias()))

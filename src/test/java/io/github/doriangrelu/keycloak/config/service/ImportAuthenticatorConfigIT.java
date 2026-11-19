@@ -27,7 +27,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
+import io.github.doriangrelu.keycloak.config.application.authenticationflow.UnknownAuthenticatorConfigException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import java.io.IOException;
 import java.util.List;
@@ -210,8 +210,8 @@ class ImportAuthenticatorConfigIT extends AbstractImportIT {
     void shouldThrowInvalidAuthConfig() throws IOException {
         RealmImport foundImport = getFirstImport("9_update_realm__invalid_auth_config.json");
 
-        ImportProcessingException thrown =
-                assertThrows(ImportProcessingException.class, () -> realmImportService.doImport(foundImport));
+        UnknownAuthenticatorConfigException thrown =
+                assertThrows(UnknownAuthenticatorConfigException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(
                 thrown.getMessage(),

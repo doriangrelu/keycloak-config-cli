@@ -20,6 +20,10 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
 
+import io.github.doriangrelu.keycloak.config.application.authenticationflow.AuthenticationFlowReconciler;
+import io.github.doriangrelu.keycloak.config.application.authenticationflow.AuthenticatorConfigReconciler;
+import io.github.doriangrelu.keycloak.config.application.authenticationflow.ClientFlowBindingsReconciler;
+import io.github.doriangrelu.keycloak.config.application.authenticationflow.port.AuthenticationFlowGateway;
 import io.github.doriangrelu.keycloak.config.application.client.ClientReconciler;
 import io.github.doriangrelu.keycloak.config.application.client.port.ClientGateway;
 import io.github.doriangrelu.keycloak.config.application.clientpolicy.ClientPolicyReconciler;
@@ -75,6 +79,7 @@ public class ReconciliationConfiguration {
             final ScopeMappingGateway scopeMappingGateway,
             final ComponentGateway componentGateway,
             final UserProfileGateway userProfileGateway,
+            final AuthenticationFlowGateway authenticationFlowGateway,
             final ImportConfigProperties properties) {
         return new ReconciliationEngine(List.of(
                 new RealmRoleReconciler(roleGateway),
@@ -98,6 +103,9 @@ public class ReconciliationConfiguration {
                 ScopeMappingReconciler.ofClientRoles(scopeMappingGateway),
                 ComponentReconciler.ofComponents(componentGateway),
                 ComponentReconciler.ofSubComponents(componentGateway),
-                new UserProfileReconciler(userProfileGateway)));
+                new UserProfileReconciler(userProfileGateway),
+                new AuthenticationFlowReconciler(authenticationFlowGateway),
+                new AuthenticatorConfigReconciler(authenticationFlowGateway),
+                new ClientFlowBindingsReconciler(authenticationFlowGateway)));
     }
 }

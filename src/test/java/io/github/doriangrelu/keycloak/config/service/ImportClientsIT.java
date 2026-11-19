@@ -43,9 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.client.ClientRejectedException;
+import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.InvalidAuthenticationFlowException;
 import io.github.doriangrelu.keycloak.config.domain.client.model.InvalidClientException;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
@@ -1491,8 +1491,8 @@ class ImportClientsIT extends AbstractImportIT {
     @Order(18)
     void shouldntUpdateWithAnInvalidAuthenticationFlowBindingOverrides() throws IOException {
         RealmImport foundImport = getFirstImport("18_cannot_update_realm__with_invalid_auth-flow-overrides.json");
-        KeycloakRepositoryException thrown =
-                assertThrows(KeycloakRepositoryException.class, () -> runImport(List.of(foundImport)));
+        InvalidAuthenticationFlowException thrown =
+                assertThrows(InvalidAuthenticationFlowException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(thrown.getMessage(), is("Cannot find top-level-flow 'bad value' in realm 'realmWithClients'."));
 

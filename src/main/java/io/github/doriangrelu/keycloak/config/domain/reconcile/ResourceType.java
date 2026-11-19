@@ -39,7 +39,10 @@ public enum ResourceType {
     CLIENT_SCOPE_MAPPING("Client scope mapping"),
     COMPONENT("Component"),
     SUB_COMPONENT("Sub-component"),
-    USER_PROFILE("User profile");
+    USER_PROFILE("User profile"),
+    AUTHENTICATION_FLOW("Authentication flow"),
+    AUTHENTICATOR_CONFIG("Authenticator config"),
+    CLIENT_FLOW_BINDING("Client flow binding");
 
     private final String label;
 

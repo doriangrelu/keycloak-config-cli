@@ -29,6 +29,7 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciliatio
 import io.github.doriangrelu.keycloak.config.application.requiredaction.RequiredActionReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.ClientRoleReconciler;
 import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconciler;
+import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.ClientFlowBindings;
 import io.github.doriangrelu.keycloak.config.domain.client.model.Client;
 import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
@@ -41,6 +42,7 @@ import io.github.doriangrelu.keycloak.config.domain.scopemapping.model.ScopeMapp
 import io.github.doriangrelu.keycloak.config.domain.user.model.InvalidUserException;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import io.github.doriangrelu.keycloak.config.domain.userprofile.model.UserProfile;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.authenticationflow.AuthenticationFlowKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientpolicy.ClientPolicyKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakMapper;
@@ -104,6 +106,7 @@ public class LegacyReconciliationBridge {
     private final IdentityProviderKeycloakMapper identityProviderMapper;
     private final ClientPolicyKeycloakMapper clientPolicyMapper;
     private final ComponentKeycloakMapper componentMapper;
+    private final AuthenticationFlowKeycloakMapper authenticationFlowMapper;
     private final UserProfileKeycloakMapper userProfileMapper;
     private final ClientApi clientApi;
     private final KeycloakProvider keycloakProvider;
@@ -121,6 +124,7 @@ public class LegacyReconciliationBridge {
             final IdentityProviderKeycloakMapper identityProviderMapper,
             final ClientPolicyKeycloakMapper clientPolicyMapper,
             final ComponentKeycloakMapper componentMapper,
+            final AuthenticationFlowKeycloakMapper authenticationFlowMapper,
             final UserProfileKeycloakMapper userProfileMapper,
             final ClientApi clientApi,
             final KeycloakProvider keycloakProvider,
@@ -136,6 +140,7 @@ public class LegacyReconciliationBridge {
         this.identityProviderMapper = identityProviderMapper;
         this.clientPolicyMapper = clientPolicyMapper;
         this.componentMapper = componentMapper;
+        this.authenticationFlowMapper = authenticationFlowMapper;
         this.userProfileMapper = userProfileMapper;
         this.clientApi = clientApi;
         this.keycloakProvider = keycloakProvider;
@@ -222,7 +227,12 @@ public class LegacyReconciliationBridge {
                                             modeOf(this.properties.getManaged().getComponent())),
                                     Map.entry(
                                             ResourceType.SUB_COMPONENT,
-                                            modeOf(this.properties.getManaged().getSubComponent()))));
+                                            modeOf(this.properties.getManaged().getSubComponent())),
+                                    Map.entry(
+                                            ResourceType.AUTHENTICATION_FLOW,
+                                            modeOf(this.properties.getManaged().getAuthenticationFlow())),
+                                    // Unused authenticator configs are garbage: always deleted, as before
+                                    Map.entry(ResourceType.AUTHENTICATOR_CONFIG, ManagedMode.FULL)));
                     ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
                     return created;
                 });
@@ -350,6 +360,33 @@ public class LegacyReconciliationBridge {
                     ResourceType.IDENTITY_PROVIDER_MAPPER,
                     realmImport.getIdentityProviderMappers().stream()
                             .map(this.identityProviderMapper::toMapper)
+                            .toList());
+        }
+        if (realmImport.getAuthenticationFlows() != null) {
+            desired.declare(
+                    ResourceType.AUTHENTICATION_FLOW,
+                    this.authenticationFlowMapper.toDesiredFlows(
+                            realmImport.getAuthenticationFlows(), realmImport.getAuthenticatorConfig()));
+        }
+        if (realmImport.getAuthenticationFlows() != null || realmImport.getAuthenticatorConfig() != null) {
+            desired.declare(
+                    ResourceType.AUTHENTICATOR_CONFIG,
+                    realmImport.getAuthenticatorConfig() == null
+                            ? List.of()
+                            : realmImport.getAuthenticatorConfig().stream()
+                                    .map(config -> this.authenticationFlowMapper.toAuthenticatorConfig(config, false))
+                                    .toList());
+        }
+        if (realmImport.getClients() != null) {
+            // The declared bindings of a client are exact: a client without bindings loses them, as before
+            desired.declare(
+                    ResourceType.CLIENT_FLOW_BINDING,
+                    realmImport.getClients().stream()
+                            .filter(client -> client.getClientId() != null || client.getName() != null)
+                            .map(client -> new ClientFlowBindings(
+                                    client.getClientId(),
+                                    client.getName(),
+                                    client.getAuthenticationFlowBindingOverrides()))
                             .toList());
         }
         if (realmImport.getComponents() != null) {

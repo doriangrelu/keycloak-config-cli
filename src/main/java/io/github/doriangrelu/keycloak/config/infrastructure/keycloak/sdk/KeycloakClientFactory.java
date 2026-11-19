@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.AuthenticationFlowAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientPolicyAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientScopeAdapter;
@@ -32,6 +33,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ScopeMappingAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.UserAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.UserProfileAdapter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.AuthenticationFlowApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientPolicyApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientScopeApi;
@@ -85,6 +87,11 @@ public class KeycloakClientFactory {
     @Bean
     public ClientPolicyApi clientPolicyApi(final KeycloakProvider keycloakProvider) {
         return new ClientPolicyAdapter(keycloakProvider::getInstance);
+    }
+
+    @Bean
+    public AuthenticationFlowApi authenticationFlowApi(final KeycloakProvider keycloakProvider) {
+        return new AuthenticationFlowAdapter(keycloakProvider::getInstance);
     }
 
     @Bean

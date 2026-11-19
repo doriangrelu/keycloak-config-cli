@@ -75,12 +75,9 @@ public class RealmImportService {
     private final OtpPolicyImportService otpPolicyImportService;
 
     private final LegacyReconciliationBridge reconciliationBridge;
-    private final ClientImportService clientImportService;
     private final ClientScopeImportService clientScopeImportService;
     private final DefaultGroupsImportService defaultGroupsImportService;
     private final ComponentGateway componentGateway;
-    private final AuthenticationFlowsImportService authenticationFlowsImportService;
-    private final AuthenticatorConfigImportService authenticatorConfigImportService;
     private final ClientAuthorizationImportService clientAuthorizationImportService;
 
     private final ImportConfigProperties importProperties;
@@ -94,12 +91,9 @@ public class RealmImportService {
             KeycloakProvider keycloakProvider,
             RealmRepository realmRepository,
             LegacyReconciliationBridge reconciliationBridge,
-            ClientImportService clientImportService,
             ClientScopeImportService clientScopeImportService,
             DefaultGroupsImportService defaultGroupsImportService,
             ComponentGateway componentGateway,
-            AuthenticationFlowsImportService authenticationFlowsImportService,
-            AuthenticatorConfigImportService authenticatorConfigImportService,
             ClientAuthorizationImportService clientAuthorizationImportService,
             OtpPolicyImportService otpPolicyImportService,
             ChecksumService checksumService,
@@ -108,12 +102,9 @@ public class RealmImportService {
         this.keycloakProvider = keycloakProvider;
         this.realmRepository = realmRepository;
         this.reconciliationBridge = reconciliationBridge;
-        this.clientImportService = clientImportService;
         this.clientScopeImportService = clientScopeImportService;
         this.defaultGroupsImportService = defaultGroupsImportService;
         this.componentGateway = componentGateway;
-        this.authenticationFlowsImportService = authenticationFlowsImportService;
-        this.authenticatorConfigImportService = authenticatorConfigImportService;
         this.clientAuthorizationImportService = clientAuthorizationImportService;
         this.otpPolicyImportService = otpPolicyImportService;
         this.checksumService = checksumService;
@@ -233,9 +224,10 @@ public class RealmImportService {
             logger.warn("Purging users isn't supported in keycloak-config-cli!");
         }
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.USER));
-        authenticationFlowsImportService.doImport(realmImport);
-        authenticatorConfigImportService.doImport(realmImport);
-        clientImportService.doImportDependencies(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.AUTHENTICATION_FLOW));
+        bindRealmFlows(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.AUTHENTICATOR_CONFIG));
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_FLOW_BINDING));
         clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
         reconciliationBridge.apply(
                 realmImport, Set.of(ResourceType.IDENTITY_PROVIDER, ResourceType.IDENTITY_PROVIDER_MAPPER));
@@ -244,6 +236,21 @@ public class RealmImportService {
 
         stateService.doImport(realmImport);
         checksumService.doImport(realmImport);
+    }
+
+    /** Binds the flows of the realm once its declared flows exist. */
+    private void bindRealmFlows(RealmImport realmImport) {
+        if (realmImport.getAuthenticationFlows() == null) {
+            return;
+        }
+        RealmRepresentation realm = realmRepository.get(realmImport.getRealm());
+        realm.setBrowserFlow(realmImport.getBrowserFlow());
+        realm.setDirectGrantFlow(realmImport.getDirectGrantFlow());
+        realm.setClientAuthenticationFlow(realmImport.getClientAuthenticationFlow());
+        realm.setDockerAuthenticationFlow(realmImport.getDockerAuthenticationFlow());
+        realm.setRegistrationFlow(realmImport.getRegistrationFlow());
+        realm.setResetCredentialsFlow(realmImport.getResetCredentialsFlow());
+        realmRepository.update(realm);
     }
 
     private void syncUserFederationIfNecessary(RealmImport realmImport) {
@@ -257,9 +264,8 @@ public class RealmImportService {
     /**
      * Performs cleanup operations on the realm after the import configuration has been applied.
      *
-     * <p>When the client managed mode is set to {@code FULL}, this method delegates to
-     * {@link ClientImportService#deleteClientsMissingInImport(RealmImport)} to remove
-     * any clients that exist in Keycloak but are absent from the import configuration.</p>
+     * <p>The reconciliation engine deletes the managed resources of the migrated types missing from every import
+     * file of the realm.</p>
      *
      * @param realmImport the realm import configuration identifying the target realm
      */
