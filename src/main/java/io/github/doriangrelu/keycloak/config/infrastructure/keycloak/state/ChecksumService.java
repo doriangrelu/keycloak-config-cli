@@ -18,14 +18,14 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.service.checksum;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state;
 
 import io.github.doriangrelu.keycloak.config.application.importation.ChecksumChangedException;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RealmApi;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportBehaviorsProperties.ChecksumChangedOption;
-import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
 import java.text.MessageFormat;
 import java.util.Map;
 import java.util.Objects;
@@ -43,23 +43,23 @@ import org.springframework.stereotype.Service;
 public class ChecksumService {
     private static final Logger logger = LoggerFactory.getLogger(ChecksumService.class);
 
-    private final RealmRepository realmRepository;
+    private final RealmApi realmApi;
     private final ImportConfigProperties importConfigProperties;
 
     @Autowired
-    public ChecksumService(RealmRepository realmRepository, ImportConfigProperties importConfigProperties) {
-        this.realmRepository = realmRepository;
+    public ChecksumService(RealmApi realmApi, ImportConfigProperties importConfigProperties) {
+        this.realmApi = realmApi;
         this.importConfigProperties = importConfigProperties;
     }
 
     public void doImport(RealmImport realmImport) {
-        RealmRepresentation existingRealm = realmRepository.get(realmImport.getRealm());
+        RealmRepresentation existingRealm = existingRealm(realmImport.getRealm());
         Map<String, String> customAttributes = existingRealm.getAttributes();
 
         String importChecksum = realmImport.getChecksum();
         String attributeKey = getCustomAttributeKey(realmImport);
         customAttributes.put(attributeKey, importChecksum);
-        realmRepository.update(existingRealm);
+        this.realmApi.updateRealm(existingRealm.getRealm(), existingRealm);
 
         logger.debug(
                 "Updated import checksum of realm '{}' to '{}', attributeKey: '{}'",
@@ -69,7 +69,7 @@ public class ChecksumService {
     }
 
     public boolean hasToBeUpdated(RealmImport realmImport) {
-        RealmRepresentation existingRealm = realmRepository.get(realmImport.getRealm());
+        RealmRepresentation existingRealm = existingRealm(realmImport.getRealm());
         if (existingRealm == null) {
             throw new InvalidImportException("The specified realm does not exist: " + realmImport.getRealm());
         }
@@ -108,5 +108,18 @@ public class ChecksumService {
         }
 
         return MessageFormat.format(ImportConfigProperties.REALM_CHECKSUM_ATTRIBUTE_PREFIX_KEY, attributeSuffix);
+    }
+
+    /** The realm, with the attributes and events flag Keycloak omits when they are empty. */
+    private RealmRepresentation existingRealm(String realmName) {
+        RealmRepresentation realm = realmApi.findRealm(realmName)
+                .orElseThrow(() -> new InvalidImportException("The specified realm does not exist: " + realmName));
+        if (realm.getAttributes() == null) {
+            realm.setAttributes(new java.util.HashMap<>());
+        }
+        if (realm.isEventsEnabled() == null) {
+            realm.setEventsEnabled(false);
+        }
+        return realm;
     }
 }

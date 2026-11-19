@@ -28,6 +28,15 @@ Les flux d'authentification (avec `UsedAuthenticationFlowWorkaroundFactory`) et 
 
 Quand tous les types sont migrés : suppression du reconciler « legacy », de `RealmImportService.cleanRealm`, d'`ExecutionContextHolder`, de `ThreadHelper` et des packages hérités ; l'exclusion d'`ArchitectureTest` est retirée.
 
+Réalisé :
+
+- La passerelle `LegacyReconciliationBridge` devient `RealmImportReconciliation` (`infrastructure.keycloak.importation`) : elle traduit le modèle des fichiers d'import en état voulu et garde le contexte de chaque realm pendant une exécution, ce qui remplace `ExecutionContextHolder`, `ExecutionContext` et `MissingRequiredExecutionContextException`.
+- `RealmImportService.cleanRealm` disparaît : `RealmImportService.importAll` enchaîne une exécution complète (nouvelle exécution, import de chaque fichier, puis nettoyage de chaque realm), appelée par la ligne de commande et par les tests.
+- Le package `repository` disparaît : les dépôts devenus inutiles sont supprimés, l'état distant et les sommes de contrôle passent dans `infrastructure.keycloak.state` sur l'API Keycloak des realms, et la liaison des flux du realm devient un type du moteur (`realm-flow-binding`). Les utilitaires orphelins (`ClientScopeUtil`, `ProtocolMapperUtil`, `KeycloakUtil`, `ResponseUtil`) sont supprimés.
+- `ArchitectureTest` ne tolère plus de couche vide et vérifie l'absence de cycle entre tous les packages du code.
+
+Écart : `RealmImportService` reste, réduit à l'enchaînement d'un import (existence du realm, somme de contrôle, état distant, ordre d'application des types). Les packages `model`, `provider`, `properties` et `service.normalize` restent aussi : ils relèvent de la lecture des fichiers et de la normalisation (EPIC-005).
+
 ## Avancement
 
 | Type | Statut | Remarques |

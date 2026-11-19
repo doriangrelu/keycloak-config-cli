@@ -18,11 +18,10 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.service.state;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state;
 
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
-import io.github.doriangrelu.keycloak.config.repository.StateRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

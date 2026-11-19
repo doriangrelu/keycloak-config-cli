@@ -25,7 +25,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
 import java.util.*;
@@ -33,7 +32,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.*;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
@@ -61,9 +59,6 @@ class ImportManagedNoDeleteIT extends AbstractImportIT {
     ImportManagedNoDeleteIT() {
         this.resourcePath = "import-files/managed-no-delete";
     }
-
-    @Autowired
-    private IdentityProviderRepository identityProviderRepository;
 
     @Test
     @Order(0)
@@ -147,7 +142,7 @@ class ImportManagedNoDeleteIT extends AbstractImportIT {
 
         List<String> identityProviderList = Arrays.asList("my-first-idp", "my-second-idp");
         List<IdentityProviderRepresentation> createdIdentityProviders =
-                identityProviderRepository.getAll(createdRealm.getRealm()).stream()
+                keycloakRepository.getIdentityProviders(createdRealm.getRealm()).stream()
                         .filter((identityProvider) -> identityProviderList.contains(identityProvider.getAlias()))
                         .toList();
         assertThat(createdIdentityProviders, hasSize(2));

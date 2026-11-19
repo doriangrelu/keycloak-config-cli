@@ -25,15 +25,20 @@ import io.github.doriangrelu.keycloak.config.application.realm.UnknownRealmRefer
 import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultClientScopes;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultGroups;
+import io.github.doriangrelu.keycloak.config.domain.realm.model.RealmFlowBindings;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.RealmSettings;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientScopeApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.GroupApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RealmApi;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
@@ -48,6 +53,35 @@ public class RealmKeycloakGateway implements RealmGateway {
 
     /** Longest value some Keycloak versions store for these properties without a database error. */
     private static final int MAX_LENGTH = 241;
+
+    /** Flow bindings of a realm, by name in the import. */
+    private record FlowBinding(
+            String name,
+            Function<RealmRepresentation, String> getter,
+            BiConsumer<RealmRepresentation, String> setter) {}
+
+    private static final List<FlowBinding> FLOW_BINDINGS = List.of(
+            new FlowBinding("browserFlow", RealmRepresentation::getBrowserFlow, RealmRepresentation::setBrowserFlow),
+            new FlowBinding(
+                    "directGrantFlow",
+                    RealmRepresentation::getDirectGrantFlow,
+                    RealmRepresentation::setDirectGrantFlow),
+            new FlowBinding(
+                    "clientAuthenticationFlow",
+                    RealmRepresentation::getClientAuthenticationFlow,
+                    RealmRepresentation::setClientAuthenticationFlow),
+            new FlowBinding(
+                    "dockerAuthenticationFlow",
+                    RealmRepresentation::getDockerAuthenticationFlow,
+                    RealmRepresentation::setDockerAuthenticationFlow),
+            new FlowBinding(
+                    "registrationFlow",
+                    RealmRepresentation::getRegistrationFlow,
+                    RealmRepresentation::setRegistrationFlow),
+            new FlowBinding(
+                    "resetCredentialsFlow",
+                    RealmRepresentation::getResetCredentialsFlow,
+                    RealmRepresentation::setResetCredentialsFlow));
 
     private final RealmApi realmApi;
     private final ClientScopeApi clientScopeApi;
@@ -173,6 +207,41 @@ public class RealmKeycloakGateway implements RealmGateway {
                     .map(GroupRepresentation::getId)
                     .orElseThrow(() -> UnknownRealmReferenceException.group(path));
             this.realmApi.addDefaultGroup(realm, id);
+        }
+    }
+
+    /** Flow bindings an import declares. */
+    public static RealmFlowBindings flowBindingsOf(final RealmRepresentation realm) {
+        Map<String, String> flows = new LinkedHashMap<>();
+        FLOW_BINDINGS.forEach(
+                binding -> flows.put(binding.name(), binding.getter().apply(realm)));
+        return new RealmFlowBindings(flows);
+    }
+
+    @Override
+    public RealmFlowBindings findFlowBindings(final String realm) {
+        return this.realmApi
+                .findRealm(realm)
+                .map(RealmKeycloakGateway::flowBindingsOf)
+                .orElse(new RealmFlowBindings(Map.of()));
+    }
+
+    @Override
+    public void bindFlows(final String realm, final RealmFlowBindings bindings) {
+        RealmRepresentation existing = this.realmApi
+                .findRealm(realm)
+                .orElseThrow(() -> new IllegalStateException("Realm '" + realm + "' is missing"));
+        FLOW_BINDINGS.forEach(binding -> {
+            String alias = bindings.flows().get(binding.name());
+            if (alias != null) {
+                binding.setter().accept(existing, alias);
+            }
+        });
+        try {
+            this.realmApi.updateRealm(realm, existing);
+        } catch (final KeycloakAccessException error) {
+            throw new RealmRejectedException(
+                    String.format("Cannot update realm '%s': %s", realm, error.getMessage()), error);
         }
     }
 

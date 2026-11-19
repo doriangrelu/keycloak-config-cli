@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation;
 
 import io.github.doriangrelu.keycloak.config.application.client.ClientReconciler;
 import io.github.doriangrelu.keycloak.config.application.clientauthorization.ClientAuthorizationReconciler;
@@ -58,6 +58,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.realm.Realm
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.StateService;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user.UserKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.userprofile.UserProfileKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
@@ -65,8 +66,6 @@ import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
-import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
-import io.github.doriangrelu.keycloak.config.service.state.StateService;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -99,14 +98,17 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
-public class LegacyReconciliationBridge {
+public class RealmImportReconciliation {
 
-    private static final Logger logger = LoggerFactory.getLogger(LegacyReconciliationBridge.class);
+    private static final Logger logger = LoggerFactory.getLogger(RealmImportReconciliation.class);
 
     /** Realm attribute that enables the management of the user profile configuration. */
     static final String USER_PROFILE_ENABLED = "userProfileEnabled";
 
     private final ReconciliationEngine engine;
+    /** Context of each realm during the current run. */
+    private final Map<String, RealmContext> contexts = new java.util.HashMap<>();
+
     private final RoleKeycloakMapper roleMapper;
     private final ClientKeycloakMapper clientMapper;
     private final GroupKeycloakMapper groupMapper;
@@ -125,7 +127,7 @@ public class LegacyReconciliationBridge {
     private final StateService stateService;
     private final ImportConfigProperties properties;
 
-    public LegacyReconciliationBridge(
+    public RealmImportReconciliation(
             final ReconciliationEngine engine,
             final RoleKeycloakMapper roleMapper,
             final ClientKeycloakMapper clientMapper,
@@ -209,52 +211,57 @@ public class LegacyReconciliationBridge {
         this.engine.prune(contextOf(realmImport));
     }
 
+    /**
+     * Starts a run of the command line: forgets the contexts of the previous run, if any. The clean phase of a run
+     * relies on what every file of the run declared.
+     */
+    public synchronized void startRun() {
+        this.contexts.clear();
+    }
+
     private synchronized RealmContext contextOf(final RealmImport realmImport) {
         String realm = realmImport.getRealm();
-        return ExecutionContextHolder.context().get(realm, RealmContext.class).stream()
-                .findFirst()
-                .orElseGet(() -> {
-                    RealmContext created = new RealmContext(
-                            realm,
-                            this.properties.isParallel(),
-                            this.properties.getRemoteState().isEnabled(),
-                            Map.ofEntries(
-                                    Map.entry(ResourceType.REALM_ROLE, roleMode()),
-                                    Map.entry(ResourceType.CLIENT_ROLE, roleMode()),
-                                    Map.entry(ResourceType.REQUIRED_ACTION, requiredActionMode()),
-                                    Map.entry(ResourceType.MESSAGE_BUNDLE, messageBundleMode()),
-                                    Map.entry(ResourceType.CLIENT_SCOPE, clientScopeMode()),
-                                    Map.entry(ResourceType.CLIENT, clientMode()),
-                                    Map.entry(ResourceType.GROUP, groupMode()),
-                                    Map.entry(
-                                            ResourceType.IDENTITY_PROVIDER,
-                                            modeOf(this.properties.getManaged().getIdentityProvider())),
-                                    Map.entry(
-                                            ResourceType.IDENTITY_PROVIDER_MAPPER,
-                                            modeOf(this.properties.getManaged().getIdentityProviderMapper())),
-                                    // The declared client profiles and policies are the exact ones, as before
-                                    Map.entry(ResourceType.CLIENT_PROFILE, ManagedMode.FULL),
-                                    Map.entry(ResourceType.CLIENT_POLICY, ManagedMode.FULL),
-                                    Map.entry(
-                                            ResourceType.SCOPE_MAPPING,
-                                            modeOf(this.properties.getManaged().getScopeMapping())),
-                                    Map.entry(
-                                            ResourceType.CLIENT_SCOPE_MAPPING,
-                                            modeOf(this.properties.getManaged().getClientScopeMapping())),
-                                    Map.entry(
-                                            ResourceType.COMPONENT,
-                                            modeOf(this.properties.getManaged().getComponent())),
-                                    Map.entry(
-                                            ResourceType.SUB_COMPONENT,
-                                            modeOf(this.properties.getManaged().getSubComponent())),
-                                    Map.entry(
-                                            ResourceType.AUTHENTICATION_FLOW,
-                                            modeOf(this.properties.getManaged().getAuthenticationFlow())),
-                                    // Unused authenticator configs are garbage: always deleted, as before
-                                    Map.entry(ResourceType.AUTHENTICATOR_CONFIG, ManagedMode.FULL)));
-                    ExecutionContextHolder.context().put(realm, RealmContext.class, List.of(created));
-                    return created;
-                });
+        return this.contexts.computeIfAbsent(realm, unused -> {
+            RealmContext created = new RealmContext(
+                    realm,
+                    this.properties.isParallel(),
+                    this.properties.getRemoteState().isEnabled(),
+                    Map.ofEntries(
+                            Map.entry(ResourceType.REALM_ROLE, roleMode()),
+                            Map.entry(ResourceType.CLIENT_ROLE, roleMode()),
+                            Map.entry(ResourceType.REQUIRED_ACTION, requiredActionMode()),
+                            Map.entry(ResourceType.MESSAGE_BUNDLE, messageBundleMode()),
+                            Map.entry(ResourceType.CLIENT_SCOPE, clientScopeMode()),
+                            Map.entry(ResourceType.CLIENT, clientMode()),
+                            Map.entry(ResourceType.GROUP, groupMode()),
+                            Map.entry(
+                                    ResourceType.IDENTITY_PROVIDER,
+                                    modeOf(this.properties.getManaged().getIdentityProvider())),
+                            Map.entry(
+                                    ResourceType.IDENTITY_PROVIDER_MAPPER,
+                                    modeOf(this.properties.getManaged().getIdentityProviderMapper())),
+                            // The declared client profiles and policies are the exact ones, as before
+                            Map.entry(ResourceType.CLIENT_PROFILE, ManagedMode.FULL),
+                            Map.entry(ResourceType.CLIENT_POLICY, ManagedMode.FULL),
+                            Map.entry(
+                                    ResourceType.SCOPE_MAPPING,
+                                    modeOf(this.properties.getManaged().getScopeMapping())),
+                            Map.entry(
+                                    ResourceType.CLIENT_SCOPE_MAPPING,
+                                    modeOf(this.properties.getManaged().getClientScopeMapping())),
+                            Map.entry(
+                                    ResourceType.COMPONENT,
+                                    modeOf(this.properties.getManaged().getComponent())),
+                            Map.entry(
+                                    ResourceType.SUB_COMPONENT,
+                                    modeOf(this.properties.getManaged().getSubComponent())),
+                            Map.entry(
+                                    ResourceType.AUTHENTICATION_FLOW,
+                                    modeOf(this.properties.getManaged().getAuthenticationFlow())),
+                            // Unused authenticator configs are garbage: always deleted, as before
+                            Map.entry(ResourceType.AUTHENTICATOR_CONFIG, ManagedMode.FULL)));
+            return created;
+        });
     }
 
     private static ManagedMode modeOf(final ImportManagedPropertiesValues value) {
@@ -365,6 +372,12 @@ public class LegacyReconciliationBridge {
         }
         if (!defaultClientScopes.isEmpty()) {
             desired.declare(ResourceType.DEFAULT_CLIENT_SCOPE, defaultClientScopes);
+        }
+        if (realmImport.getAuthenticationFlows() != null) {
+            desired.declare(
+                    ResourceType.REALM_FLOW_BINDING,
+                    List.of(io.github.doriangrelu.keycloak.config.infrastructure.keycloak.realm.RealmKeycloakGateway
+                            .flowBindingsOf(realmImport)));
         }
         if (realmImport.getDefaultGroups() != null) {
             desired.declare(
@@ -658,7 +671,7 @@ public class LegacyReconciliationBridge {
 
     private static List<ProtectionRule> protectionsOf(final RealmImport realmImport) {
         return realmImport.getProtectedResources().stream()
-                .map(LegacyReconciliationBridge::toRule)
+                .map(RealmImportReconciliation::toRule)
                 .toList();
     }
 

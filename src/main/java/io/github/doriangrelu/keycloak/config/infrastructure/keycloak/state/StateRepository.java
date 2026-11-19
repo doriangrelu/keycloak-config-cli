@@ -18,11 +18,13 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.repository;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state;
 
 import static io.github.doriangrelu.keycloak.config.util.JsonUtil.fromJson;
 import static io.github.doriangrelu.keycloak.config.util.JsonUtil.toJson;
 
+import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RealmApi;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.util.CryptoUtil;
@@ -40,13 +42,13 @@ import org.springframework.stereotype.Component;
 public class StateRepository {
     private static final int MAX_ATTRIBUTE_LENGTH = 250;
 
-    private final RealmRepository realmRepository;
+    private final RealmApi realmApi;
     private final ImportConfigProperties importConfigProperties;
 
     private Map<String, String> customAttributes;
 
-    public StateRepository(RealmRepository realmRepository, ImportConfigProperties importConfigProperties) {
-        this.realmRepository = realmRepository;
+    public StateRepository(RealmApi realmApi, ImportConfigProperties importConfigProperties) {
+        this.realmApi = realmApi;
         this.importConfigProperties = importConfigProperties;
     }
 
@@ -129,11 +131,11 @@ public class StateRepository {
     }
 
     public void update(RealmImport realmImport) {
-        RealmRepresentation existingRealm = realmRepository.get(realmImport.getRealm());
+        RealmRepresentation existingRealm = existingRealm(realmImport.getRealm());
         Map<String, String> realmAttributes = existingRealm.getAttributes();
         realmAttributes.putAll(customAttributes);
 
-        realmRepository.update(existingRealm);
+        realmApi.updateRealm(existingRealm.getRealm(), existingRealm);
     }
 
     private String getCustomAttributeKey(String entity) {
@@ -144,7 +146,7 @@ public class StateRepository {
     }
 
     private Map<String, String> retrieveCustomAttributes(String realmName) {
-        RealmRepresentation existingRealm = realmRepository.get(realmName);
+        RealmRepresentation existingRealm = existingRealm(realmName);
         return existingRealm.getAttributes();
     }
 
@@ -170,5 +172,15 @@ public class StateRepository {
             customAttributes.put(getCustomAttributeKey(entity) + "-" + index, value);
             index++;
         }
+    }
+
+    /** The realm, with the attributes Keycloak omits when there are none. */
+    private RealmRepresentation existingRealm(String realmName) {
+        RealmRepresentation realm = realmApi.findRealm(realmName)
+                .orElseThrow(() -> new InvalidImportException("The specified realm does not exist: " + realmName));
+        if (realm.getAttributes() == null) {
+            realm.setAttributes(new java.util.HashMap<>());
+        }
+        return realm;
     }
 }

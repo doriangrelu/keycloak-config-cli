@@ -26,7 +26,6 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
 import java.util.List;
@@ -34,14 +33,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @SuppressWarnings({"java:S5961", "java:S5976"})
 class ImportIdentityProvidersIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithIdentityProviders";
-
-    @Autowired
-    private IdentityProviderRepository identityProviderRepository;
 
     ImportIdentityProvidersIT() {
         this.resourcePath = "import-files/identity-providers";
@@ -50,7 +45,7 @@ class ImportIdentityProvidersIT extends AbstractImportIT {
     private List<IdentityProviderRepresentation> getIdentityProviders(RealmRepresentation realm) {
         return VersionUtil.lt(KEYCLOAK_VERSION, "26")
                 ? realm.getIdentityProviders()
-                : identityProviderRepository.getAll(realm.getRealm());
+                : keycloakRepository.getIdentityProviders(realm.getRealm());
     }
 
     @Test

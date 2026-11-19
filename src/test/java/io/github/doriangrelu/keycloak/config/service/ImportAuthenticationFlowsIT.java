@@ -31,7 +31,6 @@ import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.authenticationflow.AuthenticationFlowRejectedException;
 import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.InvalidAuthenticationFlowException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
-import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
 import java.util.List;
@@ -41,14 +40,10 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.keycloak.representations.idm.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @SuppressWarnings({"java:S5961", "java:S5976", "deprecation"})
 class ImportAuthenticationFlowsIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithFlow";
-
-    @Autowired
-    private IdentityProviderRepository identityProviderRepository;
 
     ImportAuthenticationFlowsIT() {
         this.resourcePath = "import-files/auth-flows";
@@ -1273,7 +1268,7 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         assertThat(realm.isEnabled(), is(true));
 
         IdentityProviderRepresentation identityProviderRepresentation =
-                identityProviderRepository.getAll(realm.getRealm()).stream()
+                keycloakRepository.getIdentityProviders(realm.getRealm()).stream()
                         .filter(idp -> Objects.equals(idp.getAlias(), "keycloak-oidc"))
                         .findFirst()
                         .orElse(null);
@@ -1297,7 +1292,7 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         assertThat(realm.isEnabled(), is(true));
 
         IdentityProviderRepresentation identityProviderRepresentation =
-                identityProviderRepository.getAll(realm.getRealm()).stream()
+                keycloakRepository.getIdentityProviders(realm.getRealm()).stream()
                         .filter(idp -> Objects.equals(idp.getAlias(), "keycloak-oidc"))
                         .findFirst()
                         .orElse(null);
@@ -1334,7 +1329,7 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
-        IdentityProviderRepresentation identityProvider = identityProviderRepository.getAll(REALM_NAME).stream()
+        IdentityProviderRepresentation identityProvider = keycloakRepository.getIdentityProviders(REALM_NAME).stream()
                 .filter(idp -> "saml-with-custom-flow".equals(idp.getAlias()))
                 .findFirst()
                 .orElse(null);
@@ -1357,10 +1352,11 @@ class ImportAuthenticationFlowsIT extends AbstractImportIT {
                 getAuthenticationFlow(updatedRealm, "my custom post login flow");
         assertThat(postLoginFlow, is(nullValue()));
 
-        IdentityProviderRepresentation updatedIdentityProvider = identityProviderRepository.getAll(REALM_NAME).stream()
-                .filter(idp -> "saml-with-custom-flow".equals(idp.getAlias()))
-                .findFirst()
-                .orElse(null);
+        IdentityProviderRepresentation updatedIdentityProvider =
+                keycloakRepository.getIdentityProviders(REALM_NAME).stream()
+                        .filter(idp -> "saml-with-custom-flow".equals(idp.getAlias()))
+                        .findFirst()
+                        .orElse(null);
         assertThat(updatedIdentityProvider, is(not(nullValue())));
         assertThat(updatedIdentityProvider.getFirstBrokerLoginFlowAlias(), is("my custom first login flow"));
         assertThat(updatedIdentityProvider.getPostBrokerLoginFlowAlias(), is(nullValue()));

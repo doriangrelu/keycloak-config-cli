@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation;
 
 import io.github.doriangrelu.keycloak.config.application.authenticationflow.AuthenticationFlowReconciler;
 import io.github.doriangrelu.keycloak.config.application.authenticationflow.AuthenticatorConfigReconciler;
@@ -44,6 +44,7 @@ import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBu
 import io.github.doriangrelu.keycloak.config.application.messagebundle.port.MessageBundleGateway;
 import io.github.doriangrelu.keycloak.config.application.realm.DefaultClientScopesReconciler;
 import io.github.doriangrelu.keycloak.config.application.realm.DefaultGroupsReconciler;
+import io.github.doriangrelu.keycloak.config.application.realm.RealmFlowBindingsReconciler;
 import io.github.doriangrelu.keycloak.config.application.realm.RealmSettingsReconciler;
 import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
@@ -95,6 +96,7 @@ public class ReconciliationConfiguration {
                 new RealmSettingsReconciler(realmGateway, ImportConfigProperties.REALM_STATE_ATTRIBUTE_COMMON_PREFIX),
                 new DefaultClientScopesReconciler(realmGateway),
                 new DefaultGroupsReconciler(realmGateway),
+                new RealmFlowBindingsReconciler(realmGateway),
                 new RealmRoleReconciler(roleGateway),
                 new ClientRoleReconciler(roleGateway),
                 new RoleCompositeReconciler(roleGateway),

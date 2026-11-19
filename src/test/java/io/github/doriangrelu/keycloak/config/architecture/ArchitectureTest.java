@@ -33,9 +33,10 @@ import com.tngtech.archunit.lang.ArchRule;
 /**
  * Layering rules of ADR-001.
  *
- * <p>They only apply to the new {@code domain}, {@code application} and {@code infrastructure} packages: the
- * legacy packages are migrated one resource type at a time and are not checked until they move. Rules allow
- * empty layers for the same reason.
+ * <p>The layers are the {@code domain}, {@code application} and {@code infrastructure} packages. The other packages
+ * hold the command line itself: reading the import files ({@code model}, {@code provider}), the configuration
+ * ({@code properties}) and the orchestration of an import ({@code service}). No package of the code base is part of a
+ * dependency cycle.
  */
 @AnalyzeClasses(packages = ArchitectureTest.ROOT, importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
@@ -52,7 +53,6 @@ class ArchitectureTest {
     @ArchTest
     static final ArchRule dependenciesPointInwards = layeredArchitecture()
             .consideringOnlyDependenciesInLayers()
-            .withOptionalLayers(true)
             .layer("Domain")
             .definedBy(DOMAIN)
             .layer("Application")
@@ -64,8 +64,7 @@ class ArchitectureTest {
             .whereLayer("Application")
             .mayOnlyBeAccessedByLayers("Infrastructure")
             .whereLayer("Domain")
-            .mayOnlyBeAccessedByLayers("Application", "Infrastructure")
-            .allowEmptyShould(true);
+            .mayOnlyBeAccessedByLayers("Application", "Infrastructure");
 
     @ArchTest
     static final ArchRule domainIsPlainJava = classes()
@@ -73,8 +72,7 @@ class ArchitectureTest {
             .resideInAPackage(DOMAIN)
             .should()
             .onlyDependOnClassesThat()
-            .resideInAnyPackage(DOMAIN, "java..")
-            .allowEmptyShould(true);
+            .resideInAnyPackage(DOMAIN, "java..");
 
     @ArchTest
     static final ArchRule applicationOnlyDependsOnDomain = classes()
@@ -82,8 +80,7 @@ class ArchitectureTest {
             .resideInAPackage(APPLICATION)
             .should()
             .onlyDependOnClassesThat()
-            .resideInAnyPackage(APPLICATION, DOMAIN, "java..", "org.springframework.stereotype..")
-            .allowEmptyShould(true);
+            .resideInAnyPackage(APPLICATION, DOMAIN, "java..", "org.springframework.stereotype..");
 
     @ArchTest
     static final ArchRule keycloakSdkStaysInKeycloakInfrastructure = noClasses()
@@ -91,8 +88,7 @@ class ArchitectureTest {
             .resideInAnyPackage(DOMAIN, APPLICATION, INFRASTRUCTURE_CLI, INFRASTRUCTURE_SOURCE)
             .should()
             .dependOnClassesThat()
-            .resideInAPackage("org.keycloak..")
-            .allowEmptyShould(true);
+            .resideInAPackage("org.keycloak..");
 
     @ArchTest
     static final ArchRule keycloakInfrastructureIgnoresSources = noClasses()
@@ -100,8 +96,7 @@ class ArchitectureTest {
             .resideInAPackage(INFRASTRUCTURE_KEYCLOAK)
             .should()
             .dependOnClassesThat()
-            .resideInAPackage(INFRASTRUCTURE_SOURCE)
-            .allowEmptyShould(true);
+            .resideInAPackage(INFRASTRUCTURE_SOURCE);
 
     @ArchTest
     static final ArchRule sourcesIgnoreKeycloakInfrastructure = noClasses()
@@ -109,12 +104,14 @@ class ArchitectureTest {
             .resideInAPackage(INFRASTRUCTURE_SOURCE)
             .should()
             .dependOnClassesThat()
-            .resideInAPackage(INFRASTRUCTURE_KEYCLOAK)
-            .allowEmptyShould(true);
+            .resideInAPackage(INFRASTRUCTURE_KEYCLOAK);
+
+    @ArchTest
+    static final ArchRule packagesAreFreeOfCycles =
+            slices().matching(ROOT + ".(*)..").should().beFreeOfCycles();
 
     @ArchTest
     static final ArchRule newCodeIsFreeOfCycles = slices().matching(ROOT + ".(domain|application|infrastructure).(*)..")
             .should()
-            .beFreeOfCycles()
-            .allowEmptyShould(true);
+            .beFreeOfCycles();
 }

@@ -25,9 +25,9 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.is;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.ChecksumService;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
-import io.github.doriangrelu.keycloak.config.service.checksum.ChecksumService;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;

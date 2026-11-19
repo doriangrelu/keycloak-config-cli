@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.application.realm.port;
 
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultClientScopes;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultGroups;
+import io.github.doriangrelu.keycloak.config.domain.realm.model.RealmFlowBindings;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.RealmSettings;
 import java.util.Optional;
 import java.util.Set;
@@ -49,4 +50,9 @@ public interface RealmGateway {
     void addDefaultGroups(String realm, Set<String> paths);
 
     void removeDefaultGroups(String realm, Set<String> paths);
+
+    RealmFlowBindings findFlowBindings(String realm);
+
+    /** Binds the given flows; the other bindings keep their flow. */
+    void bindFlows(String realm, RealmFlowBindings bindings);
 }

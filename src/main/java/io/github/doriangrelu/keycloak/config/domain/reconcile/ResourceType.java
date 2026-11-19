@@ -46,7 +46,8 @@ public enum ResourceType {
     CLIENT_FLOW_BINDING("Client flow binding"),
     CLIENT_AUTHORIZATION("Client authorization"),
     DEFAULT_CLIENT_SCOPE("Default client scopes"),
-    DEFAULT_GROUP("Default groups");
+    DEFAULT_GROUP("Default groups"),
+    REALM_FLOW_BINDING("Realm flow bindings");
 
     private final String label;
 

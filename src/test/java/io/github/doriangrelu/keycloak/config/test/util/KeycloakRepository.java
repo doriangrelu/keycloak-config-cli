@@ -44,6 +44,15 @@ public class KeycloakRepository {
         this.keycloakProvider = keycloakProvider;
     }
 
+    public List<org.keycloak.representations.idm.IdentityProviderRepresentation> getIdentityProviders(
+            String realmName) {
+        return keycloakProvider
+                .getInstance()
+                .realm(realmName)
+                .identityProviders()
+                .findAll();
+    }
+
     public List<IdentityProviderMapperRepresentation> getIdentityProviderMappers(String realmName) {
         var identityProviders = keycloakProvider.getInstance().realm(realmName).identityProviders();
         return identityProviders.findAll().stream()

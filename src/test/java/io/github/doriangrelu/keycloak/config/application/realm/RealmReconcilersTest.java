@@ -29,6 +29,7 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciliatio
 import io.github.doriangrelu.keycloak.config.domain.common.UnmodeledAttributes;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultClientScopes;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultGroups;
+import io.github.doriangrelu.keycloak.config.domain.realm.model.RealmFlowBindings;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.RealmSettings;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.EnumMap;
@@ -93,6 +94,14 @@ class RealmReconcilersTest {
 
         @Override
         public void removeDefaultGroups(String realm, Set<String> paths) {}
+
+        @Override
+        public RealmFlowBindings findFlowBindings(String realm) {
+            return new RealmFlowBindings(Map.of());
+        }
+
+        @Override
+        public void bindFlows(String realm, RealmFlowBindings bindings) {}
     }
 
     @Test

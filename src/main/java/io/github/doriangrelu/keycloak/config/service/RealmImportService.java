@@ -21,18 +21,16 @@
 package io.github.doriangrelu.keycloak.config.service;
 
 import io.github.doriangrelu.keycloak.config.application.component.port.ComponentGateway;
+import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
-import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.legacy.LegacyReconciliationBridge;
-import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportReconciliation;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.ChecksumService;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.StateService;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
-import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
-import io.github.doriangrelu.keycloak.config.service.checksum.ChecksumService;
-import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
-import io.github.doriangrelu.keycloak.config.service.state.StateService;
+import java.util.Collection;
 import java.util.Set;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +42,9 @@ import org.springframework.stereotype.Service;
 public class RealmImportService {
     private static final Logger logger = LoggerFactory.getLogger(RealmImportService.class);
     private final KeycloakProvider keycloakProvider;
-    private final RealmRepository realmRepository;
+    private final RealmGateway realmGateway;
 
-    private final LegacyReconciliationBridge reconciliationBridge;
+    private final RealmImportReconciliation reconciliation;
     private final ComponentGateway componentGateway;
 
     private final ImportConfigProperties importProperties;
@@ -58,25 +56,22 @@ public class RealmImportService {
     public RealmImportService(
             ImportConfigProperties importProperties,
             KeycloakProvider keycloakProvider,
-            RealmRepository realmRepository,
-            LegacyReconciliationBridge reconciliationBridge,
+            RealmGateway realmGateway,
+            RealmImportReconciliation reconciliation,
             ComponentGateway componentGateway,
             ChecksumService checksumService,
             StateService stateService) {
         this.importProperties = importProperties;
         this.keycloakProvider = keycloakProvider;
-        this.realmRepository = realmRepository;
-        this.reconciliationBridge = reconciliationBridge;
+        this.realmGateway = realmGateway;
+        this.reconciliation = reconciliation;
         this.componentGateway = componentGateway;
         this.checksumService = checksumService;
         this.stateService = stateService;
     }
 
     public void doImport(RealmImport realmImport) {
-        ExecutionContextHolder.context()
-                .put(realmImport.getRealm(), ProtectedResource.class, realmImport.getProtectedResources());
-
-        boolean realmExists = realmRepository.exists(realmImport.getRealm());
+        boolean realmExists = realmGateway.findSettings(realmImport.getRealm()).isPresent();
         trackImport(realmImport, realmExists);
 
         if (realmExists) {
@@ -97,7 +92,7 @@ public class RealmImportService {
         if (remoteStateLoaded) {
             stateService.loadState(realmImport);
         }
-        reconciliationBridge.startFile(realmImport, realmExists, remoteStateLoaded);
+        reconciliation.startFile(realmImport, realmExists, remoteStateLoaded);
     }
 
     private void updateRealmIfNecessary(RealmImport realmImport) {
@@ -114,7 +109,7 @@ public class RealmImportService {
     private void createRealm(RealmImport realmImport) {
         logger.debug("Creating realm '{}' ...", realmImport.getRealm());
 
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
+        reconciliation.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
 
         // refresh the access token to update the scopes. See: https://github.com/adorsys/keycloak-config-cli/issues/339
         keycloakProvider.refreshToken();
@@ -127,7 +122,7 @@ public class RealmImportService {
         logger.debug("Updating realm '{}'...", realmImport.getRealm());
 
         // Settings omitted by the import keep their value, events and keycloak-config-cli attributes included
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
+        reconciliation.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
         // The state is written back at the end of the import with the attributes read here: the updated ones
         stateService.loadState(realmImport);
 
@@ -135,11 +130,11 @@ public class RealmImportService {
     }
 
     private void configureRealm(RealmImport realmImport) {
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_SCOPE));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.DEFAULT_CLIENT_SCOPE));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_PROFILE, ResourceType.CLIENT_POLICY));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT));
-        reconciliationBridge.apply(
+        reconciliation.apply(realmImport, Set.of(ResourceType.CLIENT_SCOPE));
+        reconciliation.apply(realmImport, Set.of(ResourceType.DEFAULT_CLIENT_SCOPE));
+        reconciliation.apply(realmImport, Set.of(ResourceType.CLIENT_PROFILE, ResourceType.CLIENT_POLICY));
+        reconciliation.apply(realmImport, Set.of(ResourceType.CLIENT));
+        reconciliation.apply(
                 realmImport,
                 Set.of(
                         ResourceType.REALM_ROLE,
@@ -148,41 +143,26 @@ public class RealmImportService {
                         ResourceType.REQUIRED_ACTION,
                         ResourceType.MESSAGE_BUNDLE,
                         ResourceType.GROUP));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.DEFAULT_GROUP));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.COMPONENT, ResourceType.SUB_COMPONENT));
+        reconciliation.apply(realmImport, Set.of(ResourceType.DEFAULT_GROUP));
+        reconciliation.apply(realmImport, Set.of(ResourceType.COMPONENT, ResourceType.SUB_COMPONENT));
         syncUserFederationIfNecessary(realmImport);
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.USER_PROFILE));
+        reconciliation.apply(realmImport, Set.of(ResourceType.USER_PROFILE));
         if (realmImport.getUsers() != null && realmImport.getUsers().isEmpty()) {
             logger.warn("Purging users isn't supported in keycloak-config-cli!");
         }
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.USER));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.AUTHENTICATION_FLOW));
-        bindRealmFlows(realmImport);
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.AUTHENTICATOR_CONFIG));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_FLOW_BINDING));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.DEFAULT_CLIENT_SCOPE));
-        reconciliationBridge.apply(
+        reconciliation.apply(realmImport, Set.of(ResourceType.USER));
+        reconciliation.apply(realmImport, Set.of(ResourceType.AUTHENTICATION_FLOW));
+        reconciliation.apply(realmImport, Set.of(ResourceType.REALM_FLOW_BINDING));
+        reconciliation.apply(realmImport, Set.of(ResourceType.AUTHENTICATOR_CONFIG));
+        reconciliation.apply(realmImport, Set.of(ResourceType.CLIENT_FLOW_BINDING));
+        reconciliation.apply(realmImport, Set.of(ResourceType.DEFAULT_CLIENT_SCOPE));
+        reconciliation.apply(
                 realmImport, Set.of(ResourceType.IDENTITY_PROVIDER, ResourceType.IDENTITY_PROVIDER_MAPPER));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_AUTHORIZATION));
-        reconciliationBridge.apply(realmImport, Set.of(ResourceType.SCOPE_MAPPING, ResourceType.CLIENT_SCOPE_MAPPING));
+        reconciliation.apply(realmImport, Set.of(ResourceType.CLIENT_AUTHORIZATION));
+        reconciliation.apply(realmImport, Set.of(ResourceType.SCOPE_MAPPING, ResourceType.CLIENT_SCOPE_MAPPING));
 
         stateService.doImport(realmImport);
         checksumService.doImport(realmImport);
-    }
-
-    /** Binds the flows of the realm once its declared flows exist. */
-    private void bindRealmFlows(RealmImport realmImport) {
-        if (realmImport.getAuthenticationFlows() == null) {
-            return;
-        }
-        RealmRepresentation realm = realmRepository.get(realmImport.getRealm());
-        realm.setBrowserFlow(realmImport.getBrowserFlow());
-        realm.setDirectGrantFlow(realmImport.getDirectGrantFlow());
-        realm.setClientAuthenticationFlow(realmImport.getClientAuthenticationFlow());
-        realm.setDockerAuthenticationFlow(realmImport.getDockerAuthenticationFlow());
-        realm.setRegistrationFlow(realmImport.getRegistrationFlow());
-        realm.setResetCredentialsFlow(realmImport.getResetCredentialsFlow());
-        realmRepository.update(realm);
     }
 
     private void syncUserFederationIfNecessary(RealmImport realmImport) {
@@ -194,16 +174,12 @@ public class RealmImportService {
     }
 
     /**
-     * Performs cleanup operations on the realm after the import configuration has been applied.
-     *
-     * <p>The reconciliation engine deletes the managed resources of the migrated types missing from every import
-     * file of the realm.</p>
-     *
-     * @param realmImport the realm import configuration identifying the target realm
+     * Imports the files of one run of the command line: each file in turn, then the clean phase of each realm,
+     * which deletes the managed resources missing from every file of the realm.
      */
-    public void cleanRealm(final RealmImport realmImport) {
-        logger.debug("Start cleaning realm import for realm part '{}'", realmImport.getRealm());
-        // Roles: managed mode, remote state and protections are applied by the reconciliation engine
-        this.reconciliationBridge.prune(realmImport);
+    public void importAll(final Collection<RealmImport> realmImports) {
+        reconciliation.startRun();
+        realmImports.forEach(this::doImport);
+        realmImports.forEach(reconciliation::prune);
     }
 }

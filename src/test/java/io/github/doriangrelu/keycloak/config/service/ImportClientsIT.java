@@ -49,7 +49,6 @@ import io.github.doriangrelu.keycloak.config.domain.client.model.InvalidClientEx
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
-import io.github.doriangrelu.keycloak.config.repository.IdentityProviderRepository;
 import io.github.doriangrelu.keycloak.config.test.util.SubGroupUtil;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
@@ -87,9 +86,6 @@ class ImportClientsIT extends AbstractImportIT {
 
     @Autowired
     private KeycloakConfigProperties properties;
-
-    @Autowired
-    private IdentityProviderRepository identityProviderRepository;
 
     ImportClientsIT() {
         this.resourcePath = "import-files/clients";
@@ -3062,7 +3058,7 @@ class ImportClientsIT extends AbstractImportIT {
     }
 
     private IdentityProviderRepresentation getIdentityProviderByAlias(RealmRepresentation realm, String alias) {
-        return identityProviderRepository.getAll(realm.getRealm()).stream()
+        return keycloakRepository.getIdentityProviders(realm.getRealm()).stream()
                 .filter(s -> Objects.equals(s.getAlias(), alias))
                 .findFirst()
                 .orElse(null);

@@ -27,7 +27,6 @@ import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
-import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakAuthentication;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakRepository;
 import java.io.IOException;
@@ -81,9 +80,7 @@ public abstract class AbstractImportTest {
     }
 
     public void runImport(List<RealmImport> realmImports, RealmImportService _realmImportService) {
-        ExecutionContextHolder.initializeEmptyContext();
-        realmImports.forEach(_realmImportService::doImport);
-        realmImports.forEach(_realmImportService::cleanRealm);
+        _realmImportService.importAll(realmImports);
     }
 
     public RealmImport getFirstImport(String fileName) throws IOException {

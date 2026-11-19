@@ -27,7 +27,6 @@ import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
-import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -79,7 +78,6 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
     @Override
     public void run(String... args) {
         try {
-            ExecutionContextHolder.initializeEmptyContext();
             Collection<String> importLocations =
                     importConfigProperties.getFiles().getLocations();
             KeycloakImport keycloakImport = keycloakImportProvider.readFromLocations(importLocations);
@@ -92,12 +90,11 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
                 for (Map.Entry<String, List<RealmImport>> realmImport : realmImportLocations.entrySet()) {
                     logger.info("Importing file '{}'", realmImport.getKey());
                     for (RealmImport realmImportParts : realmImport.getValue()) {
-                        realmImportService.doImport(realmImportParts);
                         importedRealm.add(realmImportParts);
                     }
                 }
             }
-            importedRealm.forEach(realmImportService::cleanRealm);
+            realmImportService.importAll(importedRealm);
         } catch (Exception e) {
             // Single place where import failures are caught and turned into an exit code (ADR-005)
             exitCode = FailureReporter.report(logger, "import", e).code();
