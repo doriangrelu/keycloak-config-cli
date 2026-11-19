@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "realm": "realmForDryRun",
+  "displayName": "Dry run",
+  "roles": {
+    "realm": [
+      {
+        "name": "reader"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "team"
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "app",
+      "publicClient": true,
+      "redirectUris": [
+        "https://app.example.org/*"
+      ]
+    }
+  ]
+}

@@ -20,13 +20,17 @@
 
 package io.github.doriangrelu.keycloak.config.application.reconcile;
 
+import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 
 /**
  * A change applied, or to apply, to a realm: the entries of the reconciliation plan (ADR-004), kept for the report
  * and the dry run.
+ *
+ * @param before the resource in Keycloak, {@code null} for a creation
+ * @param after the resource once the change is applied, {@code null} for a deletion
  */
-public record PlannedChange(ResourceType type, Object key, Kind kind) {
+public record PlannedChange(ResourceType type, Object key, Kind kind, Resource<?> before, Resource<?> after) {
 
     public enum Kind {
         CREATE,

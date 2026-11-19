@@ -110,11 +110,14 @@ public final class ReconciliationEngine {
             context.declare(reconciler.type(), desired, scopes);
         }
 
-        List<T> current = reconciler.read(context, desired);
+        List<T> current = currentOf(context, reconciler, desired);
         List<Change<T>> changes =
                 Changes.toApply(desired, current, (actual, wanted) -> reconciler.merge(context, actual, wanted));
         run(context, reconciler, changes, change -> {
             record(context, reconciler.type(), change);
+            if (context.isDryRun()) {
+                return;
+            }
             switch (change) {
                 case Change.Create<T> creation -> reconciler.create(context, creation.resource());
                 case Change.Update<T> update -> reconciler.update(context, update.current(), update.resource());
@@ -127,7 +130,7 @@ public final class ReconciliationEngine {
     private static <K, T extends Resource<K>> void pruneType(
             final RealmContext context, final Reconciler<K, T> reconciler) {
         List<T> desired = context.desired(reconciler.type());
-        List<T> current = reconciler.read(context, desired);
+        List<T> current = currentOf(context, reconciler, desired);
         List<Change<T>> deletions = Changes.toPrune(
                 desired,
                 current,
@@ -139,8 +142,16 @@ public final class ReconciliationEngine {
                                 .allowsDeletionOf(resource.stateName()));
         run(context, reconciler, deletions, deletion -> {
             record(context, reconciler.type(), deletion);
-            reconciler.delete(context, deletion.resource());
+            if (!context.isDryRun()) {
+                reconciler.delete(context, deletion.resource());
+            }
         });
+    }
+
+    /** Current resources; none for a realm a dry run plans to create, since it cannot be read. */
+    private static <K, T extends Resource<K>> List<T> currentOf(
+            final RealmContext context, final Reconciler<K, T> reconciler, final List<T> desired) {
+        return context.isRealmMissing() ? List.of() : reconciler.read(context, desired);
     }
 
     private static boolean prunes(final RealmContext context, final Reconciler<?, ?> reconciler) {
@@ -165,7 +176,13 @@ public final class ReconciliationEngine {
             case Change.Update<?> _ -> PlannedChange.Kind.UPDATE;
             case Change.Delete<?> _ -> PlannedChange.Kind.DELETE;
         };
-        context.record(new PlannedChange(type, change.resource().key(), kind));
+        Resource<?> before = switch (change) {
+            case Change.Create<?> _ -> null;
+            case Change.Update<?> update -> update.current();
+            case Change.Delete<?> deletion -> deletion.resource();
+        };
+        Resource<?> after = change instanceof Change.Delete<?> ? null : change.resource();
+        context.record(new PlannedChange(type, change.resource().key(), kind, before, after));
     }
 
     /** Topological sort of the reconcilers; dependencies on types without reconciler are ignored. */

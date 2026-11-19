@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.application.clientauthorization.Cli
 import io.github.doriangrelu.keycloak.config.application.component.ComponentReconciler;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
+import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.application.requiredaction.RequiredActionReconciler;
@@ -107,7 +108,7 @@ public class RealmImportReconciliation {
 
     private final ReconciliationEngine engine;
     /** Context of each realm during the current run. */
-    private final Map<String, RealmContext> contexts = new java.util.HashMap<>();
+    private final Map<String, RealmContext> contexts = new java.util.LinkedHashMap<>();
 
     private final RoleKeycloakMapper roleMapper;
     private final ClientKeycloakMapper clientMapper;
@@ -176,6 +177,10 @@ public class RealmImportReconciliation {
      */
     public void startFile(final RealmImport realmImport, final boolean realmExists, final boolean remoteStateLoaded) {
         RealmContext context = contextOf(realmImport);
+        if (!realmExists && context.isDryRun()) {
+            // A dry run never creates the realm: nothing can be read from it
+            context.realmIsMissing();
+        }
         context.addProtections(protectionsOf(realmImport));
         if (remoteStateLoaded) {
             if (realmImport.getClients() != null) {
@@ -200,10 +205,11 @@ public class RealmImportReconciliation {
      */
     public void apply(final RealmImport realmImport, final Set<ResourceType> types) {
         // The realm settings come first, before the realm may exist: nothing else is read from Keycloak for them
+        RealmContext context = contextOf(realmImport);
         DesiredState desired = types.equals(Set.of(ResourceType.REALM_SETTINGS))
                 ? realmSettingsStateOf(realmImport, new DesiredState())
-                : desiredStateOf(realmImport, true);
-        this.engine.apply(contextOf(realmImport), desired, types);
+                : desiredStateOf(realmImport, !context.isRealmMissing());
+        this.engine.apply(context, desired, types);
     }
 
     /** Deletes, once per realm, the managed resources of the migrated types missing from every file of the realm. */
@@ -217,6 +223,13 @@ public class RealmImportReconciliation {
      */
     public synchronized void startRun() {
         this.contexts.clear();
+    }
+
+    /** Changes of the current run, by realm in import order: applied, or only planned in a dry run. */
+    public synchronized Map<String, List<PlannedChange>> plans() {
+        Map<String, List<PlannedChange>> plans = new java.util.LinkedHashMap<>();
+        this.contexts.forEach((realm, context) -> plans.put(realm, context.plan()));
+        return plans;
     }
 
     private synchronized RealmContext contextOf(final RealmImport realmImport) {
@@ -259,7 +272,8 @@ public class RealmImportReconciliation {
                                     ResourceType.AUTHENTICATION_FLOW,
                                     modeOf(this.properties.getManaged().getAuthenticationFlow())),
                             // Unused authenticator configs are garbage: always deleted, as before
-                            Map.entry(ResourceType.AUTHENTICATOR_CONFIG, ManagedMode.FULL)));
+                            Map.entry(ResourceType.AUTHENTICATOR_CONFIG, ManagedMode.FULL)),
+                    this.properties.isDryRun());
             return created;
         });
     }

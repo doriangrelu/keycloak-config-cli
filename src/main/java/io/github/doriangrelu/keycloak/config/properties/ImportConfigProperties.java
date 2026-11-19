@@ -46,6 +46,16 @@ public class ImportConfigProperties {
     @NotNull
     private final boolean parallel;
 
+    /** Computes and reports the changes of the import without applying them. */
+    @NotNull
+    private final boolean dryRun;
+
+    @NotNull
+    private final DryRunFormat dryRunFormat;
+
+    /** File the dry run report is also written to, in its format; none by default. */
+    private final String dryRunReportFile;
+
     @Valid
     private final ImportFilesProperties files;
 
@@ -70,6 +80,9 @@ public class ImportConfigProperties {
     public ImportConfigProperties(
             @DefaultValue("true") final boolean validate,
             @DefaultValue("false") final boolean parallel,
+            @DefaultValue("false") final boolean dryRun,
+            @DefaultValue("TEXT") final DryRunFormat dryRunFormat,
+            final String dryRunReportFile,
             @DefaultValue final ImportFilesProperties files,
             @DefaultValue final ImportVarSubstitutionProperties varSubstitution,
             @DefaultValue final ImportMustacheProperties mustache,
@@ -79,6 +92,9 @@ public class ImportConfigProperties {
             @DefaultValue final ImportRemoteStateProperties remoteState) {
         this.validate = validate;
         this.parallel = parallel;
+        this.dryRun = dryRun;
+        this.dryRunFormat = dryRunFormat;
+        this.dryRunReportFile = dryRunReportFile;
         this.files = files;
         this.varSubstitution = varSubstitution;
         this.mustache = mustache;
@@ -94,6 +110,24 @@ public class ImportConfigProperties {
 
     public boolean isParallel() {
         return this.parallel;
+    }
+
+    public boolean isDryRun() {
+        return this.dryRun;
+    }
+
+    public DryRunFormat getDryRunFormat() {
+        return this.dryRunFormat;
+    }
+
+    public String getDryRunReportFile() {
+        return this.dryRunReportFile;
+    }
+
+    /** Format of the dry run report. */
+    public enum DryRunFormat {
+        TEXT,
+        JSON
     }
 
     public ImportFilesProperties getFiles() {

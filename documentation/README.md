@@ -31,6 +31,7 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 - [Full Realm Example](examples/full-realm-example.md)
 
 ### Advanced Topics
+- [Dry Run](advanced/dry-run.md)
 - [Parallel Processing](advanced/parallel-processing.md)
 - [State Management](advanced/state-management.md)
 - [Normalization](advanced/normalization.md)

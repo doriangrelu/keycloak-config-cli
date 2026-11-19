@@ -50,6 +50,8 @@ public final class RealmContext {
     private final boolean parallel;
     private final boolean remoteStateEnabled;
     private final Map<ResourceType, ManagedMode> modes;
+    private final boolean dryRun;
+    private volatile boolean realmMissing;
 
     private final List<ProtectionRule> protections = Collections.synchronizedList(new ArrayList<>());
     private final Map<String, Set<String>> previousState = new ConcurrentHashMap<>();
@@ -66,6 +68,17 @@ public final class RealmContext {
             final boolean parallel,
             final boolean remoteStateEnabled,
             final Map<ResourceType, ManagedMode> modes) {
+        this(realm, parallel, remoteStateEnabled, modes, false);
+    }
+
+    /** @param dryRun whether the changes are only planned, never applied (EPIC-004) */
+    public RealmContext(
+            final String realm,
+            final boolean parallel,
+            final boolean remoteStateEnabled,
+            final Map<ResourceType, ManagedMode> modes,
+            final boolean dryRun) {
+        this.dryRun = dryRun;
         this.realm = Objects.requireNonNull(realm, "realm");
         this.parallel = parallel;
         this.remoteStateEnabled = remoteStateEnabled;
@@ -74,6 +87,23 @@ public final class RealmContext {
 
     public String realm() {
         return this.realm;
+    }
+
+    public boolean isDryRun() {
+        return this.dryRun;
+    }
+
+    /**
+     * Whether the realm does not exist in Keycloak during a dry run: it is not created, so nothing can be read from
+     * it, and everything the import declares is planned as a creation.
+     */
+    public boolean isRealmMissing() {
+        return this.realmMissing;
+    }
+
+    /** Records that the realm does not exist; only meaningful in a dry run, where it is never created. */
+    public void realmIsMissing() {
+        this.realmMissing = true;
     }
 
     public boolean isParallel() {

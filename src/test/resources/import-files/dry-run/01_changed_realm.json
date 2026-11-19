@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "realm": "realmForDryRun",
+  "displayName": "Dry run changed",
+  "roles": {
+    "realm": [
+      {
+        "name": "reader"
+      },
+      {
+        "name": "writer"
+      }
+    ]
+  },
+  "groups": [],
+  "clients": [
+    {
+      "clientId": "app",
+      "publicClient": true,
+      "redirectUris": [
+        "https://changed.example.org/*"
+      ]
+    }
+  ]
+}

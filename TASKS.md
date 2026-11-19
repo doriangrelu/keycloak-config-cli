@@ -9,7 +9,7 @@
 | [EPIC-001](documentation/architecture/epics/EPIC-001-socle.md) | Socle : outillage, dépendances, couches, couche SDK, codes de sortie | Terminé (tests d'intégration à confirmer en CI) |
 | [EPIC-002](documentation/architecture/epics/EPIC-002-moteur-et-roles.md) | Moteur de réconciliation et migration des rôles | Terminé |
 | [EPIC-003](documentation/architecture/epics/EPIC-003-migration-ressources.md) | Migration des autres types de ressources | Terminé |
-| [EPIC-004](documentation/architecture/epics/EPIC-004-dry-run.md) | Dry-run et rapport des changements | À faire |
+| [EPIC-004](documentation/architecture/epics/EPIC-004-dry-run.md) | Dry-run et rapport des changements | Terminé |
 | [EPIC-005](documentation/architecture/epics/EPIC-005-normalisation.md) | Normalisation sur le nouveau socle | À faire |
 
 ## Après la refonte

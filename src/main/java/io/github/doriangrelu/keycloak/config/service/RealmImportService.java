@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.service;
 
 import io.github.doriangrelu.keycloak.config.application.component.port.ComponentGateway;
 import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway;
+import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportReconciliation;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.ChecksumService;
@@ -30,6 +31,8 @@ import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,10 +114,12 @@ public class RealmImportService {
 
         reconciliation.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
 
-        // refresh the access token to update the scopes. See: https://github.com/adorsys/keycloak-config-cli/issues/339
-        keycloakProvider.refreshToken();
-
-        stateService.loadState(realmImport);
+        if (!importProperties.isDryRun()) {
+            // refresh the access token to update the scopes. See:
+            // https://github.com/adorsys/keycloak-config-cli/issues/339
+            keycloakProvider.refreshToken();
+            stateService.loadState(realmImport);
+        }
         configureRealm(realmImport);
     }
 
@@ -145,7 +150,9 @@ public class RealmImportService {
                         ResourceType.GROUP));
         reconciliation.apply(realmImport, Set.of(ResourceType.DEFAULT_GROUP));
         reconciliation.apply(realmImport, Set.of(ResourceType.COMPONENT, ResourceType.SUB_COMPONENT));
-        syncUserFederationIfNecessary(realmImport);
+        if (!importProperties.isDryRun()) {
+            syncUserFederationIfNecessary(realmImport);
+        }
         reconciliation.apply(realmImport, Set.of(ResourceType.USER_PROFILE));
         if (realmImport.getUsers() != null && realmImport.getUsers().isEmpty()) {
             logger.warn("Purging users isn't supported in keycloak-config-cli!");
@@ -161,8 +168,11 @@ public class RealmImportService {
         reconciliation.apply(realmImport, Set.of(ResourceType.CLIENT_AUTHORIZATION));
         reconciliation.apply(realmImport, Set.of(ResourceType.SCOPE_MAPPING, ResourceType.CLIENT_SCOPE_MAPPING));
 
-        stateService.doImport(realmImport);
-        checksumService.doImport(realmImport);
+        if (!importProperties.isDryRun()) {
+            // A dry run leaves the remote state and the checksums as they are: the next run applies the import
+            stateService.doImport(realmImport);
+            checksumService.doImport(realmImport);
+        }
     }
 
     private void syncUserFederationIfNecessary(RealmImport realmImport) {
@@ -181,5 +191,10 @@ public class RealmImportService {
         reconciliation.startRun();
         realmImports.forEach(this::doImport);
         realmImports.forEach(reconciliation::prune);
+    }
+
+    /** Changes of the last run, by realm: applied, or only planned in a dry run. */
+    public Map<String, List<PlannedChange>> plans() {
+        return reconciliation.plans();
     }
 }

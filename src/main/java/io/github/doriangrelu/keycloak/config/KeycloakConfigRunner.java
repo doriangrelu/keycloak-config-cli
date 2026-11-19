@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config;
 
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.DryRunReport;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
 import io.github.doriangrelu.keycloak.config.model.KeycloakImport;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
@@ -27,6 +29,11 @@ import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -95,6 +102,9 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
                 }
             }
             realmImportService.importAll(importedRealm);
+            if (importConfigProperties.isDryRun()) {
+                exitCode = reportDryRun().code();
+            }
         } catch (Exception e) {
             // Single place where import failures are caught and turned into an exit code (ADR-005)
             exitCode = FailureReporter.report(logger, "import", e).code();
@@ -103,5 +113,26 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
             String formattedTime = new SimpleDateFormat("mm:ss.SSS").format(new Date(totalTime));
             logger.info("keycloak-config-cli ran in {}.", formattedTime);
         }
+    }
+
+    /**
+     * Shows what the import would change (EPIC-004): on the standard output, and in the report file when one is
+     * configured. Pending changes give exit code {@code 10} (ADR-005).
+     */
+    private ExitCode reportDryRun() {
+        DryRunReport report = DryRunReport.of(realmImportService.plans());
+        String content = importConfigProperties.getDryRunFormat() == ImportConfigProperties.DryRunFormat.JSON
+                ? report.toJson()
+                : report.toText();
+        System.out.println(content);
+        String reportFile = importConfigProperties.getDryRunReportFile();
+        if (reportFile != null && !reportFile.isBlank()) {
+            try {
+                Files.writeString(Path.of(reportFile), content, StandardCharsets.UTF_8);
+            } catch (IOException error) {
+                throw new UncheckedIOException("Cannot write the dry run report to " + reportFile, error);
+            }
+        }
+        return report.pendingChanges() == 0 ? ExitCode.SUCCESS : ExitCode.PENDING_CHANGES;
     }
 }

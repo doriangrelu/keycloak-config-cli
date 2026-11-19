@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Dry run with `import.dry-run=true`: the import is compared with Keycloak, clean phase included, and the changes it would make are reported by realm (creations, updates with their changed fields, deletions) without applying anything. Text or JSON report (`import.dry-run-format`), optionally written to a file (`import.dry-run-report-file`); field values are never shown. Exit code `10` when changes are pending, `0` otherwise. See [Dry Run](documentation/advanced/dry-run.md).
 - Mustache templating support with CLI-provided variables via `import.mustache.enabled` and `import.mustache.variables.*`
     - Variables can be passed as CLI arguments (`--import.mustache.variables.key=value`), environment variables (`IMPORT_MUSTACHE_VARIABLES_KEY=value`), or in configuration files
     - Templates use `{{key}}` syntax in import files (JSON/YAML)
