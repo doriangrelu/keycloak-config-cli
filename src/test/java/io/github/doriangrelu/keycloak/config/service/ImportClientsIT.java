@@ -43,9 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.client.ClientRejectedException;
+import io.github.doriangrelu.keycloak.config.application.clientauthorization.UnknownAuthorizationReferenceException;
 import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.InvalidAuthenticationFlowException;
 import io.github.doriangrelu.keycloak.config.domain.client.model.InvalidClientException;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
@@ -2686,11 +2686,11 @@ class ImportClientsIT extends AbstractImportIT {
     @Test
     @Order(49)
     void shouldTriggerErrorWhenReferencingMissingObjectsByNameInFineGrainedAuthz() throws IOException {
-        ImportProcessingException thrown;
+        UnknownAuthorizationReferenceException thrown;
 
         RealmImport foundImport0 = getFirstImport(
                 "49.0_update_realm_update_authz_policy_for_unknown_type_with_placeholder_realm-management.json");
-        thrown = assertThrows(ImportProcessingException.class, () -> runImport(List.of(foundImport0)));
+        thrown = assertThrows(UnknownAuthorizationReferenceException.class, () -> runImport(List.of(foundImport0)));
         assertThat(
                 thrown.getMessage(),
                 is(
@@ -2698,7 +2698,7 @@ class ImportClientsIT extends AbstractImportIT {
 
         RealmImport foundImport1 = getFirstImport(
                 "49.1_update_realm_update_authz_policy_for_client_with_error_placeholder_realm-management.json");
-        thrown = assertThrows(ImportProcessingException.class, () -> runImport(List.of(foundImport1)));
+        thrown = assertThrows(UnknownAuthorizationReferenceException.class, () -> runImport(List.of(foundImport1)));
         assertThat(
                 thrown.getMessage(),
                 is(
@@ -2706,7 +2706,7 @@ class ImportClientsIT extends AbstractImportIT {
 
         RealmImport foundImport2 = getFirstImport(
                 "49.2_update_realm_update_authz_policy_for_idp_with_error_placeholder_realm-management.json");
-        thrown = assertThrows(ImportProcessingException.class, () -> runImport(List.of(foundImport2)));
+        thrown = assertThrows(UnknownAuthorizationReferenceException.class, () -> runImport(List.of(foundImport2)));
         assertThat(
                 thrown.getMessage(),
                 is(
@@ -2714,7 +2714,7 @@ class ImportClientsIT extends AbstractImportIT {
 
         RealmImport foundImport3 = getFirstImport(
                 "49.3_update_realm_update_authz_policy_for_role_with_error_placeholder_realm-management.json");
-        thrown = assertThrows(ImportProcessingException.class, () -> runImport(List.of(foundImport3)));
+        thrown = assertThrows(UnknownAuthorizationReferenceException.class, () -> runImport(List.of(foundImport3)));
         assertThat(
                 thrown.getMessage(),
                 is(
@@ -2722,7 +2722,7 @@ class ImportClientsIT extends AbstractImportIT {
 
         RealmImport foundImport4 = getFirstImport(
                 "49.4_update_realm_update_authz_policy_for_group_with_error_placeholder_realm-management.json");
-        thrown = assertThrows(ImportProcessingException.class, () -> runImport(List.of(foundImport4)));
+        thrown = assertThrows(UnknownAuthorizationReferenceException.class, () -> runImport(List.of(foundImport4)));
         assertThat(
                 thrown.getMessage(),
                 is(

@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.AuthenticationFlowAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientAdapter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientAuthorizationAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientPolicyAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ClientScopeAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.ComponentAdapter;
@@ -35,6 +36,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter.UserProfileAdapter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.AuthenticationFlowApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientAuthorizationApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientPolicyApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientScopeApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ComponentApi;
@@ -47,6 +49,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.Sco
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.UserApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.UserProfileApi;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
+import io.github.doriangrelu.keycloak.config.resource.ManagementPermissions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -92,6 +95,14 @@ public class KeycloakClientFactory {
     @Bean
     public AuthenticationFlowApi authenticationFlowApi(final KeycloakProvider keycloakProvider) {
         return new AuthenticationFlowAdapter(keycloakProvider::getInstance);
+    }
+
+    @Bean
+    public ClientAuthorizationApi clientAuthorizationApi(final KeycloakProvider keycloakProvider) {
+        return new ClientAuthorizationAdapter(
+                keycloakProvider::getInstance,
+                () -> keycloakProvider.getCustomApiProxy(ManagementPermissions.class),
+                keycloakProvider::isFgapV2Active);
     }
 
     @Bean

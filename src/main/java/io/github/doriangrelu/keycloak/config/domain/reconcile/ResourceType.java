@@ -42,7 +42,8 @@ public enum ResourceType {
     USER_PROFILE("User profile"),
     AUTHENTICATION_FLOW("Authentication flow"),
     AUTHENTICATOR_CONFIG("Authenticator config"),
-    CLIENT_FLOW_BINDING("Client flow binding");
+    CLIENT_FLOW_BINDING("Client flow binding"),
+    CLIENT_AUTHORIZATION("Client authorization");
 
     private final String label;
 

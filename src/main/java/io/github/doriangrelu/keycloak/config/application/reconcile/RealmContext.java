@@ -100,6 +100,16 @@ public final class RealmContext {
         this.previousState.putIfAbsent(scope, Set.copyOf(names));
     }
 
+    /**
+     * Names the remote state recorded for a scope before the run, when the remote state is enabled: for reconcilers
+     * whose resources hold parts deleted on their own rules, such as the resources of a client authorization.
+     */
+    public Optional<Set<String>> managedState(final String scope) {
+        return this.remoteStateEnabled
+                ? Optional.of(this.previousState.getOrDefault(scope, Set.of()))
+                : Optional.empty();
+    }
+
     /** Whether a protection rule of the import files covers this name. */
     public boolean isProtected(final String name) {
         synchronized (this.protections) {

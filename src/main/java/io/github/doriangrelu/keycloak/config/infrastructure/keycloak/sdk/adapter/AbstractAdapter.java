@@ -86,6 +86,18 @@ public abstract class AbstractAdapter {
         }
     }
 
+    /**
+     * Runs a creation call and requires a {@code 201 Created} answer, for APIs that return the created resource
+     * instead of its location, such as the authorization services.
+     */
+    protected static void createWithoutId(final Supplier<Response> creation) {
+        try (Response response = execute(creation)) {
+            if (response.getStatus() != CREATED) {
+                throw KeycloakErrorTranslator.translate(response, null);
+            }
+        }
+    }
+
     /** Runs a creation call, requires a {@code 201 Created} answer and returns the id of the created resource. */
     protected static String createAndGetId(final Supplier<Response> creation) {
         try (Response response = execute(creation)) {

@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.service.clientauthorization;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientauthorization;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

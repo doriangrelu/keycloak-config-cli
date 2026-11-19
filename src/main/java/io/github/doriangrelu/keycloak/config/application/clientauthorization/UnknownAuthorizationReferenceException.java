@@ -2,7 +2,7 @@
  * ---license-start
  * keycloak-config-cli
  * ---
- * Copyright (C) 2017 - 2022 adorsys GmbH & Co. KG @ https://adorsys.com
+ * Copyright (C) 2017 - 2026 keycloak-config-cli contributors
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,17 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.service.clientauthorization;
+package io.github.doriangrelu.keycloak.config.application.clientauthorization;
 
-public interface PermissionResolver {
-    String resolveObjectId(String placeholder, String authzName);
+import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
 
-    void enablePermissions(String id);
+/**
+ * A resource or a policy of a client authorization names, through a placeholder, a Keycloak object that does not
+ * exist, or a type of object keycloak-config-cli does not support.
+ */
+public class UnknownAuthorizationReferenceException extends ApplicationException {
+
+    public UnknownAuthorizationReferenceException(final String message) {
+        super(message);
+    }
 }

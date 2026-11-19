@@ -61,7 +61,7 @@ public final class KeycloakErrorTranslator {
         String message = body.isEmpty()
                 ? "Keycloak responded with HTTP " + status
                 : "Keycloak responded with HTTP " + status + ": " + body;
-        return new KeycloakAccessException(failureOf(status), message, cause);
+        return new KeycloakAccessException(failureOf(status), status, message, cause);
     }
 
     private static KeycloakFailure failureOf(final int status) {

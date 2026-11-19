@@ -28,11 +28,21 @@ import java.util.Objects;
  */
 public class KeycloakAccessException extends RuntimeException {
 
-    private final KeycloakFailure failure;
+    /** No HTTP status: the call failed before Keycloak answered. */
+    public static final int NO_STATUS = 0;
 
-    public KeycloakAccessException(final KeycloakFailure failure, final String message, final Throwable cause) {
+    private final KeycloakFailure failure;
+    private final int status;
+
+    public KeycloakAccessException(
+            final KeycloakFailure failure, final int status, final String message, final Throwable cause) {
         super(message, cause);
         this.failure = Objects.requireNonNull(failure, "failure");
+        this.status = status;
+    }
+
+    public KeycloakAccessException(final KeycloakFailure failure, final String message, final Throwable cause) {
+        this(failure, NO_STATUS, message, cause);
     }
 
     public KeycloakAccessException(final KeycloakFailure failure, final String message) {
@@ -41,5 +51,13 @@ public class KeycloakAccessException extends RuntimeException {
 
     public KeycloakFailure getFailure() {
         return this.failure;
+    }
+
+    /**
+     * The HTTP status Keycloak answered with, or {@link #NO_STATUS}. Some Keycloak APIs answer {@code 501} when a
+     * feature is disabled, which {@link KeycloakFailure#UNEXPECTED} does not tell apart from a server error.
+     */
+    public int getStatus() {
+        return this.status;
     }
 }

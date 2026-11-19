@@ -78,7 +78,6 @@ public class RealmImportService {
     private final ClientScopeImportService clientScopeImportService;
     private final DefaultGroupsImportService defaultGroupsImportService;
     private final ComponentGateway componentGateway;
-    private final ClientAuthorizationImportService clientAuthorizationImportService;
 
     private final ImportConfigProperties importProperties;
 
@@ -94,7 +93,6 @@ public class RealmImportService {
             ClientScopeImportService clientScopeImportService,
             DefaultGroupsImportService defaultGroupsImportService,
             ComponentGateway componentGateway,
-            ClientAuthorizationImportService clientAuthorizationImportService,
             OtpPolicyImportService otpPolicyImportService,
             ChecksumService checksumService,
             StateService stateService) {
@@ -105,7 +103,6 @@ public class RealmImportService {
         this.clientScopeImportService = clientScopeImportService;
         this.defaultGroupsImportService = defaultGroupsImportService;
         this.componentGateway = componentGateway;
-        this.clientAuthorizationImportService = clientAuthorizationImportService;
         this.otpPolicyImportService = otpPolicyImportService;
         this.checksumService = checksumService;
         this.stateService = stateService;
@@ -231,7 +228,7 @@ public class RealmImportService {
         clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
         reconciliationBridge.apply(
                 realmImport, Set.of(ResourceType.IDENTITY_PROVIDER, ResourceType.IDENTITY_PROVIDER_MAPPER));
-        clientAuthorizationImportService.doImport(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_AUTHORIZATION));
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.SCOPE_MAPPING, ResourceType.CLIENT_SCOPE_MAPPING));
 
         stateService.doImport(realmImport);

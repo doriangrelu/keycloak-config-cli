@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.service.clientauthorization;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientauthorization;
 
 import java.util.Objects;
 import java.util.StringJoiner;
