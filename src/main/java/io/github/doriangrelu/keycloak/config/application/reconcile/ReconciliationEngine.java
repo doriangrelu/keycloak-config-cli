@@ -82,7 +82,9 @@ public final class ReconciliationEngine {
     public void register(final RealmContext context, final DesiredState part) {
         for (Reconciler<?, ?> reconciler : this.ordered) {
             ResourceType type = reconciler.type();
-            part.resources(type).ifPresent(declared -> context.declare(type, declared, part.scopes(type)));
+            if (reconciler.tracksDeclarations()) {
+                part.resources(type).ifPresent(declared -> context.declare(type, declared, part.scopes(type)));
+            }
         }
     }
 
@@ -104,7 +106,9 @@ public final class ReconciliationEngine {
             final List<? extends Resource<?>> declared,
             final Set<String> scopes) {
         List<T> desired = (List<T>) declared;
-        context.declare(reconciler.type(), desired, scopes);
+        if (reconciler.tracksDeclarations()) {
+            context.declare(reconciler.type(), desired, scopes);
+        }
 
         List<T> current = reconciler.read(context, desired);
         List<Change<T>> changes =

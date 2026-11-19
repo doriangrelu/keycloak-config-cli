@@ -27,9 +27,10 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.application.realm.UnknownRealmReferenceException;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import java.io.IOException;
+import java.util.List;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -88,8 +89,8 @@ class ImportDefaultGroupsIT extends AbstractImportIT {
     void shouldUpdateRealmAddNonExistSubGroup() throws IOException {
         RealmImport foundImport = getFirstImport("96_update_realm_add_non_exists_default_subgroup.json");
 
-        InvalidImportException thrown =
-                assertThrows(InvalidImportException.class, () -> realmImportService.doImport(foundImport));
+        UnknownRealmReferenceException thrown =
+                assertThrows(UnknownRealmReferenceException.class, () -> runImport(List.of(foundImport)));
 
         assertThat(thrown.getMessage(), is("Unable to add default group '/not-exist'. Does group exists?"));
     }

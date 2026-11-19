@@ -37,6 +37,8 @@ import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.group.model.Group;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
+import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultClientScopes;
+import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultGroups;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
@@ -52,6 +54,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.component.C
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.group.GroupKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.identityprovider.IdentityProviderKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.UnmodeledAttributesConverter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.realm.RealmKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
@@ -64,6 +67,7 @@ import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.I
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
+import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,6 +80,7 @@ import org.keycloak.representations.idm.ClientPoliciesRepresentation;
 import org.keycloak.representations.idm.ClientProfilesRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.ScopeMappingRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -111,6 +116,7 @@ public class LegacyReconciliationBridge {
     private final ComponentKeycloakMapper componentMapper;
     private final AuthenticationFlowKeycloakMapper authenticationFlowMapper;
     private final UnmodeledAttributesConverter unmodeledAttributes;
+    private final RealmKeycloakMapper realmMapper;
     private final UserProfileKeycloakMapper userProfileMapper;
     private final ClientApi clientApi;
     private final KeycloakProvider keycloakProvider;
@@ -130,6 +136,7 @@ public class LegacyReconciliationBridge {
             final ComponentKeycloakMapper componentMapper,
             final AuthenticationFlowKeycloakMapper authenticationFlowMapper,
             final UnmodeledAttributesConverter unmodeledAttributes,
+            final RealmKeycloakMapper realmMapper,
             final UserProfileKeycloakMapper userProfileMapper,
             final ClientApi clientApi,
             final KeycloakProvider keycloakProvider,
@@ -147,6 +154,7 @@ public class LegacyReconciliationBridge {
         this.componentMapper = componentMapper;
         this.authenticationFlowMapper = authenticationFlowMapper;
         this.unmodeledAttributes = unmodeledAttributes;
+        this.realmMapper = realmMapper;
         this.userProfileMapper = userProfileMapper;
         this.clientApi = clientApi;
         this.keycloakProvider = keycloakProvider;
@@ -189,7 +197,11 @@ public class LegacyReconciliationBridge {
      * place each type had, so that the types it still handles find what they rely on.
      */
     public void apply(final RealmImport realmImport, final Set<ResourceType> types) {
-        this.engine.apply(contextOf(realmImport), desiredStateOf(realmImport, true), types);
+        // The realm settings come first, before the realm may exist: nothing else is read from Keycloak for them
+        DesiredState desired = types.equals(Set.of(ResourceType.REALM_SETTINGS))
+                ? realmSettingsStateOf(realmImport, new DesiredState())
+                : desiredStateOf(realmImport, true);
+        this.engine.apply(contextOf(realmImport), desired, types);
     }
 
     /** Deletes, once per realm, the managed resources of the migrated types missing from every file of the realm. */
@@ -334,8 +346,30 @@ public class LegacyReconciliationBridge {
         }
     }
 
+    private DesiredState realmSettingsStateOf(final RealmImport realmImport, final DesiredState desired) {
+        return desired.declare(
+                ResourceType.REALM_SETTINGS,
+                List.of(this.realmMapper.toSettings(CloneUtil.deepClone(realmImport, RealmRepresentation.class))));
+    }
+
     private DesiredState desiredStateOf(final RealmImport realmImport, final boolean realmExists) {
-        DesiredState desired = new DesiredState();
+        DesiredState desired = realmSettingsStateOf(realmImport, new DesiredState());
+        List<DefaultClientScopes> defaultClientScopes = new ArrayList<>();
+        if (realmImport.getDefaultDefaultClientScopes() != null) {
+            defaultClientScopes.add(new DefaultClientScopes(
+                    DefaultClientScopes.Kind.DEFAULT, Set.copyOf(realmImport.getDefaultDefaultClientScopes())));
+        }
+        if (realmImport.getDefaultOptionalClientScopes() != null) {
+            defaultClientScopes.add(new DefaultClientScopes(
+                    DefaultClientScopes.Kind.OPTIONAL, Set.copyOf(realmImport.getDefaultOptionalClientScopes())));
+        }
+        if (!defaultClientScopes.isEmpty()) {
+            desired.declare(ResourceType.DEFAULT_CLIENT_SCOPE, defaultClientScopes);
+        }
+        if (realmImport.getDefaultGroups() != null) {
+            desired.declare(
+                    ResourceType.DEFAULT_GROUP, List.of(new DefaultGroups(Set.copyOf(realmImport.getDefaultGroups()))));
+        }
         if (realmImport.getClients() != null) {
             desired.declare(ResourceType.CLIENT, clientsOf(realmImport, realmExists));
         }

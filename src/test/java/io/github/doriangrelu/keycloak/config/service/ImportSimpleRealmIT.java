@@ -28,9 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
+import io.github.doriangrelu.keycloak.config.application.realm.RealmRejectedException;
+import io.github.doriangrelu.keycloak.config.application.realm.UnknownRealmReferenceException;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
 import java.util.Map;
@@ -113,8 +113,8 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     @Test
     @Order(4)
     void shouldNotCreateSimpleRealmWithInvalidName() {
-        KeycloakRepositoryException thrown = assertThrows(
-                KeycloakRepositoryException.class, () -> doImport("04_create_simple-realm_with_invalid_name.json"));
+        RealmRejectedException thrown = assertThrows(
+                RealmRejectedException.class, () -> doImport("04_create_simple-realm_with_invalid_name.json"));
 
         assertThat(thrown.getMessage(), matchesPattern("^Cannot create realm '.+': .+$"));
     }
@@ -213,10 +213,10 @@ class ImportSimpleRealmIT extends AbstractImportIT {
 
         // Could be direct KeycloakRepositoryException or wrapped SQL exception
         if (VersionUtil.lt(KEYCLOAK_VERSION, "26.2.0")) {
-            assertEquals(KeycloakRepositoryException.class, thrown.getClass());
+            assertEquals(RealmRejectedException.class, thrown.getClass());
         } else {
             if (thrown.getCause() != null && thrown.getCause().getMessage().contains("Value too long for column")) {
-                assertEquals(KeycloakRepositoryException.class, thrown.getClass());
+                assertEquals(RealmRejectedException.class, thrown.getClass());
             }
         }
     }
@@ -275,15 +275,15 @@ class ImportSimpleRealmIT extends AbstractImportIT {
         assertThat(realm.getDefaultDefaultClientScopes(), empty());
         assertThat(realm.getDefaultOptionalClientScopes(), empty());
 
-        ImportProcessingException thrown;
+        UnknownRealmReferenceException thrown;
         thrown = assertThrows(
-                ImportProcessingException.class,
+                UnknownRealmReferenceException.class,
                 () -> doImport("10.5_update_simple-realm_invalid-default_defaultScopes.json"));
 
         assertThat(thrown.getMessage(), is("Could not find client scope 'non-exist' in realm 'simple'!"));
 
         thrown = assertThrows(
-                ImportProcessingException.class,
+                UnknownRealmReferenceException.class,
                 () -> doImport("10.6_update_simple-realm_invalid-optional_defaultScopes.json"));
 
         assertThat(thrown.getMessage(), is("Could not find client scope 'non-exist' in realm 'simple'!"));

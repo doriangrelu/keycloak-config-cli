@@ -119,22 +119,6 @@ public class RealmRepository {
         return getResource(realmName).partialExport(exportGroupsAndRoles, exportClients);
     }
 
-    public void addDefaultDefaultClientScope(String realmName, String scopeId) {
-        getResource(realmName).addDefaultDefaultClientScope(scopeId);
-    }
-
-    public void addDefaultOptionalClientScope(String realmName, String scopeId) {
-        getResource(realmName).addDefaultOptionalClientScope(scopeId);
-    }
-
-    public void removeDefaultDefaultClientScope(String realmName, String scopeId) {
-        getResource(realmName).removeDefaultDefaultClientScope(scopeId);
-    }
-
-    public void removeDefaultOptionalClientScope(String realmName, String scopeId) {
-        getResource(realmName).removeDefaultOptionalClientScope(scopeId);
-    }
-
     public List<RealmRepresentation> getRealms() {
         return keycloakProvider.getInstance().realms().findAll();
     }

@@ -31,7 +31,6 @@ import io.github.doriangrelu.keycloak.config.repository.RealmRepository;
 import io.github.doriangrelu.keycloak.config.service.checksum.ChecksumService;
 import io.github.doriangrelu.keycloak.config.service.state.ExecutionContextHolder;
 import io.github.doriangrelu.keycloak.config.service.state.StateService;
-import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import java.util.Set;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.slf4j.Logger;
@@ -43,40 +42,11 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class RealmImportService {
-    static final String[] ignoredPropertiesForRealmImport = new String[] {
-        "authenticatorConfig",
-        "clients",
-        "roles",
-        "users",
-        "groups",
-        "defaultGroups",
-        "identityProviders",
-        "browserFlow",
-        "directGrantFlow",
-        "clientAuthenticationFlow",
-        "dockerAuthenticationFlow",
-        "registrationFlow",
-        "resetCredentialsFlow",
-        "components",
-        "authenticationFlows",
-        "scopeMappings",
-        "clientScopeMappings",
-        "clientScopes",
-        "requiredActions",
-        "defaultDefaultClientScopes",
-        "defaultOptionalClientScopes",
-        "clientProfiles",
-        "clientPolicies",
-    };
-
     private static final Logger logger = LoggerFactory.getLogger(RealmImportService.class);
     private final KeycloakProvider keycloakProvider;
     private final RealmRepository realmRepository;
-    private final OtpPolicyImportService otpPolicyImportService;
 
     private final LegacyReconciliationBridge reconciliationBridge;
-    private final ClientScopeImportService clientScopeImportService;
-    private final DefaultGroupsImportService defaultGroupsImportService;
     private final ComponentGateway componentGateway;
 
     private final ImportConfigProperties importProperties;
@@ -90,20 +60,14 @@ public class RealmImportService {
             KeycloakProvider keycloakProvider,
             RealmRepository realmRepository,
             LegacyReconciliationBridge reconciliationBridge,
-            ClientScopeImportService clientScopeImportService,
-            DefaultGroupsImportService defaultGroupsImportService,
             ComponentGateway componentGateway,
-            OtpPolicyImportService otpPolicyImportService,
             ChecksumService checksumService,
             StateService stateService) {
         this.importProperties = importProperties;
         this.keycloakProvider = keycloakProvider;
         this.realmRepository = realmRepository;
         this.reconciliationBridge = reconciliationBridge;
-        this.clientScopeImportService = clientScopeImportService;
-        this.defaultGroupsImportService = defaultGroupsImportService;
         this.componentGateway = componentGateway;
-        this.otpPolicyImportService = otpPolicyImportService;
         this.checksumService = checksumService;
         this.stateService = stateService;
     }
@@ -138,7 +102,6 @@ public class RealmImportService {
 
     private void updateRealmIfNecessary(RealmImport realmImport) {
         if (!importProperties.getCache().isEnabled() || checksumService.hasToBeUpdated(realmImport)) {
-            setEventsEnabledWorkaround(realmImport);
             updateRealm(realmImport);
         } else {
             logger.debug(
@@ -148,60 +111,32 @@ public class RealmImportService {
         }
     }
 
-    private void setEventsEnabledWorkaround(RealmImport realmImport) {
-        // https://github.com/adorsys/keycloak-config-cli/issues/338
-        if (realmImport.isEventsEnabled() != null) return;
-
-        Boolean existingEventsEnabled =
-                realmRepository.get(realmImport.getRealm()).isEventsEnabled();
-        realmImport.setEventsEnabled(existingEventsEnabled);
-    }
-
     private void createRealm(RealmImport realmImport) {
         logger.debug("Creating realm '{}' ...", realmImport.getRealm());
 
-        RealmRepresentation realm =
-                CloneUtil.deepClone(realmImport, RealmRepresentation.class, ignoredPropertiesForRealmImport);
-        realmRepository.create(realm);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
 
         // refresh the access token to update the scopes. See: https://github.com/adorsys/keycloak-config-cli/issues/339
         keycloakProvider.refreshToken();
 
         stateService.loadState(realmImport);
-        configureRealm(realmImport, realm);
+        configureRealm(realmImport);
     }
 
     private void updateRealm(RealmImport realmImport) {
         logger.debug("Updating realm '{}'...", realmImport.getRealm());
 
-        RealmRepresentation realm =
-                CloneUtil.deepClone(realmImport, RealmRepresentation.class, ignoredPropertiesForRealmImport);
+        // Settings omitted by the import keep their value, events and keycloak-config-cli attributes included
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
+        // The state is written back at the end of the import with the attributes read here: the updated ones
+        stateService.loadState(realmImport);
 
-        RealmRepresentation existingRealm = realmRepository.get(realmImport.getRealm());
-
-        if (realm.getEventsExpiration() == null && existingRealm.getEventsExpiration() != null) {
-            realm.setEventsExpiration(existingRealm.getEventsExpiration());
-        }
-
-        otpPolicyImportService.updateOtpPolicy(realmImport.getRealm(), realm);
-        stateService.loadState(realm);
-
-        realmRepository.update(realm);
-
-        configureRealm(realmImport, realm);
+        configureRealm(realmImport);
     }
 
-    private void importOtpPolicy(RealmImport realmImport) {
-        RealmRepresentation realmConfig = realmRepository.get(realmImport.getRealm());
-        if (realmConfig.getOtpPolicyAlgorithm() != null) {
-            otpPolicyImportService.updateOtpPolicy(realmImport.getRealm(), realmConfig);
-        }
-    }
-
-    private void configureRealm(RealmImport realmImport, RealmRepresentation existingRealm) {
-        importOtpPolicy(realmImport);
+    private void configureRealm(RealmImport realmImport) {
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_SCOPE));
-        clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.DEFAULT_CLIENT_SCOPE));
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_PROFILE, ResourceType.CLIENT_POLICY));
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT));
         reconciliationBridge.apply(
@@ -213,7 +148,7 @@ public class RealmImportService {
                         ResourceType.REQUIRED_ACTION,
                         ResourceType.MESSAGE_BUNDLE,
                         ResourceType.GROUP));
-        defaultGroupsImportService.doImport(realmImport);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.DEFAULT_GROUP));
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.COMPONENT, ResourceType.SUB_COMPONENT));
         syncUserFederationIfNecessary(realmImport);
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.USER_PROFILE));
@@ -225,7 +160,7 @@ public class RealmImportService {
         bindRealmFlows(realmImport);
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.AUTHENTICATOR_CONFIG));
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_FLOW_BINDING));
-        clientScopeImportService.updateDefaultClientScopes(realmImport, existingRealm);
+        reconciliationBridge.apply(realmImport, Set.of(ResourceType.DEFAULT_CLIENT_SCOPE));
         reconciliationBridge.apply(
                 realmImport, Set.of(ResourceType.IDENTITY_PROVIDER, ResourceType.IDENTITY_PROVIDER_MAPPER));
         reconciliationBridge.apply(realmImport, Set.of(ResourceType.CLIENT_AUTHORIZATION));

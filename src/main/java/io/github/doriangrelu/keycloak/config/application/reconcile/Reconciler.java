@@ -89,4 +89,13 @@ public interface Reconciler<K, T extends Resource<K>> {
     default boolean appliesInParallel() {
         return true;
     }
+
+    /**
+     * Whether the declarations of this type are added to the desired state of the realm. A type that is never pruned
+     * and that each import file declares in part, such as the realm settings, is not: each file applies its own
+     * declaration, the last one winning, instead of being rejected as a conflicting definition.
+     */
+    default boolean tracksDeclarations() {
+        return true;
+    }
 }

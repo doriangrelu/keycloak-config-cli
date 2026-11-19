@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.domain.reconcile;
 
 /** Resource types handled by the reconciliation engine. Grows as resource types are migrated (EPIC-003). */
 public enum ResourceType {
+    REALM_SETTINGS("Realm settings"),
     REALM_ROLE("Realm role"),
     CLIENT_ROLE("Client role"),
     ROLE_COMPOSITE("Role composites"),
@@ -43,7 +44,9 @@ public enum ResourceType {
     AUTHENTICATION_FLOW("Authentication flow"),
     AUTHENTICATOR_CONFIG("Authenticator config"),
     CLIENT_FLOW_BINDING("Client flow binding"),
-    CLIENT_AUTHORIZATION("Client authorization");
+    CLIENT_AUTHORIZATION("Client authorization"),
+    DEFAULT_CLIENT_SCOPE("Default client scopes"),
+    DEFAULT_GROUP("Default groups");
 
     private final String label;
 
