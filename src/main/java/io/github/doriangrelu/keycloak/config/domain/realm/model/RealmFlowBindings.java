@@ -32,7 +32,7 @@ public record RealmFlowBindings(Map<String, String> flows) implements Resource<S
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return KEY;
     }
 

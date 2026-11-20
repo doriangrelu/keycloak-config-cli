@@ -81,7 +81,7 @@ public record User(
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.username;
     }
 

@@ -80,19 +80,9 @@ public final class AuthenticatorConfigReconciler implements Reconciler<String, A
         this.flows.deleteAuthenticatorConfig(context.realm(), resource.alias());
     }
 
-    @Override
-    public String stateScope(final AuthenticatorConfig resource) {
-        return "authenticator-configs";
-    }
-
     /** A configuration an execution uses goes with its execution. */
     @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final AuthenticatorConfig resource) {
         return resource.inUse();
-    }
-
-    @Override
-    public boolean usesRemoteState() {
-        return false;
     }
 }

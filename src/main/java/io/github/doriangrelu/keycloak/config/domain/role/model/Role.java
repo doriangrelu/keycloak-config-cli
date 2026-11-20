@@ -53,7 +53,7 @@ public record Role(RoleKey key, String description, Map<String, List<String>> at
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.key.name();
     }
 

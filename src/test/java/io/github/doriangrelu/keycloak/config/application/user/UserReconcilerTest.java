@@ -103,7 +103,7 @@ class UserReconcilerTest {
     }
 
     private static RealmContext context() {
-        return new RealmContext("test", true, false);
+        return new RealmContext("test", true);
     }
 
     private static User declared(String username, String email, Set<String> realmRoles) {

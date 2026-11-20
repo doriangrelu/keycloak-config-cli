@@ -40,10 +40,7 @@ public interface Reconciler<K, T extends Resource<K>> {
     /** Current resources in Keycloak, restricted to the scope of {@code desired} when the type is scoped. */
     List<T> read(RealmContext context, Collection<T> desired);
 
-    /**
-     * The resource as it should be after applying {@code desired}: fields omitted by the import keep their value. The
-     * context gives the managed mode, for types where it also governs the content of a resource.
-     */
+    /** The resource as it should be after applying {@code desired}: fields omitted by the import keep their value. */
     T merge(RealmContext context, T current, T desired);
 
     void create(RealmContext context, T resource);
@@ -52,8 +49,13 @@ public interface Reconciler<K, T extends Resource<K>> {
 
     void delete(RealmContext context, T resource);
 
-    /** Remote state entry where keycloak-config-cli records the resources of this type it created. */
-    String stateScope(T resource);
+    /**
+     * Whether a current resource is declared under another key: a client a file only gives by name is created with a
+     * client id Keycloak generates. Such a resource is not pruned.
+     */
+    default boolean isDeclaredByAnotherKey(T current, Collection<T> desired) {
+        return false;
+    }
 
     /** Resources created by Keycloak itself, such as default roles: never deleted. */
     boolean isOwnedByKeycloak(RealmContext context, T resource);
@@ -63,22 +65,6 @@ public interface Reconciler<K, T extends Resource<K>> {
      * composites of a role, is never pruned: it disappears with its owner.
      */
     default boolean prunes() {
-        return true;
-    }
-
-    /**
-     * Whether the clean phase deletes resources of this type when the remote state is disabled. Some types, such as
-     * message bundles, only delete what the remote state proves keycloak-config-cli created.
-     */
-    default boolean prunesWithoutRemoteState() {
-        return true;
-    }
-
-    /**
-     * Whether the remote state limits the deletions of this type to the resources keycloak-config-cli created. Some
-     * types, such as client scopes, never used it: their deletions only follow the managed mode.
-     */
-    default boolean usesRemoteState() {
         return true;
     }
 

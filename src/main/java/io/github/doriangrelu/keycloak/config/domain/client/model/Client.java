@@ -101,7 +101,7 @@ public record Client(
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return key();
     }
 

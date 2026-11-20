@@ -83,17 +83,7 @@ public final class IdentityProviderMapperReconciler
     }
 
     @Override
-    public String stateScope(final IdentityProviderMapper resource) {
-        return "identity-provider-mappers";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final IdentityProviderMapper resource) {
-        return false;
-    }
-
-    @Override
-    public boolean usesRemoteState() {
         return false;
     }
 }

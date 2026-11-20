@@ -1174,8 +1174,12 @@ class ImportClientsIT extends AbstractImportIT {
         assertThat(authorizationSettings.isAllowRemoteResourceManagement(), is(true));
         assertThat(authorizationSettings.getDecisionStrategy(), is(DecisionStrategy.UNANIMOUS));
 
+        // The client manages its resources remotely (allowRemoteResourceManagement): the import cannot tell a resource
+        // removed from the files from one the application created at runtime, and keeps both (ADR-007)
         List<ResourceRepresentation> authorizationSettingsResources = authorizationSettings.getResources();
-        assertThat(authorizationSettingsResources, hasSize(4));
+        assertThat(authorizationSettingsResources, hasSize(5));
+        assertThat(
+                getAuthorizationSettingsResource(authorizationSettingsResources, "Protected Resource"), notNullValue());
 
         ResourceRepresentation authorizationSettingsResource;
         authorizationSettingsResource =
@@ -1292,10 +1296,12 @@ class ImportClientsIT extends AbstractImportIT {
                 authorizationSettingsPolicy.getConfig(),
                 hasEntry(equalTo("applyPolicies"), equalTo("[\"Any Admin Policy\"]")));
 
-        assertThat(authorizationSettings.getScopes(), hasSize(4));
+        // The scope of the kept resource stays: Keycloak does not remove a scope a resource uses
+        assertThat(authorizationSettings.getScopes(), hasSize(5));
         assertThat(
                 authorizationSettings.getScopes(),
                 containsInAnyOrder(
+                        new ScopeRepresentation("urn:servlet-authz:protected:resource:access"),
                         new ScopeRepresentation("urn:servlet-authz:protected:admin:access"),
                         new ScopeRepresentation("urn:servlet-authz:protected:premium:access"),
                         new ScopeRepresentation("urn:servlet-authz:page:main:actionForPremiumUser"),
@@ -1319,9 +1325,17 @@ class ImportClientsIT extends AbstractImportIT {
         assertThat(authorizationSettings.isAllowRemoteResourceManagement(), is(true));
         assertThat(authorizationSettings.getDecisionStrategy(), is(DecisionStrategy.UNANIMOUS));
 
-        assertThat(authorizationSettings.getResources(), hasSize(0));
+        // Remote resource management: the resource removed from the files is kept, with the scopes it uses (ADR-007)
+        assertThat(authorizationSettings.getResources(), hasSize(1));
+        assertThat(authorizationSettings.getResources().get(0).getName(), is("Admin Resource"));
         assertThat(authorizationSettings.getPolicies(), hasSize(0));
-        assertThat(authorizationSettings.getScopes(), hasSize(0));
+        assertThat(
+                authorizationSettings.getScopes().stream()
+                        .map(ScopeRepresentation::getName)
+                        .collect(Collectors.toSet()),
+                is(authorizationSettings.getResources().get(0).getScopes().stream()
+                        .map(ScopeRepresentation::getName)
+                        .collect(Collectors.toSet())));
     }
 
     @Test

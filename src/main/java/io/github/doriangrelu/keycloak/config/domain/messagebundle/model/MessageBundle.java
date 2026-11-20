@@ -46,7 +46,7 @@ public record MessageBundle(String locale, Map<String, String> texts) implements
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.locale;
     }
 

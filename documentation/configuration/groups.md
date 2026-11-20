@@ -346,7 +346,6 @@ Check that:
 A group missing from the files might not be deleted if:
 - No import file of the realm has a `groups` key
 - A `protectedResources` rule matches its name
-- Remote state is enabled and keycloak-config-cli did not create it
 - The path doesn't match exactly
 - There's a configuration error
 

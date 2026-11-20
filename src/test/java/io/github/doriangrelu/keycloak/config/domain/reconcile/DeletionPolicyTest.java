@@ -25,47 +25,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule.Matching;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class DeletionPolicyTest {
 
     @Test
-    void withoutStateDeletesWhatNoRuleProtects() {
-        DeletionPolicy policy = new DeletionPolicy(Optional.empty(), List.of());
+    void deletesWhatNoRuleProtects() {
+        DeletionPolicy policy = new DeletionPolicy(List.of());
 
         assertThat(policy.allowsDeletionOf("anything")).isTrue();
     }
 
     @Test
     void resourcesProtectedByEqualityOrPatternAreNeverDeleted() {
-        DeletionPolicy policy = new DeletionPolicy(
-                Optional.empty(),
-                List.of(
-                        new ProtectionRule(Matching.EQUALS, "legacy-app"),
-                        new ProtectionRule(Matching.PATTERN, "team-.*")));
+        DeletionPolicy policy = new DeletionPolicy(List.of(
+                new ProtectionRule(Matching.EQUALS, "legacy-app"), new ProtectionRule(Matching.PATTERN, "team-.*")));
 
         assertThat(policy.allowsDeletionOf("legacy-app")).isFalse();
         assertThat(policy.allowsDeletionOf("team-reader")).isFalse();
         assertThat(policy.allowsDeletionOf("legacy-app-2")).isTrue();
         assertThat(policy.allowsDeletionOf("other")).isTrue();
-    }
-
-    @Test
-    void withStateOnlyResourcesCreatedByTheToolAreDeleted() {
-        DeletionPolicy policy = new DeletionPolicy(Optional.of(Set.of("created")), List.of());
-
-        assertThat(policy.allowsDeletionOf("created")).isTrue();
-        assertThat(policy.allowsDeletionOf("created-by-hand")).isFalse();
-    }
-
-    @Test
-    void protectedResourcesAreNeverDeleted() {
-        DeletionPolicy policy = new DeletionPolicy(
-                Optional.of(Set.of("admin", "app-reader")), List.of(new ProtectionRule(Matching.PATTERN, "app-.*")));
-
-        assertThat(policy.allowsDeletionOf("admin")).isTrue();
-        assertThat(policy.allowsDeletionOf("app-reader")).isFalse();
     }
 }

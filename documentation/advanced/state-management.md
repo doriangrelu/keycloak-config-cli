@@ -69,21 +69,6 @@ To force a fresh import:
 2. **Manually in Keycloak**:
    - Delete `keycloak-config-cli-*` attributes from realm
 
-## State Encryption
-
-For sensitive environments, encrypt state data:
-
-```yaml
-import:
-  state: true
-  state-encryption-key: "${STATE_ENCRYPTION_KEY}"
-```
-
-The key should be:
-- At least 16 characters
-- Stored securely (vault, env var)
-- Consistent across all imports
-
 ## When State Helps
 
 ### Large Configurations
@@ -208,13 +193,6 @@ Only use `--import.force=true` when needed:
 - After manual Keycloak changes
 - When state seems corrupted
 - During initial setup
-
-### 3. Encrypt State in Sensitive Environments
-
-```yaml
-import:
-  state-encryption-key: "${ENCRYPTED_STATE_KEY}"
-```
 
 ### 4. Monitor State
 

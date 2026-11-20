@@ -108,11 +108,6 @@ public final class UserReconciler implements Reconciler<String, User> {
     }
 
     @Override
-    public String stateScope(final User resource) {
-        return "users";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final User resource) {
         return false;
     }

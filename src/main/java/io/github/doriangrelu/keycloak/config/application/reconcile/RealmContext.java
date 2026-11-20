@@ -34,41 +34,35 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Everything the engine knows about one realm during one run (ADR-004): the merged desired state of all its import
- * files, the remote state recorded before the run, the managed modes, the protection rules and the plan. It replaces
+ * files, the protection rules and the plan. It replaces
  * the global execution context for the migrated resource types, and is passed explicitly.
  */
 public final class RealmContext {
 
     private final String realm;
     private final boolean parallel;
-    private final boolean remoteStateEnabled;
     private final boolean dryRun;
     private volatile boolean realmMissing;
 
     private final List<ProtectionRule> protections = Collections.synchronizedList(new ArrayList<>());
-    private final Map<String, Set<String>> previousState = new ConcurrentHashMap<>();
     private final Map<ResourceType, Map<Object, Resource<?>>> desired = new EnumMap<>(ResourceType.class);
     private final Map<ResourceType, Set<String>> scopes = new EnumMap<>(ResourceType.class);
     private final List<PlannedChange> plan = Collections.synchronizedList(new ArrayList<>());
     private boolean pruned;
 
-    public RealmContext(final String realm, final boolean parallel, final boolean remoteStateEnabled) {
-        this(realm, parallel, remoteStateEnabled, false);
+    public RealmContext(final String realm, final boolean parallel) {
+        this(realm, parallel, false);
     }
 
     /** @param dryRun whether the changes are only planned, never applied (EPIC-004) */
-    public RealmContext(
-            final String realm, final boolean parallel, final boolean remoteStateEnabled, final boolean dryRun) {
+    public RealmContext(final String realm, final boolean parallel, final boolean dryRun) {
         this.dryRun = dryRun;
         this.realm = Objects.requireNonNull(realm, "realm");
         this.parallel = parallel;
-        this.remoteStateEnabled = remoteStateEnabled;
     }
 
     public String realm() {
@@ -96,30 +90,13 @@ public final class RealmContext {
         return this.parallel;
     }
 
-    public boolean isRemoteStateEnabled() {
-        return this.remoteStateEnabled;
-    }
-
     public void addProtections(final Collection<ProtectionRule> rules) {
         this.protections.addAll(rules);
     }
 
-    /**
-     * Records the remote state of a scope the first time it is seen in the run: later import files of the same run
-     * overwrite the state, and the clean phase needs it as it was before the run.
-     */
-    public void captureState(final String scope, final Collection<String> names) {
-        this.previousState.putIfAbsent(scope, Set.copyOf(names));
-    }
-
-    /**
-     * Names the remote state recorded for a scope before the run, when the remote state is enabled: for reconcilers
-     * whose resources hold parts deleted on their own rules, such as the resources of a client authorization.
-     */
-    public Optional<Set<String>> managedState(final String scope) {
-        return this.remoteStateEnabled
-                ? Optional.of(this.previousState.getOrDefault(scope, Set.of()))
-                : Optional.empty();
+    /** What the clean phase may delete: what no protection rule of the import files covers (ADR-007). */
+    public DeletionPolicy deletionPolicy() {
+        return new DeletionPolicy(List.copyOf(this.protections));
     }
 
     /** Whether a protection rule of the import files covers this name. */
@@ -127,19 +104,6 @@ public final class RealmContext {
         synchronized (this.protections) {
             return this.protections.stream().anyMatch(rule -> rule.protects(name));
         }
-    }
-
-    public DeletionPolicy deletionPolicy(final ResourceType type, final String stateScope) {
-        return deletionPolicy(type, stateScope, true);
-    }
-
-    /** @param usesRemoteState whether the type limits its deletions to what the remote state records */
-    public DeletionPolicy deletionPolicy(
-            final ResourceType type, final String stateScope, final boolean usesRemoteState) {
-        Optional<Set<String>> managedState = this.remoteStateEnabled && usesRemoteState
-                ? Optional.of(this.previousState.getOrDefault(stateScope, Set.of()))
-                : Optional.empty();
-        return new DeletionPolicy(managedState, List.copyOf(this.protections));
     }
 
     /**

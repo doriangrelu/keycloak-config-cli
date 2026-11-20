@@ -57,7 +57,7 @@ Retirer les modes gérés (`import.managed.*`, `ManagedMode`, `DeletionPolicy` r
 
 ### US-006-02 — Retrait de l'état distant
 
-**Statut :** À faire
+**Statut :** Terminé
 Retirer `import.remote-state.*`, `StateService`, `StateRepository`, `CryptoUtil` et les hooks `usesRemoteState`, `prunesWithoutRemoteState`, `stateScope`, ainsi que `managedState` et `captureState` du `RealmContext`. `RealmSettings.mergedWith` ne garde plus les attributs d'état : ils disparaissent au premier import qui déclare les attributs du realm. Vérifier que Spring Security n'est plus nécessaire une fois `CryptoUtil` retiré.
 
 ### US-006-03 — Retrait du cache par checksum
@@ -122,4 +122,16 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
   - composants `KeyProvider`, `ClientRegistrationPolicy` et `UserProfileProvider` : sans cette règle, le retrait de l'état distant aurait permis de supprimer les clés du realm.
 - Tests de garantie : `TechnicalResourcesTest` et `DeletionPolicyTest` (égalité et expression régulière) dans le domaine ; `ImportCleanupGuaranteesIT`, sans état distant, sur un vrai Keycloak : après un second import qui ne déclare plus que `app`, les ressources orphelines de chaque type sont supprimées, tandis que l'utilisateur, toutes les ressources techniques et les ressources protégées par `EQUALS` et par `PATTERN` restent.
 - `ImportManagedNoDeleteIT` est supprimé avec le mode qu'il testait.
+
+### US-006-02
+
+- Retirés : `import.remote-state.*`, `StateService`, `StateRepository`, `CryptoUtil` et la dépendance Spring Security ; les hooks `stateScope`, `usesRemoteState` et `prunesWithoutRemoteState` des reconcilers ; `captureState`, `managedState` et `isRemoteStateEnabled` du `RealmContext` ; `ClientAuthorizationGateway.Deletions`. `DeletionPolicy` ne porte plus que les règles de protection.
+- `Resource.stateName()` devient `protectedName()` : c'est le nom que les règles de protection comparent.
+- Les attributs de l'ancien état distant sont supprimés par tout import, déclarés ou non (`RealmSettings.mergedWith`), écart assumé avec la première version de l'ADR-007, qui ne les supprimait qu'avec des attributs déclarés. Les attributs de checksum restent jusqu'à US-006-03.
+- Deux comportements changent avec l'état distant : les langues des message bundles absentes des fichiers sont supprimées (elles ne l'étaient qu'avec l'état), et toutes les ressources non déclarées de l'autorisation d'un client le sont aussi.
+- `ImportManagedWithEncryptedStateIT`, `CryptoUtilTest` et `ImportRemoteStatePropertiesTest` sont supprimés ; `ImportCleanupGuaranteesIT` tourne avec la configuration par défaut.
+- Deux cas que l'état distant épargnait, tranchés le 20/11/2026 :
+  - **sous-composants** : le SDK Keycloak ne distingue pas `subComponents` absent de `subComponents: {}`. Un composant qui déclare au moins un sous-composant a exactement ceux-là ; un composant qui n'en déclare aucun garde les siens, dont les mappers que Keycloak crée avec un LDAP. On ne peut plus supprimer tous les sous-composants d'un coup ;
+  - **ressources d'autorisation créées à l'exécution** par l'application (API Protection) : quand le client permet la gestion distante des ressources (`allowRemoteResourceManagement`, actif par défaut dans Keycloak), les ressources non déclarées sont gardées, sauf la `Default Resource`, ainsi que les scopes qu'elles utilisent (Keycloak refuse de supprimer un scope utilisé). Une ressource retirée des fichiers n'est donc plus supprimée dans ce cas : il faut `allowRemoteResourceManagement: false` pour que les fichiers fassent foi.
+- Bug révélé par le retrait de l'état : un client déclaré par son seul nom, créé pendant l'import avec un client id généré, était supprimé par le nettoyage du même import. Nouveau hook `Reconciler.isDeclaredByAnotherKey`, implémenté par `ClientReconciler`.
 

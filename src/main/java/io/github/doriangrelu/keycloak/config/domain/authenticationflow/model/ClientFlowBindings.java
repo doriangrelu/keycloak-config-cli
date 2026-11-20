@@ -51,7 +51,7 @@ public record ClientFlowBindings(String clientId, String name, Map<String, Strin
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return key();
     }
 

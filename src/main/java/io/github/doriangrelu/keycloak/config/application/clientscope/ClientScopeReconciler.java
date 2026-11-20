@@ -77,19 +77,9 @@ public final class ClientScopeReconciler implements Reconciler<String, ClientSco
         this.clientScopes.delete(context.realm(), resource.name());
     }
 
-    @Override
-    public String stateScope(final ClientScope resource) {
-        return "client-scopes";
-    }
-
     /** The default and optional client scopes of the realm stay, as in the legacy import. */
     @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final ClientScope resource) {
         return resource.isOwnedByKeycloak();
-    }
-
-    @Override
-    public boolean usesRemoteState() {
-        return false;
     }
 }

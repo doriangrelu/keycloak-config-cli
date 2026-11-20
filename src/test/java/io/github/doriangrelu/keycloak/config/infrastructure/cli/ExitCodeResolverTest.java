@@ -33,7 +33,7 @@ import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryExcepti
 import io.github.doriangrelu.keycloak.config.exception.NormalizationException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakFailure;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportRemoteStateProperties;
+import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import jakarta.validation.Validation;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
@@ -108,13 +108,10 @@ class ExitCodeResolverTest {
                 .messageInterpolator(new ParameterMessageInterpolator())
                 .buildValidatorFactory()
                 .getValidator());
-        Binder binder = new Binder(
-                new MapConfigurationPropertySource(Map.of("import.remote-state.encryption-key", "password")));
+        Binder binder = new Binder(new MapConfigurationPropertySource(Map.of("import.dry-run-format", "xml")));
 
-        Throwable startupFailure = catchThrowable(() -> binder.bind(
-                "import.remote-state",
-                Bindable.of(ImportRemoteStateProperties.class),
-                new ValidationBindHandler(validator)));
+        Throwable startupFailure = catchThrowable(() ->
+                binder.bind("import", Bindable.of(ImportConfigProperties.class), new ValidationBindHandler(validator)));
 
         assertThat(startupFailure).isNotNull();
         assertThat(ExitCodeResolver.resolve(new IllegalStateException("context failed", startupFailure)))

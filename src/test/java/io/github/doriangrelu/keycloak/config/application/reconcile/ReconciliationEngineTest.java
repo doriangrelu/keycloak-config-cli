@@ -42,7 +42,7 @@ class ReconciliationEngineTest {
 
     record Item(String key, String value) implements Resource<String> {
         @Override
-        public String stateName() {
+        public String protectedName() {
             return this.key;
         }
     }
@@ -102,11 +102,6 @@ class ReconciliationEngineTest {
         }
 
         @Override
-        public String stateScope(Item resource) {
-            return this.type.name();
-        }
-
-        @Override
         public boolean isOwnedByKeycloak(RealmContext context, Item resource) {
             return resource.key().startsWith("default-");
         }
@@ -114,8 +109,8 @@ class ReconciliationEngineTest {
 
     private final List<String> log = new ArrayList<>();
 
-    private static RealmContext context(boolean remoteState) {
-        return new RealmContext("test", false, remoteState);
+    private static RealmContext context() {
+        return new RealmContext("test", false);
     }
 
     @Test
@@ -125,7 +120,7 @@ class ReconciliationEngineTest {
         ReconciliationEngine engine = new ReconciliationEngine(List.of(clientRoles, realmRoles));
 
         engine.apply(
-                context(false),
+                context(),
                 new DesiredState()
                         .declare(CLIENT_ROLE, List.of(new Item("c", "1")))
                         .declare(REALM_ROLE, List.of(new Item("r", "1"))));
@@ -144,7 +139,7 @@ class ReconciliationEngineTest {
                 new Item("changed", "1"),
                 new Item("orphan", "1"));
         ReconciliationEngine engine = new ReconciliationEngine(List.of(realmRoles));
-        RealmContext context = context(false);
+        RealmContext context = context();
 
         engine.apply(
                 context,
@@ -164,7 +159,7 @@ class ReconciliationEngineTest {
                 new Item("from-b", "1"),
                 new Item("orphan", "1"));
         ReconciliationEngine engine = new ReconciliationEngine(List.of(realmRoles));
-        RealmContext context = context(false);
+        RealmContext context = context();
 
         engine.apply(context, new DesiredState().declare(REALM_ROLE, List.of(new Item("from-a", null))));
         engine.apply(context, new DesiredState().declare(REALM_ROLE, List.of(new Item("from-b", null))));
@@ -179,7 +174,7 @@ class ReconciliationEngineTest {
         FakeReconciler realmRoles = new FakeReconciler(
                 REALM_ROLE, Set.of(), this.log, new Item("unchanged-file", "1"), new Item("orphan", "1"));
         ReconciliationEngine engine = new ReconciliationEngine(List.of(realmRoles));
-        RealmContext context = context(false);
+        RealmContext context = context();
 
         engine.register(context, new DesiredState().declare(REALM_ROLE, List.of(new Item("unchanged-file", "2"))));
         engine.prune(context);
@@ -192,7 +187,7 @@ class ReconciliationEngineTest {
         FakeReconciler realmRoles = new FakeReconciler(REALM_ROLE, Set.of(), this.log, new Item("r", "1"));
         FakeReconciler clientRoles = new FakeReconciler(CLIENT_ROLE, Set.of(REALM_ROLE), this.log, new Item("c", "1"));
         ReconciliationEngine engine = new ReconciliationEngine(List.of(realmRoles, clientRoles));
-        RealmContext context = context(false);
+        RealmContext context = context();
 
         engine.apply(context, new DesiredState().declare(REALM_ROLE, List.of()).declare(CLIENT_ROLE, List.of()));
         engine.prune(context);
@@ -204,7 +199,7 @@ class ReconciliationEngineTest {
     void neverPrunesUndeclaredTypes() {
         FakeReconciler realmRoles = new FakeReconciler(REALM_ROLE, Set.of(), this.log, new Item("r", "1"));
         ReconciliationEngine engine = new ReconciliationEngine(List.of(realmRoles));
-        RealmContext context = context(false);
+        RealmContext context = context();
 
         engine.apply(context, new DesiredState());
         engine.prune(context);
@@ -213,7 +208,7 @@ class ReconciliationEngineTest {
     }
 
     @Test
-    void prunesOnlyWhatThePolicyAllows() {
+    void prunesWhatIsNeitherProtectedNorOwnedByKeycloak() {
         FakeReconciler realmRoles = new FakeReconciler(
                 REALM_ROLE,
                 Set.of(),
@@ -221,23 +216,25 @@ class ReconciliationEngineTest {
                 new Item("created-by-tool", "1"),
                 new Item("created-by-hand", "1"),
                 new Item("protected", "1"),
+                new Item("team-reader", "1"),
                 new Item("default-roles", "1"));
         ReconciliationEngine engine = new ReconciliationEngine(List.of(realmRoles));
-        RealmContext context = context(true);
-        context.captureState("REALM_ROLE", List.of("created-by-tool", "protected", "default-roles"));
-        context.addProtections(List.of(new ProtectionRule(Matching.EQUALS, "protected")));
+        RealmContext context = context();
+        context.addProtections(List.of(
+                new ProtectionRule(Matching.EQUALS, "protected"), new ProtectionRule(Matching.PATTERN, "team-.*")));
 
         engine.apply(context, new DesiredState().declare(REALM_ROLE, List.of()));
         engine.prune(context);
 
-        assertThat(this.log).containsExactly("REALM_ROLE delete created-by-tool");
+        assertThat(this.log)
+                .containsExactlyInAnyOrder("REALM_ROLE delete created-by-tool", "REALM_ROLE delete created-by-hand");
     }
 
     @Test
     void conflictingDefinitionsInTwoFilesAreRejected() {
         ReconciliationEngine engine =
                 new ReconciliationEngine(List.of(new FakeReconciler(REALM_ROLE, Set.of(), this.log)));
-        RealmContext context = context(false);
+        RealmContext context = context();
         engine.apply(context, new DesiredState().declare(REALM_ROLE, List.of(new Item("admin", "1"))));
 
         assertThatThrownBy(() ->
@@ -250,7 +247,7 @@ class ReconciliationEngineTest {
     void identicalDefinitionsInTwoFilesAreAccepted() {
         ReconciliationEngine engine =
                 new ReconciliationEngine(List.of(new FakeReconciler(REALM_ROLE, Set.of(), this.log)));
-        RealmContext context = context(false);
+        RealmContext context = context();
 
         engine.apply(context, new DesiredState().declare(REALM_ROLE, List.of(new Item("admin", "1"))));
         engine.apply(context, new DesiredState().declare(REALM_ROLE, List.of(new Item("admin", "1"))));

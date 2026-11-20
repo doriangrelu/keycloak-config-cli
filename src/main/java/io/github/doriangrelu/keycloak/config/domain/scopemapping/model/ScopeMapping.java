@@ -77,7 +77,7 @@ public record ScopeMapping(Key key, Set<String> roles) implements Resource<Scope
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.key.holder();
     }
 

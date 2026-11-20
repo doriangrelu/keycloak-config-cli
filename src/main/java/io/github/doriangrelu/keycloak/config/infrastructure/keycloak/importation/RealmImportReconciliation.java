@@ -20,17 +20,10 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation;
 
-import io.github.doriangrelu.keycloak.config.application.client.ClientReconciler;
-import io.github.doriangrelu.keycloak.config.application.clientauthorization.ClientAuthorizationReconciler;
-import io.github.doriangrelu.keycloak.config.application.component.ComponentReconciler;
-import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
-import io.github.doriangrelu.keycloak.config.application.requiredaction.RequiredActionReconciler;
-import io.github.doriangrelu.keycloak.config.application.role.ClientRoleReconciler;
-import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconciler;
 import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.ClientFlowBindings;
 import io.github.doriangrelu.keycloak.config.domain.client.model.Client;
 import io.github.doriangrelu.keycloak.config.domain.clientauthorization.model.ClientAuthorization;
@@ -58,7 +51,6 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.realm.Realm
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
-import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.StateService;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user.UserKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.userprofile.UserProfileKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
@@ -123,7 +115,6 @@ public class RealmImportReconciliation {
     private final KeycloakProvider keycloakProvider;
     private final ClientScopeKeycloakMapper clientScopeMapper;
     private final RequiredActionKeycloakMapper requiredActionMapper;
-    private final StateService stateService;
     private final ImportConfigProperties properties;
 
     public RealmImportReconciliation(
@@ -143,7 +134,6 @@ public class RealmImportReconciliation {
             final KeycloakProvider keycloakProvider,
             final ClientScopeKeycloakMapper clientScopeMapper,
             final RequiredActionKeycloakMapper requiredActionMapper,
-            final StateService stateService,
             final ImportConfigProperties properties) {
         this.engine = engine;
         this.roleMapper = roleMapper;
@@ -161,39 +151,22 @@ public class RealmImportReconciliation {
         this.keycloakProvider = keycloakProvider;
         this.clientScopeMapper = clientScopeMapper;
         this.requiredActionMapper = requiredActionMapper;
-        this.stateService = stateService;
         this.properties = properties;
     }
 
     /**
-     * Prepares the import of one file: captures the remote state before the import overwrites it, and adds what the
-     * file declares to the desired state of its realm. Called for every file, including those whose import is
-     * skipped because their checksum did not change.
+     * Prepares the import of one file: adds what the file declares, and its protection rules, to the desired state of
+     * its realm. Called for every file, including those whose import is skipped because their checksum did not change.
      *
      * @param realmExists whether the realm already exists in Keycloak
-     * @param remoteStateLoaded whether the remote state of the realm was loaded for this file
      */
-    public void startFile(final RealmImport realmImport, final boolean realmExists, final boolean remoteStateLoaded) {
+    public void startFile(final RealmImport realmImport, final boolean realmExists) {
         RealmContext context = contextOf(realmImport);
         if (!realmExists && context.isDryRun()) {
             // A dry run never creates the realm: nothing can be read from it
             context.realmIsMissing();
         }
         context.addProtections(protectionsOf(realmImport));
-        if (remoteStateLoaded) {
-            if (realmImport.getClients() != null) {
-                context.captureState(ClientReconciler.STATE_SCOPE, this.stateService.getClients());
-            }
-            captureRoleState(realmImport, context);
-            if (realmImport.getRequiredActions() != null) {
-                context.captureState(RequiredActionReconciler.STATE_SCOPE, this.stateService.getRequiredActions());
-            }
-            if (realmImport.getMessageBundles() != null) {
-                context.captureState(MessageBundleReconciler.STATE_SCOPE, this.stateService.getMessageBundles());
-            }
-            captureComponentState(realmImport, context);
-            captureClientAuthorizationState(realmImport, context);
-        }
         this.engine.register(context, desiredStateOf(realmImport, realmExists));
     }
 
@@ -233,23 +206,9 @@ public class RealmImportReconciliation {
     private synchronized RealmContext contextOf(final RealmImport realmImport) {
         String realm = realmImport.getRealm();
         return this.contexts.computeIfAbsent(realm, unused -> {
-            RealmContext created = new RealmContext(
-                    realm,
-                    this.properties.isParallel(),
-                    this.properties.getRemoteState().isEnabled(),
-                    this.properties.isDryRun());
+            RealmContext created = new RealmContext(realm, this.properties.isParallel(), this.properties.isDryRun());
             return created;
         });
-    }
-
-    private void captureClientAuthorizationState(final RealmImport realmImport, final RealmContext context) {
-        if (realmImport.getClients() == null) {
-            return;
-        }
-        clientAuthorizationsOf(realmImport)
-                .forEach(client -> context.captureState(
-                        ClientAuthorizationReconciler.resourcesStateScope(client.key()),
-                        this.stateService.getClientAuthorizationResources(client.key())));
     }
 
     private List<ClientAuthorization> clientAuthorizationsOf(final RealmImport realmImport) {
@@ -261,34 +220,6 @@ public class RealmImportReconciliation {
                         client.getName(),
                         this.unmodeledAttributes.extract(client.getAuthorizationSettings(), Set.of())))
                 .toList();
-    }
-
-    private void captureComponentState(final RealmImport realmImport, final RealmContext context) {
-        if (realmImport.getComponents() == null) {
-            return;
-        }
-        context.captureState("components", this.stateService.getComponents(null));
-        this.componentMapper.flatten(realmImport.getComponents()).forEach(component -> {
-            String name = component.key().name();
-            context.captureState(
-                    ComponentReconciler.subComponentStateScope(name), this.stateService.getComponents(name));
-        });
-    }
-
-    private void captureRoleState(final RealmImport realmImport, final RealmContext context) {
-        RolesRepresentation roles = realmImport.getRoles();
-        if (roles == null) {
-            return;
-        }
-        if (roles.getRealm() != null) {
-            context.captureState(RealmRoleReconciler.STATE_SCOPE, this.stateService.getRealmRoles());
-        }
-        if (roles.getClient() != null) {
-            roles.getClient()
-                    .keySet()
-                    .forEach(clientId -> context.captureState(
-                            ClientRoleReconciler.stateScope(clientId), this.stateService.getClientRoles(clientId)));
-        }
     }
 
     private DesiredState realmSettingsStateOf(final RealmImport realmImport, final DesiredState desired) {
@@ -413,13 +344,17 @@ public class RealmImportReconciliation {
                     components.stream()
                             .filter(component -> component.key().isTopLevel())
                             .toList());
-            // The sub-components of every declared component are managed, even when it declares none
+            // A component that declares sub-components has exactly those; one that declares none keeps its own, such
+            // as the mappers Keycloak creates with an LDAP user storage: the files cannot tell an empty list apart
+            List<io.github.doriangrelu.keycloak.config.domain.component.model.Component> children = components.stream()
+                    .filter(component -> !component.key().isTopLevel())
+                    .toList();
             desired.declare(
                     ResourceType.SUB_COMPONENT,
-                    components.stream()
-                            .filter(component -> !component.key().isTopLevel())
-                            .toList(),
-                    components.stream().map(component -> component.key().path()).collect(Collectors.toSet()));
+                    children,
+                    children.stream()
+                            .map(component -> component.key().parent().path())
+                            .collect(Collectors.toSet()));
         }
         String userProfileEnabled = realmImport.getAttributesOrEmpty().get(USER_PROFILE_ENABLED);
         if (userProfileEnabled != null) {

@@ -31,8 +31,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Components of the realm ({@link ResourceType#COMPONENT}, {@code import.managed.component}) or their
- * sub-components ({@link ResourceType#SUB_COMPONENT}, {@code import.managed.sub-component}).
+ * Components of the realm ({@link ResourceType#COMPONENT}) or their sub-components
+ * ({@link ResourceType#SUB_COMPONENT}).
  *
  * <p>The sub-components of every declared component are managed, even when the component declares none: in
  * {@code full} mode, the sub-components it does not declare are deleted, such as the default mappers Keycloak adds to
@@ -54,11 +54,6 @@ public final class ComponentReconciler implements Reconciler<Component.Key, Comp
 
     public static ComponentReconciler ofSubComponents(final ComponentGateway components) {
         return new ComponentReconciler(ResourceType.SUB_COMPONENT, components);
-    }
-
-    /** Remote state entry of the sub-components of a component. */
-    public static String subComponentStateScope(final String parentName) {
-        return "sub-components-" + parentName;
     }
 
     @Override
@@ -104,13 +99,6 @@ public final class ComponentReconciler implements Reconciler<Component.Key, Comp
     @Override
     public void delete(final RealmContext context, final Component resource) {
         this.components.delete(context.realm(), resource.key());
-    }
-
-    @Override
-    public String stateScope(final Component resource) {
-        return resource.key().isTopLevel()
-                ? "components"
-                : subComponentStateScope(resource.key().parent().name());
     }
 
     @Override

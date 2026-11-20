@@ -34,9 +34,6 @@ import java.util.Set;
 /** Realm roles, managed by {@code import.managed.role}. */
 public final class RealmRoleReconciler implements Reconciler<RoleKey, Role> {
 
-    /** Remote state entry of the realm roles created by keycloak-config-cli. */
-    public static final String STATE_SCOPE = "roles-realm";
-
     private final RoleGateway roles;
 
     public RealmRoleReconciler(final RoleGateway roles) {
@@ -76,11 +73,6 @@ public final class RealmRoleReconciler implements Reconciler<RoleKey, Role> {
     @Override
     public void delete(final RealmContext context, final Role resource) {
         this.roles.delete(context.realm(), resource.key());
-    }
-
-    @Override
-    public String stateScope(final Role resource) {
-        return STATE_SCOPE;
     }
 
     @Override

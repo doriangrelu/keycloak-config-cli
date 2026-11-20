@@ -79,17 +79,7 @@ public final class ClientPolicyReconciler implements Reconciler<String, ClientPo
     }
 
     @Override
-    public String stateScope(final ClientPolicy resource) {
-        return "client-policies";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final ClientPolicy resource) {
-        return false;
-    }
-
-    @Override
-    public boolean usesRemoteState() {
         return false;
     }
 

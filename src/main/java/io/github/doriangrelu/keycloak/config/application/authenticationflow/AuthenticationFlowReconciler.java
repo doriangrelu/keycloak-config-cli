@@ -89,20 +89,10 @@ public final class AuthenticationFlowReconciler implements Reconciler<String, Au
         this.flows.delete(context.realm(), resource.alias());
     }
 
-    @Override
-    public String stateScope(final AuthenticationFlow resource) {
-        return "authentication-flows";
-    }
-
     /** Built-in flows belong to Keycloak. */
     @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final AuthenticationFlow resource) {
         return resource.builtIn();
-    }
-
-    @Override
-    public boolean usesRemoteState() {
-        return false;
     }
 
     /** Recreating a flow moves the realm bindings to a temporary flow shared by all flows. */

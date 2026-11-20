@@ -78,11 +78,6 @@ public final class UserProfileReconciler implements Reconciler<String, UserProfi
     }
 
     @Override
-    public String stateScope(final UserProfile resource) {
-        return "user-profile";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final UserProfile resource) {
         return true;
     }

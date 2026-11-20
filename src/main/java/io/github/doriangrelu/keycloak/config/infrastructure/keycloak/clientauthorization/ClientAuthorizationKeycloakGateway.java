@@ -129,7 +129,7 @@ public class ClientAuthorizationKeycloakGateway implements ClientAuthorizationGa
     }
 
     @Override
-    public void apply(final String realm, final ClientAuthorization target, final Deletions deletions) {
+    public void apply(final String realm, final ClientAuthorization target) {
         ClientRepresentation client = findClient(realm, target)
                 .orElseThrow(() ->
                         new IllegalStateException("Client '" + target.key() + "' is missing in realm '" + realm + "'"));
@@ -143,7 +143,7 @@ public class ClientAuthorizationKeycloakGateway implements ClientAuthorizationGa
                     realm);
             return;
         }
-        new Application(realm, client, fgapV2, settingsOf(target), deletions).run();
+        new Application(realm, client, fgapV2, settingsOf(target)).run();
     }
 
     private ResourceServerRepresentation settingsOf(final ClientAuthorization target) {
@@ -207,20 +207,17 @@ public class ClientAuthorizationKeycloakGateway implements ClientAuthorizationGa
         private final ClientRepresentation client;
         private final boolean fgapV2;
         private final ResourceServerRepresentation declared;
-        private final Deletions deletions;
         private final FineGrainedPermissions permissions;
 
         private Application(
                 final String realm,
                 final ClientRepresentation client,
                 final boolean fgapV2,
-                final ResourceServerRepresentation declared,
-                final Deletions deletions) {
+                final ResourceServerRepresentation declared) {
             this.realm = realm;
             this.client = client;
             this.fgapV2 = fgapV2;
             this.declared = declared;
-            this.deletions = deletions;
             this.permissions = new FineGrainedPermissions(
                     realm,
                     fgapV2,
@@ -245,10 +242,33 @@ public class ClientAuthorizationKeycloakGateway implements ClientAuthorizationGa
 
             createOrUpdateResources(listOf(existing.getResources()), resources);
             createOrUpdateScopes(listOf(existing.getScopes()), scopes);
-            deleteResources(listOf(existing.getResources()), resources);
+            List<ResourceRepresentation> deletable = listOf(existing.getResources());
+            Set<String> scopesOfKeptResources = Set.of();
+            if (managesResourcesRemotely(existing)) {
+                // Only the Default Resource of Keycloak: the others may have been created by the application
+                deletable = deletable.stream()
+                        .filter(resource -> DEFAULT_RESOURCE.equals(resource.getName()))
+                        .toList();
+                scopesOfKeptResources = scopesOfUndeclared(
+                        listOf(existing.getResources()).stream()
+                                .filter(resource -> !DEFAULT_RESOURCE.equals(resource.getName()))
+                                .toList(),
+                        resources);
+            }
+            deleteResources(deletable, resources);
             deletePolicies(listOf(existing.getPolicies()), policies);
-            deleteScopes(listOf(existing.getScopes()), scopes);
+            deleteScopes(listOf(existing.getScopes()), scopes, scopesOfKeptResources);
             createOrUpdatePolicies(listOf(refreshed(existing).getPolicies()), policies);
+        }
+
+        /**
+         * Whether the application may create its resources at runtime, through the Protection API: they are runtime
+         * data, as users, and the import only deletes the {@code Default Resource} of Keycloak among the resources it
+         * does not declare. Keycloak allows it by default: {@code allowRemoteResourceManagement: false} makes the files
+         * the only source of truth for the resources.
+         */
+        private boolean managesResourcesRemotely(final ResourceServerRepresentation existing) {
+            return this.declared.isAllowRemoteResourceManagement() || existing.isAllowRemoteResourceManagement();
         }
 
         private static <T> List<T> listOf(final List<T> list) {
@@ -432,7 +452,6 @@ public class ClientAuthorizationKeycloakGateway implements ClientAuthorizationGa
             Set<String> declaredNames =
                     declared.stream().map(ResourceRepresentation::getName).collect(Collectors.toSet());
             existing.stream()
-                    .filter(resource -> isManaged(resource.getName()))
                     .filter(resource -> !declaredNames.contains(resource.getName()))
                     .forEach(resource -> {
                         logger.debug(
@@ -447,14 +466,6 @@ public class ClientAuthorizationKeycloakGateway implements ClientAuthorizationGa
                                 "resource",
                                 resource.getName());
                     });
-        }
-
-        /** With the remote state, only the resources keycloak-config-cli created, and the default one, are managed. */
-        private boolean isManaged(final String name) {
-            return this.deletions
-                    .managedResources()
-                    .map(managed -> managed.contains(name) || DEFAULT_RESOURCE.equals(name))
-                    .orElse(true);
         }
 
         private void createOrUpdateScopes(
@@ -490,11 +501,28 @@ public class ClientAuthorizationKeycloakGateway implements ClientAuthorizationGa
             }
         }
 
-        private void deleteScopes(final List<ScopeRepresentation> existing, final List<ScopeRepresentation> declared) {
+        /** Scopes of the resources the import does not declare: Keycloak keeps a scope a resource still uses. */
+        private static Set<String> scopesOfUndeclared(
+                final List<ResourceRepresentation> existing, final List<ResourceRepresentation> declared) {
+            Set<String> declaredNames =
+                    declared.stream().map(ResourceRepresentation::getName).collect(Collectors.toSet());
+            return existing.stream()
+                    .filter(resource -> !declaredNames.contains(resource.getName()))
+                    .filter(resource -> resource.getScopes() != null)
+                    .flatMap(resource -> resource.getScopes().stream())
+                    .map(ScopeRepresentation::getName)
+                    .collect(Collectors.toSet());
+        }
+
+        private void deleteScopes(
+                final List<ScopeRepresentation> existing,
+                final List<ScopeRepresentation> declared,
+                final Set<String> stillUsed) {
             Set<String> declaredNames =
                     declared.stream().map(ScopeRepresentation::getName).collect(Collectors.toSet());
             existing.stream()
                     .filter(scope -> !declaredNames.contains(scope.getName()))
+                    .filter(scope -> !stillUsed.contains(scope.getName()))
                     .forEach(scope -> tolerating(
                             () -> ClientAuthorizationKeycloakGateway.this.authorizationApi.deleteScope(
                                     this.realm, this.client.getId(), scope.getName()),

@@ -82,7 +82,7 @@ class ClientScopeReconcilerTest {
 
     @Test
     void deletesMissingScopesButNotTheRealmDefaultOnesEvenWithRemoteState() {
-        RealmContext context = new RealmContext("test", false, true);
+        RealmContext context = new RealmContext("test", false);
 
         this.engine.apply(context, declaring(new ClientScope("added", "d", null, null, null, false, null)));
         this.engine.prune(context);
@@ -95,7 +95,7 @@ class ClientScopeReconcilerTest {
     void neverDeletesTheScopesKeycloakCreatesEvenWhenTheRealmNoLongerListsThem() {
         this.keycloak.scopes.put(
                 "service_account", new ClientScope("service_account", null, null, null, null, false, null));
-        RealmContext context = new RealmContext("test", false, false);
+        RealmContext context = new RealmContext("test", false);
 
         this.engine.apply(context, declaring());
         this.engine.prune(context);

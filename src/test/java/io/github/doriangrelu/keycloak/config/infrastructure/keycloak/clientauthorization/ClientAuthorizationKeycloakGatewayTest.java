@@ -33,7 +33,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.doriangrelu.keycloak.config.application.clientauthorization.UnknownAuthorizationReferenceException;
-import io.github.doriangrelu.keycloak.config.application.clientauthorization.port.ClientAuthorizationGateway.Deletions;
 import io.github.doriangrelu.keycloak.config.domain.clientauthorization.model.ClientAuthorization;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.UnmodeledAttributesConverter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
@@ -61,7 +60,6 @@ import org.mockito.ArgumentCaptor;
 class ClientAuthorizationKeycloakGatewayTest {
 
     private static final String REALM = "realm";
-    private static final Deletions ALL = new Deletions(Optional.empty());
 
     private final UnmodeledAttributesConverter converter = new UnmodeledAttributesConverter();
     private ClientAuthorizationApi authorizationApi;
@@ -134,8 +132,8 @@ class ClientAuthorizationKeycloakGatewayTest {
 
         this.gateway.apply(
                 REALM,
-                declared("app", settings(List.of(resource("docs")), List.of(policy("only", Map.of())), List.of(scope))),
-                ALL);
+                declared(
+                        "app", settings(List.of(resource("docs")), List.of(policy("only", Map.of())), List.of(scope))));
 
         verify(this.authorizationApi).createResource(eq(REALM), eq("app-uuid"), any());
         verify(this.authorizationApi).createScope(eq(REALM), eq("app-uuid"), any());
@@ -150,8 +148,7 @@ class ClientAuthorizationKeycloakGatewayTest {
 
         this.gateway.apply(
                 REALM,
-                declared("app", settings(List.of(resource("docs")), List.of(policy("only", Map.of())), List.of())),
-                ALL);
+                declared("app", settings(List.of(resource("docs")), List.of(policy("only", Map.of())), List.of())));
 
         verify(this.authorizationApi).createPolicy(eq(REALM), eq("app-uuid"), any());
     }
@@ -162,7 +159,7 @@ class ClientAuthorizationKeycloakGatewayTest {
         doThrow(failure(500)).when(this.authorizationApi).createResource(anyString(), anyString(), any());
 
         assertThatThrownBy(() -> this.gateway.apply(
-                        REALM, declared("app", settings(List.of(resource("docs")), List.of(), List.of())), ALL))
+                        REALM, declared("app", settings(List.of(resource("docs")), List.of(), List.of()))))
                 .isInstanceOf(KeycloakAccessException.class);
     }
 
@@ -175,7 +172,7 @@ class ClientAuthorizationKeycloakGatewayTest {
         when(this.authorizationApi.isFgapV2Active()).thenReturn(true);
 
         this.gateway.apply(
-                REALM, declared("admin-permissions", settings(List.of(resource("Users")), List.of(), List.of())), ALL);
+                REALM, declared("admin-permissions", settings(List.of(resource("Users")), List.of(), List.of())));
 
         verify(this.authorizationApi).isFgapV2Active();
         verifyNoMoreInteractions(this.authorizationApi);
@@ -188,11 +185,11 @@ class ClientAuthorizationKeycloakGatewayTest {
         givenClient("app", settings(List.of(), List.of(), List.of()));
         doThrow(failure(400)).when(this.authorizationApi).updateSettings(anyString(), anyString(), any());
 
-        assertThatThrownBy(() -> this.gateway.apply(REALM, declared("app", declared), ALL))
+        assertThatThrownBy(() -> this.gateway.apply(REALM, declared("app", declared)))
                 .isInstanceOf(KeycloakAccessException.class);
 
         givenClient("admin-permissions", settings(List.of(), List.of(), List.of()));
-        this.gateway.apply(REALM, declared("admin-permissions", declared), ALL);
+        this.gateway.apply(REALM, declared("admin-permissions", declared));
     }
 
     @Test
@@ -209,8 +206,7 @@ class ClientAuthorizationKeycloakGatewayTest {
                 REALM,
                 declared(
                         "realm-management",
-                        settings(List.of(resource("client.resource.$target")), List.of(), List.of())),
-                ALL);
+                        settings(List.of(resource("client.resource.$target")), List.of(), List.of())));
 
         verify(this.authorizationApi).enableClientPermission(REALM, "target-uuid");
         verify(this.authorizationApi).createResource(eq(REALM), eq("realm-management-uuid"), created.capture());
@@ -221,8 +217,7 @@ class ClientAuthorizationKeycloakGatewayTest {
                 REALM,
                 declared(
                         "realm-management",
-                        settings(List.of(resource("client.resource.$target")), List.of(), List.of())),
-                ALL);
+                        settings(List.of(resource("client.resource.$target")), List.of(), List.of())));
         verify(this.authorizationApi, org.mockito.Mockito.times(2))
                 .createResource(eq(REALM), eq("realm-management-uuid"), created.capture());
         assertThat(created.getValue().getName()).isEqualTo("target-uuid");
@@ -246,8 +241,7 @@ class ClientAuthorizationKeycloakGatewayTest {
                                 List.of(policy(
                                         "view target",
                                         Map.of("defaultResourceType", "Clients", "resources", "[\"$target\"]"))),
-                                List.of())),
-                ALL);
+                                List.of())));
 
         verify(this.authorizationApi).createPolicy(eq(REALM), eq("app-uuid"), created.capture());
         assertThat(created.getValue().getConfig()).containsEntry("resources", "[\"target-uuid\"]");
@@ -261,29 +255,42 @@ class ClientAuthorizationKeycloakGatewayTest {
                         REALM,
                         declared(
                                 "realm-management",
-                                settings(List.of(resource("unknown.resource.$x")), List.of(), List.of())),
-                        ALL))
+                                settings(List.of(resource("unknown.resource.$x")), List.of(), List.of()))))
                 .isInstanceOf(UnknownAuthorizationReferenceException.class)
                 .hasMessage("Cannot resolve 'unknown.resource.$x' in realm 'realm', the type 'unknown' is not"
                         + " supported by keycloak-config-cli.");
     }
 
     @Test
-    void withTheRemoteStateOnlyDeletesTheResourcesItCreatedAndTheDefaultOne() {
+    void withoutRemoteManagementDeletesEveryResourceTheImportMisses() {
+        ResourceServerRepresentation existing = settings(
+                List.of(resource("created"), resource("foreign"), resource("Default Resource")), List.of(), List.of());
+        existing.setAllowRemoteResourceManagement(false);
+        givenClient("app", existing);
+        ResourceServerRepresentation declared = settings(List.of(), List.of(), List.of());
+        declared.setAllowRemoteResourceManagement(false);
+
+        this.gateway.apply(REALM, declared("app", declared));
+
+        verify(this.authorizationApi).deleteResource(REALM, "app-uuid", "created");
+        verify(this.authorizationApi).deleteResource(REALM, "app-uuid", "foreign");
+        verify(this.authorizationApi).deleteResource(REALM, "app-uuid", "Default Resource");
+    }
+
+    @Test
+    void keepsTheResourcesAnApplicationManagesRemotely() {
         givenClient(
                 "app",
                 settings(
-                        List.of(resource("created"), resource("foreign"), resource("Default Resource")),
+                        List.of(resource("declared"), resource("created-at-runtime"), resource("Default Resource")),
                         List.of(),
                         List.of()));
+        ResourceServerRepresentation declared = settings(List.of(resource("declared")), List.of(), List.of());
+        declared.setAllowRemoteResourceManagement(true);
 
-        this.gateway.apply(
-                REALM,
-                declared("app", settings(List.of(), List.of(), List.of())),
-                new Deletions(Optional.of(Set.of("created"))));
+        this.gateway.apply(REALM, declared("app", declared));
 
-        verify(this.authorizationApi).deleteResource(REALM, "app-uuid", "created");
+        verify(this.authorizationApi, never()).deleteResource(REALM, "app-uuid", "created-at-runtime");
         verify(this.authorizationApi).deleteResource(REALM, "app-uuid", "Default Resource");
-        verify(this.authorizationApi, never()).deleteResource(REALM, "app-uuid", "foreign");
     }
 }

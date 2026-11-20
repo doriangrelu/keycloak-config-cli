@@ -48,7 +48,7 @@ public record IdentityProviderMapper(Key key, UnmodeledAttributes unmodeled)
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.key.name();
     }
 

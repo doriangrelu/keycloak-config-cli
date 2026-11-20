@@ -30,7 +30,7 @@ class ChangesTest {
 
     record Item(String key, String value) implements Resource<String> {
         @Override
-        public String stateName() {
+        public String protectedName() {
             return this.key;
         }
     }

@@ -89,7 +89,7 @@ public record ClientScope(
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.name;
     }
 

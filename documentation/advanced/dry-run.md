@@ -13,7 +13,7 @@ java -jar keycloak-config-cli.jar \
   --import.dry-run=true
 ```
 
-The import files are read and compared with Keycloak as in a real import, including the clean phase: resources the import would delete are listed too. Nothing is written to Keycloak: no resource, no remote state, no checksum.
+The import files are read and compared with Keycloak as in a real import, including the clean phase: resources the import would delete are listed too. Nothing is written to Keycloak: no resource, no checksum.
 
 ## Properties
 

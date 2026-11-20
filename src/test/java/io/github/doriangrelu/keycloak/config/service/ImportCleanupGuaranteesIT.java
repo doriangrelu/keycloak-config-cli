@@ -39,13 +39,11 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.ScopeMappingRepresentation;
-import org.springframework.test.context.TestPropertySource;
 
 /**
- * The guarantees of the cleanup (ADR-007), without remote state: what the files no longer declare is deleted, except
+ * The guarantees of the cleanup (ADR-007): what the files no longer declare is deleted, except
  * the users, the resources of Keycloak and the resources protected by equality or by pattern.
  */
-@TestPropertySource(properties = {"import.remote-state.enabled=false"})
 class ImportCleanupGuaranteesIT extends AbstractImportIT {
 
     private static final String REALM_NAME = "cleanupGuarantees";

@@ -26,7 +26,6 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportReconciliation;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.ChecksumService;
-import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.StateService;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
@@ -53,7 +52,6 @@ public class RealmImportService {
     private final ImportConfigProperties importProperties;
 
     private final ChecksumService checksumService;
-    private final StateService stateService;
 
     @Autowired
     public RealmImportService(
@@ -62,15 +60,13 @@ public class RealmImportService {
             RealmGateway realmGateway,
             RealmImportReconciliation reconciliation,
             ComponentGateway componentGateway,
-            ChecksumService checksumService,
-            StateService stateService) {
+            ChecksumService checksumService) {
         this.importProperties = importProperties;
         this.keycloakProvider = keycloakProvider;
         this.realmGateway = realmGateway;
         this.reconciliation = reconciliation;
         this.componentGateway = componentGateway;
         this.checksumService = checksumService;
-        this.stateService = stateService;
     }
 
     public void doImport(RealmImport realmImport) {
@@ -85,17 +81,11 @@ public class RealmImportService {
     }
 
     /**
-     * Prepares the clean phase: captures the remote state before this import overwrites it, and records what the
-     * import declares. Done for every file, including those skipped because their checksum did not change.
+     * Prepares the clean phase: records what the import declares. Done for every file, including those skipped because
+     * their checksum did not change.
      */
     private void trackImport(RealmImport realmImport, boolean realmExists) {
-        String realmName = realmImport.getRealm();
-        boolean remoteStateLoaded =
-                realmExists && importProperties.getRemoteState().isEnabled();
-        if (remoteStateLoaded) {
-            stateService.loadState(realmImport);
-        }
-        reconciliation.startFile(realmImport, realmExists, remoteStateLoaded);
+        reconciliation.startFile(realmImport, realmExists);
     }
 
     private void updateRealmIfNecessary(RealmImport realmImport) {
@@ -118,7 +108,6 @@ public class RealmImportService {
             // refresh the access token to update the scopes. See:
             // https://github.com/adorsys/keycloak-config-cli/issues/339
             keycloakProvider.refreshToken();
-            stateService.loadState(realmImport);
         }
         configureRealm(realmImport);
     }
@@ -126,10 +115,8 @@ public class RealmImportService {
     private void updateRealm(RealmImport realmImport) {
         logger.debug("Updating realm '{}'...", realmImport.getRealm());
 
-        // Settings omitted by the import keep their value, events and keycloak-config-cli attributes included
+        // Settings omitted by the import keep their value, events and the checksums of keycloak-config-cli included
         reconciliation.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
-        // The state is written back at the end of the import with the attributes read here: the updated ones
-        stateService.loadState(realmImport);
 
         configureRealm(realmImport);
     }
@@ -169,8 +156,7 @@ public class RealmImportService {
         reconciliation.apply(realmImport, Set.of(ResourceType.SCOPE_MAPPING, ResourceType.CLIENT_SCOPE_MAPPING));
 
         if (!importProperties.isDryRun()) {
-            // A dry run leaves the remote state and the checksums as they are: the next run applies the import
-            stateService.doImport(realmImport);
+            // A dry run leaves the checksums as they are: the next run applies the import
             checksumService.doImport(realmImport);
         }
     }

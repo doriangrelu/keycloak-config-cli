@@ -47,7 +47,7 @@ public record UserProfile(UnmodeledAttributes configuration) implements Resource
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return KEY;
     }
 }

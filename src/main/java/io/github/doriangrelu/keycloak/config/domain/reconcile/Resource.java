@@ -30,8 +30,8 @@ public interface Resource<K> {
     K key();
 
     /**
-     * Name of the resource in the remote state and for the protection rules. Not called {@code name()}: resources
-     * such as required actions also have a display name.
+     * Name the protection rules of the import files match (ADR-007). Not called {@code name()}: resources such as
+     * required actions also have a display name.
      */
-    String stateName();
+    String protectedName();
 }

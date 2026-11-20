@@ -106,11 +106,6 @@ public final class DefaultClientScopesReconciler implements Reconciler<DefaultCl
     }
 
     @Override
-    public String stateScope(final DefaultClientScopes resource) {
-        return "default-client-scopes";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final DefaultClientScopes resource) {
         return false;
     }

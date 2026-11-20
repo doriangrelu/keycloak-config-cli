@@ -100,7 +100,7 @@ class GroupReconcilerTest {
     }
 
     private static RealmContext context() {
-        return new RealmContext("test", true, false);
+        return new RealmContext("test", true);
     }
 
     @Test

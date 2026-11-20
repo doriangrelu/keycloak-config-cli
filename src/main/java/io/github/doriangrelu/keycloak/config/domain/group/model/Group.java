@@ -75,7 +75,7 @@ public record Group(
 
     /** The name: the remote state and protection rules work on group names. */
     @Override
-    public String stateName() {
+    public String protectedName() {
         return name();
     }
 

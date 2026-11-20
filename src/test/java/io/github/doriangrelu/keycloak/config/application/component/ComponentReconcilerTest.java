@@ -99,7 +99,7 @@ class ComponentReconcilerTest {
     }
 
     private void run(Component... declared) {
-        RealmContext context = new RealmContext("test", false, false);
+        RealmContext context = new RealmContext("test", false);
         List<Component> topLevel = java.util.Arrays.stream(declared)
                 .filter(component -> component.key().isTopLevel())
                 .toList();
@@ -107,7 +107,7 @@ class ComponentReconcilerTest {
                 .filter(component -> !component.key().isTopLevel())
                 .toList();
         Set<String> parents =
-                java.util.Arrays.stream(declared).map(c -> c.key().path()).collect(Collectors.toSet());
+                children.stream().map(c -> c.key().parent().path()).collect(Collectors.toSet());
         DesiredState desired = new DesiredState()
                 .declare(ResourceType.COMPONENT, topLevel)
                 .declare(ResourceType.SUB_COMPONENT, children, parents);
@@ -134,6 +134,13 @@ class ComponentReconcilerTest {
         run(component(LDAP, Map.of()), component(declaredMapper, Map.of()));
 
         assertThat(this.keycloak.components).containsOnlyKeys(LDAP, declaredMapper);
+    }
+
+    @Test
+    void aComponentDeclaredWithoutSubComponentsKeepsItsOwn() {
+        run(component(LDAP, Map.of()));
+
+        assertThat(this.keycloak.components).containsKeys(LDAP, DEFAULT_MAPPER);
     }
 
     @Test

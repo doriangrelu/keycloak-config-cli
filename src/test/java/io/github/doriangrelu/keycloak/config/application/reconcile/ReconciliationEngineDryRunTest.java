@@ -41,7 +41,7 @@ class ReconciliationEngineDryRunTest {
         }
 
         @Override
-        public String stateName() {
+        public String protectedName() {
             return this.name;
         }
     }
@@ -89,23 +89,13 @@ class ReconciliationEngineDryRunTest {
         }
 
         @Override
-        public String stateScope(Item resource) {
-            return "items";
-        }
-
-        @Override
         public boolean isOwnedByKeycloak(RealmContext context, Item resource) {
-            return false;
-        }
-
-        @Override
-        public boolean usesRemoteState() {
             return false;
         }
     }
 
     private static RealmContext dryRun() {
-        return new RealmContext("realm", false, false, true);
+        return new RealmContext("realm", false, true);
     }
 
     @Test

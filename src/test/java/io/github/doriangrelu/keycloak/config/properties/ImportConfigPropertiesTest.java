@@ -53,9 +53,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             "import.var-substitution.suffix=}",
             "import.cache.enabled=false",
             "import.cache.key=custom",
-            "import.remote-state.enabled=false",
-            "import.remote-state.encryption-key=password",
-            "import.remote-state.encryption-salt=0123456789ABCDEFabcdef",
             "import.behaviors.sync-user-federation=true",
             "import.behaviors.remove-default-role-from-user=true",
             "import.behaviors.skip-attributes-for-federated-user=true",
@@ -82,9 +79,6 @@ class ImportConfigPropertiesTest {
         assertThat(properties.getVarSubstitution().getSuffix(), is("}"));
         assertThat(properties.getCache().isEnabled(), is(false));
         assertThat(properties.getCache().getKey(), is("custom"));
-        assertThat(properties.getRemoteState().isEnabled(), is(false));
-        assertThat(properties.getRemoteState().getEncryptionKey(), is("password"));
-        assertThat(properties.getRemoteState().getEncryptionSalt(), is("0123456789ABCDEFabcdef"));
         assertThat(properties.getBehaviors().isSyncUserFederation(), is(true));
         assertThat(properties.getBehaviors().isRemoveDefaultRoleFromUser(), is(true));
         assertThat(properties.getBehaviors().isSkipAttributesForFederatedUser(), is(true));

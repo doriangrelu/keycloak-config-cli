@@ -45,7 +45,7 @@ public record AuthenticatorConfig(String alias, Map<String, String> config, bool
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.alias;
     }
 

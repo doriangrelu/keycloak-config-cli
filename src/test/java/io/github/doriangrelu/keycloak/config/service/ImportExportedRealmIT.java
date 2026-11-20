@@ -35,7 +35,6 @@ import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
         properties = {
-            "import.remote-state.enabled=false",
             "logging.level.io.github.doriangrelu.keycloak.config.KeycloakConfigRunner=INFO",
         })
 @Timeout(value = 60, unit = SECONDS)

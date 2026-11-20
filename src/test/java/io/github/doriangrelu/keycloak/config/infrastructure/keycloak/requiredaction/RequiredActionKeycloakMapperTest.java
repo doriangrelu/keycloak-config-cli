@@ -46,7 +46,7 @@ class RequiredActionKeycloakMapperTest {
         RequiredAction requiredAction = mapper.toRequiredAction(representation);
         RequiredActionProviderRepresentation written = mapper.toRepresentation(requiredAction);
 
-        assertThat(requiredAction.stateName()).isEqualTo("CONFIGURE_TOTP");
+        assertThat(requiredAction.protectedName()).isEqualTo("CONFIGURE_TOTP");
         assertThat(requiredAction.unmodeled().isEmpty()).isTrue();
         assertThat(written).usingRecursiveComparison().isEqualTo(representation);
     }

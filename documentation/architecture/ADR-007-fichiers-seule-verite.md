@@ -48,7 +48,7 @@ Les types qu'un fichier ne déclare qu'en partie (paramètres du realm, flow bin
 ### Options retirées
 
 - Cache par checksum : `import.cache.*`, `import.behaviors.checksum-with-cache-key`, `import.behaviors.checksum-changed`. Chaque import compare tous les fichiers avec Keycloak ; le moteur n'appelle Keycloak en écriture qu'en cas de différence.
-- État distant : `import.remote-state.*`. Les attributs d'état et de checksum déjà écrits dans les realms sont supprimés au premier import qui déclare les attributs du realm, comme tout attribut absent des fichiers.
+- État distant : `import.remote-state.*`. Les attributs d'état déjà écrits dans les realms (`io.github.doriangrelu.keycloak.config.state-*`) sont supprimés au premier import, que les fichiers déclarent ou non les attributs du realm : sans cela, un realm qui ne déclare jamais ses attributs les garderait. Les attributs de checksum suivent le cache.
 - Modes gérés : `import.managed.*`.
 - Import parallèle : `import.parallel`.
 - Substitution `$(...)` : `import.var-substitution.*`.

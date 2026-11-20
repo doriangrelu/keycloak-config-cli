@@ -49,7 +49,7 @@ public record ClientAuthorization(String clientId, String name, UnmodeledAttribu
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return key();
     }
 }

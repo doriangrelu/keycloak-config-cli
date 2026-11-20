@@ -83,35 +83,23 @@ class MessageBundleReconcilerTest {
 
     @Test
     void replacesTheTextsOfADeclaredLocale() {
-        this.engine.apply(context(false), english(Map.of("kept", "new", "added", "y")));
+        this.engine.apply(context(), english(Map.of("kept", "new", "added", "y")));
 
         assertThat(this.keycloak.locales.get("en"))
                 .containsExactlyInAnyOrderEntriesOf(Map.of("kept", "new", "added", "y"));
     }
 
     @Test
-    void withoutRemoteStateNoLocaleIsRemoved() {
-        RealmContext context = context(false);
+    void removesTheLocalesNoLongerDeclared() {
+        RealmContext context = context();
 
         this.engine.apply(context, english(Map.of("kept", "old")));
         this.engine.prune(context);
 
-        assertThat(this.keycloak.locales).containsKeys("en", "de");
+        assertThat(this.keycloak.locales).containsOnlyKeys("en");
     }
 
-    @Test
-    void withRemoteStateOnlyLocalesCreatedByTheToolAreRemoved() {
-        this.keycloak.locales.put("fr", new LinkedHashMap<>(Map.of("bonjour", "monde")));
-        RealmContext context = context(true);
-        context.captureState(MessageBundleReconciler.STATE_SCOPE, List.of("en", "fr"));
-
-        this.engine.apply(context, english(Map.of("kept", "old")));
-        this.engine.prune(context);
-
-        assertThat(this.keycloak.locales).containsOnlyKeys("en", "de");
-    }
-
-    private static RealmContext context(boolean remoteState) {
-        return new RealmContext("test", false, remoteState);
+    private static RealmContext context() {
+        return new RealmContext("test", false);
     }
 }

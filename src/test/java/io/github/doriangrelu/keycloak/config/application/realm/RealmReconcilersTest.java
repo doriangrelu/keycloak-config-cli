@@ -42,7 +42,8 @@ import org.junit.jupiter.api.Test;
 
 class RealmReconcilersTest {
 
-    private static final String OWN = "io.github.doriangrelu.keycloak.config";
+    private static final String OWN = "io.github.doriangrelu.keycloak.config.import-checksum-";
+    private static final String OBSOLETE = "io.github.doriangrelu.keycloak.config.state-";
 
     static final class InMemoryRealm implements RealmGateway {
         RealmSettings settings;
@@ -105,29 +106,43 @@ class RealmReconcilersTest {
     }
 
     @Test
-    void declaredSettingsOverrideTheCurrentOnesAndTheStateAttributesAreKept() {
+    void declaredSettingsOverrideTheCurrentOnesAndTheChecksumsAreKept() {
         RealmSettings current = new RealmSettings(
                 "realm",
                 new UnmodeledAttributes(Map.of(
                         "enabled", true,
                         "eventsEnabled", true,
-                        "attributes", Map.of(OWN + ".state-key-roles", "[]", "custom", "old"))));
+                        "attributes", Map.of(OWN + "default", "abc", "custom", "old"))));
         RealmSettings desired = new RealmSettings(
                 "realm", new UnmodeledAttributes(Map.of("enabled", false, "attributes", Map.of("custom", "new"))));
 
-        RealmSettings merged = current.mergedWith(desired, OWN);
+        RealmSettings merged = current.mergedWith(desired, OWN, OBSOLETE);
 
         assertThat(merged.settings().values())
                 .containsEntry("enabled", false)
                 .containsEntry("eventsEnabled", true)
-                .containsEntry("attributes", Map.of("custom", "new", OWN + ".state-key-roles", "[]"));
+                .containsEntry("attributes", Map.of("custom", "new", OWN + "default", "abc"));
+    }
+
+    @Test
+    void theAttributesOfTheFormerRemoteStateAreRemovedEvenWhenTheImportDeclaresNoAttribute() {
+        RealmSettings current = new RealmSettings(
+                "realm",
+                new UnmodeledAttributes(
+                        Map.of("enabled", true, "attributes", Map.of(OBSOLETE + "key-roles", "[]", "custom", "kept"))));
+        RealmSettings desired = new RealmSettings("realm", new UnmodeledAttributes(Map.of("enabled", true)));
+
+        RealmSettings merged = current.mergedWith(desired, OWN, OBSOLETE);
+
+        assertThat(merged.settings().values()).containsEntry("attributes", Map.of("custom", "kept"));
+        assertThat(current.mergedWith(merged, OWN, OBSOLETE)).isNotEqualTo(current);
     }
 
     @Test
     void aScopeChangingKindLeavesTheOtherKindFirst() {
         InMemoryRealm keycloak = new InMemoryRealm();
         ReconciliationEngine engine = new ReconciliationEngine(List.of(new DefaultClientScopesReconciler(keycloak)));
-        RealmContext context = new RealmContext("realm", false, false);
+        RealmContext context = new RealmContext("realm", false);
 
         engine.apply(
                 context,
@@ -146,8 +161,9 @@ class RealmReconcilersTest {
     @Test
     void eachFileAppliesItsOwnSettingsWithoutConflict() {
         InMemoryRealm keycloak = new InMemoryRealm();
-        ReconciliationEngine engine = new ReconciliationEngine(List.of(new RealmSettingsReconciler(keycloak, OWN)));
-        RealmContext context = new RealmContext("realm", false, false);
+        ReconciliationEngine engine =
+                new ReconciliationEngine(List.of(new RealmSettingsReconciler(keycloak, OWN, OBSOLETE)));
+        RealmContext context = new RealmContext("realm", false);
 
         engine.apply(
                 context,

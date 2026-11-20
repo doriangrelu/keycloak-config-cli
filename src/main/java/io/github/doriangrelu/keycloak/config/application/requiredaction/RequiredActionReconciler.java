@@ -33,9 +33,6 @@ import java.util.Set;
 /** Required actions, managed by {@code import.managed.required-action}. */
 public final class RequiredActionReconciler implements Reconciler<String, RequiredAction> {
 
-    /** Remote state entry of the required actions created by keycloak-config-cli. */
-    public static final String STATE_SCOPE = "required-actions";
-
     private final RequiredActionGateway requiredActions;
 
     public RequiredActionReconciler(final RequiredActionGateway requiredActions) {
@@ -81,11 +78,6 @@ public final class RequiredActionReconciler implements Reconciler<String, Requir
     @Override
     public void delete(final RealmContext context, final RequiredAction resource) {
         this.requiredActions.delete(context.realm(), resource.alias());
-    }
-
-    @Override
-    public String stateScope(final RequiredAction resource) {
-        return STATE_SCOPE;
     }
 
     /** Built-in required actions can be deleted, as the legacy import did; the remote state usually prevents it. */

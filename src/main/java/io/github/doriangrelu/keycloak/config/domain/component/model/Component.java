@@ -84,7 +84,7 @@ public record Component(Key key, String id, String providerId, Map<String, List<
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.key.name();
     }
 

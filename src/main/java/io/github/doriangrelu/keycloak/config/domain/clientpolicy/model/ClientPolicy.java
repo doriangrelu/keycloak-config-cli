@@ -41,7 +41,7 @@ public record ClientPolicy(String name, UnmodeledAttributes unmodeled) implement
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.name;
     }
 }

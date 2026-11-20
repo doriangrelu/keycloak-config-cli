@@ -83,11 +83,6 @@ public final class ClientFlowBindingsReconciler implements Reconciler<String, Cl
     }
 
     @Override
-    public String stateScope(final ClientFlowBindings resource) {
-        return "client-flow-bindings";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final ClientFlowBindings resource) {
         return false;
     }

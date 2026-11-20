@@ -95,11 +95,6 @@ public final class RoleCompositeReconciler implements Reconciler<RoleKey, RoleCo
     }
 
     @Override
-    public String stateScope(final RoleComposites resource) {
-        return "roles-composites";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final RoleComposites resource) {
         return false;
     }

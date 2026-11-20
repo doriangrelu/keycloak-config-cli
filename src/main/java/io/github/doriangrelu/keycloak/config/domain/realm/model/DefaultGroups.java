@@ -41,7 +41,7 @@ public record DefaultGroups(Set<String> paths) implements Resource<String> {
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return KEY;
     }
 }

@@ -79,17 +79,7 @@ public final class IdentityProviderReconciler implements Reconciler<String, Iden
     }
 
     @Override
-    public String stateScope(final IdentityProvider resource) {
-        return "identity-providers";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final IdentityProvider resource) {
-        return false;
-    }
-
-    @Override
-    public boolean usesRemoteState() {
         return false;
     }
 }

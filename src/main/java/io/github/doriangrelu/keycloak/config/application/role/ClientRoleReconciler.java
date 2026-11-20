@@ -45,11 +45,6 @@ public final class ClientRoleReconciler implements Reconciler<RoleKey, Role> {
         this.roles = Objects.requireNonNull(roles, "roles");
     }
 
-    /** Remote state entry of the roles of a client created by keycloak-config-cli. */
-    public static String stateScope(final String clientId) {
-        return "roles-client-" + clientId;
-    }
-
     @Override
     public ResourceType type() {
         return ResourceType.CLIENT_ROLE;
@@ -94,11 +89,6 @@ public final class ClientRoleReconciler implements Reconciler<RoleKey, Role> {
     @Override
     public void delete(final RealmContext context, final Role resource) {
         this.roles.delete(context.realm(), resource.key());
-    }
-
-    @Override
-    public String stateScope(final Role resource) {
-        return stateScope(resource.key().clientId());
     }
 
     @Override

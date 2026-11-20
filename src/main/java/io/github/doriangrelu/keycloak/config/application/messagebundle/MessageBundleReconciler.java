@@ -38,9 +38,6 @@ import java.util.Set;
  */
 public final class MessageBundleReconciler implements Reconciler<String, MessageBundle> {
 
-    /** Remote state entry of the locales created by keycloak-config-cli. */
-    public static final String STATE_SCOPE = "message-bundles";
-
     private final MessageBundleGateway messageBundles;
 
     public MessageBundleReconciler(final MessageBundleGateway messageBundles) {
@@ -90,17 +87,7 @@ public final class MessageBundleReconciler implements Reconciler<String, Message
     }
 
     @Override
-    public String stateScope(final MessageBundle resource) {
-        return STATE_SCOPE;
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final MessageBundle resource) {
-        return false;
-    }
-
-    @Override
-    public boolean prunesWithoutRemoteState() {
         return false;
     }
 }

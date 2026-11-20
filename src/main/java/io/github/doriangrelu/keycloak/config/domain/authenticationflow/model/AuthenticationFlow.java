@@ -69,7 +69,7 @@ public record AuthenticationFlow(
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.alias;
     }
 

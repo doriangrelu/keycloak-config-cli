@@ -51,7 +51,7 @@ public record RealmSettings(String realm, UnmodeledAttributes settings) implemen
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.realm;
     }
 
@@ -65,12 +65,16 @@ public record RealmSettings(String realm, UnmodeledAttributes settings) implemen
     }
 
     /**
-     * These settings once {@code desired} is applied on them.
+     * These settings once {@code desired} is applied on them. Declared {@code attributes} replace the current ones,
+     * except the attributes of keycloak-config-cli itself; the attributes of its former remote state are removed,
+     * declared or not (ADR-007).
      *
      * @param ownAttributePrefix prefix of the attributes of keycloak-config-cli, kept when the import declares
      *     attributes
+     * @param obsoleteAttributePrefix prefix of the attributes keycloak-config-cli no longer uses, always removed
      */
-    public RealmSettings mergedWith(final RealmSettings desired, final String ownAttributePrefix) {
+    public RealmSettings mergedWith(
+            final RealmSettings desired, final String ownAttributePrefix, final String obsoleteAttributePrefix) {
         UnmodeledAttributes merged = this.settings.overriddenBy(desired.settings);
         if (desired.settings.values().get(ATTRIBUTES) instanceof Map<?, ?> declared
                 && this.settings.values().get(ATTRIBUTES) instanceof Map<?, ?> current) {
@@ -80,10 +84,22 @@ public record RealmSettings(String realm, UnmodeledAttributes settings) implemen
                     attributes.put(name, value);
                 }
             });
-            Map<String, Object> values = new LinkedHashMap<>(merged.values());
-            values.put(ATTRIBUTES, attributes);
-            merged = new UnmodeledAttributes(values);
+            merged = withAttributes(merged, attributes);
+        }
+        if (merged.values().get(ATTRIBUTES) instanceof Map<?, ?> attributes
+                && attributes.keySet().stream()
+                        .anyMatch(name -> String.valueOf(name).startsWith(obsoleteAttributePrefix))) {
+            Map<Object, Object> kept = new LinkedHashMap<>(attributes);
+            kept.keySet().removeIf(name -> String.valueOf(name).startsWith(obsoleteAttributePrefix));
+            merged = withAttributes(merged, kept);
         }
         return new RealmSettings(this.realm, merged);
+    }
+
+    private static UnmodeledAttributes withAttributes(
+            final UnmodeledAttributes settings, final Map<Object, Object> attributes) {
+        Map<String, Object> values = new LinkedHashMap<>(settings.values());
+        values.put(ATTRIBUTES, attributes);
+        return new UnmodeledAttributes(values);
     }
 }

@@ -38,11 +38,17 @@ public final class RealmSettingsReconciler implements Reconciler<String, RealmSe
 
     private final RealmGateway realms;
     private final String ownAttributePrefix;
+    private final String obsoleteAttributePrefix;
 
-    /** @param ownAttributePrefix prefix of the realm attributes where keycloak-config-cli keeps its state */
-    public RealmSettingsReconciler(final RealmGateway realms, final String ownAttributePrefix) {
+    /**
+     * @param ownAttributePrefix prefix of the realm attributes where keycloak-config-cli keeps its checksums
+     * @param obsoleteAttributePrefix prefix of the realm attributes of its former remote state, removed by any import
+     */
+    public RealmSettingsReconciler(
+            final RealmGateway realms, final String ownAttributePrefix, final String obsoleteAttributePrefix) {
         this.realms = Objects.requireNonNull(realms, "realms");
         this.ownAttributePrefix = Objects.requireNonNull(ownAttributePrefix, "ownAttributePrefix");
+        this.obsoleteAttributePrefix = Objects.requireNonNull(obsoleteAttributePrefix, "obsoleteAttributePrefix");
     }
 
     @Override
@@ -62,7 +68,7 @@ public final class RealmSettingsReconciler implements Reconciler<String, RealmSe
 
     @Override
     public RealmSettings merge(final RealmContext context, final RealmSettings current, final RealmSettings desired) {
-        return current.mergedWith(desired, this.ownAttributePrefix);
+        return current.mergedWith(desired, this.ownAttributePrefix, this.obsoleteAttributePrefix);
     }
 
     @Override
@@ -78,11 +84,6 @@ public final class RealmSettingsReconciler implements Reconciler<String, RealmSe
     @Override
     public void delete(final RealmContext context, final RealmSettings resource) {
         throw new UnsupportedOperationException("A realm is never deleted");
-    }
-
-    @Override
-    public String stateScope(final RealmSettings resource) {
-        return "realm";
     }
 
     @Override

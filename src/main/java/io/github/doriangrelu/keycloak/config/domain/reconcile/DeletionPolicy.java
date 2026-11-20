@@ -22,36 +22,21 @@ package io.github.doriangrelu.keycloak.config.domain.reconcile;
 
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 /**
- * Decides whether a resource missing from the import may be deleted.
+ * Decides whether a resource missing from the import files may be deleted (ADR-007): unless a protection rule of the
+ * files matches its name, by equality or by pattern.
  *
- * <p>A resource is deleted only if all of these hold:
- *
- * <ul>
- *   <li>when the remote state is enabled, keycloak-config-cli created it: its name is in the state recorded before
- *       the run;
- *   <li>no protection rule matches its name.
- * </ul>
- *
- * <p>Resources created by Keycloak itself (default roles, built-in clients...) are excluded by each resource type,
- * and users are never deleted (ADR-007).
- *
- * @param managedState names recorded in the remote state before the run, or empty when the remote state is disabled
+ * <p>The other guarantees are kept by each resource type: users are never deleted, nor the resources Keycloak creates
+ * (default roles, built-in clients...).
  */
-public record DeletionPolicy(Optional<Set<String>> managedState, List<ProtectionRule> protections) {
+public record DeletionPolicy(List<ProtectionRule> protections) {
 
     public DeletionPolicy {
-        managedState = managedState.map(Set::copyOf);
         protections = List.copyOf(protections);
     }
 
     public boolean allowsDeletionOf(final String name) {
-        if (this.managedState.isPresent() && !this.managedState.get().contains(name)) {
-            return false;
-        }
         return this.protections.stream().noneMatch(rule -> rule.protects(name));
     }
 }

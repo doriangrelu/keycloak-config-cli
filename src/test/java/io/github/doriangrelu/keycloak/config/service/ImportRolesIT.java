@@ -1068,8 +1068,7 @@ class ImportRolesIT extends AbstractImportIT {
 
     @Nested
     @Order(65)
-    @TestPropertySource(properties = {"import.remote-state.enabled=false"})
-    class ImportRemoteStateDisabled {
+    class ImportFakeDefaultRoles {
 
         @Test
         @Order(0)

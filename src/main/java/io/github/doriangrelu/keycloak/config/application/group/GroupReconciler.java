@@ -92,17 +92,7 @@ public final class GroupReconciler implements Reconciler<String, Group> {
     }
 
     @Override
-    public String stateScope(final Group resource) {
-        return "groups";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final Group resource) {
-        return false;
-    }
-
-    @Override
-    public boolean usesRemoteState() {
         return false;
     }
 

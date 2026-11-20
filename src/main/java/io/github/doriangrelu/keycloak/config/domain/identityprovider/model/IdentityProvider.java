@@ -49,7 +49,7 @@ public record IdentityProvider(
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.alias;
     }
 

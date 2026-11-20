@@ -585,7 +585,7 @@ class ImportComponentsIT extends AbstractImportIT {
 
     @Test
     @Order(11)
-    void shouldUpdateComponentRemoveAllSubComponent() throws IOException {
+    void shouldKeepTheSubComponentsOfAComponentThatDeclaresNone() throws IOException {
         doImport("11_update_realm__update_component_remove_all_subcomponent.json");
 
         ComponentRepresentation rsaComponent = getComponent("org.keycloak.keys.KeyProvider", "rsa-generated");
@@ -609,7 +609,8 @@ class ImportComponentsIT extends AbstractImportIT {
         ComponentExportRepresentation subComponent2 =
                 getSubComponent(subComponentsMap, "org.keycloak.storage.ldap.mappers.LDAPStorageMapper", "picture");
 
-        assertThat(subComponent2, is(nullValue()));
+        // An empty list of sub-components cannot be told apart from none: the existing ones are kept
+        assertThat(subComponent2, notNullValue());
     }
 
     @Test
@@ -658,7 +659,8 @@ class ImportComponentsIT extends AbstractImportIT {
         ComponentExportRepresentation subComponent2 =
                 getSubComponent(subComponentsMap, "org.keycloak.storage.ldap.mappers.LDAPStorageMapper", "picture");
 
-        assertThat(subComponent2, is(nullValue()));
+        // No components key: the components are left as they are
+        assertThat(subComponent2, notNullValue());
     }
 
     @Test

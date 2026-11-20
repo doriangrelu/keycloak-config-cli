@@ -78,17 +78,7 @@ public final class ClientProfileReconciler implements Reconciler<String, ClientP
     }
 
     @Override
-    public String stateScope(final ClientProfile resource) {
-        return "client-profiles";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final ClientProfile resource) {
-        return false;
-    }
-
-    @Override
-    public boolean usesRemoteState() {
         return false;
     }
 

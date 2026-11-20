@@ -22,25 +22,9 @@ package io.github.doriangrelu.keycloak.config.application.clientauthorization.po
 
 import io.github.doriangrelu.keycloak.config.domain.clientauthorization.model.ClientAuthorization;
 import java.util.Optional;
-import java.util.Set;
 
 /** Authorization services of the clients of a realm in Keycloak. */
 public interface ClientAuthorizationGateway {
-
-    /**
-     * What the import may delete of the authorization of a client: the resources, policies and scopes it misses, the
-     * resources limited to those keycloak-config-cli created when the remote state is enabled.
-     */
-    record Deletions(Optional<Set<String>> managedResources) {
-
-        /**
-         * @param managedResources resources keycloak-config-cli created, when the remote state is enabled; the
-         *     {@code Default Resource} of Keycloak is always managed
-         */
-        public Deletions {
-            managedResources = managedResources == null ? Optional.empty() : managedResources;
-        }
-    }
 
     /** Current authorization of a declared client; empty when the client does not exist. */
     Optional<ClientAuthorization> find(String realm, ClientAuthorization client);
@@ -48,7 +32,7 @@ public interface ClientAuthorizationGateway {
     /**
      * Applies the declared authorization of a client: resolves its placeholders, enables the fine-grained permissions
      * of the objects it names for {@code realm-management}, then writes the settings, resources, scopes and policies
-     * that changed, and deletes those the import misses as {@code deletions} allows.
+     * that changed, and deletes those the import misses.
      */
-    void apply(String realm, ClientAuthorization target, Deletions deletions);
+    void apply(String realm, ClientAuthorization target);
 }

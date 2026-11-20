@@ -41,7 +41,7 @@ public record ClientProfile(String name, UnmodeledAttributes unmodeled) implemen
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.name;
     }
 }

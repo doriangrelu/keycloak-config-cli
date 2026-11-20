@@ -104,17 +104,7 @@ public final class ScopeMappingReconciler implements Reconciler<ScopeMapping.Key
     }
 
     @Override
-    public String stateScope(final ScopeMapping resource) {
-        return this.type == ResourceType.SCOPE_MAPPING ? "scope-mappings" : "client-scope-mappings";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final ScopeMapping resource) {
         return resource.isOwnedByKeycloak();
-    }
-
-    @Override
-    public boolean usesRemoteState() {
-        return false;
     }
 }

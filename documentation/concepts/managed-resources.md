@@ -118,10 +118,6 @@ Client deletion removes the client and everything attached to it in Keycloak:
 
 When several files target the same realm, the declared types and resources are the union of all the files. A resource declared in one file is not deleted because another file of the same realm does not mention it.
 
-## Remote State
-
-When [remote state](../advanced/state-management.md) is enabled (`import.remote-state.enabled`), deletions are further limited to resources keycloak-config-cli created in a previous run. It does not replace the rule above: within the resources it created, a declared type is still cleaned.
-
 ## Best Practices
 
 ### Run a Dry Run First

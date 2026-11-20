@@ -135,11 +135,8 @@ public final class ReconciliationEngine {
                 desired,
                 current,
                 resource -> !reconciler.isOwnedByKeycloak(context, resource)
-                        && context.deletionPolicy(
-                                        reconciler.type(),
-                                        reconciler.stateScope(resource),
-                                        reconciler.usesRemoteState())
-                                .allowsDeletionOf(resource.stateName()));
+                        && !reconciler.isDeclaredByAnotherKey(resource, desired)
+                        && context.deletionPolicy().allowsDeletionOf(resource.protectedName()));
         run(context, reconciler, deletions, deletion -> {
             record(context, reconciler.type(), deletion);
             if (!context.isDryRun()) {
@@ -155,7 +152,7 @@ public final class ReconciliationEngine {
     }
 
     private static boolean prunes(final RealmContext context, final Reconciler<?, ?> reconciler) {
-        return reconciler.prunes() && (context.isRemoteStateEnabled() || reconciler.prunesWithoutRemoteState());
+        return reconciler.prunes();
     }
 
     private static <T extends Resource<?>> void run(

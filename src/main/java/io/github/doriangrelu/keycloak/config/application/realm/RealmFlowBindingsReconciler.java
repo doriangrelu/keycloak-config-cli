@@ -56,11 +56,6 @@ public final class RealmFlowBindingsReconciler implements Reconciler<String, Rea
     }
 
     @Override
-    public String stateScope(final RealmFlowBindings resource) {
-        return "realm-flow-bindings";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final RealmFlowBindings resource) {
         return true;
     }

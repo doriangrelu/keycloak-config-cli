@@ -33,8 +33,7 @@ import java.util.Set;
 
 /**
  * Authorization services of the declared clients. The resources, policies and scopes the import misses are deleted
- * while the authorization is applied. Resources follow the remote
- * state; policies and scopes do not. The authorization of an undeclared client is left as it is.
+ * while the authorization is applied. The authorization of an undeclared client is left as it is.
  */
 public final class ClientAuthorizationReconciler implements Reconciler<String, ClientAuthorization> {
 
@@ -42,11 +41,6 @@ public final class ClientAuthorizationReconciler implements Reconciler<String, C
 
     public ClientAuthorizationReconciler(final ClientAuthorizationGateway authorizations) {
         this.authorizations = Objects.requireNonNull(authorizations, "authorizations");
-    }
-
-    /** Remote state entry of the authorization resources of a client. */
-    public static String resourcesStateScope(final String clientKey) {
-        return "resources-client-" + clientKey;
     }
 
     @Override
@@ -91,20 +85,12 @@ public final class ClientAuthorizationReconciler implements Reconciler<String, C
     }
 
     private void apply(final RealmContext context, final ClientAuthorization target) {
-        this.authorizations.apply(
-                context.realm(),
-                target,
-                new ClientAuthorizationGateway.Deletions(context.managedState(resourcesStateScope(target.key()))));
+        this.authorizations.apply(context.realm(), target);
     }
 
     @Override
     public void delete(final RealmContext context, final ClientAuthorization resource) {
         throw new UnsupportedOperationException("The authorization of a client is never deleted on its own");
-    }
-
-    @Override
-    public String stateScope(final ClientAuthorization resource) {
-        return resourcesStateScope(resource.key());
     }
 
     @Override

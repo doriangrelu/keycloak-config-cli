@@ -40,19 +40,15 @@ The per-type managed mode properties under `import` (`managed.group`, `managed.c
 | Client Scope Mappings | `clientScopeMappings` | `account-console` mapping kept |
 | Realm Roles | `roles.realm` | Built-in realm roles are kept |
 | Client Roles | `roles.client` | Roles of Keycloak clients are kept |
-| Components | `components` | Key providers, client registration policies and user profile are kept |
+| Components | `components` | Key providers, client registration policies and user profile are kept. A component that declares sub-components has exactly those; one that declares none keeps its own, such as the mappers Keycloak creates with an LDAP user storage |
 | Authentication Flows | `authenticationFlows` | Built-in flows are kept |
 | Authenticator Configs | `authenticatorConfig` | Configs used by built-in flows are kept |
 | Identity Providers | `identityProviders` | - |
 | Identity Provider Mappers | `identityProviderMappers` | - |
 | Clients | `clients` | Built-in clients are kept |
-| Client Authorization Settings | `authorizationSettings` of a client | Resources, policies and scopes |
+| Client Authorization Settings | `authorizationSettings` of a client | Resources, policies and scopes. With `allowRemoteResourceManagement` (the Keycloak default), the application may create resources at runtime: undeclared resources are kept, except the `Default Resource`, and so are the scopes they use. Set `allowRemoteResourceManagement: false` to make the files the only source of truth for the resources |
 | Message Bundles | `messageBundles` | Texts of a locale are exactly the declared ones |
 | Users | `users` | Created and updated, never deleted |
-
-## Remote State Management
-
-When `import.remote-state.enabled=true`, deletions are further limited to resources keycloak-config-cli created in a previous run: resources created by other means are kept, even if their type is declared. See [State Management](../advanced/state-management.md).
 
 ## User Federation Impact
 

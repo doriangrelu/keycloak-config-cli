@@ -49,7 +49,7 @@ public record DefaultClientScopes(Kind kind, Set<String> scopes) implements Reso
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.kind.name();
     }
 }

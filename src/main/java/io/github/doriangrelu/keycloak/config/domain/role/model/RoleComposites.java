@@ -51,7 +51,7 @@ public record RoleComposites(RoleKey key, Set<String> realm, Map<String, Set<Str
     }
 
     @Override
-    public String stateName() {
+    public String protectedName() {
         return this.key.name();
     }
 

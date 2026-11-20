@@ -85,11 +85,6 @@ public final class DefaultGroupsReconciler implements Reconciler<String, Default
     }
 
     @Override
-    public String stateScope(final DefaultGroups resource) {
-        return "default-groups";
-    }
-
-    @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final DefaultGroups resource) {
         return false;
     }

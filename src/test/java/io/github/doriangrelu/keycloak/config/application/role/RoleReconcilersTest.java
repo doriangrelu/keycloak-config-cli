@@ -31,7 +31,6 @@ import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleKey;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -155,7 +154,7 @@ class RoleReconcilersTest {
     }
 
     private static RealmContext context() {
-        return new RealmContext("test", false, false);
+        return new RealmContext("test", false);
     }
 
     @Test
@@ -225,30 +224,6 @@ class RoleReconcilersTest {
                 .isInstanceOf(UnknownClientException.class)
                 .hasMessage("Can't create role 'my_second_client_role' for non existing client 'non-exists-client' in"
                         + " realm 'test'!");
-    }
-
-    @Test
-    void withRemoteStateOnlyRolesCreatedByTheToolArePruned() {
-        this.keycloak.add(realmRole("created-by-tool", null));
-        this.keycloak.add(realmRole("created-by-hand", null));
-        this.keycloak.add(clientRole("app", "created-by-tool"));
-        this.keycloak.add(clientRole("app", "created-by-hand"));
-        RealmContext context = new RealmContext("test", false, true);
-        context.captureState(RealmRoleReconciler.STATE_SCOPE, List.of("created-by-tool"));
-        context.captureState(ClientRoleReconciler.stateScope("app"), List.of("created-by-tool"));
-
-        this.engine.apply(
-                context,
-                new DesiredState()
-                        .declare(ResourceType.REALM_ROLE, List.of())
-                        .declare(ResourceType.CLIENT_ROLE, new ArrayList<>()));
-        this.engine.prune(context);
-
-        assertThat(this.keycloak.roles.keySet())
-                .containsExactlyInAnyOrder(
-                        RoleKey.realm("created-by-hand"),
-                        RoleKey.client("app", "created-by-tool"),
-                        RoleKey.client("app", "created-by-hand"));
     }
 
     @Test

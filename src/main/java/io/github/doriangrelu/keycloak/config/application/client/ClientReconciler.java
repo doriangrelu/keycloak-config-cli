@@ -37,9 +37,6 @@ import java.util.stream.Collectors;
  */
 public final class ClientReconciler implements Reconciler<String, Client> {
 
-    /** Remote state entry of the clients created by keycloak-config-cli. */
-    public static final String STATE_SCOPE = "clients";
-
     private final ClientGateway clients;
 
     public ClientReconciler(final ClientGateway clients) {
@@ -88,9 +85,13 @@ public final class ClientReconciler implements Reconciler<String, Client> {
         this.clients.delete(context.realm(), resource.clientId());
     }
 
+    /** A client a file only gives by name, created in this run, has the client id Keycloak generated. */
     @Override
-    public String stateScope(final Client resource) {
-        return STATE_SCOPE;
+    public boolean isDeclaredByAnotherKey(final Client current, final Collection<Client> desired) {
+        return current.name() != null
+                && desired.stream()
+                        .anyMatch(client ->
+                                client.clientId() == null && current.name().equals(client.name()));
     }
 
     @Override

@@ -39,7 +39,6 @@ keycloak:
 | `import.dry-run-format` | `IMPORT_DRYRUNFORMAT` | `text` | Format of the dry run report: `text` or `json` |
 | `import.dry-run-report-file` | `IMPORT_DRYRUNREPORTFILE` | - | File the dry run report is also written to |
 | `import.state` | `IMPORT_STATE` | `true` | Enable state management |
-| `import.state-encryption-key` | `IMPORT_STATEENCRYPTIONKEY` | - | Encryption key for state |
 | `import.force` | `IMPORT_FORCE` | `false` | Force import even if unchanged |
 
 ### Example

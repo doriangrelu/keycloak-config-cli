@@ -21,9 +21,7 @@
 package io.github.doriangrelu.keycloak.config.properties;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import java.util.Collection;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -35,10 +33,11 @@ import org.springframework.validation.annotation.Validated;
 @SuppressWarnings({"java:S107"})
 public class ImportConfigProperties {
     public static final String REALM_STATE_ATTRIBUTE_COMMON_PREFIX = "io.github.doriangrelu.keycloak.config";
-    public static final String REALM_CHECKSUM_ATTRIBUTE_PREFIX_KEY =
-            REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".import-checksum-{0}";
-    public static final String REALM_STATE_ATTRIBUTE_PREFIX_KEY =
-            REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".state-{0}-{1}";
+    public static final String REALM_CHECKSUM_ATTRIBUTE_PREFIX =
+            REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".import-checksum-";
+    public static final String REALM_CHECKSUM_ATTRIBUTE_PREFIX_KEY = REALM_CHECKSUM_ATTRIBUTE_PREFIX + "{0}";
+    /** Prefix of the realm attributes of the former remote state, removed by any import (ADR-007). */
+    public static final String REALM_STATE_ATTRIBUTE_OBSOLETE_PREFIX = REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".state-";
 
     @NotNull
     private final boolean validate;
@@ -71,9 +70,6 @@ public class ImportConfigProperties {
     @Valid
     private final ImportCacheProperties cache;
 
-    @Valid
-    private final ImportRemoteStateProperties remoteState;
-
     public ImportConfigProperties(
             @DefaultValue("true") final boolean validate,
             @DefaultValue("false") final boolean parallel,
@@ -84,8 +80,7 @@ public class ImportConfigProperties {
             @DefaultValue final ImportVarSubstitutionProperties varSubstitution,
             @DefaultValue final ImportMustacheProperties mustache,
             @DefaultValue final ImportBehaviorsProperties behaviors,
-            @DefaultValue final ImportCacheProperties cache,
-            @DefaultValue final ImportRemoteStateProperties remoteState) {
+            @DefaultValue final ImportCacheProperties cache) {
         this.validate = validate;
         this.parallel = parallel;
         this.dryRun = dryRun;
@@ -96,7 +91,6 @@ public class ImportConfigProperties {
         this.mustache = mustache;
         this.behaviors = behaviors;
         this.cache = cache;
-        this.remoteState = remoteState;
     }
 
     public boolean isValidate() {
@@ -143,10 +137,6 @@ public class ImportConfigProperties {
 
     public ImportCacheProperties getCache() {
         return this.cache;
-    }
-
-    public ImportRemoteStateProperties getRemoteState() {
-        return this.remoteState;
     }
 
     @SuppressWarnings("unused")
@@ -332,50 +322,6 @@ public class ImportConfigProperties {
 
         public String getKey() {
             return this.key;
-        }
-    }
-
-    @SuppressWarnings("unused")
-    public static class ImportRemoteStateProperties {
-        @NotNull
-        private final boolean enabled;
-
-        private final String encryptionKey;
-
-        @Pattern(regexp = "^[A-Fa-f0-9]+$")
-        private final String encryptionSalt;
-
-        public ImportRemoteStateProperties(
-                @DefaultValue("true") final boolean enabled, final String encryptionKey, final String encryptionSalt) {
-            this.enabled = enabled;
-            this.encryptionKey = encryptionKey;
-            this.encryptionSalt = encryptionSalt;
-        }
-
-        /**
-         * No salt is shipped with the tool: a salt shared by every installation would weaken the key derivation.
-         */
-        @AssertTrue(
-                message =
-                        "import.remote-state.encryption-salt must be set when import.remote-state.encryption-key is set")
-        public boolean isEncryptionSaltProvidedWhenEncrypted() {
-            return isBlank(this.encryptionKey) || !isBlank(this.encryptionSalt);
-        }
-
-        private static boolean isBlank(final String value) {
-            return value == null || value.isBlank();
-        }
-
-        public boolean isEnabled() {
-            return this.enabled;
-        }
-
-        public String getEncryptionKey() {
-            return this.encryptionKey;
-        }
-
-        public String getEncryptionSalt() {
-            return this.encryptionSalt;
         }
     }
 }
