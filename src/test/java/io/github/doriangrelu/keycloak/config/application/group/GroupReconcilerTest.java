@@ -26,9 +26,9 @@ import io.github.doriangrelu.keycloak.config.application.group.port.GroupGateway
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
-import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
-import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule.Matching;
 import io.github.doriangrelu.keycloak.config.domain.group.model.Group;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ProtectionRule;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ProtectionRule.Matching;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

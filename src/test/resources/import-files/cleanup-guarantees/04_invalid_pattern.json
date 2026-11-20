@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "realm": "cleanupGuaranteesTyped",
+  "displayName": "must not be applied",
+  "clients": [],
+  "protectedResources": [
+    {
+      "rule": "PATTERN",
+      "matcher": "shared-("
+    }
+  ]
+}

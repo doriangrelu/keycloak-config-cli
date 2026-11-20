@@ -10,17 +10,18 @@ Protection only prevents deletion. A protected resource that a file declares is 
 
 ## The `protectedResources` Rules
 
-An import file can list rules that protect resources from deletion, whatever their type. Each rule has two fields:
+An import file can list rules that protect resources from deletion. Each rule has up to three fields:
 
 | Field | Values | Description |
 |-------|--------|-------------|
-| `rule` | `EQUALS` | `matcher` is compared with the resource name exactly |
+| `rule` | `EQUALS` (default) | `matcher` is compared with the resource name exactly |
 | | `PATTERN` | `matcher` is a Java regular expression matched against the whole name |
-| `matcher` | string | The name, or the regular expression |
+| `matcher` | string, required | The name, or the regular expression |
+| `type` | optional, see [below](#restricting-a-rule-to-one-type) | The only resource type the rule protects |
 
 The name is the identifier of the resource in the import files: the client id of a client, the alias of an authentication flow, authenticator config, required action or identity provider, the client or client scope of a scope mapping, the locale of a message bundle, the name otherwise.
 
-A rule applies to every resource type: `legacy-app` protects a client, a role or a group named `legacy-app` alike.
+Without `type`, a rule applies to every resource type: `legacy-app` protects a client, a role or a group named `legacy-app` alike.
 
 ### JSON
 
@@ -72,6 +73,42 @@ With these rules and the `clients` key declared:
 | `(app1\|app2)` | `app1`, `app2` | `app10` |
 
 In YAML, quote matchers that contain special characters.
+
+An invalid regular expression is a configuration error: the import fails when the files are read, before anything is changed in Keycloak, with the exit code of an invalid configuration (`2`).
+
+### Restricting a Rule to One Type
+
+With `type`, a rule only protects the resources of that type:
+
+```yaml
+protectedResources:
+  - rule: PATTERN
+    matcher: "ext-.*"
+    type: CLIENT        # protects the clients ext-*, not the roles or groups ext-*
+```
+
+| `type` | Resources |
+|--------|-----------|
+| `CLIENT` | Clients |
+| `REALM_ROLE` | Realm roles |
+| `CLIENT_ROLE` | Client roles |
+| `GROUP` | Groups and subgroups |
+| `CLIENT_SCOPE` | Client scopes |
+| `SCOPE_MAPPING` | Scope mappings (matched on the client or client scope) |
+| `CLIENT_SCOPE_MAPPING` | Client scope mappings |
+| `IDENTITY_PROVIDER` | Identity providers |
+| `IDENTITY_PROVIDER_MAPPER` | Identity provider mappers |
+| `AUTHENTICATION_FLOW` | Authentication flows |
+| `AUTHENTICATOR_CONFIG` | Authenticator configs |
+| `REQUIRED_ACTION` | Required actions |
+| `COMPONENT` | Components |
+| `SUB_COMPONENT` | Sub-components |
+| `CLIENT_PROFILE` | Client profiles |
+| `CLIENT_POLICY` | Client policies |
+| `MESSAGE_BUNDLE` | Message bundles (matched on the locale) |
+| `CLIENT_AUTHORIZATION` | Authorization settings of a client |
+
+An unknown `type` fails the import when the file is read.
 
 ### Several Files
 

@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "realm": "cleanupGuaranteesTyped",
+  "clients": [],
+  "roles": {
+    "realm": []
+  },
+  "clientScopes": [],
+  "protectedResources": [
+    {
+      "rule": "PATTERN",
+      "matcher": "shared-.*",
+      "type": "CLIENT"
+    }
+  ]
+}

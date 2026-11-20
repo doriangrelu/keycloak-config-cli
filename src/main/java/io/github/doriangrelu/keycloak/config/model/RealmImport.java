@@ -22,6 +22,8 @@ package io.github.doriangrelu.keycloak.config.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ProtectionRule;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,7 +43,7 @@ public class RealmImport extends RealmRepresentation {
 
     private Map<String, Map<String, String>> messageBundles;
 
-    private Collection<ProtectedResource> protectedResources;
+    private List<ProtectionRule> protectedResources = List.of();
 
     private String source;
 
@@ -58,14 +60,30 @@ public class RealmImport extends RealmRepresentation {
         return new ArrayList<>(authenticationFlowImports);
     }
 
+    /**
+     * A {@code protectedResources} entry of an import file: {@code rule} ({@code EQUALS} by default, or
+     * {@code PATTERN}), {@code matcher} and an optional {@code type}, the only resource type the rule protects.
+     */
+    public record ProtectedResourceDeclaration(ProtectionRule.Matching rule, String matcher, ResourceType type) {}
+
+    /**
+     * Converts the declarations to protection rules when the file is read, so that an invalid regular expression fails
+     * before anything is changed in Keycloak.
+     */
     @SuppressWarnings("unused")
     @JsonSetter("protectedResources")
-    public void setAuthenticationFlowImports(Collection<ProtectedResource> protectedResources) {
-        this.protectedResources = protectedResources;
+    public void setProtectedResources(final Collection<ProtectedResourceDeclaration> declarations) {
+        this.protectedResources = declarations == null
+                ? List.of()
+                : declarations.stream()
+                        .map(declaration ->
+                                new ProtectionRule(declaration.rule(), declaration.matcher(), declaration.type()))
+                        .toList();
     }
 
-    public Collection<ProtectedResource> getProtectedResources() {
-        return null == this.protectedResources ? List.of() : List.copyOf(protectedResources);
+    @JsonIgnore
+    public List<ProtectionRule> getProtectedResources() {
+        return this.protectedResources;
     }
 
     @SuppressWarnings("unused")

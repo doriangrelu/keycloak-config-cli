@@ -21,8 +21,8 @@
 package io.github.doriangrelu.keycloak.config.application.reconcile;
 
 import io.github.doriangrelu.keycloak.config.domain.common.ConflictingDefinitionException;
-import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.DeletionPolicy;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
@@ -92,9 +92,9 @@ public final class RealmContext {
         return new DeletionPolicy(List.copyOf(this.protections));
     }
 
-    /** Whether a protection rule of the import files covers this name. */
-    public boolean isProtected(final String name) {
-        return this.protections.stream().anyMatch(rule -> rule.protects(name));
+    /** Whether a protection rule of the import files covers this resource. */
+    public boolean isProtected(final ResourceType type, final String name) {
+        return !deletionPolicy().allowsDeletionOf(type, name);
     }
 
     /**

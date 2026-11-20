@@ -21,8 +21,10 @@
 package io.github.doriangrelu.keycloak.config.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -47,6 +49,7 @@ import org.keycloak.representations.idm.ScopeMappingRepresentation;
 class ImportCleanupGuaranteesIT extends AbstractImportIT {
 
     private static final String REALM_NAME = "cleanupGuarantees";
+    private static final String TYPED_REALM_NAME = "cleanupGuaranteesTyped";
 
     ImportCleanupGuaranteesIT() {
         this.resourcePath = "import-files/cleanup-guarantees";
@@ -106,6 +109,38 @@ class ImportCleanupGuaranteesIT extends AbstractImportIT {
         assertThat(after.getScopeMappings())
                 .extracting(ScopeMappingRepresentation::getClientScope)
                 .contains("offline_access");
+    }
+
+    @Test
+    void aRuleWithATypeOnlyProtectsThatTypeAndAnInvalidPatternChangesNothing() throws IOException {
+        doImport("02_create_realm_with_shared_names.json");
+
+        doImport("03_protect_clients_only.json");
+        RealmRepresentation after =
+                keycloakProvider.getInstance().realm(TYPED_REALM_NAME).partialExport(true, true);
+
+        // The rule is restricted to the clients: the role and the scope with the same name are deleted
+        assertThat(names(after.getClients(), ClientRepresentation::getClientId)).contains("shared-name");
+        assertThat(names(after.getRoles().getRealm(), RoleRepresentation::getName))
+                .doesNotContain("shared-name");
+        assertThat(names(after.getClientScopes(), ClientScopeRepresentation::getName))
+                .doesNotContain("shared-name");
+
+        // An invalid regular expression fails when the file is read, before anything is changed in Keycloak
+        assertThatThrownBy(() -> doImport("04_invalid_pattern.json"))
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageContaining("shared-(");
+        RealmRepresentation unchanged =
+                keycloakProvider.getInstance().realm(TYPED_REALM_NAME).toRepresentation();
+        assertThat(unchanged.getDisplayName()).isNull();
+        assertThat(names(
+                        keycloakProvider
+                                .getInstance()
+                                .realm(TYPED_REALM_NAME)
+                                .clients()
+                                .findAll(),
+                        ClientRepresentation::getClientId))
+                .contains("shared-name");
     }
 
     private RealmRepresentation export() {

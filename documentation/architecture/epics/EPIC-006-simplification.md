@@ -80,7 +80,7 @@ Retirer `import.parallel`, le hook `appliesInParallel`, l'application parallèle
 
 ### US-006-06 — Protection des ressources dans le domaine
 
-**Statut :** À faire
+**Statut :** Terminé
 `ProtectedResource` (package `model`, avec son cache d'expressions régulières) fait double emploi avec `ProtectionRule` du domaine. Garder une seule règle dans le domaine, compilée une fois, et convertir la déclaration du fichier dans `infrastructure.source`. Une expression régulière invalide est une erreur de configuration, signalée avant toute modification de Keycloak. Option à étudier : restreindre une règle à un type de ressource (champ `type` facultatif, sans changer le comportement des règles existantes).
 
 ### US-006-07 — Lecture des fichiers dans `infrastructure.source`
@@ -153,4 +153,12 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
 - Échappement : les valeurs sont échappées comme le contenu d'une chaîne entre guillemets doubles (`"`, `\`, retours à la ligne, caractères de contrôle). Cet échappement est le même en JSON et en YAML : un seul échappeur couvre les deux formats, à condition qu'en YAML la variable soit écrite entre guillemets doubles quand sa valeur peut contenir ces caractères. Plus d'échappement HTML. `{{{nom}}}` insère une valeur telle quelle (un nombre, un fragment JSON).
 - `MustacheTemplates` et `MustacheContextWithDefaults` restent provisoirement dans le paquet `provider`, à côté du lecteur de fichiers : `infrastructure` dépend encore de `provider`, et l'y placer créerait un cycle. US-006-07 les déplace avec le lecteur dans `infrastructure.source`.
 - Tests : `MustacheTemplatesTest`, `MustacheContextWithDefaultsTest`, `ImportRealmTemplateIT` (variable fournie, valeur par défaut, fragment brut, YAML, variable manquante, valeur avec guillemets et antislash).
+
+### US-006-06
+
+- `ProtectedResource` (package `model`, avec son cache d'expressions régulières partagé) est supprimé. Une seule règle, `ProtectionRule`, déplacée de `domain.common` vers `domain.reconcile` à côté de `DeletionPolicy` et de `ResourceType` (sinon cycle entre les deux paquets). Elle compile son expression une fois, à sa création.
+- Une expression invalide ou une règle sans `matcher` lève `InvalidProtectionRuleException` (exception du domaine, code de configuration invalide). La règle est créée à la lecture du fichier (`RealmImport.setProtectedResources`) : l'erreur survient avant toute modification de Keycloak, avec le nom du fichier.
+- Option retenue : champ `type` facultatif, une valeur de `ResourceType`. Une règle sans type protège tous les types, comme avant. `DeletionPolicy.allowsDeletionOf(type, name)` et `RealmContext.isProtected(type, name)` reçoivent le type ; le moteur passe celui du reconciler, `GroupReconciler` celui des groupes pour les sous-groupes retirés.
+- La déclaration du fichier (`RealmImport.ProtectedResourceDeclaration`) reste provisoirement dans `model` avec `RealmImport` : US-006-07 et 08 déplacent la lecture et l'analyse des fichiers.
+- Tests : `ProtectionRuleTest`, `DeletionPolicyTest` et un cas de `ImportCleanupGuaranteesIT` (règle restreinte aux clients, expression invalide sans aucune modification).
 

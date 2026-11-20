@@ -82,7 +82,7 @@ public final class GroupReconciler implements Reconciler<String, Group> {
         Set<String> removedChildren = new LinkedHashSet<>(current.subGroups());
         removedChildren.removeAll(target.subGroups());
         removedChildren.stream()
-                .filter(name -> !context.isProtected(name))
+                .filter(name -> !context.isProtected(ResourceType.GROUP, name))
                 .forEach(name -> this.groups.delete(context.realm(), Group.childPath(target.path(), name)));
     }
 

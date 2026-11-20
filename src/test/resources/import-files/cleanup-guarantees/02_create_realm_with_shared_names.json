@@ -1,0 +1,23 @@
+{
+  "enabled": true,
+  "realm": "cleanupGuaranteesTyped",
+  "clients": [
+    {
+      "clientId": "shared-name",
+      "publicClient": true
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "shared-name"
+      }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "shared-name",
+      "protocol": "openid-connect"
+    }
+  ]
+}

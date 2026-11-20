@@ -136,7 +136,7 @@ public final class ReconciliationEngine {
                 current,
                 resource -> !reconciler.isOwnedByKeycloak(context, resource)
                         && !reconciler.isDeclaredByAnotherKey(resource, desired)
-                        && context.deletionPolicy().allowsDeletionOf(resource.protectedName()));
+                        && context.deletionPolicy().allowsDeletionOf(reconciler.type(), resource.protectedName()));
         run(context, reconciler, deletions, deletion -> {
             record(context, reconciler.type(), deletion);
             if (!context.isDryRun()) {

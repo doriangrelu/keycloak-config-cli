@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- A `protectedResources` rule can be restricted to one resource type with the optional `type` field (`CLIENT`, `REALM_ROLE`, `GROUP`...). Rules without `type` still protect every type.
 - Reference realm of Keycloak `26.5.3` for the normalization.
 - Dry run with `import.dry-run=true`: the import is compared with Keycloak, clean phase included, and the changes it would make are reported by realm (creations, updates with their changed fields, deletions) without applying anything. Text or JSON report (`import.dry-run-format`), optionally written to a file (`import.dry-run-report-file`); field values are never shown. Exit code `10` when changes are pending, `0` otherwise. See [Dry Run](documentation/advanced/dry-run.md).
 - Mustache templating support with CLI-provided variables via `import.mustache.enabled` and `import.mustache.variables.*`
@@ -29,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- An invalid regular expression in `protectedResources` fails the import when the files are read, before anything is changed in Keycloak, with the exit code of an invalid configuration. A rule without `rule` compares by equality; a rule without `matcher` is rejected.
 - **BREAKING**: Mustache is the only template engine. The `$(...)` substitution is removed (`import.var-substitution.*`, and the `env:`, `sys:` and `file:` lookups): give the values as `import.mustache.variables.*` and write `{{name}}` in the files. A configuration that still sets `import.var-substitution.*` fails at startup.
 - **BREAKING**: A Mustache variable that is neither defined nor given a default value (`{{name:default}}`) fails the import, with the name of the variable, the file and the line, instead of rendering an empty value.
 - **BREAKING**: Mustache values are escaped as the content of a double-quoted JSON or YAML string (quotes, backslashes, line breaks), and no longer as HTML: `&` and `<` stay as they are. `{{{name}}}` inserts a value as it is, to inject a JSON or YAML fragment.

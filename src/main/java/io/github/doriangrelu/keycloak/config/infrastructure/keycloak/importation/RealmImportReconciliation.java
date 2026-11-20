@@ -27,7 +27,6 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciliatio
 import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.ClientFlowBindings;
 import io.github.doriangrelu.keycloak.config.domain.client.model.Client;
 import io.github.doriangrelu.keycloak.config.domain.clientauthorization.model.ClientAuthorization;
-import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.group.model.Group;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultClientScopes;
@@ -53,7 +52,6 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKe
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user.UserKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.userprofile.UserProfileKeycloakMapper;
-import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
@@ -166,7 +164,7 @@ public class RealmImportReconciliation {
             // A dry run never creates the realm: nothing can be read from it
             context.realmIsMissing();
         }
-        context.addProtections(protectionsOf(realmImport));
+        context.addProtections(realmImport.getProtectedResources());
         this.engine.register(context, desiredStateOf(realmImport, realmExists));
     }
 
@@ -540,18 +538,5 @@ public class RealmImportReconciliation {
         boolean adminPermissions =
                 Client.ADMIN_PERMISSIONS.equals(client.clientId()) || Client.ADMIN_PERMISSIONS.equals(client.name());
         return adminPermissions && this.keycloakProvider.isFgapV2Active();
-    }
-
-    private static List<ProtectionRule> protectionsOf(final RealmImport realmImport) {
-        return realmImport.getProtectedResources().stream()
-                .map(RealmImportReconciliation::toRule)
-                .toList();
-    }
-
-    private static ProtectionRule toRule(final ProtectedResource resource) {
-        ProtectionRule.Matching matching = resource.rule() == ProtectedResource.Rule.PATTERN
-                ? ProtectionRule.Matching.PATTERN
-                : ProtectionRule.Matching.EQUALS;
-        return new ProtectionRule(matching, resource.matcher());
     }
 }

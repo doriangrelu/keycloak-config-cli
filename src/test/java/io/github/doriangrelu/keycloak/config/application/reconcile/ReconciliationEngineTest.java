@@ -26,8 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.doriangrelu.keycloak.config.domain.common.ConflictingDefinitionException;
-import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
-import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule.Matching;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ProtectionRule;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ProtectionRule.Matching;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
