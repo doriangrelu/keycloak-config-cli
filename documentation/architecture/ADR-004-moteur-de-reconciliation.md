@@ -28,7 +28,7 @@ public interface Reconciler<T> {
 ```
 
 - `read` lit l'existant par le port de la ressource et renvoie des BOs (ADR-002).
-- `diff` s'appuie sur les règles du domaine : appariement par `ResourceKey`, comparaison des BOs, puis filtre des suppressions selon le mode géré (`full`, `no-delete`), l'état (ressources créées par l'outil) et les règles de protection (`protectedResources`).
+- `diff` s'appuie sur les règles du domaine : appariement par `ResourceKey`, comparaison des BOs, puis filtre des suppressions selon le mode géré (`full`, `no-delete`), l'état (ressources créées par l'outil) et les règles de protection (`protectedResources`). *Le mode géré et l'état sont retirés par l'[ADR-007](ADR-007-fichiers-seule-verite.md) : seuls restent les ressources de Keycloak et les règles de protection.*
 - `apply` et `prune` exécutent une modification par le port.
 
 ### Le déroulement pour un realm
