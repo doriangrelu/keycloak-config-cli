@@ -24,6 +24,10 @@ L'outil hérité offre bien plus, et ces options compliquent le moteur ou contre
 
 ## Décision
 
+### Modèle : un `apply` déclaratif
+
+L'outil fonctionne comme `kubectl apply` avec ses manifests : les fichiers décrivent l'état voulu de chaque realm, et un import aligne Keycloak dessus. Ce qui manque est créé, ce qui diffère est mis à jour, ce qui n'est plus décrit est supprimé. Relancer l'import sur des fichiers inchangés ne change rien ; relancer après une modification manuelle dans Keycloak la défait. Le dry-run joue le rôle de `kubectl diff`.
+
 ### Règle de nettoyage unique
 
 Pour chaque realm importé, les fichiers sont la vérité :
@@ -31,14 +35,15 @@ Pour chaque realm importé, les fichiers sont la vérité :
 - **Un type déclaré** par au moins un fichier du realm (clé présente, même avec une liste vide) est nettoyé : toute ressource de ce type qui existe dans Keycloak et qu'aucun fichier ne déclare est supprimée.
 - **Un type non déclaré** n'est pas touché. Un fichier sans clé `groups` ne supprime aucun groupe ; `groups: []` les supprime tous.
 
-Les exceptions sont fixées dans le code, pas dans la configuration :
+Trois garanties encadrent la suppression. Elles sont fixées dans le code, ne dépendent d'aucune option, et chacune est couverte par des tests pour chaque type nettoyé :
 
-| Exception | Raison |
+| Garantie | Portée |
 |---|---|
-| Les utilisateurs ne sont jamais supprimés | Un realm contient les vrais utilisateurs, qui ne sont pas dans les fichiers |
-| Les ressources de Keycloak ne sont jamais supprimées (`isOwnedByKeycloak`) : clients et rôles par défaut, flows et configs built-in, client scopes par défaut du realm… | Keycloak les recrée ou en dépend |
-| Les ressources protégées (`protectedResources` du fichier) ne sont jamais supprimées | Garde-fou pour ce qui vit dans le realm hors des fichiers (un client créé par une autre équipe) |
-| Les types déclarés en partie (paramètres du realm, flow bindings, client scopes et groupes par défaut, composites, flow bindings et autorisation des clients) ne sont pas nettoyés comme des listes | Un fichier n'en déclare que ce qu'il veut changer |
+| **Les utilisateurs ne sont jamais supprimés** | C'est le seul type exclu du nettoyage : un realm contient les vrais utilisateurs, qui ne sont pas dans les fichiers |
+| **Les ressources techniques ne sont jamais supprimées** (`isOwnedByKeycloak`) | Ce que Keycloak crée et dont il dépend : clients et rôles par défaut (`account`, `admin-cli`, `realm-management`, `offline_access`, `default-roles-<realm>`…), flows et configs built-in, client scopes par défaut du realm, clients `<realm>-realm` du realm master, client `admin-permissions` |
+| **Les ressources protégées ne sont jamais supprimées** | Les règles `protectedResources` des fichiers, par égalité (`EQUALS`) ou par expression régulière (`PATTERN`) sur le nom de la ressource : tout ce qu'elles désignent reste, quel que soit son type, même absent des fichiers |
+
+Les types qu'un fichier ne déclare qu'en partie (paramètres du realm, flow bindings, client scopes et groupes par défaut, composites, flow bindings et autorisation des clients) ne sont pas nettoyés comme des listes : un fichier n'en déclare que ce qu'il veut changer.
 
 ### Options retirées
 
@@ -61,7 +66,7 @@ Les exceptions sont fixées dans le code, pas dans la configuration :
 
 - Le dry-run : avec un nettoyage qui supprime tout ce qui manque, relire les suppressions avant de les appliquer devient indispensable. Sans cache, il compare toujours tous les fichiers.
 - Les codes de sortie (ADR-005).
-- Les ressources protégées.
+- Les ressources protégées, par égalité ou par expression régulière.
 - La normalisation, mode à part (`run.operation=NORMALIZE`).
 - Les comportements propres à un type : `import.behaviors.remove-default-role-from-user`, `skip-attributes-for-federated-user`, `sync-user-federation`, et `import.validate`.
 
@@ -70,5 +75,6 @@ Les exceptions sont fixées dans le code, pas dans la configuration :
 - **Changement incompatible.** Qui comptait sur `no-delete` ou sur l'état distant pour garder des ressources hors des fichiers doit les déclarer ou les protéger. Le guide de migration le dit, et recommande un dry-run avant le premier import en 7.0.0.
 - Le moteur se simplifie : les hooks `usesRemoteState`, `prunesWithoutRemoteState`, `stateScope` et `appliesInParallel` disparaissent, ainsi que `managedState` et `captureState` du `RealmContext`. Il reste `prunes` et `isOwnedByKeycloak`.
 - La règle de suppression se lit dans les fichiers et se teste sans configuration particulière.
+- Les fonctionnalités gardées sont reprises sur le socle des ADR-001 à ADR-006 : lecture des fichiers et Mustache dans `infrastructure.source`, cas d'usage d'import dans `application.importation`, ligne de commande dans `infrastructure.cli`. À la fin, il ne reste que `domain`, `application`, `infrastructure` et la classe de démarrage.
 - Un import compare toujours tous les fichiers : il est un peu plus long qu'avec le cache, mais toujours correct.
 - Les tests d'intégration des options retirées disparaissent (`*Checksum*IT`, `ImportManaged*IT`, `ImportParallelImportIT`, `ImportRealmCustomImportKeyIT`, `ImportRealmSubstitutionIT`) ; ceux qui portaient sur la suppression sont repris pour la nouvelle règle.

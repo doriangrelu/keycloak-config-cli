@@ -3,7 +3,9 @@
 **Statut :** À faire
 **ADR :** [ADR-007](../ADR-007-fichiers-seule-verite.md), [ADR-004](../ADR-004-moteur-de-reconciliation.md)
 
-Recentrer l'outil sur son besoin : créer et mettre à jour les realms décrits par les fichiers, supprimer ce qui n'y figure plus, et variabiliser les valeurs avec Mustache. Les options qui compliquent le moteur ou contredisent ce besoin sont retirées.
+Recentrer l'outil sur son besoin, sur le modèle de `kubectl apply` : créer et mettre à jour les realms décrits par les fichiers, supprimer ce qui n'y figure plus, et variabiliser les valeurs avec Mustache. Les options qui compliquent le moteur ou contredisent ce besoin sont retirées, et les fonctionnalités gardées sont reprises sur le nouveau socle.
+
+Non négociable à chaque story : les utilisateurs, les ressources techniques de Keycloak et les ressources protégées (par égalité ou par expression régulière) ne sont jamais supprimés.
 
 Chaque story est livrée seule, build et tests d'intégration verts, comme pendant l'EPIC-003.
 
@@ -12,7 +14,11 @@ Chaque story est livrée seule, build et tests d'intégration verts, comme penda
 ### US-006-01 — Règle de nettoyage unique
 
 **Statut :** À faire
-Retirer les modes gérés (`import.managed.*`, `ManagedMode`) : un type déclaré est nettoyé, un type non déclaré n'est pas touché. Les exceptions restent dans le code : utilisateurs jamais supprimés, ressources de Keycloak (`isOwnedByKeycloak`), ressources protégées, types déclarés en partie. Vérifier type par type que `isOwnedByKeycloak` couvre bien ce que Keycloak crée, en particulier pour les types qui étaient en `no-delete` par défaut (client scopes, scope mappings). Reprendre les tests de suppression (`ImportManagedClientsFullIT`, `ImportManagedNoDeleteIT` et les cas de nettoyage de chaque type).
+Retirer les modes gérés (`import.managed.*`, `ManagedMode`, `DeletionPolicy` réduite aux garanties) : un type déclaré est nettoyé, un type non déclaré n'est pas touché. Les garanties restent dans le code : utilisateurs jamais supprimés, ressources techniques (`isOwnedByKeycloak`), ressources protégées, types déclarés en partie.
+
+- Vérifier type par type que `isOwnedByKeycloak` couvre bien ce que Keycloak crée, en particulier pour les types qui étaient en `no-delete` par défaut (client scopes, scope mappings).
+- Test de garantie pour chaque type nettoyé : une ressource technique, une ressource protégée par égalité et une protégée par expression régulière, absentes des fichiers, survivent au nettoyage ; une ressource ordinaire absente est supprimée. Tests du domaine sur la règle, et test d'intégration de bout en bout sur un realm.
+- Reprendre les tests de suppression (`ImportManagedClientsFullIT`, `ImportManagedNoDeleteIT` et les cas de nettoyage de chaque type).
 
 ### US-006-02 — Retrait de l'état distant
 
@@ -37,7 +43,32 @@ Retirer `import.parallel`, le hook `appliesInParallel`, l'application parallèle
 - Échappement selon le format du fichier (JSON, YAML) ; plus d'échappement HTML.
 - Tests unitaires du contexte (`MustacheContextWithDefaults`) et test d'intégration d'un import variabilisé : variable fournie, valeur par défaut, variable manquante, valeur avec guillemets.
 
-### US-006-06 — Documentation et migration
+### US-006-06 — Protection des ressources dans le domaine
+
+**Statut :** À faire
+`ProtectedResource` (package `model`, avec son cache d'expressions régulières) fait double emploi avec `ProtectionRule` du domaine. Garder une seule règle dans le domaine, compilée une fois, et convertir la déclaration du fichier dans `infrastructure.source`. Une expression régulière invalide est une erreur de configuration, signalée avant toute modification de Keycloak. Option à étudier : restreindre une règle à un type de ressource (champ `type` facultatif, sans changer le comportement des règles existantes).
+
+### US-006-07 — Lecture des fichiers dans `infrastructure.source`
+
+**Statut :** À faire
+Déplacer la lecture des fichiers (`KeycloakImportProvider`, `FileUtils`, `ImportResource`, `KeycloakImport`, `RealmImport`, `AuthenticationFlowImport`) et Mustache (`MustacheContextWithDefaults`) dans `infrastructure.source`, derrière un port de l'application. Mustache y devient une étape explicite de la préparation des fichiers, testée seule.
+
+### US-006-08 — Cas d'usage d'import dans `application.importation`
+
+**Statut :** À faire
+Remplacer `RealmImportService` (package `service`) par le cas d'usage « appliquer les fichiers » dans `application.importation` : fusion des fichiers par realm, création du realm, application puis nettoyage par le moteur, dry-run. La synchronisation des fédérations d'utilisateurs devient un appel de gateway. `RealmImportReconciliation` perd ce qui relève de l'orchestration.
+
+### US-006-09 — Ligne de commande dans `infrastructure.cli`
+
+**Statut :** À faire
+Déplacer les runners (`KeycloakConfigRunner`, `KeycloakConfigNormalizationRunner`) et le binding des propriétés (`properties`) dans `infrastructure.cli`. Les runners ne font plus que lire la configuration, appeler le cas d'usage et traduire le résultat en code de sortie.
+
+### US-006-10 — Derniers paquets hérités
+
+**Statut :** À faire
+Ranger ce qui reste hors des couches : `provider.KeycloakProvider`, `resource.ManagementPermissions` et `util.ResteasyUtil` dans `infrastructure.keycloak.sdk` ; `provider.KeycloakExportProvider` avec la normalisation ; `exception`, `configuration` et les `util` restants à leur couche, ou supprimés s'ils ne servent plus. Durcir `ArchitectureTest` : plus aucune classe hors de `domain`, `application`, `infrastructure`, à part la classe de démarrage.
+
+### US-006-11 — Documentation et migration
 
 **Statut :** À faire
 Mettre à jour la documentation utilisateur (configuration, concepts, ressources gérées, état, parallélisme, dry-run, `features.md`) et le CHANGELOG. Guide de migration : options retirées et leur remplacement, nouvelle règle de suppression, dry-run recommandé avant le premier import en 7.0.0.
