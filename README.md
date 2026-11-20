@@ -25,7 +25,7 @@ Quick links:
 - [Quick start](#quick-start)
 - [Help and community](#help-and-community)
 - [Config Files](#config-files)
-- [Variable Substitution](#variable-substitution)
+- [Templating with Mustache](#templating-with-mustache)
 - [Logging](#logging)
 - [Supported Features](#supported-features)
 - [Compatibility with Keycloak](#compatibility-with-keycloak)
@@ -83,45 +83,35 @@ The config files are based on the keycloak export files. You can use them to re-
 
 [moped.json](./contrib/example-config/moped.json) is a full working example file you can consider. Other examples are located in the [test resources](./src/test/resources/import-files).
 
-## Variable Substitution
+## Templating with Mustache
 
-keycloak-config-cli supports variable substitution of config files. This could be enabled by `import.var-substitution.enabled=true` (**disabled by default**).
+Import files can be rendered as [Mustache](https://mustache.github.io/) templates before they are parsed. This is enabled by `import.mustache.enabled=true` (**disabled by default**, because existing files may contain `{{`, for example in message bundles or themes).
 
-Variables exposed by spring boot (through configtree or [external configuration](https://docs.spring.io/spring-boot/docs/2.5.0/reference/htmlsingle/#features.external-config.typesafe-configuration-properties.relaxed-binding.environment-variables)) can be accessed by `$(property.name)`.
+Variables are set with `import.mustache.variables.<name>`, as a command line argument, an environment variable or in a Spring configuration file:
 
-In additional, the string substitution support multiple prefixes for different approaches
-
-```
-Base64 Decoder:        $(base64Decoder:SGVsbG9Xb3JsZCE=)
-Base64 Encoder:        $(base64Encoder:HelloWorld!)
-Java Constant:         $(const:java.awt.event.KeyEvent.VK_ESCAPE)
-Date:                  $(date:yyyy-MM-dd)
-DNS:                   $(dns:address|apache.org)
-Environment Variable:  $(env:USERNAME)
-File Content:          $(file:UTF-8:src/test/resources/document.properties)
-Java:                  $(java:version)
-Localhost:             $(localhost:canonical-name)
-Properties File:       $(properties:src/test/resources/document.properties::mykey)
-Resource Bundle:       $(resourceBundle:org.example.testResourceBundleLookup:mykey)
-Script:                $(script:javascript:3 + 4)
-System Property:       $(sys:user.dir)
-URL Decoder:           $(urlDecoder:Hello%20World%21)
-URL Encoder:           $(urlEncoder:Hello World!)
-URL Content (HTTP):    $(url:UTF-8:http://www.apache.org)
-URL Content (HTTPS):   $(url:UTF-8:https://www.apache.org)
-URL Content (File):    $(url:UTF-8:file:///$(sys:user.dir)/src/test/resources/document.properties)
-XML XPath:             $(xml:src/test/resources/document.xml:/root/path/to/node)
+```shell
+java -jar keycloak-config-cli.jar \
+  --import.mustache.enabled=true \
+  --import.mustache.variables.host=sso.example.com \
+  --import.mustache.variables.secret=${CLIENT_SECRET} \
+  --import.files.locations=realm.json
 ```
 
-to replace the values with java system properties or environment variables. Recursive variable replacement like `$(file:UTF-8:$(env:KEYCLOAK_PASSWORD_FILE))` is enabled by default if `import.var-substitution.enabled` is set to `true`.
+```json
+{
+  "realm": "my-realm",
+  "attributes": { "frontendUrl": "https://{{host}}" },
+  "clients": [{ "clientId": "my-app", "secret": "{{secret}}" }],
+  "notBefore": {{notBefore:0}}
+}
+```
 
-The variable substitution is running before the json parser gets executed. This allows json structures or complex values.
+- `{{name}}` is replaced by the value; `{{name:default}}` uses `default` when the variable is not defined.
+- A variable that is neither defined nor given a default fails the import (exit code `2`, invalid configuration); the message names the variable, the file and the line.
+- Values are escaped as the content of a double-quoted string (the same in JSON and YAML), so put placeholders inside double quotes. `{{{name}}}` inserts the value as is.
+- Keycloak placeholders such as `${role_uma_authorization}` are left untouched.
 
-See [Apache Common `StringSubstitutor` documentation](https://commons.apache.org/proper/commons-text/apidocs/org/apache/commons/text/StringSubstitutor.html) for more information and advanced usage.
-
-**Note**: Since variable substitution is a part of the keycloak-config-cli, it's done locally. This means, the environment variables need to be available where keycloak-config-cli is executed.
-
-If `import.var-substitution.prefix=${` and `import.var-substitution.suffix=}` (default in keycloak-config-cli 3.x) is set, then keycloak builtin variables like `${role_uma_authorization}` needs to be escaped by `$${role_uma_authorization}`.
+The former `$(...)` variable substitution (`import.var-substitution.*`) has been removed. See [Templating with Mustache](./documentation/advanced/templating.md) for the full reference and the migration guide.
 
 # Logging
 
@@ -292,11 +282,8 @@ Checkout helm docs about [chart dependencies](https://helm.sh/docs/topics/charts
 | --import.files.locations                              | `IMPORT_FILES_LOCATIONS`                           | Location of config files (URL, file path, or Ant-style pattern)                                                                                                                                                                                                                                                                                                                                                                    | -          | [IMPORT.md](documentation/reference/import-patterns.md)   |
 | --import.files.include-hidden-files                   | `IMPORT_FILES_INCLUDE_HIDDEN_FILES`                | Includes files that marked as hidden                                                                                                                                                                                                                                                                                                                                                                                               | `false`    |                               |
 | --import.files.excludes                               | `IMPORT_FILES_EXCLUDES`                            | Exclude files with Ant-style pattern                                                                                                                                                                                                                                                                                                                                                                                               | -          |                               |
-| --import.var-substitution.enabled                     | `IMPORT_VARSUBSTITUTION_ENABLED`                   | Enable variable substitution config files                                                                                                                                                                                                                                                                                                                                                                                          | `false`    |                               |
-| --import.var-substitution.nested                      | `IMPORT_VARSUBSTITUTION_NESTED`                    | Expand variables in variables.                                                                                                                                                                                                                                                                                                                                                                                                     | `true`     |                               |
-| --import.var-substitution.undefined-is-error          | `IMPORT_VARSUBSTITUTION_UNDEFINEDISTERROR`         | Raise exceptions, if variables are not defined.                                                                                                                                                                                                                                                                                                                                                                                    | `true`     |                               |
-| --import.var-substitution.prefix                      | `IMPORT_VARSUBSTITUTION_PREFIX`                    | Configure the variable prefix, if `import.var-substitution.enabled` is `true`.                                                                                                                                                                                                                                                                                                                                                     | `$(`       |                               |
-| --import.var-substitution.suffix                      | `IMPORT_VARSUBSTITUTION_SUFFIX`                    | Configure the variable suffix, if `import.var-substitution.enabled` is `true`.                                                                                                                                                                                                                                                                                                                                                     | `)`        |                               |
+| --import.mustache.enabled                             | `IMPORT_MUSTACHE_ENABLED`                          | Render the import files as Mustache templates                                                                                                                                                                                                                                                                                                                                                                                      | `false`    | [templating.md](documentation/advanced/templating.md) |
+| --import.mustache.variables.*                         | `IMPORT_MUSTACHE_VARIABLES_*`                      | Variables of the Mustache templates: `--import.mustache.variables.host=...` sets `{{host}}`                                                                                                                                                                                                                                                                                                                                        | -          | [templating.md](documentation/advanced/templating.md) |
 | --import.behaviors.sync-user-federation               | `IMPORT_BEHAVIORS_SYNC_USER_FEDERATION`            | Enable the synchronization of user federation.                                                                                                                                                                                                                                                                                                                                                                                     | `false`    |                               |
 | --import.behaviors.remove-default-role-from-user      | `IMPORT_BEHAVIORS_REMOVEDEFAULTROLEFROMUSER`       | The default setting of this flag prevents keycloak-config-cli from removing `default-roles-$REALM`, even if its not defined in the import json. To make keycloak-config-cli able to remove the `default-role-$REALM`, `import.remove-default-role-from-user` must be set to true. In conclusion, you have to add the `default-role-$REALM` to the realm import on certain users, if you want not remove the `default-role-$REALM`. | `false`    |                               |
 | --import.behaviors.skip-attributes-for-federated-user | `IMPORT_BEHAVIORS_SKIP_ATTRIBUTESFORFEDERATEDUSER` | Set attributes to null for federated users to avoid read only conflicts                                                                                                                                                                                                                                                                                                                                                            | `false`    |                               |

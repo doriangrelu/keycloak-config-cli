@@ -70,6 +70,6 @@ The closer the reference, the smaller the result: a reference of another version
 
 ## After normalizing
 
-- Replace the values that depend on the environment, and the secrets, with variables: see `import.var-substitution` in the [configuration](../getting-started/configuration.md).
+- Replace the values that depend on the environment, and the secrets, with variables: see [Templating with Mustache](templating.md).
 - Split the file by resource type if it helps: keycloak-config-cli imports several files of the same realm.
 - Try the import on a test instance, or run a [dry run](dry-run.md) against the realm the export comes from and review the changes it plans.

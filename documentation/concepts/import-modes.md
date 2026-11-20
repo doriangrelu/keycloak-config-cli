@@ -132,27 +132,25 @@ groups:
 }
 ```
 
-## Variable Substitution
+## Templating
 
-Enable dynamic configuration values:
+Enable Mustache templating to make values depend on the environment:
 
 ```yaml
 import:
-  var-substitution:
+  mustache:
     enabled: true
-    prefix: "${"
-    suffix: "}"
 ```
 
 Usage in configuration:
 
 ```yaml
-realm: ${REALM_NAME}
+realm: "{{realmName}}"
 clients:
-  - clientId: ${CLIENT_ID}
-    secret: ${CLIENT_SECRET}
+  - clientId: "{{clientId}}"
+    secret: "{{clientSecret}}"
     redirectUris:
-      - ${APP_URL}/*
+      - "{{appUrl}}/*"
 ```
 
 ### Default Values
@@ -160,20 +158,25 @@ clients:
 Provide fallback values:
 
 ```yaml
-realm: ${REALM_NAME:default-realm}
+realm: "{{realmName:default-realm}}"
 clients:
-  - clientId: ${CLIENT_ID:my-app}
+  - clientId: "{{clientId:my-app}}"
 ```
 
-### Environment Variables
+A variable without a value and without a default fails the import.
+
+### Passing Variables
 
 ```bash
-export REALM_NAME=production
-export CLIENT_ID=prod-app
-export CLIENT_SECRET=secret123
-
-java -jar keycloak-config-cli.jar ...
+java -jar keycloak-config-cli.jar \
+  --import.mustache.variables.realmName=production \
+  --import.mustache.variables.clientId=prod-app \
+  --import.mustache.variables.clientSecret='${CLIENT_SECRET}' \
+  --import.mustache.variables.appUrl=https://app.example.com \
+  ...
 ```
+
+See [Templating with Mustache](../advanced/templating.md).
 
 ## Multi-Realm Import
 
@@ -287,7 +290,7 @@ The CLI validates configuration before applying:
 ## Best Practices
 
 1. **Use Version Control**: Store configuration files in Git
-2. **Environment-Specific Files**: Use variable substitution for environment differences
+2. **Environment-Specific Files**: Use [Mustache templating](../advanced/templating.md) for environment differences
 3. **Logical File Organization**: Group related resources in same file or directory
 4. **Test in Development**: Always test imports in dev before production
 5. **Dry Run Before Cleanup**: Export the current config and run a [dry run](../advanced/dry-run.md) before declaring a new resource type, since missing resources of a declared type are deleted

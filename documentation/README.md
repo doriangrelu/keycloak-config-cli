@@ -34,6 +34,7 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 - [Dry Run](advanced/dry-run.md)
 - [Normalization](advanced/normalization.md)
 - [Protected Resources](advanced/protected-resources.md)
+- [Templating with Mustache](advanced/templating.md)
 
 ### Technical Reference
 - [Supported Features](reference/features.md)

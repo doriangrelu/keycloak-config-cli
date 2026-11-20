@@ -1,0 +1,6 @@
+enabled: true
+realm: realm-template
+displayName: "{{displayName}} (yaml)"
+displayNameHtml: "{{displayNameHtml:<i>yaml</i>}}"
+verifyEmail: false
+notBefore: {{notBefore:300}}

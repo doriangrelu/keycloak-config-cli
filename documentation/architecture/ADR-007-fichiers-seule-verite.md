@@ -59,7 +59,7 @@ Les types qu'un fichier ne déclare qu'en partie (paramètres du realm, flow bin
 
 - Les variables viennent de `import.mustache.variables.*` : arguments, variables d'environnement (`IMPORT_MUSTACHE_VARIABLES_<NOM>`) ou fichier de configuration. Une valeur par défaut s'écrit `{{nom:défaut}}`.
 - **Une variable non définie et sans valeur par défaut est une erreur de configuration** : une valeur vide passée en silence (une `redirectUri` vide, un secret vide) est pire qu'un échec.
-- Les valeurs sont échappées selon le format du fichier : une valeur contenant un guillemet ou un antislash ne doit ni casser le JSON ni changer de sens. L'échappement HTML par défaut de jmustache (`&` devient `&amp;`) est désactivé.
+- Les valeurs sont échappées selon le format du fichier : une valeur contenant un guillemet ou un antislash ne doit ni casser le JSON ni changer de sens. L'échappement HTML par défaut de jmustache (`&` devient `&amp;`) est désactivé. L'échappement d'une chaîne entre guillemets doubles est le même en JSON et en YAML : un seul échappeur couvre les deux formats ; en YAML, la variable s'écrit entre guillemets doubles quand sa valeur peut contenir ces caractères. `{{{nom}}}` insère une valeur telle quelle (un nombre, un fragment JSON).
 - `import.mustache.enabled` reste, désactivé par défaut : un fichier existant peut contenir `{{` (un message bundle, un thème), qui ne doit pas être interprété sans le demander.
 
 ### Ce qui reste

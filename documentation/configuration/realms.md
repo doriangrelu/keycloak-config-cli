@@ -285,13 +285,13 @@ clients:
 
 ### 1. Environment-Specific Settings
 
-Use variable substitution:
+Use [Mustache templating](../advanced/templating.md):
 
 ```yaml
-realm: ${REALM_NAME:my-realm}
+realm: "{{realmName:my-realm}}"
 smtpServer:
-  host: "${SMTP_HOST}"
-  password: "${SMTP_PASSWORD}"
+  host: "{{smtpHost}}"
+  password: "{{smtpPassword}}"
 ```
 
 ### 2. Split Large Configurations

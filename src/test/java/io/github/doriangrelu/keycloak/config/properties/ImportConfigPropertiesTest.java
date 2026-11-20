@@ -44,11 +44,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             "import.files.locations=other",
             "import.files.include-hidden-files=true",
             "import.files.excludes=exclude1,exclude2",
-            "import.var-substitution.enabled=true",
-            "import.var-substitution.nested=false",
-            "import.var-substitution.undefined-is-error=false",
-            "import.var-substitution.prefix=${",
-            "import.var-substitution.suffix=}",
             "import.behaviors.sync-user-federation=true",
             "import.behaviors.remove-default-role-from-user=true",
             "import.behaviors.skip-attributes-for-federated-user=true",
@@ -65,11 +60,6 @@ class ImportConfigPropertiesTest {
         assertThat(properties.getFiles().getLocations(), contains("other"));
         assertThat(properties.getFiles().getExcludes(), contains("exclude1", "exclude2"));
         assertThat(properties.getFiles().isIncludeHiddenFiles(), is(true));
-        assertThat(properties.getVarSubstitution().isEnabled(), is(true));
-        assertThat(properties.getVarSubstitution().isNested(), is(false));
-        assertThat(properties.getVarSubstitution().isUndefinedIsError(), is(false));
-        assertThat(properties.getVarSubstitution().getPrefix(), is("${"));
-        assertThat(properties.getVarSubstitution().getSuffix(), is("}"));
         assertThat(properties.getBehaviors().isSyncUserFederation(), is(true));
         assertThat(properties.getBehaviors().isRemoveDefaultRoleFromUser(), is(true));
         assertThat(properties.getBehaviors().isSkipAttributesForFederatedUser(), is(true));

@@ -22,12 +22,10 @@ package io.github.doriangrelu.keycloak.config.provider;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.samskivert.mustache.Mustache;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.model.ImportResource;
 import io.github.doriangrelu.keycloak.config.model.KeycloakImport;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
-import io.github.doriangrelu.keycloak.config.mustache.MustacheContextWithDefaults;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import java.io.File;
 import java.io.IOException;
@@ -44,14 +42,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.text.StringSubstitutor;
-import org.apache.commons.text.lookup.StringLookup;
-import org.apache.commons.text.lookup.StringLookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -62,11 +56,9 @@ import org.yaml.snakeyaml.Yaml;
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class KeycloakImportProvider {
-    protected static final String DEFAULT_VALUE = "";
     private final PathMatchingResourcePatternResolver patternResolver;
     private final ImportConfigProperties importConfigProperties;
-
-    private StringSubstitutor interpolator = null;
+    private final MustacheTemplates templates;
 
     private static final Logger logger = LoggerFactory.getLogger(KeycloakImportProvider.class);
 
@@ -75,31 +67,12 @@ public class KeycloakImportProvider {
 
     @Autowired
     public KeycloakImportProvider(
-            final Environment environment,
             final PathMatchingResourcePatternResolver patternResolver,
             final ImportConfigProperties importConfigProperties) {
         this.patternResolver = patternResolver;
         this.importConfigProperties = importConfigProperties;
-
-        if (importConfigProperties.getVarSubstitution().isEnabled()) {
-            this.setupVariableSubstitution(environment);
-        }
-    }
-
-    private void setupVariableSubstitution(final Environment environment) {
-        final StringLookup variableResolver = StringLookupFactory.INSTANCE.interpolatorStringLookup(
-                StringLookupFactory.INSTANCE.functionStringLookup(environment::getProperty));
-
-        this.interpolator = StringSubstitutor.createInterpolator()
-                .setVariableResolver(variableResolver)
-                .setVariablePrefix(
-                        this.importConfigProperties.getVarSubstitution().getPrefix())
-                .setVariableSuffix(
-                        this.importConfigProperties.getVarSubstitution().getSuffix())
-                .setEnableSubstitutionInVariables(
-                        this.importConfigProperties.getVarSubstitution().isNested())
-                .setEnableUndefinedVariableException(
-                        this.importConfigProperties.getVarSubstitution().isUndefinedIsError());
+        this.templates =
+                new MustacheTemplates(importConfigProperties.getMustache().getVariables());
     }
 
     public KeycloakImport readFromLocations(final String... locations) {
@@ -133,7 +106,6 @@ public class KeycloakImportProvider {
                     .map(this::readResource)
                     .filter(this::filterEmptyResources)
                     .sorted(Map.Entry.comparingByKey())
-                    .map(this::substituteImportResource)
                     .map(this::applyMustacheTemplate)
                     .map(this::readRealmImportFromImportResource)
                     .collect(Collectors.toMap(
@@ -209,23 +181,9 @@ public class KeycloakImportProvider {
         return !resource.getValue().isEmpty();
     }
 
-    private ImportResource substituteImportResource(final ImportResource importResource) {
-        if (this.importConfigProperties.getVarSubstitution().isEnabled()) {
-            importResource.setValue(this.interpolator.replace(importResource.getValue()));
-        }
-
-        return importResource;
-    }
-
     private ImportResource applyMustacheTemplate(final ImportResource importResource) {
         if (this.importConfigProperties.getMustache().isEnabled()) {
-            final Map<String, String> variables =
-                    this.importConfigProperties.getMustache().getVariables();
-            final String result = Mustache.compiler()
-                    .defaultValue(DEFAULT_VALUE)
-                    .compile(importResource.getValue())
-                    .execute(new MustacheContextWithDefaults(variables));
-            importResource.setValue(result);
+            importResource.setValue(this.templates.render(importResource.getFilename(), importResource.getValue()));
         }
 
         return importResource;

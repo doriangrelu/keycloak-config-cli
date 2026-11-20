@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "realm": "realm-template",
+  "displayName": "{{displayName}}",
+  "displayNameHtml": "{{displayNameHtml:<b>R&D</b>}} - ${role_uma_authorization}",
+  "verifyEmail": {{verifyEmail}},
+  "notBefore": {{notBefore:600}},
+  "browserSecurityHeaders": {{{browserSecurityHeaders}}}
+}

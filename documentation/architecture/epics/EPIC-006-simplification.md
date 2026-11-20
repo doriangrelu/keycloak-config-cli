@@ -72,7 +72,7 @@ Retirer `import.parallel`, le hook `appliesInParallel`, l'application parallèle
 
 ### US-006-05 — Mustache, seul moteur de template
 
-**Statut :** À faire
+**Statut :** Terminé
 - Retirer la substitution `$(...)` (`import.var-substitution.*`, commons-text si plus utilisé) et `ImportRealmSubstitutionIT`.
 - Une variable non définie sans valeur par défaut fait échouer l'import (code de configuration invalide), avec le nom de la variable et du fichier.
 - Échappement selon le format du fichier (JSON, YAML) ; plus d'échappement HTML.
@@ -145,4 +145,12 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
 
 - Retirés : `import.parallel`, le hook `Reconciler.appliesInParallel` (et ses six surcharges), `RealmContext.isParallel`, l'application en `parallelStream` du moteur, `ImportParallelImportIT` et la page `parallel-processing.md`.
 - `RealmContext` n'est plus partagé entre threads : ses verrous (`synchronized`, listes synchronisées, `volatile`) sont retirés. Constructeurs : `RealmContext(realm)` et `RealmContext(realm, dryRun)`.
+
+### US-006-05
+
+- Retirés : `import.var-substitution.*`, la substitution `$(...)` de commons-text (`env:`, `sys:`, `file:`…), la dépendance `commons-text`, `ImportRealmSubstitutionIT` et ses fichiers. `ImportUserFederationIT` passe l'hôte et le port du LDAP de test par des variables Mustache.
+- `MustacheTemplates` rend un fichier : une variable non définie et sans valeur par défaut fait échouer l'import (`InvalidImportException`, code de configuration invalide) avec le nom de la variable, le fichier et la ligne.
+- Échappement : les valeurs sont échappées comme le contenu d'une chaîne entre guillemets doubles (`"`, `\`, retours à la ligne, caractères de contrôle). Cet échappement est le même en JSON et en YAML : un seul échappeur couvre les deux formats, à condition qu'en YAML la variable soit écrite entre guillemets doubles quand sa valeur peut contenir ces caractères. Plus d'échappement HTML. `{{{nom}}}` insère une valeur telle quelle (un nombre, un fragment JSON).
+- `MustacheTemplates` et `MustacheContextWithDefaults` restent provisoirement dans le paquet `provider`, à côté du lecteur de fichiers : `infrastructure` dépend encore de `provider`, et l'y placer créerait un cycle. US-006-07 les déplace avec le lecteur dans `infrastructure.source`.
+- Tests : `MustacheTemplatesTest`, `MustacheContextWithDefaultsTest`, `ImportRealmTemplateIT` (variable fournie, valeur par défaut, fragment brut, YAML, variable manquante, valeur avec guillemets et antislash).
 

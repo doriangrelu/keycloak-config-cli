@@ -42,7 +42,9 @@ import org.springframework.test.context.TestPropertySource;
         properties = {
             "import.behaviors.sync-user-federation=true",
             "import.behaviors.skip-attributes-for-federated-user=true",
-            "import.var-substitution.enabled=true"
+            "import.mustache.enabled=true",
+            "import.mustache.variables.ldapHost=${JUNIT_LDAP_HOST}",
+            "import.mustache.variables.ldapPort=${JUNIT_LDAP_PORT}"
         })
 @SuppressWarnings({"SameParameterValue"})
 class ImportUserFederationIT extends AbstractImportIT {

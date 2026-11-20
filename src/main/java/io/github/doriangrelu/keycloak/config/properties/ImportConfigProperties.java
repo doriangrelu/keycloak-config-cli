@@ -55,9 +55,6 @@ public class ImportConfigProperties {
     private final ImportFilesProperties files;
 
     @Valid
-    private final ImportVarSubstitutionProperties varSubstitution;
-
-    @Valid
     private final ImportMustacheProperties mustache;
 
     @Valid
@@ -69,7 +66,6 @@ public class ImportConfigProperties {
             @DefaultValue("TEXT") final DryRunFormat dryRunFormat,
             final String dryRunReportFile,
             @DefaultValue final ImportFilesProperties files,
-            @DefaultValue final ImportVarSubstitutionProperties varSubstitution,
             @DefaultValue final ImportMustacheProperties mustache,
             @DefaultValue final ImportBehaviorsProperties behaviors) {
         this.validate = validate;
@@ -77,7 +73,6 @@ public class ImportConfigProperties {
         this.dryRunFormat = dryRunFormat;
         this.dryRunReportFile = dryRunReportFile;
         this.files = files;
-        this.varSubstitution = varSubstitution;
         this.mustache = mustache;
         this.behaviors = behaviors;
     }
@@ -106,10 +101,6 @@ public class ImportConfigProperties {
 
     public ImportFilesProperties getFiles() {
         return this.files;
-    }
-
-    public ImportVarSubstitutionProperties getVarSubstitution() {
-        return this.varSubstitution;
     }
 
     public ImportMustacheProperties getMustache() {
@@ -150,57 +141,6 @@ public class ImportConfigProperties {
 
         public boolean isIncludeHiddenFiles() {
             return this.includeHiddenFiles;
-        }
-    }
-
-    @SuppressWarnings("unused")
-    public static class ImportVarSubstitutionProperties {
-        @NotNull
-        private final boolean enabled;
-
-        @NotNull
-        private final boolean nested;
-
-        @NotNull
-        private final boolean undefinedIsError;
-
-        @NotNull
-        private final String prefix;
-
-        @NotNull
-        private final String suffix;
-
-        public ImportVarSubstitutionProperties(
-                @DefaultValue("false") final boolean enabled,
-                @DefaultValue("true") final boolean nested,
-                @DefaultValue("true") final boolean undefinedIsError,
-                @DefaultValue("$(") final String prefix,
-                @DefaultValue(")") final String suffix) {
-            this.enabled = enabled;
-            this.nested = nested;
-            this.undefinedIsError = undefinedIsError;
-            this.prefix = prefix;
-            this.suffix = suffix;
-        }
-
-        public boolean isEnabled() {
-            return this.enabled;
-        }
-
-        public boolean isNested() {
-            return this.nested;
-        }
-
-        public boolean isUndefinedIsError() {
-            return this.undefinedIsError;
-        }
-
-        public String getPrefix() {
-            return this.prefix;
-        }
-
-        public String getSuffix() {
-            return this.suffix;
         }
     }
 

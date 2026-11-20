@@ -85,15 +85,15 @@ defaultLocale: en
 
 # Email
 smtpServer:
-  host: "${SMTP_HOST}"
-  port: "${SMTP_PORT:587}"
-  from: "${SMTP_FROM:no-reply@saas-platform.com}"
+  host: "{{smtpHost}}"
+  port: "{{smtpPort:587}}"
+  from: "{{smtpFrom:no-reply@saas-platform.com}}"
   fromDisplayName: "SaaS Platform"
-  replyTo: "${SMTP_REPLY_TO:support@saas-platform.com}"
+  replyTo: "{{smtpReplyTo:support@saas-platform.com}}"
   starttls: "true"
   auth: "true"
-  user: "${SMTP_USER}"
-  password: "${SMTP_PASSWORD}"
+  user: "{{smtpUser}}"
+  password: "{{smtpPassword}}"
 
 # Events
 eventsEnabled: true
@@ -333,7 +333,7 @@ clients:
     publicClient: false
     serviceAccountsEnabled: true
     standardFlowEnabled: false
-    secret: "${WORKER_SERVICE_SECRET}"
+    secret: "{{workerServiceSecret}}"
 
   - clientId: notification-service
     name: "Notification Service"
@@ -341,7 +341,7 @@ clients:
     publicClient: false
     serviceAccountsEnabled: true
     standardFlowEnabled: false
-    secret: "${NOTIFICATION_SERVICE_SECRET}"
+    secret: "{{notificationServiceSecret}}"
 
 roles:
   client:
@@ -386,8 +386,8 @@ identityProviders:
     trustEmail: true
     firstBrokerLoginFlowAlias: "first broker login"
     config:
-      clientId: "${GOOGLE_CLIENT_ID}"
-      clientSecret: "${GOOGLE_CLIENT_SECRET}"
+      clientId: "{{googleClientId}}"
+      clientSecret: "{{googleClientSecret}}"
       authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth"
       tokenUrl: "https://oauth2.googleapis.com/token"
       userInfoUrl: "https://openidconnect.googleapis.com/v1/userinfo"
@@ -403,8 +403,8 @@ identityProviders:
     trustEmail: true
     firstBrokerLoginFlowAlias: "first broker login"
     config:
-      clientId: "${GITHUB_CLIENT_ID}"
-      clientSecret: "${GITHUB_CLIENT_SECRET}"
+      clientId: "{{githubClientId}}"
+      clientSecret: "{{githubClientSecret}}"
       defaultScope: "user:email"
       guiOrder: "2"
 
@@ -412,11 +412,11 @@ identityProviders:
   - alias: corporate-sso
     displayName: "Enterprise SSO"
     providerId: saml
-    enabled: "${CORPORATE_SSO_ENABLED:false}"
+    enabled: {{corporateSsoEnabled:false}}
     trustEmail: true
     config:
-      entityId: "${KEYCLOAK_URL}/realms/saas-platform"
-      singleSignOnServiceUrl: "${CORPORATE_SSO_URL}"
+      entityId: "{{keycloakUrl}}/realms/saas-platform"
+      singleSignOnServiceUrl: "{{corporateSsoUrl}}"
       nameIDPolicyFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
       signatureAlgorithm: "RSA_SHA256"
       wantAuthnRequestsSigned: "true"
@@ -563,7 +563,7 @@ users:
       - /platform-admins
     credentials:
       - type: password
-        value: "${PLATFORM_ADMIN_PASSWORD}"
+        value: "{{platformAdminPassword}}"
         temporary: true
     requiredActions:
       - CONFIGURE_TOTP
@@ -584,10 +584,28 @@ java -jar keycloak-config-cli.jar \
   --keycloak.user=${KEYCLOAK_ADMIN} \
   --keycloak.password=${KEYCLOAK_ADMIN_PASSWORD} \
   --import.files.locations=config/ \
-  --import.var-substitution.enabled=true
+  --import.mustache.enabled=true \
+  --import.mustache.variables.smtpHost="${SMTP_HOST}" \
+  --import.mustache.variables.smtpPort="${SMTP_PORT:-587}" \
+  --import.mustache.variables.smtpFrom="${SMTP_FROM:-no-reply@saas-platform.com}" \
+  --import.mustache.variables.smtpReplyTo="${SMTP_REPLY_TO:-support@saas-platform.com}" \
+  --import.mustache.variables.smtpUser="${SMTP_USER}" \
+  --import.mustache.variables.smtpPassword="${SMTP_PASSWORD}" \
+  --import.mustache.variables.workerServiceSecret="${WORKER_SERVICE_SECRET}" \
+  --import.mustache.variables.notificationServiceSecret="${NOTIFICATION_SERVICE_SECRET}" \
+  --import.mustache.variables.googleClientId="${GOOGLE_CLIENT_ID}" \
+  --import.mustache.variables.googleClientSecret="${GOOGLE_CLIENT_SECRET}" \
+  --import.mustache.variables.githubClientId="${GITHUB_CLIENT_ID}" \
+  --import.mustache.variables.githubClientSecret="${GITHUB_CLIENT_SECRET}" \
+  --import.mustache.variables.corporateSsoEnabled="${CORPORATE_SSO_ENABLED:-false}" \
+  --import.mustache.variables.keycloakUrl="${KEYCLOAK_URL}" \
+  --import.mustache.variables.corporateSsoUrl="${CORPORATE_SSO_URL}" \
+  --import.mustache.variables.platformAdminPassword="${PLATFORM_ADMIN_PASSWORD}"
 
 echo "Import completed successfully!"
 ```
+
+The import files use [Mustache templating](../advanced/templating.md): each `{{name}}` placeholder is set by `--import.mustache.variables.name`. A variable given an empty value is defined, so its `{{name:default}}` default is not used: the script repeats the defaults with `${VAR:-default}` for the optional settings.
 
 ## Environment File (`.env`)
 

@@ -31,9 +31,7 @@ keycloak:
 |----------|---------------------|---------|-------------|
 | `import.files.locations` | `IMPORT_FILES_LOCATIONS` | - | Comma-separated list of file paths or directories |
 | `import.files.include-hidden-files` | `IMPORT_FILES_INCLUDE_HIDDEN_FILES` | `false` | Include hidden files in import |
-| `import.var-substitution.enabled` | `IMPORT_VARSUBSTITUTION_ENABLED` | `true` | Enable variable substitution in files |
-| `import.var-substitution.prefix` | `IMPORT_VARSUBSTITUTION_PREFIX` | `$(` | Variable prefix |
-| `import.var-substitution.suffix` | `IMPORT_VARSUBSTITUTION_SUFFIX` | `)` | Variable suffix |
+| `import.mustache.enabled` | `IMPORT_MUSTACHE_ENABLED` | `false` | Render the import files as Mustache templates, see [Mustache Templating](#mustache-templating) |
 | `import.dry-run` | `IMPORT_DRYRUN` | `false` | Plan the changes without applying them, see [Dry Run](../advanced/dry-run.md) |
 | `import.dry-run-format` | `IMPORT_DRYRUNFORMAT` | `text` | Format of the dry run report: `text` or `json` |
 | `import.dry-run-report-file` | `IMPORT_DRYRUNREPORTFILE` | - | File the dry run report is also written to |
@@ -47,10 +45,8 @@ import:
       - /config/realms/*.yaml
       - /config/clients/*.json
     include-hidden-files: false
-  var-substitution:
+  mustache:
     enabled: true
-    prefix: "${"
-    suffix: "}"
 ```
 
 ## Cleanup
@@ -109,27 +105,9 @@ logging:
     io.github.doriangrelu.keycloak.config: DEBUG
 ```
 
-## Variable Substitution
-
-You can use variables in your configuration files:
-
-```yaml
-realm: ${REALM_NAME}
-clients:
-  - clientId: ${CLIENT_ID:default-client}  # With default value
-    secret: ${CLIENT_SECRET}
-```
-
-Run with environment variables:
-
-```bash
-REALM_NAME=production CLIENT_SECRET=secret123 \
-  java -jar keycloak-config-cli.jar ...
-```
-
 ## Mustache Templating
 
-Mustache templating allows you to use `{{variable}}` placeholders in your import files, resolved at import time from CLI-provided variables.
+Mustache templating allows you to use `{{variable}}` placeholders in your import files, resolved at import time from the variables given to keycloak-config-cli. It is the only template engine: the former `$(...)` variable substitution (`import.var-substitution.*`) has been removed, and a configuration that still sets it fails at startup.
 
 | Property | Environment Variable | Default | Description |
 |----------|---------------------|---------|-------------|
@@ -143,18 +121,17 @@ Pass variables via CLI arguments:
 ```bash
 java -jar keycloak-config-cli.jar \
   --import.mustache.enabled=true \
-  --import.mustache.variables.realm-name=my-realm \
-  --import.mustache.variables.client-id=my-app \
-  --import.mustache.variables.admin-email=admin@example.com \
+  --import.mustache.variables.realmName=my-realm \
+  --import.mustache.variables.clientId=my-app \
+  --import.mustache.variables.clientSecret='${CLIENT_SECRET}' \
   --import.files.locations=/config/realm.yaml
 ```
 
-Or via environment variables:
+Or via environment variables (the name is bound lower-cased, so prefer single-word names):
 
 ```bash
 export IMPORT_MUSTACHE_ENABLED=true
-export IMPORT_MUSTACHE_VARIABLES_REALM_NAME=my-realm
-export IMPORT_MUSTACHE_VARIABLES_CLIENT_ID=my-app
+export IMPORT_MUSTACHE_VARIABLES_HOST=sso.example.com
 ```
 
 Or in `application.yaml`:
@@ -164,39 +141,35 @@ import:
   mustache:
     enabled: true
     variables:
-      realm-name: my-realm
-      client-id: my-app
-      admin-email: admin@example.com
+      realmName: my-realm
+      clientId: my-app
+      clientSecret: ${CLIENT_SECRET}
 ```
 
 Then use the variables in your import files:
 
 ```yaml
-realm: "{{realm-name}}"
+realm: "{{realmName}}"
 clients:
-  - clientId: "{{client-id}}"
-    attributes:
-      admin.email: "{{admin-email}}"
+  - clientId: "{{clientId}}"
+    secret: "{{clientSecret}}"
+    rootUrl: "https://{{host}}"
 ```
 
 ### Default Values
 
-Undefined variables are resolved to an empty string by default. You can also specify an explicit default value using the `{{key:default_value}}` syntax:
+Use `{{key:default_value}}` to give a default value, used when the variable is not defined:
 
 ```yaml
-realm: "{{realm-name:my-default-realm}}"
+realm: "{{realmName:my-default-realm}}"
 clients:
-  - clientId: "{{client-id:default-client}}"
+  - clientId: "{{clientId:default-client}}"
     protocol: "{{protocol:openid-connect}}"
 ```
 
-In this example:
-- If `realm-name` is not provided, it resolves to `my-default-realm`
-- If `client-id` is not provided, it resolves to `default-client`
-- If `protocol` is not provided, it resolves to `openid-connect`
-- Any variable without a `:default` suffix resolves to an empty string if undefined
+A variable that is neither defined nor given a default **fails the import** with exit code `2` (invalid configuration); the error names the variable, the file and the line.
 
-> **Note**: Mustache templating and variable substitution (`import.var-substitution`) can be used together. Variable substitution runs first, then Mustache templating is applied.
+Values are escaped as the content of a double-quoted string, so keep placeholders inside double quotes. See [Templating with Mustache](../advanced/templating.md) for escaping, numbers and booleans, unescaped values (`{{{name}}}`) and the migration from `$(...)`.
 
 ## Command Line Examples
 

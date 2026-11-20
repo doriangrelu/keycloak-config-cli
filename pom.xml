@@ -56,7 +56,6 @@
         <keycloak.client.version>26.0.13</keycloak.client.version>
 
         <!-- Dependencies -->
-        <commons-text.version>1.12.0</commons-text.version>
         <failsafe.version>3.3.2</failsafe.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
@@ -186,12 +185,6 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-text</artifactId>
-            <version>${commons-text.version}</version>
         </dependency>
 
         <dependency>

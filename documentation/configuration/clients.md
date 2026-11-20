@@ -33,7 +33,7 @@ clients:
     serviceAccountsEnabled: true
     standardFlowEnabled: false
     directAccessGrantsEnabled: false
-    secret: "${CLIENT_SECRET}"  # Use variable substitution
+    secret: "{{clientSecret}}"  # Mustache variable, see ../advanced/templating.md
 ```
 
 ### Bearer-Only Client (API)
