@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
-import io.github.doriangrelu.keycloak.config.application.importation.ChecksumChangedException;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
@@ -59,7 +58,6 @@ class ExitCodeResolverTest {
         assertThat(ExitCode.INVALID_CONFIGURATION.code()).isEqualTo(2);
         assertThat(ExitCode.KEYCLOAK_UNAVAILABLE.code()).isEqualTo(3);
         assertThat(ExitCode.KEYCLOAK_REFUSED.code()).isEqualTo(4);
-        assertThat(ExitCode.CHECKSUM_CHANGED.code()).isEqualTo(5);
         assertThat(ExitCode.PENDING_CHANGES.code()).isEqualTo(10);
     }
 
@@ -78,12 +76,6 @@ class ExitCodeResolverTest {
     void applicationErrorsAreInvalidConfiguration() {
         assertThat(ExitCodeResolver.resolve(new ApplicationException("cycle") {}))
                 .isEqualTo(ExitCode.INVALID_CONFIGURATION);
-    }
-
-    @Test
-    void changedChecksumHasItsOwnCode() {
-        assertThat(ExitCodeResolver.resolve(new ChecksumChangedException("realm.json", "a", "b")))
-                .isEqualTo(ExitCode.CHECKSUM_CHANGED);
     }
 
     @ParameterizedTest
@@ -155,9 +147,9 @@ class ExitCodeResolverTest {
 
     @Test
     void theOutermostKnownErrorWins() {
-        ChecksumChangedException checksum = new ChecksumChangedException("realm.json", "a", "b");
+        InvalidImportException invalid = new InvalidImportException("invalid");
         RuntimeException wrapper =
-                new RuntimeException(new KeycloakAccessException(KeycloakFailure.TIMEOUT, "t", checksum));
+                new RuntimeException(new KeycloakAccessException(KeycloakFailure.TIMEOUT, "t", invalid));
 
         assertThat(ExitCodeResolver.resolve(wrapper)).isEqualTo(ExitCode.KEYCLOAK_UNAVAILABLE);
     }

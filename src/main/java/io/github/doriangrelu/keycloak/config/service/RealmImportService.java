@@ -25,7 +25,6 @@ import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway
 import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportReconciliation;
-import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.state.ChecksumService;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
@@ -51,22 +50,18 @@ public class RealmImportService {
 
     private final ImportConfigProperties importProperties;
 
-    private final ChecksumService checksumService;
-
     @Autowired
     public RealmImportService(
             ImportConfigProperties importProperties,
             KeycloakProvider keycloakProvider,
             RealmGateway realmGateway,
             RealmImportReconciliation reconciliation,
-            ComponentGateway componentGateway,
-            ChecksumService checksumService) {
+            ComponentGateway componentGateway) {
         this.importProperties = importProperties;
         this.keycloakProvider = keycloakProvider;
         this.realmGateway = realmGateway;
         this.reconciliation = reconciliation;
         this.componentGateway = componentGateway;
-        this.checksumService = checksumService;
     }
 
     public void doImport(RealmImport realmImport) {
@@ -74,29 +69,15 @@ public class RealmImportService {
         trackImport(realmImport, realmExists);
 
         if (realmExists) {
-            updateRealmIfNecessary(realmImport);
+            updateRealm(realmImport);
         } else {
             createRealm(realmImport);
         }
     }
 
-    /**
-     * Prepares the clean phase: records what the import declares. Done for every file, including those skipped because
-     * their checksum did not change.
-     */
+    /** Prepares the clean phase: records what the import declares. */
     private void trackImport(RealmImport realmImport, boolean realmExists) {
         reconciliation.startFile(realmImport, realmExists);
-    }
-
-    private void updateRealmIfNecessary(RealmImport realmImport) {
-        if (!importProperties.getCache().isEnabled() || checksumService.hasToBeUpdated(realmImport)) {
-            updateRealm(realmImport);
-        } else {
-            logger.debug(
-                    "No need to update realm '{}', import checksum same: '{}'",
-                    realmImport.getRealm(),
-                    realmImport.getChecksum());
-        }
     }
 
     private void createRealm(RealmImport realmImport) {
@@ -115,7 +96,7 @@ public class RealmImportService {
     private void updateRealm(RealmImport realmImport) {
         logger.debug("Updating realm '{}'...", realmImport.getRealm());
 
-        // Settings omitted by the import keep their value, events and the checksums of keycloak-config-cli included
+        // Settings omitted by the import keep their value, events included
         reconciliation.apply(realmImport, Set.of(ResourceType.REALM_SETTINGS));
 
         configureRealm(realmImport);
@@ -154,11 +135,6 @@ public class RealmImportService {
                 realmImport, Set.of(ResourceType.IDENTITY_PROVIDER, ResourceType.IDENTITY_PROVIDER_MAPPER));
         reconciliation.apply(realmImport, Set.of(ResourceType.CLIENT_AUTHORIZATION));
         reconciliation.apply(realmImport, Set.of(ResourceType.SCOPE_MAPPING, ResourceType.CLIENT_SCOPE_MAPPING));
-
-        if (!importProperties.isDryRun()) {
-            // A dry run leaves the checksums as they are: the next run applies the import
-            checksumService.doImport(realmImport);
-        }
     }
 
     private void syncUserFederationIfNecessary(RealmImport realmImport) {

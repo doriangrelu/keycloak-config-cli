@@ -62,7 +62,7 @@ Retirer `import.remote-state.*`, `StateService`, `StateRepository`, `CryptoUtil`
 
 ### US-006-03 — Retrait du cache par checksum
 
-**Statut :** À faire
+**Statut :** Terminé
 Retirer `import.cache.*`, `import.behaviors.checksum-with-cache-key`, `import.behaviors.checksum-changed`, `ChecksumService` et `ChecksumChangedException`, avec leurs tests (`AbstractChecksumServiceIT`, `DefaultChecksumKeyIT`, `PerResourceChecksumKeyIT`, `FailWhenChecksumChangedIT`, `ImportRealmCustomImportKeyIT`). La limite « fichier inchangé » du dry-run disparaît de sa documentation.
 
 ### US-006-04 — Retrait de l'import parallèle
@@ -134,4 +134,10 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
   - **sous-composants** : le SDK Keycloak ne distingue pas `subComponents` absent de `subComponents: {}`. Un composant qui déclare au moins un sous-composant a exactement ceux-là ; un composant qui n'en déclare aucun garde les siens, dont les mappers que Keycloak crée avec un LDAP. On ne peut plus supprimer tous les sous-composants d'un coup ;
   - **ressources d'autorisation créées à l'exécution** par l'application (API Protection) : quand le client permet la gestion distante des ressources (`allowRemoteResourceManagement`, actif par défaut dans Keycloak), les ressources non déclarées sont gardées, sauf la `Default Resource`, ainsi que les scopes qu'elles utilisent (Keycloak refuse de supprimer un scope utilisé). Une ressource retirée des fichiers n'est donc plus supprimée dans ce cas : il faut `allowRemoteResourceManagement: false` pour que les fichiers fassent foi.
 - Bug révélé par le retrait de l'état : un client déclaré par son seul nom, créé pendant l'import avec un client id généré, était supprimé par le nettoyage du même import. Nouveau hook `Reconciler.isDeclaredByAnotherKey`, implémenté par `ClientReconciler`.
+
+### US-006-03
+
+- Retirés : `import.cache.*`, `import.behaviors.checksum-with-cache-key`, `import.behaviors.checksum-changed`, `ChecksumService`, `ChecksumChangedException`, le code de sortie `5`, le checksum des fichiers lus et la dépendance `commons-codec`. Chaque import compare tous les fichiers avec Keycloak : une modification manuelle est défaite au prochain import, et le dry-run la montre toujours.
+- Tous les attributs que keycloak-config-cli écrivait dans les realms (préfixe `io.github.doriangrelu.keycloak.config.` : état et checksums) sont supprimés par tout import. `RealmSettings.mergedWith` ne garde plus d'attribut propre à l'outil.
+- Tests supprimés avec le cache : `AbstractChecksumServiceIT`, `DefaultChecksumKeyIT`, `PerResourceChecksumKeyIT`, `FailWhenChecksumChangedIT`, `ImportRealmCustomImportKeyIT`. La page `state-management.md`, qui décrivait le cache (avec des propriétés `import.state` et `import.force` qui n'existaient pas), est supprimée.
 

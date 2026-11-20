@@ -25,7 +25,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportBehaviorsProperties.ChecksumChangedOption;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,13 +50,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             "import.var-substitution.undefined-is-error=false",
             "import.var-substitution.prefix=${",
             "import.var-substitution.suffix=}",
-            "import.cache.enabled=false",
-            "import.cache.key=custom",
             "import.behaviors.sync-user-federation=true",
             "import.behaviors.remove-default-role-from-user=true",
             "import.behaviors.skip-attributes-for-federated-user=true",
-            "import.behaviors.checksum-with-cache-key=true",
-            "import.behaviors.checksum-changed=fail"
         })
 class ImportConfigPropertiesTest {
 
@@ -77,13 +72,9 @@ class ImportConfigPropertiesTest {
         assertThat(properties.getVarSubstitution().isUndefinedIsError(), is(false));
         assertThat(properties.getVarSubstitution().getPrefix(), is("${"));
         assertThat(properties.getVarSubstitution().getSuffix(), is("}"));
-        assertThat(properties.getCache().isEnabled(), is(false));
-        assertThat(properties.getCache().getKey(), is("custom"));
         assertThat(properties.getBehaviors().isSyncUserFederation(), is(true));
         assertThat(properties.getBehaviors().isRemoveDefaultRoleFromUser(), is(true));
         assertThat(properties.getBehaviors().isSkipAttributesForFederatedUser(), is(true));
-        assertThat(properties.getBehaviors().isChecksumWithCacheKey(), is(true));
-        assertThat(properties.getBehaviors().getChecksumChanged(), is(ChecksumChangedOption.FAIL));
     }
 
     @EnableConfigurationProperties(ImportConfigProperties.class)

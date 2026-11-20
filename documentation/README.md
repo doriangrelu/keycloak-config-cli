@@ -33,7 +33,6 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 ### Advanced Topics
 - [Dry Run](advanced/dry-run.md)
 - [Parallel Processing](advanced/parallel-processing.md)
-- [State Management](advanced/state-management.md)
 - [Normalization](advanced/normalization.md)
 - [Protected Resources](advanced/protected-resources.md)
 

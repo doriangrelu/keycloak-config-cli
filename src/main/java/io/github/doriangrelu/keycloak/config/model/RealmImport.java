@@ -43,7 +43,6 @@ public class RealmImport extends RealmRepresentation {
 
     private Collection<ProtectedResource> protectedResources;
 
-    private String checksum;
     private String source;
 
     // FGAP V2 field (Keycloak 26.2+) - Fine-Grained Admin Permissions
@@ -93,16 +92,6 @@ public class RealmImport extends RealmRepresentation {
 
     public UPConfig getUserProfile() {
         return userProfile;
-    }
-
-    @JsonIgnore
-    public String getChecksum() {
-        return checksum;
-    }
-
-    @JsonIgnore
-    public void setChecksum(String checksum) {
-        this.checksum = checksum;
     }
 
     @JsonIgnore

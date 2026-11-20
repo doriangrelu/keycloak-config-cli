@@ -19,6 +19,6 @@
  */
 
 /**
- * Reading and preparing import files: formats, variable substitution, templating and checksums.
+ * Reading and preparing import files: formats, variable substitution, templating.
  */
 package io.github.doriangrelu.keycloak.config.infrastructure.source;

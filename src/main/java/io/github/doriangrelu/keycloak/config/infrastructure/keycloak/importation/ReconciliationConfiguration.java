@@ -91,10 +91,7 @@ public class ReconciliationConfiguration {
             final RealmGateway realmGateway,
             final ImportConfigProperties properties) {
         return new ReconciliationEngine(List.of(
-                new RealmSettingsReconciler(
-                        realmGateway,
-                        ImportConfigProperties.REALM_CHECKSUM_ATTRIBUTE_PREFIX,
-                        ImportConfigProperties.REALM_STATE_ATTRIBUTE_OBSOLETE_PREFIX),
+                new RealmSettingsReconciler(realmGateway, ImportConfigProperties.REALM_OBSOLETE_ATTRIBUTE_PREFIX),
                 new DefaultClientScopesReconciler(realmGateway),
                 new DefaultGroupsReconciler(realmGateway),
                 new RealmFlowBindingsReconciler(realmGateway),

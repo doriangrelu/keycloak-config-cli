@@ -31,8 +31,7 @@ import java.util.Set;
  * The settings of a realm, identified by its name: everything an import declares at the top level of the realm except
  * the resources imported on their own (clients, roles, flows...). They are not modeled.
  *
- * <p>The settings an import omits keep their value. Declared {@code attributes} replace the current ones, except the
- * attributes where keycloak-config-cli keeps its remote state and checksums.
+ * <p>The settings an import omits keep their value. Declared {@code attributes} replace the current ones.
  */
 public record RealmSettings(String realm, UnmodeledAttributes settings) implements Resource<String> {
 
@@ -65,27 +64,13 @@ public record RealmSettings(String realm, UnmodeledAttributes settings) implemen
     }
 
     /**
-     * These settings once {@code desired} is applied on them. Declared {@code attributes} replace the current ones,
-     * except the attributes of keycloak-config-cli itself; the attributes of its former remote state are removed,
-     * declared or not (ADR-007).
+     * These settings once {@code desired} is applied on them. Declared {@code attributes} replace the current ones; the
+     * attributes former versions of keycloak-config-cli kept in the realm are removed, declared or not (ADR-007).
      *
-     * @param ownAttributePrefix prefix of the attributes of keycloak-config-cli, kept when the import declares
-     *     attributes
-     * @param obsoleteAttributePrefix prefix of the attributes keycloak-config-cli no longer uses, always removed
+     * @param obsoleteAttributePrefix prefix of the attributes keycloak-config-cli no longer uses
      */
-    public RealmSettings mergedWith(
-            final RealmSettings desired, final String ownAttributePrefix, final String obsoleteAttributePrefix) {
+    public RealmSettings mergedWith(final RealmSettings desired, final String obsoleteAttributePrefix) {
         UnmodeledAttributes merged = this.settings.overriddenBy(desired.settings);
-        if (desired.settings.values().get(ATTRIBUTES) instanceof Map<?, ?> declared
-                && this.settings.values().get(ATTRIBUTES) instanceof Map<?, ?> current) {
-            Map<Object, Object> attributes = new LinkedHashMap<>(declared);
-            current.forEach((name, value) -> {
-                if (String.valueOf(name).startsWith(ownAttributePrefix)) {
-                    attributes.put(name, value);
-                }
-            });
-            merged = withAttributes(merged, attributes);
-        }
         if (merged.values().get(ATTRIBUTES) instanceof Map<?, ?> attributes
                 && attributes.keySet().stream()
                         .anyMatch(name -> String.valueOf(name).startsWith(obsoleteAttributePrefix))) {

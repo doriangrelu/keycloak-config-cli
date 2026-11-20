@@ -13,7 +13,7 @@ java -jar keycloak-config-cli.jar \
   --import.dry-run=true
 ```
 
-The import files are read and compared with Keycloak as in a real import, including the clean phase: resources the import would delete are listed too. Nothing is written to Keycloak: no resource, no checksum.
+The import files are read and compared with Keycloak as in a real import, including the clean phase: resources the import would delete are listed too. Nothing is written to Keycloak.
 
 ## Properties
 
@@ -110,4 +110,3 @@ The report file holds the report alone, without the logs of the run: it is the o
 - **Realm to create:** when the realm does not exist yet, everything the import declares is listed as a creation. Nothing can be read from a realm that does not exist.
 - **Changes that depend on earlier ones:** a type planned after another one does not see the earlier changes, since they are not applied.
 - **Client authorization:** it is always listed as an update. Its resources and policies name Keycloak objects through placeholders (`client.resource.$my-client`), resolved only when they are applied.
-- **Unchanged files:** a file whose checksum did not change is skipped, as in a real import, so it plans no change. Set `import.cache.enabled=false` to compare every file with Keycloak.

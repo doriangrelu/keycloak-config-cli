@@ -32,12 +32,11 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @SuppressWarnings({"java:S107"})
 public class ImportConfigProperties {
-    public static final String REALM_STATE_ATTRIBUTE_COMMON_PREFIX = "io.github.doriangrelu.keycloak.config";
-    public static final String REALM_CHECKSUM_ATTRIBUTE_PREFIX =
-            REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".import-checksum-";
-    public static final String REALM_CHECKSUM_ATTRIBUTE_PREFIX_KEY = REALM_CHECKSUM_ATTRIBUTE_PREFIX + "{0}";
-    /** Prefix of the realm attributes of the former remote state, removed by any import (ADR-007). */
-    public static final String REALM_STATE_ATTRIBUTE_OBSOLETE_PREFIX = REALM_STATE_ATTRIBUTE_COMMON_PREFIX + ".state-";
+    /**
+     * Prefix of the realm attributes where former versions kept their remote state and checksums, removed by any import
+     * (ADR-007).
+     */
+    public static final String REALM_OBSOLETE_ATTRIBUTE_PREFIX = "io.github.doriangrelu.keycloak.config.";
 
     @NotNull
     private final boolean validate;
@@ -67,9 +66,6 @@ public class ImportConfigProperties {
     @Valid
     private final ImportBehaviorsProperties behaviors;
 
-    @Valid
-    private final ImportCacheProperties cache;
-
     public ImportConfigProperties(
             @DefaultValue("true") final boolean validate,
             @DefaultValue("false") final boolean parallel,
@@ -79,8 +75,7 @@ public class ImportConfigProperties {
             @DefaultValue final ImportFilesProperties files,
             @DefaultValue final ImportVarSubstitutionProperties varSubstitution,
             @DefaultValue final ImportMustacheProperties mustache,
-            @DefaultValue final ImportBehaviorsProperties behaviors,
-            @DefaultValue final ImportCacheProperties cache) {
+            @DefaultValue final ImportBehaviorsProperties behaviors) {
         this.validate = validate;
         this.parallel = parallel;
         this.dryRun = dryRun;
@@ -90,7 +85,6 @@ public class ImportConfigProperties {
         this.varSubstitution = varSubstitution;
         this.mustache = mustache;
         this.behaviors = behaviors;
-        this.cache = cache;
     }
 
     public boolean isValidate() {
@@ -133,10 +127,6 @@ public class ImportConfigProperties {
 
     public ImportBehaviorsProperties getBehaviors() {
         return this.behaviors;
-    }
-
-    public ImportCacheProperties getCache() {
-        return this.cache;
     }
 
     @SuppressWarnings("unused")
@@ -257,23 +247,13 @@ public class ImportConfigProperties {
         @NotNull
         private final boolean skipAttributesForFederatedUser;
 
-        @NotNull
-        private final boolean checksumWithCacheKey;
-
-        @NotNull
-        private final ChecksumChangedOption checksumChanged;
-
         public ImportBehaviorsProperties(
                 final boolean syncUserFederation,
                 final boolean removeDefaultRoleFromUser,
-                final boolean skipAttributesForFederatedUser,
-                final boolean checksumWithCacheKey,
-                final ChecksumChangedOption checksumChanged) {
+                final boolean skipAttributesForFederatedUser) {
             this.syncUserFederation = syncUserFederation;
             this.removeDefaultRoleFromUser = removeDefaultRoleFromUser;
             this.skipAttributesForFederatedUser = skipAttributesForFederatedUser;
-            this.checksumWithCacheKey = checksumWithCacheKey;
-            this.checksumChanged = checksumChanged;
         }
 
         public boolean isSyncUserFederation() {
@@ -286,42 +266,6 @@ public class ImportConfigProperties {
 
         public boolean isSkipAttributesForFederatedUser() {
             return this.skipAttributesForFederatedUser;
-        }
-
-        public boolean isChecksumWithCacheKey() {
-            return this.checksumWithCacheKey;
-        }
-
-        public ChecksumChangedOption getChecksumChanged() {
-            return this.checksumChanged;
-        }
-
-        public enum ChecksumChangedOption {
-            CONTINUE,
-            FAIL
-        }
-    }
-
-    @SuppressWarnings("unused")
-    public static class ImportCacheProperties {
-        @NotNull
-        private final boolean enabled;
-
-        @NotNull
-        private final String key;
-
-        public ImportCacheProperties(
-                @DefaultValue("true") final boolean enabled, @DefaultValue("default") final String key) {
-            this.enabled = enabled;
-            this.key = key;
-        }
-
-        public boolean isEnabled() {
-            return this.enabled;
-        }
-
-        public String getKey() {
-            return this.key;
         }
     }
 }

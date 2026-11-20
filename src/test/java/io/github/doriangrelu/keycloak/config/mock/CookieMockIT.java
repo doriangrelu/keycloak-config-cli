@@ -37,11 +37,9 @@ import org.mockserver.client.MockServerClient;
 import org.mockserver.model.Cookie;
 import org.mockserver.springtest.MockServerTest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @MockServerTest("keycloak.url=http://localhost:${mockServerPort}")
-@TestPropertySource(properties = {"import.cache.enabled=false"})
 class CookieMockIT extends AbstractImportTest {
     private MockServerClient mockServerClient;
 

@@ -58,13 +58,13 @@ class ImportSimpleRealmIT extends AbstractImportIT {
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.getLoginTheme(), is(nullValue()));
         assertThat(
-                createdRealm.getAttributes().get("io.github.doriangrelu.keycloak.config.import-checksum-default"),
-                is("6292be0628c50ff8fc02bd4092f48a731133e4802e158e7bc2ba174524b4ccf1"));
+                createdRealm.getAttributes(),
+                not(hasKey("io.github.doriangrelu.keycloak.config.import-checksum-default")));
     }
 
     @Test
     @Order(1)
-    void shouldNotUpdateSimpleRealm() throws IOException {
+    void shouldApplyTheSameConfigurationAgain() throws IOException {
         doImport("00.1_update_simple-realm_with_same_config.json");
 
         RealmRepresentation createdRealm =
@@ -74,8 +74,8 @@ class ImportSimpleRealmIT extends AbstractImportIT {
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.getLoginTheme(), is(nullValue()));
         assertThat(
-                createdRealm.getAttributes().get("io.github.doriangrelu.keycloak.config.import-checksum-default"),
-                is("6292be0628c50ff8fc02bd4092f48a731133e4802e158e7bc2ba174524b4ccf1"));
+                createdRealm.getAttributes(),
+                not(hasKey("io.github.doriangrelu.keycloak.config.import-checksum-default")));
     }
 
     @Test
@@ -89,9 +89,7 @@ class ImportSimpleRealmIT extends AbstractImportIT {
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
         assertThat(realm.getLoginTheme(), is("moped"));
-        assertThat(
-                realm.getAttributes().get("io.github.doriangrelu.keycloak.config.import-checksum-default"),
-                is("4ac94d3adb91122979e80816a8a355a01f9c7c90a25b6b529bf2a572e1158b1c"));
+        assertThat(realm.getAttributes(), not(hasKey("io.github.doriangrelu.keycloak.config.import-checksum-default")));
     }
 
     @Test
@@ -106,8 +104,8 @@ class ImportSimpleRealmIT extends AbstractImportIT {
         assertThat(createdRealm.isEnabled(), is(true));
         assertThat(createdRealm.getLoginTheme(), is("moped"));
         assertThat(
-                createdRealm.getAttributes().get("io.github.doriangrelu.keycloak.config.import-checksum-default"),
-                is("9362cc7d2e91e9b9eee39d0b9306de0f7857f9d6326133335fc2d5cf767f7018"));
+                createdRealm.getAttributes(),
+                not(hasKey("io.github.doriangrelu.keycloak.config.import-checksum-default")));
     }
 
     @Test

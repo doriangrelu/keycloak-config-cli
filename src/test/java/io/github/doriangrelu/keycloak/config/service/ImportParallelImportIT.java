@@ -35,7 +35,6 @@ import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
         properties = {
-            "import.cache.enabled=false",
             "import.parallel=true",
             "import.behaviors.skip-attributes-for-federated-user=true",
         })

@@ -42,7 +42,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringSubstitutor;
@@ -235,7 +234,6 @@ public class KeycloakImportProvider {
     private Pair<String, List<RealmImport>> readRealmImportFromImportResource(final ImportResource resource) {
         final String location = resource.getFilename();
         final String content = resource.getValue();
-        final String contentChecksum = DigestUtils.sha256Hex(content);
 
         if (logger.isTraceEnabled()) {
             logger.trace(content);
@@ -248,7 +246,6 @@ public class KeycloakImportProvider {
             throw new InvalidImportException("Unable to parse file '" + location + "': " + e.getMessage(), e);
         }
         realmImports.forEach(realmImport -> {
-            realmImport.setChecksum(contentChecksum);
             realmImport.setSource(location);
         });
 

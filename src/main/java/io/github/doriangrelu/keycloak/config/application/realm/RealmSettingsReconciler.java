@@ -37,17 +37,14 @@ import java.util.Set;
 public final class RealmSettingsReconciler implements Reconciler<String, RealmSettings> {
 
     private final RealmGateway realms;
-    private final String ownAttributePrefix;
     private final String obsoleteAttributePrefix;
 
     /**
-     * @param ownAttributePrefix prefix of the realm attributes where keycloak-config-cli keeps its checksums
-     * @param obsoleteAttributePrefix prefix of the realm attributes of its former remote state, removed by any import
+     * @param obsoleteAttributePrefix prefix of the realm attributes where former versions of keycloak-config-cli kept
+     *     their remote state and checksums, removed by any import
      */
-    public RealmSettingsReconciler(
-            final RealmGateway realms, final String ownAttributePrefix, final String obsoleteAttributePrefix) {
+    public RealmSettingsReconciler(final RealmGateway realms, final String obsoleteAttributePrefix) {
         this.realms = Objects.requireNonNull(realms, "realms");
-        this.ownAttributePrefix = Objects.requireNonNull(ownAttributePrefix, "ownAttributePrefix");
         this.obsoleteAttributePrefix = Objects.requireNonNull(obsoleteAttributePrefix, "obsoleteAttributePrefix");
     }
 
@@ -68,7 +65,7 @@ public final class RealmSettingsReconciler implements Reconciler<String, RealmSe
 
     @Override
     public RealmSettings merge(final RealmContext context, final RealmSettings current, final RealmSettings desired) {
-        return current.mergedWith(desired, this.ownAttributePrefix, this.obsoleteAttributePrefix);
+        return current.mergedWith(desired, this.obsoleteAttributePrefix);
     }
 
     @Override

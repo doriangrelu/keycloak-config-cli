@@ -21,7 +21,6 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
-import io.github.doriangrelu.keycloak.config.application.importation.ChecksumChangedException;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
 import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakProviderException;
@@ -57,7 +56,6 @@ public final class ExitCodeResolver {
 
     private static Optional<ExitCode> exitCodeOf(final Throwable error) {
         return switch (error) {
-            case ChecksumChangedException _ -> Optional.of(ExitCode.CHECKSUM_CHANGED);
             case DomainException _ -> Optional.of(ExitCode.INVALID_CONFIGURATION);
             case ApplicationException _ -> Optional.of(ExitCode.INVALID_CONFIGURATION);
             case KeycloakAccessException keycloak -> exitCodeOf(keycloak);

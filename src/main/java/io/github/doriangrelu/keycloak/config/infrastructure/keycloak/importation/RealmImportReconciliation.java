@@ -156,7 +156,7 @@ public class RealmImportReconciliation {
 
     /**
      * Prepares the import of one file: adds what the file declares, and its protection rules, to the desired state of
-     * its realm. Called for every file, including those whose import is skipped because their checksum did not change.
+     * its realm. Called for every file.
      *
      * @param realmExists whether the realm already exists in Keycloak
      */

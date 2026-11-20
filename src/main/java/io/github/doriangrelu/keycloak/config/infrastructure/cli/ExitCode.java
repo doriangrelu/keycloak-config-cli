@@ -32,8 +32,6 @@ public enum ExitCode {
     KEYCLOAK_UNAVAILABLE(3),
     /** Keycloak refused an operation (rights, rejected or conflicting configuration). */
     KEYCLOAK_REFUSED(4),
-    /** An already applied import changed while {@code import.behaviors.checksum-changed=fail}. */
-    CHECKSUM_CHANGED(5),
     /** Dry run only: changes are pending. */
     PENDING_CHANGES(10);
 
