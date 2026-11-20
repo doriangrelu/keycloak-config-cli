@@ -24,7 +24,6 @@ import io.github.doriangrelu.keycloak.config.application.clientauthorization.por
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciler;
 import io.github.doriangrelu.keycloak.config.domain.clientauthorization.model.ClientAuthorization;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.Collection;
 import java.util.List;
@@ -33,29 +32,16 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Authorization services of the declared clients. Their resources, policies and scopes are managed by
- * {@code import.managed.client-authorization-resources}, {@code -policies} and {@code -scopes}: in {@code full} mode,
- * those the import misses are deleted while the authorization is applied, as before. Resources follow the remote
+ * Authorization services of the declared clients. The resources, policies and scopes the import misses are deleted
+ * while the authorization is applied. Resources follow the remote
  * state; policies and scopes do not. The authorization of an undeclared client is left as it is.
  */
 public final class ClientAuthorizationReconciler implements Reconciler<String, ClientAuthorization> {
 
-    /** Managed modes of the parts of an authorization. */
-    public record Modes(ManagedMode resources, ManagedMode policies, ManagedMode scopes) {
-
-        public Modes {
-            Objects.requireNonNull(resources, "resources");
-            Objects.requireNonNull(policies, "policies");
-            Objects.requireNonNull(scopes, "scopes");
-        }
-    }
-
     private final ClientAuthorizationGateway authorizations;
-    private final Modes modes;
 
-    public ClientAuthorizationReconciler(final ClientAuthorizationGateway authorizations, final Modes modes) {
+    public ClientAuthorizationReconciler(final ClientAuthorizationGateway authorizations) {
         this.authorizations = Objects.requireNonNull(authorizations, "authorizations");
-        this.modes = Objects.requireNonNull(modes, "modes");
     }
 
     /** Remote state entry of the authorization resources of a client. */
@@ -108,11 +94,7 @@ public final class ClientAuthorizationReconciler implements Reconciler<String, C
         this.authorizations.apply(
                 context.realm(),
                 target,
-                new ClientAuthorizationGateway.Deletions(
-                        this.modes.resources() == ManagedMode.FULL,
-                        context.managedState(resourcesStateScope(target.key())),
-                        this.modes.policies() == ManagedMode.FULL,
-                        this.modes.scopes() == ManagedMode.FULL));
+                new ClientAuthorizationGateway.Deletions(context.managedState(resourcesStateScope(target.key()))));
     }
 
     @Override

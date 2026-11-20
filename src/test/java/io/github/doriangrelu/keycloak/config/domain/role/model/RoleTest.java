@@ -73,13 +73,21 @@ class RoleTest {
 
     @Test
     void defaultRolesAreOwnedByKeycloak() {
-        assertThat(role("default-roles-test", "${role_default-roles}", null).isOwnedByKeycloak())
+        assertThat(role("default-roles-test", "${role_default-roles}", null).isOwnedByKeycloak("test"))
                 .isTrue();
-        assertThat(role("offline_access", "${role_offline-access}", null).isOwnedByKeycloak())
+        assertThat(role("offline_access", "${role_offline-access}", null).isOwnedByKeycloak("test"))
                 .isTrue();
-        assertThat(role("uma_authorization", "${role_uma_authorization}", null).isOwnedByKeycloak())
+        assertThat(role("uma_authorization", "${role_uma_authorization}", null).isOwnedByKeycloak("test"))
                 .isTrue();
-        assertThat(role("offline_access", "Custom description", null).isOwnedByKeycloak())
+        // Recognized by name, even once its description is changed
+        assertThat(role("offline_access", "Custom description", null).isOwnedByKeycloak("test"))
+                .isTrue();
+        assertThat(role("default-roles-test", "Custom description", null).isOwnedByKeycloak("test"))
+                .isTrue();
+        assertThat(role("custom", "Custom description", null).isOwnedByKeycloak("test"))
+                .isFalse();
+        // Another role with the prefix is an ordinary role
+        assertThat(role("default-roles-fake", "Custom description", null).isOwnedByKeycloak("test"))
                 .isFalse();
     }
 
@@ -88,7 +96,7 @@ class RoleTest {
         Role managementRole = new Role(RoleKey.client("realm-management", "view-users"), null, null, null);
         Role applicationRole = new Role(RoleKey.client("my-app", "view-users"), null, null, null);
 
-        assertThat(managementRole.isOwnedByKeycloak()).isTrue();
-        assertThat(applicationRole.isOwnedByKeycloak()).isFalse();
+        assertThat(managementRole.isOwnedByKeycloak("test")).isTrue();
+        assertThat(applicationRole.isOwnedByKeycloak("test")).isFalse();
     }
 }

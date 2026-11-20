@@ -177,20 +177,18 @@ Each configuration file has independent state:
 ./import.sh --import.files.locations=realms.yaml,users.yaml
 ```
 
-## State with Full Management Mode
+## State and Cleanup
 
-State works with `managed: full`:
+State works together with the cleanup of declared resource types (see [Managed Resources](../concepts/managed-resources.md)):
 
 ```yaml
 import:
   state: true
-  managed:
-    group: full
 ```
 
 The CLI:
 1. Checks if configuration changed
-2. If changed, applies updates AND deletes orphaned resources
+2. If changed, applies updates AND deletes the resources of declared types that no file declares
 3. Updates state checksum
 
 ## Best Practices

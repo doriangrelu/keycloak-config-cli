@@ -300,13 +300,9 @@ clientScopes:
           single: "false"
 ```
 
-## Full Management Mode
+## Cleanup
 
-```yaml
-import:
-  managed:
-    client-scope: full
-```
+When at least one import file of the realm has an `clientScopes` key, the client scopes that no file declares are deleted. Without the key, they are not touched. See [Managed Resources](../concepts/managed-resources.md).
 
 ### Protected Scopes
 

@@ -26,7 +26,6 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.application.scopemapping.port.ScopeMappingGateway;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.scopemapping.model.ScopeMapping;
 import java.util.LinkedHashMap;
@@ -76,25 +75,27 @@ class ScopeMappingReconcilerTest {
         this.engine = new ReconciliationEngine(List.of(ScopeMappingReconciler.ofRealmRoles(this.keycloak)));
     }
 
-    private void run(ManagedMode mode, ScopeMapping... declared) {
-        RealmContext context = new RealmContext("test", true, false, Map.of(ResourceType.SCOPE_MAPPING, mode));
+    private void run(ScopeMapping... declared) {
+        RealmContext context = new RealmContext("test", true, false);
         this.engine.apply(context, new DesiredState().declare(ResourceType.SCOPE_MAPPING, List.of(declared)));
         this.engine.prune(context);
     }
 
     @Test
-    void fullModeMakesTheDeclaredRolesExactAndEmptiesUndeclaredMappings() {
-        run(ManagedMode.FULL, new ScopeMapping(APP, Set.of("reader", "admin")));
+    void makesTheDeclaredRolesExactAndEmptiesUndeclaredMappings() {
+        run(new ScopeMapping(APP, Set.of("reader", "admin")));
 
         assertThat(this.keycloak.roles.get(APP)).containsExactlyInAnyOrder("reader", "admin");
         assertThat(this.keycloak.roles.get(PROFILE)).isEmpty();
     }
 
     @Test
-    void noDeleteModeOnlyAddsRoles() {
-        run(ManagedMode.NO_DELETE, new ScopeMapping(APP, Set.of("admin")));
+    void neverEmptiesTheMappingsKeycloakCreates() {
+        ScopeMapping.Key offlineAccess = ScopeMapping.Key.ofClientScope("offline_access", null);
+        this.keycloak.addRoles("test", offlineAccess, Set.of("offline_access"));
 
-        assertThat(this.keycloak.roles.get(APP)).containsExactlyInAnyOrder("reader", "writer", "admin");
-        assertThat(this.keycloak.roles.get(PROFILE)).containsExactly("reader");
+        run(new ScopeMapping(APP, Set.of("reader")));
+
+        assertThat(this.keycloak.roles.get(offlineAccess)).containsExactly("offline_access");
     }
 }

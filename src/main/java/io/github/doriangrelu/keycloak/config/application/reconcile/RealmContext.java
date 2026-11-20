@@ -21,7 +21,6 @@
 package io.github.doriangrelu.keycloak.config.application.reconcile;
 
 import io.github.doriangrelu.keycloak.config.domain.common.ConflictingDefinitionException;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.DeletionPolicy;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
@@ -49,7 +48,6 @@ public final class RealmContext {
     private final String realm;
     private final boolean parallel;
     private final boolean remoteStateEnabled;
-    private final Map<ResourceType, ManagedMode> modes;
     private final boolean dryRun;
     private volatile boolean realmMissing;
 
@@ -60,29 +58,17 @@ public final class RealmContext {
     private final List<PlannedChange> plan = Collections.synchronizedList(new ArrayList<>());
     private boolean pruned;
 
-    /**
-     * @param modes managed mode of each type; a missing type is managed in {@link ManagedMode#FULL} mode
-     */
-    public RealmContext(
-            final String realm,
-            final boolean parallel,
-            final boolean remoteStateEnabled,
-            final Map<ResourceType, ManagedMode> modes) {
-        this(realm, parallel, remoteStateEnabled, modes, false);
+    public RealmContext(final String realm, final boolean parallel, final boolean remoteStateEnabled) {
+        this(realm, parallel, remoteStateEnabled, false);
     }
 
     /** @param dryRun whether the changes are only planned, never applied (EPIC-004) */
     public RealmContext(
-            final String realm,
-            final boolean parallel,
-            final boolean remoteStateEnabled,
-            final Map<ResourceType, ManagedMode> modes,
-            final boolean dryRun) {
+            final String realm, final boolean parallel, final boolean remoteStateEnabled, final boolean dryRun) {
         this.dryRun = dryRun;
         this.realm = Objects.requireNonNull(realm, "realm");
         this.parallel = parallel;
         this.remoteStateEnabled = remoteStateEnabled;
-        this.modes = Map.copyOf(modes);
     }
 
     public String realm() {
@@ -112,10 +98,6 @@ public final class RealmContext {
 
     public boolean isRemoteStateEnabled() {
         return this.remoteStateEnabled;
-    }
-
-    public ManagedMode mode(final ResourceType type) {
-        return this.modes.getOrDefault(type, ManagedMode.FULL);
     }
 
     public void addProtections(final Collection<ProtectionRule> rules) {
@@ -157,7 +139,7 @@ public final class RealmContext {
         Optional<Set<String>> managedState = this.remoteStateEnabled && usesRemoteState
                 ? Optional.of(this.previousState.getOrDefault(stateScope, Set.of()))
                 : Optional.empty();
-        return new DeletionPolicy(mode(type), managedState, List.copyOf(this.protections));
+        return new DeletionPolicy(managedState, List.copyOf(this.protections));
     }
 
     /**

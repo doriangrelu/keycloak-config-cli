@@ -23,7 +23,6 @@ package io.github.doriangrelu.keycloak.config.application.messagebundle;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.port.MessageBundleGateway;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciler;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.Collection;
@@ -65,7 +64,7 @@ public final class MessageBundleReconciler implements Reconciler<String, Message
 
     @Override
     public MessageBundle merge(final RealmContext context, final MessageBundle current, final MessageBundle desired) {
-        return current.mergedWith(desired, context.mode(ResourceType.MESSAGE_BUNDLE) == ManagedMode.FULL);
+        return current.mergedWith(desired);
     }
 
     @Override

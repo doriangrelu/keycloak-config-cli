@@ -60,39 +60,11 @@ import:
   force: false
 ```
 
-## Managed Resources Properties
+## Cleanup
 
-These properties control how resources are managed during import. Possible values:
-- `no-delete` (default): Create and update only, never delete
-- `full`: Full lifecycle management, delete resources not in configuration
+There is no property to choose what gets deleted. For each realm, a resource type declared by at least one import file (key present, even with an empty list) is cleaned: the resources of that type that no file declares are deleted. Users, technical resources created by Keycloak and resources matched by `protectedResources` rules are never deleted.
 
-| Property | Environment Variable | Default | Description |
-|----------|---------------------|---------|-------------|
-| `import.managed.authentication-flow` | `IMPORT_MANAGED_AUTHENTICATIONFLOW` | `no-delete` | Manage authentication flows |
-| `import.managed.client` | `IMPORT_MANAGED_CLIENT` | `no-delete` | Manage clients |
-| `import.managed.client-scope` | `IMPORT_MANAGED_CLIENTSCOPE` | `no-delete` | Manage client scopes |
-| `import.managed.client-scope-mapping` | `IMPORT_MANAGED_CLIENTSCOPEMAPPING` | `no-delete` | Manage client scope mappings |
-| `import.managed.component` | `IMPORT_MANAGED_COMPONENT` | `no-delete` | Manage components |
-| `import.managed.group` | `IMPORT_MANAGED_GROUP` | `no-delete` | Manage groups |
-| `import.managed.identity-provider` | `IMPORT_MANAGED_IDENTITYPROVIDER` | `no-delete` | Manage identity providers |
-| `import.managed.identity-provider-mapper` | `IMPORT_MANAGED_IDENTITYPROVIDERMAPPER` | `no-delete` | Manage IdP mappers |
-| `import.managed.realm-role` | `IMPORT_MANAGED_REALMROLE` | `no-delete` | Manage realm roles |
-| `import.managed.client-role` | `IMPORT_MANAGED_CLIENTROLE` | `no-delete` | Manage client roles |
-| `import.managed.required-action` | `IMPORT_MANAGED_REQUIREDACTION` | `no-delete` | Manage required actions |
-| `import.managed.scope-mapping` | `IMPORT_MANAGED_SCOPEMAPPING` | `no-delete` | Manage scope mappings |
-| `import.managed.user` | `IMPORT_MANAGED_USER` | `no-delete` | Manage users |
-
-### Example
-
-```yaml
-import:
-  managed:
-    group: full
-    realm-role: full
-    client-role: full
-    client: no-delete  # Be careful with client deletion
-    user: no-delete    # Never auto-delete users
-```
+The former per-type properties under `import` (`managed.group`, `managed.client`, ...) no longer exist; a configuration that still sets one fails at startup. See [Managed Resources](../concepts/managed-resources.md), and run a [dry run](../advanced/dry-run.md) before applying.
 
 ## Run Properties
 
@@ -243,15 +215,13 @@ java -jar keycloak-config-cli.jar \
   --keycloak.password=admin \
   --import.files.locations=/config/realm.yaml
 
-# Full management with parallel processing
+# Parallel processing
 java -jar keycloak-config-cli.jar \
   --keycloak.url=http://localhost:8080 \
   --keycloak.user=admin \
   --keycloak.password=admin \
   --import.files.locations=/config/ \
-  --import.parallel=true \
-  --import.managed.group=full \
-  --import.managed.role=full
+  --import.parallel=true
 
 # Using configuration file
 java -jar keycloak-config-cli.jar \

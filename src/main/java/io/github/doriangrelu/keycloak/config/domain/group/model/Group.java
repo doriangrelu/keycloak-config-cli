@@ -90,18 +90,15 @@ public record Group(
     }
 
     /**
-     * This group once {@code desired} is applied on it. Declared attributes replace the current ones.
-     *
-     * @param replaceRoleMappings whether a group declared without role mappings loses them ({@code full} mode)
+     * This group once {@code desired} is applied on it. Declared attributes replace the current ones, and a group
+     * declared without role mappings loses them: the files describe the whole group (ADR-007).
      */
-    public Group mergedWith(final Group desired, final boolean replaceRoleMappings) {
-        Set<String> noRealmRoles = replaceRoleMappings ? Set.of() : this.realmRoles;
-        Map<String, Set<String>> noClientRoles = replaceRoleMappings ? Map.of() : this.clientRoles;
+    public Group mergedWith(final Group desired) {
         return new Group(
                 this.path,
                 desired.attributes != null ? desired.attributes : this.attributes,
-                desired.realmRoles != null ? desired.realmRoles : noRealmRoles,
-                desired.clientRoles != null ? desired.clientRoles : noClientRoles,
+                desired.realmRoles != null ? desired.realmRoles : Set.of(),
+                desired.clientRoles != null ? desired.clientRoles : Map.of(),
                 desired.subGroups != null ? desired.subGroups : this.subGroups,
                 this.unmodeled.overriddenBy(desired.unmodeled));
     }

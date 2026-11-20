@@ -74,6 +74,8 @@ public abstract class GroupKeycloakMapper {
     @Mapping(target = "path", source = "path")
     @Mapping(target = "subGroups", source = "subGroups")
     @Mapping(target = "unmodeled", source = "unmodeled")
+    // Business method, that MapStruct takes for a fluent setter
+    @Mapping(target = "mergedWith", ignore = true)
     protected abstract Group toGroup(
             GroupRepresentation representation, String path, Set<String> subGroups, UnmodeledAttributes unmodeled);
 

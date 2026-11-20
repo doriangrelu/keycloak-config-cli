@@ -1,80 +1,86 @@
 # Managed Resources
 
-This document explains how Keycloak Config CLI manages the lifecycle of resources.
+This document explains how Keycloak Config CLI decides what to create, update and delete.
 
-## Management Modes
+## The Import Files Are the Source of Truth
 
-Each resource type can be configured with one of two management modes:
+Like `kubectl apply` with manifests, keycloak-config-cli makes Keycloak match the import files:
 
-### `no-delete` (Default)
+- **Creates** the resources the files declare and Keycloak does not have
+- **Updates** the resources that differ from the files
+- **Deletes** the resources of a declared type that no file declares
 
-- **Creates** new resources that don't exist
-- **Updates** existing resources that have changed
-- **Never deletes** resources, even if they're not in your configuration
+There is no per-type mode and no option to turn deletion off: the former per-type properties under `import` (`managed.group`, `managed.client`, ...) no longer exist. A configuration that still sets one fails at startup, because unknown `import.*` properties are rejected.
 
-This is the safe default that prevents accidental data loss.
+> **Tip**: A cleanup deletes what is missing from the files. Run a [dry run](../advanced/dry-run.md) (`--import.dry-run=true`) before applying a change, and review the deletions it reports.
+
+## The Cleanup Rule
+
+The rule is evaluated per realm, over all the import files of that realm.
+
+### A declared type is cleaned
+
+A resource type is declared when at least one import file of the realm contains its key, even with an empty list. Every resource of that type that exists in Keycloak but that no file declares is deleted.
+
+### An absent type is not touched
+
+A type whose key is absent from all the files of the realm is left as it is in Keycloak.
+
+| Import files | Effect on groups |
+|--------------|------------------|
+| No `groups` key | No group is created, updated or deleted |
+| `groups: []` | Every group is deleted (except protected ones) |
+| `groups: [ {name: admins} ]` | `admins` is created or updated, every other group is deleted (except protected ones) |
+
+### What a declared resource omits is removed
+
+Inside a declared resource, the files describe the whole resource:
+
+- A group declared without role mappings loses the role mappings it has in Keycloak
+- A subgroup missing from a declared group is deleted
+- The roles of a scope mapping are exactly the declared ones
+- The texts of a message bundle locale are exactly the declared ones
+
+Settings the files do not mention at all, such as a realm attribute absent from the import, keep their value.
+
+## Guarantees
+
+Three guarantees are fixed in the code. They have no option.
+
+### 1. Users are never deleted
+
+Users are created and updated from the `users` key, but a user missing from the files is never deleted.
+
+### 2. Technical resources created by Keycloak are never deleted
+
+Built-in clients, roles, client scopes, authentication flows, required actions, scope mappings and components are kept even when no file declares them. See [Protected Resources](../advanced/protected-resources.md#technical-resources) for the full list.
+
+### 3. Resources protected by `protectedResources` are never deleted
+
+An import file can protect resources by name, whatever their type:
 
 ```yaml
-import:
-  managed:
-    group: no-delete  # Default
-    client: no-delete
+realm: my-realm
+protectedResources:
+  - rule: EQUALS
+    matcher: legacy-app
+  - rule: PATTERN
+    matcher: "team-.*"
 ```
 
-### `full`
-
-- **Creates** new resources that don't exist
-- **Updates** existing resources that have changed
-- **Deletes** resources that exist in Keycloak but not in your configuration
-
-Use this when you want complete control over your configuration.
-
-```yaml
-import:
-  managed:
-    group: full
-    client: full
-```
-
-## Resource-Specific Configuration
-
-You can configure each resource type independently:
-
-```yaml
-import:
-  managed:
-    # Full lifecycle management
-    group: full
-    realm-role: full
-    client-role: full
-    client-scope: full
-
-    # Safe mode - never delete
-    client: no-delete        # Clients might have active sessions
-    user: no-delete          # Never auto-delete users
-    identity-provider: no-delete
-```
+See [Protected Resources](../advanced/protected-resources.md) for the details.
 
 ## How Deletion Works
 
-When using `full` management mode, the deletion process is:
+### Groups
 
-### 1. Groups (Hierarchical)
+Groups support nested subgroups. For each declared group, the CLI compares its current state in Keycloak with the files:
 
-Groups support nested subgroups. The cleanup is done in two phases:
+- **Realm roles** not in the files are removed from the group
+- **Client roles** not in the files are removed from the group
+- **Subgroups** not in the files are deleted
 
-#### Phase 1: Role Mappings Cleanup
-
-For each group present in the import, the CLI compares its current role mappings in Keycloak with the import configuration:
-- **Realm roles** not in the import are removed from the group
-- **Client roles** not in the import are removed from the group
-- If an entire client is absent from the import, all its role mappings are removed from the group
-
-This applies to all levels of the group hierarchy (subgroups included).
-
-#### Phase 2: Group Deletion
-
-After role mappings are cleaned, orphaned groups are deleted recursively:
+Top-level groups that no file declares are deleted.
 
 ```yaml
 # Your configuration
@@ -100,117 +106,61 @@ The CLI will delete:
 - `/department-a/team-3` (subgroup not in config)
 - `/department-c` (group not in config)
 
-### 2. Roles
+### Clients
 
-Realm roles and client roles are managed separately:
-
-```yaml
-import:
-  managed:
-    realm-role: full   # Manages realm-level roles
-    client-role: full  # Manages client-level roles
-```
-
-### 3. Clients
-
-Client deletion removes the client and all its associated:
+Client deletion removes the client and everything attached to it in Keycloak:
 - Client roles
-- Client scopes
 - Protocol mappers
+- Authorization settings
 - Service account (if any)
 
-## Protected Resources
+## Several Files for One Realm
 
-Some resources are protected from deletion regardless of management mode:
+When several files target the same realm, the declared types and resources are the union of all the files. A resource declared in one file is not deleted because another file of the same realm does not mention it.
 
-### Protected Groups
+## Remote State
 
-Groups with names starting with certain prefixes are protected:
-
-```java
-// These groups won't be deleted even in full mode
-"_keycloak_"  // Keycloak internal groups
-```
-
-### Default Roles
-
-Built-in Keycloak roles are never deleted:
-- `offline_access`
-- `uma_authorization`
-- Default client roles (like `account` client roles)
-
-### Default Clients
-
-Built-in Keycloak clients are never deleted:
-- `account`
-- `account-console`
-- `admin-cli`
-- `broker`
-- `realm-management`
-- `security-admin-console`
+When [remote state](../advanced/state-management.md) is enabled (`import.remote-state.enabled`), deletions are further limited to resources keycloak-config-cli created in a previous run. It does not replace the rule above: within the resources it created, a declared type is still cleaned.
 
 ## Best Practices
 
-### Start with `no-delete`
+### Run a Dry Run First
 
-When first setting up, use the default `no-delete` mode:
-
-```yaml
-import:
-  managed:
-    group: no-delete
-    client: no-delete
+```bash
+java -jar keycloak-config-cli.jar \
+  --keycloak.url=http://localhost:8080 \
+  --keycloak.user=admin \
+  --keycloak.password=admin \
+  --import.files.locations=realm.yaml \
+  --import.dry-run=true
 ```
 
-### Enable `full` Gradually
+The report lists the creations, updates and deletions the import would make. See [Dry Run](../advanced/dry-run.md).
 
-Once you're confident in your configuration, enable `full` mode for specific resources:
+### Declare Only the Types You Manage
 
-```yaml
-import:
-  managed:
-    group: full       # Groups are well-defined
-    realm-role: full  # Roles are well-defined
-    client: no-delete # Still cautious about clients
-```
+Leave out the keys of the types managed elsewhere (by hand, by another tool): keycloak-config-cli does not touch them.
 
-### Use Different Modes per Environment
+### Protect What Is Managed Outside the Files
 
-```yaml
-# development.yaml
-import:
-  managed:
-    group: full
-    client: full
+When a type is declared but some of its resources are managed elsewhere, protect them with `protectedResources` instead of leaving the type out.
 
-# production.yaml
-import:
-  managed:
-    group: full
-    client: no-delete  # More conservative in production
-```
+### Review Before Declaring a New Type
 
-### Review Before Enabling `full`
+Before adding a key for a type that already has resources in Keycloak:
 
-Before enabling `full` mode:
-
-1. Export current configuration from Keycloak
-2. Compare with your configuration files
-3. Identify resources that would be deleted
-4. Decide if that's the desired outcome
+1. Export the current configuration from Keycloak
+2. Compare it with your configuration files
+3. Run a dry run and check the deletions it reports
+4. Add the missing resources to the files, or protect them
 
 ## Handling External Changes
 
-When using `full` mode, be aware that:
+Once a type is declared:
 
-- Resources created manually in Keycloak Admin UI will be deleted
-- Changes made by other tools will be overwritten
-- Only the configuration files are the source of truth
-
-To prevent issues:
-- Use `no-delete` mode if multiple tools manage Keycloak
-- Document that all changes must go through configuration files
-- Use protected prefixes for resources managed externally
+- Resources of that type created manually in the Keycloak Admin UI are deleted on the next run, unless protected
+- Changes made by other tools to declared resources are overwritten
+- The configuration files are the only source of truth
 
 ## Example Scenarios
 
@@ -235,7 +185,7 @@ groups:
 
 Result: `devops` group is created. No deletions.
 
-### Scenario 2: Remove a Team (with full mode)
+### Scenario 2: Remove a Team
 
 ```yaml
 # Before
@@ -254,8 +204,7 @@ groups:
       - name: frontend
 ```
 
-Result with `group: full`: `legacy` group is deleted.
-Result with `group: no-delete`: `legacy` group remains in Keycloak.
+Result: the `legacy` group is deleted, unless a `protectedResources` rule matches it.
 
 ### Scenario 3: Reorganize Groups
 
@@ -273,8 +222,12 @@ groups:
       - name: team-b
 ```
 
-Result with `group: full`:
+Result:
 - Old `team-a` and `team-b` at root level are deleted
 - New `department-1/team-a` and `department-1/team-b` are created
 
 > **Note**: This is a delete + create, not a move. Group IDs will change.
+
+### Scenario 4: Stop Managing a Type
+
+Remove the `groups` key from all the files of the realm. The groups stay in Keycloak as they are, and later runs no longer touch them.

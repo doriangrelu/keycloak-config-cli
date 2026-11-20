@@ -61,7 +61,7 @@ import org.mockito.ArgumentCaptor;
 class ClientAuthorizationKeycloakGatewayTest {
 
     private static final String REALM = "realm";
-    private static final Deletions ALL = new Deletions(true, Optional.empty(), true, true);
+    private static final Deletions ALL = new Deletions(Optional.empty());
 
     private final UnmodeledAttributesConverter converter = new UnmodeledAttributesConverter();
     private ClientAuthorizationApi authorizationApi;
@@ -280,7 +280,7 @@ class ClientAuthorizationKeycloakGatewayTest {
         this.gateway.apply(
                 REALM,
                 declared("app", settings(List.of(), List.of(), List.of())),
-                new Deletions(true, Optional.of(Set.of("created")), false, false));
+                new Deletions(Optional.of(Set.of("created"))));
 
         verify(this.authorizationApi).deleteResource(REALM, "app-uuid", "created");
         verify(this.authorizationApi).deleteResource(REALM, "app-uuid", "Default Resource");

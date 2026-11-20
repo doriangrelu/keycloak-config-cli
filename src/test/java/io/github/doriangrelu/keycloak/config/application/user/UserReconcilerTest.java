@@ -26,7 +26,6 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.application.user.port.UserGateway;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import java.util.ArrayList;
@@ -104,7 +103,7 @@ class UserReconcilerTest {
     }
 
     private static RealmContext context() {
-        return new RealmContext("test", true, false, Map.of(ResourceType.USER, ManagedMode.FULL));
+        return new RealmContext("test", true, false);
     }
 
     private static User declared(String username, String email, Set<String> realmRoles) {

@@ -155,7 +155,7 @@ class RoleReconcilersTest {
     }
 
     private static RealmContext context() {
-        return new RealmContext("test", false, false, Map.of());
+        return new RealmContext("test", false, false);
     }
 
     @Test
@@ -233,7 +233,7 @@ class RoleReconcilersTest {
         this.keycloak.add(realmRole("created-by-hand", null));
         this.keycloak.add(clientRole("app", "created-by-tool"));
         this.keycloak.add(clientRole("app", "created-by-hand"));
-        RealmContext context = new RealmContext("test", false, true, Map.of());
+        RealmContext context = new RealmContext("test", false, true);
         context.captureState(RealmRoleReconciler.STATE_SCOPE, List.of("created-by-tool"));
         context.captureState(ClientRoleReconciler.stateScope("app"), List.of("created-by-tool"));
 

@@ -34,7 +34,6 @@ import io.github.doriangrelu.keycloak.config.application.role.RealmRoleReconcile
 import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.ClientFlowBindings;
 import io.github.doriangrelu.keycloak.config.domain.client.model.Client;
 import io.github.doriangrelu.keycloak.config.domain.clientauthorization.model.ClientAuthorization;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.group.model.Group;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
@@ -65,7 +64,6 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.userprofile
 import io.github.doriangrelu.keycloak.config.model.ProtectedResource;
 import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import java.util.ArrayList;
@@ -239,83 +237,9 @@ public class RealmImportReconciliation {
                     realm,
                     this.properties.isParallel(),
                     this.properties.getRemoteState().isEnabled(),
-                    Map.ofEntries(
-                            Map.entry(ResourceType.REALM_ROLE, roleMode()),
-                            Map.entry(ResourceType.CLIENT_ROLE, roleMode()),
-                            Map.entry(ResourceType.REQUIRED_ACTION, requiredActionMode()),
-                            Map.entry(ResourceType.MESSAGE_BUNDLE, messageBundleMode()),
-                            Map.entry(ResourceType.CLIENT_SCOPE, clientScopeMode()),
-                            Map.entry(ResourceType.CLIENT, clientMode()),
-                            Map.entry(ResourceType.GROUP, groupMode()),
-                            Map.entry(
-                                    ResourceType.IDENTITY_PROVIDER,
-                                    modeOf(this.properties.getManaged().getIdentityProvider())),
-                            Map.entry(
-                                    ResourceType.IDENTITY_PROVIDER_MAPPER,
-                                    modeOf(this.properties.getManaged().getIdentityProviderMapper())),
-                            // The declared client profiles and policies are the exact ones, as before
-                            Map.entry(ResourceType.CLIENT_PROFILE, ManagedMode.FULL),
-                            Map.entry(ResourceType.CLIENT_POLICY, ManagedMode.FULL),
-                            Map.entry(
-                                    ResourceType.SCOPE_MAPPING,
-                                    modeOf(this.properties.getManaged().getScopeMapping())),
-                            Map.entry(
-                                    ResourceType.CLIENT_SCOPE_MAPPING,
-                                    modeOf(this.properties.getManaged().getClientScopeMapping())),
-                            Map.entry(
-                                    ResourceType.COMPONENT,
-                                    modeOf(this.properties.getManaged().getComponent())),
-                            Map.entry(
-                                    ResourceType.SUB_COMPONENT,
-                                    modeOf(this.properties.getManaged().getSubComponent())),
-                            Map.entry(
-                                    ResourceType.AUTHENTICATION_FLOW,
-                                    modeOf(this.properties.getManaged().getAuthenticationFlow())),
-                            // Unused authenticator configs are garbage: always deleted, as before
-                            Map.entry(ResourceType.AUTHENTICATOR_CONFIG, ManagedMode.FULL)),
                     this.properties.isDryRun());
             return created;
         });
-    }
-
-    private static ManagedMode modeOf(final ImportManagedPropertiesValues value) {
-        return value == ImportManagedPropertiesValues.FULL ? ManagedMode.FULL : ManagedMode.NO_DELETE;
-    }
-
-    private ManagedMode groupMode() {
-        return this.properties.getManaged().getGroup() == ImportManagedPropertiesValues.FULL
-                ? ManagedMode.FULL
-                : ManagedMode.NO_DELETE;
-    }
-
-    private ManagedMode clientMode() {
-        return this.properties.getManaged().getClient() == ImportManagedPropertiesValues.FULL
-                ? ManagedMode.FULL
-                : ManagedMode.NO_DELETE;
-    }
-
-    private ManagedMode clientScopeMode() {
-        return this.properties.getManaged().getClientScope() == ImportManagedPropertiesValues.FULL
-                ? ManagedMode.FULL
-                : ManagedMode.NO_DELETE;
-    }
-
-    private ManagedMode messageBundleMode() {
-        return this.properties.getManaged().getMessageBundles() == ImportManagedPropertiesValues.FULL
-                ? ManagedMode.FULL
-                : ManagedMode.NO_DELETE;
-    }
-
-    private ManagedMode requiredActionMode() {
-        return this.properties.getManaged().getRequiredAction() == ImportManagedPropertiesValues.FULL
-                ? ManagedMode.FULL
-                : ManagedMode.NO_DELETE;
-    }
-
-    private ManagedMode roleMode() {
-        return this.properties.getManaged().getRole() == ImportManagedPropertiesValues.FULL
-                ? ManagedMode.FULL
-                : ManagedMode.NO_DELETE;
     }
 
     private void captureClientAuthorizationState(final RealmImport realmImport, final RealmContext context) {

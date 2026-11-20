@@ -243,16 +243,9 @@ defaultRole:
       - user
 ```
 
-## Full Management Mode
+## Cleanup
 
-To enable automatic deletion of roles not in your configuration:
-
-```yaml
-import:
-  managed:
-    realm-role: full
-    client-role: full
-```
+When at least one import file of the realm declares realm roles (`roles.realm`) or the roles of a client (`roles.client`), the roles of that kind that no file declares are deleted. Without the key, they are not touched. See [Managed Resources](../concepts/managed-resources.md).
 
 ### Protected Roles
 
@@ -357,7 +350,7 @@ groups:
 When restructuring roles:
 1. Add new roles first
 2. Update group/user assignments
-3. Remove old roles (with `full` mode) or manually
+3. Remove old roles from the files (they are deleted, since `roles` is declared)
 
 ### Handling Role Dependencies
 

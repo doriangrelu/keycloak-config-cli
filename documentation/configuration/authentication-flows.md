@@ -229,13 +229,9 @@ authenticatorConfig:
       defaultProvider: "google"
 ```
 
-## Full Management Mode
+## Cleanup
 
-```yaml
-import:
-  managed:
-    authentication-flow: full
-```
+When at least one import file of the realm has an `authenticationFlows` key, the flows that no file declares are deleted, and so are the authenticator configs no flow uses. Without the key, flows are not touched. See [Managed Resources](../concepts/managed-resources.md).
 
 ### Protected Flows
 

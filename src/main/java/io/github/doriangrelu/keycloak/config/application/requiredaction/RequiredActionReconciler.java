@@ -91,6 +91,6 @@ public final class RequiredActionReconciler implements Reconciler<String, Requir
     /** Built-in required actions can be deleted, as the legacy import did; the remote state usually prevents it. */
     @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final RequiredAction resource) {
-        return false;
+        return resource.isOwnedByKeycloak();
     }
 }

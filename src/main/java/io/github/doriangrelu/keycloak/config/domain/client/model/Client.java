@@ -63,6 +63,16 @@ public record Client(
 
     public static final String ADMIN_PERMISSIONS = "admin-permissions";
 
+    /** Clients Keycloak creates in every realm. */
+    static final Set<String> BUILT_IN = Set.of(
+            "account",
+            "account-console",
+            "admin-cli",
+            "broker",
+            REALM_MANAGEMENT,
+            "security-admin-console",
+            ADMIN_PERMISSIONS);
+
     private static final String NAME_PREFIX = "name:";
 
     /** Unmodeled field holding the protocol of the client: {@code openid-connect} when absent. */
@@ -199,11 +209,12 @@ public record Client(
     }
 
     /**
-     * Clients created by Keycloak, never deleted: those with a generated name ({@code ${client_<clientId>}}), the
-     * {@code admin-permissions} client, and the {@code <realm>-realm} clients of the master realm.
+     * Clients created by Keycloak, never deleted (ADR-007): the clients of every realm ({@code account},
+     * {@code admin-cli}, {@code realm-management}...), whatever their display name, those with a generated name
+     * ({@code ${client_<clientId>}}), and the {@code <realm>-realm} clients of the master realm.
      */
     public boolean isOwnedByKeycloak(final String realm) {
-        if (hasKeycloakName() || ADMIN_PERMISSIONS.equals(this.clientId)) {
+        if (BUILT_IN.contains(this.clientId) || hasKeycloakName()) {
             return true;
         }
         return "master".equals(realm) && this.clientId != null && this.clientId.endsWith("-realm");

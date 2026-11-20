@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,23 @@ public record ClientScope(
         UnmodeledAttributes unmodeled)
         implements Resource<String> {
 
+    /** Client scopes Keycloak creates in every realm. */
+    static final Set<String> BUILT_IN = Set.of(
+            "acr",
+            "address",
+            "basic",
+            "email",
+            "microprofile-jwt",
+            "offline_access",
+            "organization",
+            "phone",
+            "profile",
+            "role_list",
+            "roles",
+            "saml_organization",
+            "service_account",
+            "web-origins");
+
     public ClientScope {
         Objects.requireNonNull(name, "name");
         attributes = attributes == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
@@ -76,6 +94,14 @@ public record ClientScope(
     }
 
     /** This client scope once {@code desired} is applied on it. */
+    /**
+     * Whether Keycloak created this scope, never deleted (ADR-007): a default or optional scope of the realm, or a
+     * scope Keycloak creates in every realm, even when the realm no longer lists it as a default one.
+     */
+    public boolean isOwnedByKeycloak() {
+        return this.realmDefault || BUILT_IN.contains(this.name);
+    }
+
     public ClientScope mergedWith(final ClientScope desired) {
         return new ClientScope(
                 this.name,

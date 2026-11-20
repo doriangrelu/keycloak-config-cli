@@ -26,7 +26,6 @@ import static org.hamcrest.Matchers.is;
 
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportBehaviorsProperties.ChecksumChangedOption;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,19 +56,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             "import.remote-state.enabled=false",
             "import.remote-state.encryption-key=password",
             "import.remote-state.encryption-salt=0123456789ABCDEFabcdef",
-            "import.managed.authentication-flow=no-delete",
-            "import.managed.group=no-delete",
-            "import.managed.required-action=no-delete",
-            "import.managed.client-scope=no-delete",
-            "import.managed.scope-mapping=no-delete",
-            "import.managed.client-scope-mapping=no-delete",
-            "import.managed.component=no-delete",
-            "import.managed.sub-component=no-delete",
-            "import.managed.identity-provider=no-delete",
-            "import.managed.identity-provider-mapper=no-delete",
-            "import.managed.role=no-delete",
-            "import.managed.client=no-delete",
-            "import.managed.client-authorization-resources=no-delete",
             "import.behaviors.sync-user-federation=true",
             "import.behaviors.remove-default-role-from-user=true",
             "import.behaviors.skip-attributes-for-federated-user=true",
@@ -99,20 +85,6 @@ class ImportConfigPropertiesTest {
         assertThat(properties.getRemoteState().isEnabled(), is(false));
         assertThat(properties.getRemoteState().getEncryptionKey(), is("password"));
         assertThat(properties.getRemoteState().getEncryptionSalt(), is("0123456789ABCDEFabcdef"));
-        assertThat(properties.getManaged().getAuthenticationFlow(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getGroup(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getRequiredAction(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getClientScope(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getScopeMapping(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getClientScopeMapping(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getComponent(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getSubComponent(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getIdentityProvider(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getIdentityProviderMapper(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getRole(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(properties.getManaged().getClient(), is(ImportManagedPropertiesValues.NO_DELETE));
-        assertThat(
-                properties.getManaged().getClientAuthorizationResources(), is(ImportManagedPropertiesValues.NO_DELETE));
         assertThat(properties.getBehaviors().isSyncUserFederation(), is(true));
         assertThat(properties.getBehaviors().isRemoveDefaultRoleFromUser(), is(true));
         assertThat(properties.getBehaviors().isSkipAttributesForFederatedUser(), is(true));

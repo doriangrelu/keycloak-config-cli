@@ -83,7 +83,7 @@ Keycloak Config CLI is built on Spring Boot and consists of several layers:
 Each resource type has a dedicated import service that handles:
 - Creating new resources
 - Updating existing resources
-- Deleting orphaned resources (when managed mode is `full`)
+- Deleting the resources of declared types that no file declares (see [Managed Resources](managed-resources.md))
 
 ### Repositories
 
@@ -101,14 +101,14 @@ The CLI can track the state of previous imports to:
 
 ## Supported Resources
 
-| Resource | Create | Update | Delete (full mode) |
-|----------|--------|--------|-------------------|
+| Resource | Create | Update | Delete (missing from a declared type) |
+|----------|--------|--------|---------------------------------------|
 | Realms | Yes | Yes | No |
 | Clients | Yes | Yes | Yes |
 | Client Scopes | Yes | Yes | Yes |
 | Groups (hierarchical) | Yes | Yes | Yes |
 | Roles (realm & client) | Yes | Yes | Yes |
-| Users | Yes | Yes | Yes |
+| Users | Yes | Yes | No |
 | Identity Providers | Yes | Yes | Yes |
 | Authentication Flows | Yes | Yes | Yes |
 | Required Actions | Yes | Yes | Yes |

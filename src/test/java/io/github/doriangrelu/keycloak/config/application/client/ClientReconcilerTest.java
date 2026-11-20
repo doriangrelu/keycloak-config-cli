@@ -87,7 +87,7 @@ class ClientReconcilerTest {
 
     @Test
     void createsUpdatesAndPrunesSparingKeycloakClients() {
-        RealmContext context = new RealmContext("test", false, false, Map.of());
+        RealmContext context = new RealmContext("test", false, false);
 
         this.engine.apply(
                 context,
@@ -106,7 +106,7 @@ class ClientReconcilerTest {
         DesiredState part =
                 new DesiredState().declare(ResourceType.CLIENT, List.of(client("realm-management", null, null)));
 
-        assertThatThrownBy(() -> this.engine.apply(new RealmContext("test", false, false, Map.of()), part))
+        assertThatThrownBy(() -> this.engine.apply(new RealmContext("test", false, false), part))
                 .isInstanceOf(ClientRejectedException.class)
                 .hasMessage("Cannot create system client 'realm-management' in realm 'test': System clients should be"
                         + " auto-created by Keycloak");

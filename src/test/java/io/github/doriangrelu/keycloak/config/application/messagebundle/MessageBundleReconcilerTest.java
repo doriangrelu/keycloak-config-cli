@@ -26,7 +26,6 @@ import io.github.doriangrelu.keycloak.config.application.messagebundle.port.Mess
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.LinkedHashMap;
@@ -83,24 +82,16 @@ class MessageBundleReconcilerTest {
     }
 
     @Test
-    void fullModeReplacesTheTextsOfADeclaredLocale() {
-        this.engine.apply(context(ManagedMode.FULL, false), english(Map.of("kept", "new", "added", "y")));
+    void replacesTheTextsOfADeclaredLocale() {
+        this.engine.apply(context(false), english(Map.of("kept", "new", "added", "y")));
 
         assertThat(this.keycloak.locales.get("en"))
                 .containsExactlyInAnyOrderEntriesOf(Map.of("kept", "new", "added", "y"));
     }
 
     @Test
-    void noDeleteModeKeepsTheOtherTexts() {
-        this.engine.apply(context(ManagedMode.NO_DELETE, false), english(Map.of("kept", "new")));
-
-        assertThat(this.keycloak.locales.get("en"))
-                .containsExactlyInAnyOrderEntriesOf(Map.of("kept", "new", "removed", "x"));
-    }
-
-    @Test
     void withoutRemoteStateNoLocaleIsRemoved() {
-        RealmContext context = context(ManagedMode.FULL, false);
+        RealmContext context = context(false);
 
         this.engine.apply(context, english(Map.of("kept", "old")));
         this.engine.prune(context);
@@ -111,7 +102,7 @@ class MessageBundleReconcilerTest {
     @Test
     void withRemoteStateOnlyLocalesCreatedByTheToolAreRemoved() {
         this.keycloak.locales.put("fr", new LinkedHashMap<>(Map.of("bonjour", "monde")));
-        RealmContext context = context(ManagedMode.FULL, true);
+        RealmContext context = context(true);
         context.captureState(MessageBundleReconciler.STATE_SCOPE, List.of("en", "fr"));
 
         this.engine.apply(context, english(Map.of("kept", "old")));
@@ -120,7 +111,7 @@ class MessageBundleReconcilerTest {
         assertThat(this.keycloak.locales).containsOnlyKeys("en", "de");
     }
 
-    private static RealmContext context(ManagedMode mode, boolean remoteState) {
-        return new RealmContext("test", false, remoteState, Map.of(ResourceType.MESSAGE_BUNDLE, mode));
+    private static RealmContext context(boolean remoteState) {
+        return new RealmContext("test", false, remoteState);
     }
 }

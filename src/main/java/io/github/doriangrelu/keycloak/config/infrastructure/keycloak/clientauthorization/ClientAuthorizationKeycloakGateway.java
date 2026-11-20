@@ -245,15 +245,9 @@ public class ClientAuthorizationKeycloakGateway implements ClientAuthorizationGa
 
             createOrUpdateResources(listOf(existing.getResources()), resources);
             createOrUpdateScopes(listOf(existing.getScopes()), scopes);
-            if (this.deletions.resources()) {
-                deleteResources(listOf(existing.getResources()), resources);
-            }
-            if (this.deletions.policies()) {
-                deletePolicies(listOf(existing.getPolicies()), policies);
-            }
-            if (this.deletions.scopes()) {
-                deleteScopes(listOf(existing.getScopes()), scopes);
-            }
+            deleteResources(listOf(existing.getResources()), resources);
+            deletePolicies(listOf(existing.getPolicies()), policies);
+            deleteScopes(listOf(existing.getScopes()), scopes);
             createOrUpdatePolicies(listOf(refreshed(existing).getPolicies()), policies);
         }
 

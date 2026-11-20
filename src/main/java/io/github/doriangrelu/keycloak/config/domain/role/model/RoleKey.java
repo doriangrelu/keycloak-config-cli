@@ -34,6 +34,9 @@ public record RoleKey(String clientId, String name) {
     /** Clients created by Keycloak in every realm: their roles belong to Keycloak. */
     private static final Set<String> KEYCLOAK_CLIENTS = Set.of("realm-management", "account", "broker", "master-realm");
 
+    /** Clients of the master realm that administer another realm: {@code <realm>-realm}. */
+    private static final String REALM_CLIENT_SUFFIX = "-realm";
+
     public RoleKey {
         Objects.requireNonNull(name, "name");
         if (name.isBlank()) {
@@ -58,7 +61,8 @@ public record RoleKey(String clientId, String name) {
     }
 
     public boolean belongsToKeycloakClient() {
-        return this.clientId != null && KEYCLOAK_CLIENTS.contains(this.clientId);
+        return this.clientId != null
+                && (KEYCLOAK_CLIENTS.contains(this.clientId) || this.clientId.endsWith(REALM_CLIENT_SUFFIX));
     }
 
     @Override

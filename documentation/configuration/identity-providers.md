@@ -322,14 +322,9 @@ identityProviderMappers:
       role: "employee"
 ```
 
-## Full Management Mode
+## Cleanup
 
-```yaml
-import:
-  managed:
-    identity-provider: full
-    identity-provider-mapper: full
-```
+When at least one import file of the realm has an `identityProviders` (or `identityProviderMappers`) key, the identity providers (or mappers) that no file declares are deleted. Without the key, they are not touched. See [Managed Resources](../concepts/managed-resources.md).
 
 ## Best Practices
 

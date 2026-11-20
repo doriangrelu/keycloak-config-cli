@@ -187,12 +187,13 @@ class ImportScopeMappingsIT extends AbstractImportIT {
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
+        // The mapping no longer declared is deleted (ADR-007)
         List<ScopeMappingRepresentation> scopeMappings = realm.getScopeMappings();
-        assertThat(scopeMappings, hasSize(3));
+        assertThat(scopeMappings, hasSize(2));
 
         Optional<ScopeMappingRepresentation> maybeExistingScopeMapping =
                 tryToFindScopeMappingForClient(realm, "scope-mapping-client");
-        assertThat(maybeExistingScopeMapping.isPresent(), is(true));
+        assertThat(maybeExistingScopeMapping.isPresent(), is(false));
     }
 
     @Test
@@ -231,8 +232,10 @@ class ImportScopeMappingsIT extends AbstractImportIT {
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
+        // Only the mapping Keycloak creates is left
         List<ScopeMappingRepresentation> scopeMappings = realm.getScopeMappings();
-        assertThat(scopeMappings, hasSize(3));
+        assertThat(scopeMappings, hasSize(1));
+        assertThat(scopeMappings.get(0).getClientScope(), is("offline_access"));
     }
 
     @Test

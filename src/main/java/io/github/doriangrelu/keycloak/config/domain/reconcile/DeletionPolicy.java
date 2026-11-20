@@ -20,10 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.domain.reconcile;
 
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,28 +31,24 @@ import java.util.Set;
  * <p>A resource is deleted only if all of these hold:
  *
  * <ul>
- *   <li>its type is managed in {@link ManagedMode#FULL} mode;
  *   <li>when the remote state is enabled, keycloak-config-cli created it: its name is in the state recorded before
  *       the run;
  *   <li>no protection rule matches its name.
  * </ul>
  *
- * <p>Resources created by Keycloak itself (default roles, built-in clients...) are excluded by each resource type.
+ * <p>Resources created by Keycloak itself (default roles, built-in clients...) are excluded by each resource type,
+ * and users are never deleted (ADR-007).
  *
  * @param managedState names recorded in the remote state before the run, or empty when the remote state is disabled
  */
-public record DeletionPolicy(ManagedMode mode, Optional<Set<String>> managedState, List<ProtectionRule> protections) {
+public record DeletionPolicy(Optional<Set<String>> managedState, List<ProtectionRule> protections) {
 
     public DeletionPolicy {
-        Objects.requireNonNull(mode, "mode");
         managedState = managedState.map(Set::copyOf);
         protections = List.copyOf(protections);
     }
 
     public boolean allowsDeletionOf(final String name) {
-        if (this.mode != ManagedMode.FULL) {
-            return false;
-        }
         if (this.managedState.isPresent() && !this.managedState.get().contains(name)) {
             return false;
         }

@@ -61,9 +61,7 @@ import io.github.doriangrelu.keycloak.config.application.user.UserReconciler;
 import io.github.doriangrelu.keycloak.config.application.user.port.UserGateway;
 import io.github.doriangrelu.keycloak.config.application.userprofile.UserProfileReconciler;
 import io.github.doriangrelu.keycloak.config.application.userprofile.port.UserProfileGateway;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties.ImportManagedProperties.ImportManagedPropertiesValues;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -122,15 +120,6 @@ public class ReconciliationConfiguration {
                 new AuthenticationFlowReconciler(authenticationFlowGateway),
                 new AuthenticatorConfigReconciler(authenticationFlowGateway),
                 new ClientFlowBindingsReconciler(authenticationFlowGateway),
-                new ClientAuthorizationReconciler(
-                        clientAuthorizationGateway,
-                        new ClientAuthorizationReconciler.Modes(
-                                modeOf(properties.getManaged().getClientAuthorizationResources()),
-                                modeOf(properties.getManaged().getClientAuthorizationPolicies()),
-                                modeOf(properties.getManaged().getClientAuthorizationScopes())))));
-    }
-
-    private static ManagedMode modeOf(final ImportManagedPropertiesValues value) {
-        return value == ImportManagedPropertiesValues.FULL ? ManagedMode.FULL : ManagedMode.NO_DELETE;
+                new ClientAuthorizationReconciler(clientAuthorizationGateway)));
     }
 }

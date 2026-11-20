@@ -267,17 +267,9 @@ users:
     email: former@example.com
 ```
 
-## Full Management Mode
+## Cleanup
 
-> **Warning**: User deletion can have serious consequences. Use with extreme caution.
-
-```yaml
-import:
-  managed:
-    user: full  # Will delete users not in configuration!
-```
-
-This should almost never be used in production. Prefer `no-delete` for users.
+Users are never deleted: a user missing from the import files stays in Keycloak, even when the `users` key is present. To deactivate a user, declare it with `enabled: false`. See [Managed Resources](../concepts/managed-resources.md).
 
 ## User Import Best Practices
 

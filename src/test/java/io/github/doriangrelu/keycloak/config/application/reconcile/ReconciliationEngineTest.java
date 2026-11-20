@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.doriangrelu.keycloak.config.domain.common.ConflictingDefinitionException;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule.Matching;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
@@ -116,7 +115,7 @@ class ReconciliationEngineTest {
     private final List<String> log = new ArrayList<>();
 
     private static RealmContext context(boolean remoteState) {
-        return new RealmContext("test", false, remoteState, Map.of());
+        return new RealmContext("test", false, remoteState);
     }
 
     @Test
@@ -232,18 +231,6 @@ class ReconciliationEngineTest {
         engine.prune(context);
 
         assertThat(this.log).containsExactly("REALM_ROLE delete created-by-tool");
-    }
-
-    @Test
-    void noDeleteModeKeepsEverything() {
-        FakeReconciler realmRoles = new FakeReconciler(REALM_ROLE, Set.of(), this.log, new Item("r", "1"));
-        ReconciliationEngine engine = new ReconciliationEngine(List.of(realmRoles));
-        RealmContext context = new RealmContext("test", false, false, Map.of(REALM_ROLE, ManagedMode.NO_DELETE));
-
-        engine.apply(context, new DesiredState().declare(REALM_ROLE, List.of()));
-        engine.prune(context);
-
-        assertThat(this.log).isEmpty();
     }
 
     @Test

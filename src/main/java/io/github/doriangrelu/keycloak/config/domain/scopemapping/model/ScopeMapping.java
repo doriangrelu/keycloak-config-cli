@@ -67,6 +67,10 @@ public record ScopeMapping(Key key, Set<String> roles) implements Resource<Scope
         }
     }
 
+    /** Mappings Keycloak creates in every realm. */
+    private static final Set<Key> BUILT_IN =
+            Set.of(Key.ofClientScope("offline_access", null), Key.ofClient("account-console", "account"));
+
     public ScopeMapping {
         Objects.requireNonNull(key, "key");
         roles = roles == null ? Set.of() : Collections.unmodifiableSet(new LinkedHashSet<>(roles));
@@ -77,13 +81,16 @@ public record ScopeMapping(Key key, Set<String> roles) implements Resource<Scope
         return this.key.holder();
     }
 
-    /** This mapping once {@code desired} is applied on it. */
-    public ScopeMapping mergedWith(final ScopeMapping desired, final boolean replaceRoles) {
-        if (replaceRoles) {
-            return new ScopeMapping(this.key, desired.roles);
-        }
-        Set<String> union = new LinkedHashSet<>(this.roles);
-        union.addAll(desired.roles);
-        return new ScopeMapping(this.key, union);
+    /**
+     * Whether Keycloak created this mapping in every realm, never deleted (ADR-007): the {@code offline_access} role of
+     * the {@code offline_access} scope, and the roles of {@code account} given to {@code account-console}.
+     */
+    public boolean isOwnedByKeycloak() {
+        return BUILT_IN.contains(this.key);
+    }
+
+    /** This mapping once {@code desired} is applied on it: its roles are the declared ones (ADR-007). */
+    public ScopeMapping mergedWith(final ScopeMapping desired) {
+        return new ScopeMapping(this.key, desired.roles);
     }
 }

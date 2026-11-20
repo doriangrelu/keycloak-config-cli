@@ -1,0 +1,127 @@
+{
+  "enabled": true,
+  "realm": "cleanupGuarantees",
+  "clients": [
+    {
+      "clientId": "app-app",
+      "publicClient": true
+    },
+    {
+      "clientId": "legacy-app",
+      "publicClient": true
+    },
+    {
+      "clientId": "team-billing",
+      "publicClient": true
+    },
+    {
+      "clientId": "orphan-app",
+      "publicClient": true
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "app-role"
+      },
+      {
+        "name": "legacy-role"
+      },
+      {
+        "name": "team-role"
+      },
+      {
+        "name": "orphan-role"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "app-group"
+    },
+    {
+      "name": "legacy-group"
+    },
+    {
+      "name": "team-group"
+    },
+    {
+      "name": "orphan-group"
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "app-scope",
+      "protocol": "openid-connect"
+    },
+    {
+      "name": "legacy-scope",
+      "protocol": "openid-connect"
+    },
+    {
+      "name": "team-scope",
+      "protocol": "openid-connect"
+    },
+    {
+      "name": "orphan-scope",
+      "protocol": "openid-connect"
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "app-idp",
+      "providerId": "oidc",
+      "enabled": true,
+      "config": {
+        "clientId": "client",
+        "clientSecret": "secret",
+        "tokenUrl": "https://idp.example.org/token",
+        "authorizationUrl": "https://idp.example.org/auth"
+      }
+    },
+    {
+      "alias": "legacy-idp",
+      "providerId": "oidc",
+      "enabled": true,
+      "config": {
+        "clientId": "client",
+        "clientSecret": "secret",
+        "tokenUrl": "https://idp.example.org/token",
+        "authorizationUrl": "https://idp.example.org/auth"
+      }
+    },
+    {
+      "alias": "team-idp",
+      "providerId": "oidc",
+      "enabled": true,
+      "config": {
+        "clientId": "client",
+        "clientSecret": "secret",
+        "tokenUrl": "https://idp.example.org/token",
+        "authorizationUrl": "https://idp.example.org/auth"
+      }
+    },
+    {
+      "alias": "orphan-idp",
+      "providerId": "oidc",
+      "enabled": true,
+      "config": {
+        "clientId": "client",
+        "clientSecret": "secret",
+        "tokenUrl": "https://idp.example.org/token",
+        "authorizationUrl": "https://idp.example.org/auth"
+      }
+    }
+  ],
+  "components": {},
+  "requiredActions": [],
+  "authenticationFlows": [],
+  "scopeMappings": [],
+  "clientScopeMappings": {},
+  "users": [
+    {
+      "username": "user-a",
+      "enabled": true
+    }
+  ]
+}

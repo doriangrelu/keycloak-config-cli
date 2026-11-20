@@ -22,7 +22,6 @@ package io.github.doriangrelu.keycloak.config.application.reconcile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
@@ -106,7 +105,7 @@ class ReconciliationEngineDryRunTest {
     }
 
     private static RealmContext dryRun() {
-        return new RealmContext("realm", false, false, Map.of(ResourceType.MESSAGE_BUNDLE, ManagedMode.FULL), true);
+        return new RealmContext("realm", false, false, true);
     }
 
     @Test

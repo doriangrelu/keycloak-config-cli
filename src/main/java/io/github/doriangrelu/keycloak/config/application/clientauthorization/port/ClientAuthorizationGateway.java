@@ -27,8 +27,11 @@ import java.util.Set;
 /** Authorization services of the clients of a realm in Keycloak. */
 public interface ClientAuthorizationGateway {
 
-    /** What the import may delete of the authorization of a client. */
-    record Deletions(boolean resources, Optional<Set<String>> managedResources, boolean policies, boolean scopes) {
+    /**
+     * What the import may delete of the authorization of a client: the resources, policies and scopes it misses, the
+     * resources limited to those keycloak-config-cli created when the remote state is enabled.
+     */
+    record Deletions(Optional<Set<String>> managedResources) {
 
         /**
          * @param managedResources resources keycloak-config-cli created, when the remote state is enabled; the

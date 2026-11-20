@@ -27,7 +27,6 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.domain.clientscope.model.ClientScope;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -82,9 +81,8 @@ class ClientScopeReconcilerTest {
     }
 
     @Test
-    void fullModeDeletesMissingScopesButNotTheRealmDefaultOnesEvenWithRemoteState() {
-        RealmContext context =
-                new RealmContext("test", false, true, Map.of(ResourceType.CLIENT_SCOPE, ManagedMode.FULL));
+    void deletesMissingScopesButNotTheRealmDefaultOnesEvenWithRemoteState() {
+        RealmContext context = new RealmContext("test", false, true);
 
         this.engine.apply(context, declaring(new ClientScope("added", "d", null, null, null, false, null)));
         this.engine.prune(context);
@@ -94,13 +92,16 @@ class ClientScopeReconcilerTest {
     }
 
     @Test
-    void noDeleteModeKeepsEverything() {
-        RealmContext context =
-                new RealmContext("test", false, false, Map.of(ResourceType.CLIENT_SCOPE, ManagedMode.NO_DELETE));
+    void neverDeletesTheScopesKeycloakCreatesEvenWhenTheRealmNoLongerListsThem() {
+        this.keycloak.scopes.put(
+                "service_account", new ClientScope("service_account", null, null, null, null, false, null));
+        RealmContext context = new RealmContext("test", false, false);
 
         this.engine.apply(context, declaring());
         this.engine.prune(context);
 
-        assertThat(this.keycloak.log).isEmpty();
+        assertThat(this.keycloak.scopes)
+                .containsKeys("profile", "service_account")
+                .doesNotContainKey("orphan");
     }
 }

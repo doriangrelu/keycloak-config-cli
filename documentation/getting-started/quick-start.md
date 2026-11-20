@@ -138,9 +138,11 @@ java -jar keycloak-config-cli.jar \
   --import.files.locations=my-realm.yaml
 ```
 
-## Full Resource Management
+## Deleting Resources
 
-To automatically delete resources that are no longer in your configuration:
+The import files are the source of truth: for each resource type your files declare (for example a `groups` key), the resources of that type that no file declares are deleted from the realm. Types your files do not mention are not touched. Users, technical resources created by Keycloak and resources matched by `protectedResources` rules are never deleted.
+
+Check what an import would change, deletions included, with a dry run:
 
 ```bash
 java -jar keycloak-config-cli.jar \
@@ -148,12 +150,10 @@ java -jar keycloak-config-cli.jar \
   --keycloak.user=admin \
   --keycloak.password=admin \
   --import.files.locations=my-realm.yaml \
-  --import.managed.group=full \
-  --import.managed.role=full \
-  --import.managed.client=full
+  --import.dry-run=true
 ```
 
-> **Warning**: Use `--import.managed.*=full` carefully in production as it will delete resources not defined in your configuration files.
+> **Warning**: Run a dry run before applying in production, since an import deletes the resources of declared types that are missing from your files. See [Managed Resources](../concepts/managed-resources.md).
 
 ## Next Steps
 

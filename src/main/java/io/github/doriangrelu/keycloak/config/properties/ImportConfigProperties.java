@@ -72,9 +72,6 @@ public class ImportConfigProperties {
     private final ImportCacheProperties cache;
 
     @Valid
-    private final ImportManagedProperties managed;
-
-    @Valid
     private final ImportRemoteStateProperties remoteState;
 
     public ImportConfigProperties(
@@ -88,7 +85,6 @@ public class ImportConfigProperties {
             @DefaultValue final ImportMustacheProperties mustache,
             @DefaultValue final ImportBehaviorsProperties behaviors,
             @DefaultValue final ImportCacheProperties cache,
-            @DefaultValue final ImportManagedProperties managed,
             @DefaultValue final ImportRemoteStateProperties remoteState) {
         this.validate = validate;
         this.parallel = parallel;
@@ -100,7 +96,6 @@ public class ImportConfigProperties {
         this.mustache = mustache;
         this.behaviors = behaviors;
         this.cache = cache;
-        this.managed = managed;
         this.remoteState = remoteState;
     }
 
@@ -150,167 +145,8 @@ public class ImportConfigProperties {
         return this.cache;
     }
 
-    public ImportManagedProperties getManaged() {
-        return this.managed;
-    }
-
     public ImportRemoteStateProperties getRemoteState() {
         return this.remoteState;
-    }
-
-    @SuppressWarnings("unused")
-    public static class ImportManagedProperties {
-        @NotNull
-        private final ImportManagedPropertiesValues requiredAction;
-
-        @NotNull
-        private final ImportManagedPropertiesValues group;
-
-        @NotNull
-        private final ImportManagedPropertiesValues clientScope;
-
-        @NotNull
-        private final ImportManagedPropertiesValues scopeMapping;
-
-        @NotNull
-        private final ImportManagedPropertiesValues clientScopeMapping;
-
-        @NotNull
-        private final ImportManagedPropertiesValues component;
-
-        @NotNull
-        private final ImportManagedPropertiesValues subComponent;
-
-        @NotNull
-        private final ImportManagedPropertiesValues authenticationFlow;
-
-        @NotNull
-        private final ImportManagedPropertiesValues identityProvider;
-
-        @NotNull
-        private final ImportManagedPropertiesValues identityProviderMapper;
-
-        @NotNull
-        private final ImportManagedPropertiesValues role;
-
-        @NotNull
-        private final ImportManagedPropertiesValues client;
-
-        @NotNull
-        private final ImportManagedPropertiesValues clientAuthorizationResources;
-
-        @NotNull
-        private final ImportManagedPropertiesValues clientAuthorizationPolicies;
-
-        @NotNull
-        private final ImportManagedPropertiesValues clientAuthorizationScopes;
-
-        @NotNull
-        private final ImportManagedPropertiesValues messageBundles;
-
-        public ImportManagedProperties(
-                @DefaultValue("FULL") final ImportManagedPropertiesValues requiredAction,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues group,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues clientScope,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues scopeMapping,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues clientScopeMapping,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues component,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues subComponent,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues authenticationFlow,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues identityProvider,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues identityProviderMapper,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues role,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues client,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationResources,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationPolicies,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues clientAuthorizationScopes,
-                @DefaultValue("FULL") final ImportManagedPropertiesValues messageBundles) {
-            this.requiredAction = requiredAction;
-            this.group = group;
-            this.clientScope = clientScope;
-            this.scopeMapping = scopeMapping;
-            this.clientScopeMapping = clientScopeMapping;
-            this.component = component;
-            this.subComponent = subComponent;
-            this.authenticationFlow = authenticationFlow;
-            this.identityProvider = identityProvider;
-            this.identityProviderMapper = identityProviderMapper;
-            this.role = role;
-            this.client = client;
-            this.clientAuthorizationResources = clientAuthorizationResources;
-            this.clientAuthorizationPolicies = clientAuthorizationPolicies;
-            this.clientAuthorizationScopes = clientAuthorizationScopes;
-            this.messageBundles = messageBundles;
-        }
-
-        public ImportManagedPropertiesValues getRequiredAction() {
-            return this.requiredAction;
-        }
-
-        public ImportManagedPropertiesValues getClientScope() {
-            return this.clientScope;
-        }
-
-        public ImportManagedPropertiesValues getScopeMapping() {
-            return this.scopeMapping;
-        }
-
-        public ImportManagedPropertiesValues getClientScopeMapping() {
-            return this.clientScopeMapping;
-        }
-
-        public ImportManagedPropertiesValues getComponent() {
-            return this.component;
-        }
-
-        public ImportManagedPropertiesValues getSubComponent() {
-            return this.subComponent;
-        }
-
-        public ImportManagedPropertiesValues getAuthenticationFlow() {
-            return this.authenticationFlow;
-        }
-
-        public ImportManagedPropertiesValues getGroup() {
-            return this.group;
-        }
-
-        public ImportManagedPropertiesValues getIdentityProvider() {
-            return this.identityProvider;
-        }
-
-        public ImportManagedPropertiesValues getIdentityProviderMapper() {
-            return this.identityProviderMapper;
-        }
-
-        public ImportManagedPropertiesValues getRole() {
-            return this.role;
-        }
-
-        public ImportManagedPropertiesValues getClient() {
-            return this.client;
-        }
-
-        public ImportManagedPropertiesValues getClientAuthorizationResources() {
-            return this.clientAuthorizationResources;
-        }
-
-        public ImportManagedPropertiesValues getClientAuthorizationPolicies() {
-            return this.clientAuthorizationPolicies;
-        }
-
-        public ImportManagedPropertiesValues getClientAuthorizationScopes() {
-            return this.clientAuthorizationScopes;
-        }
-
-        public ImportManagedPropertiesValues getMessageBundles() {
-            return this.messageBundles;
-        }
-
-        public enum ImportManagedPropertiesValues {
-            FULL,
-            NO_DELETE
-        }
     }
 
     @SuppressWarnings("unused")

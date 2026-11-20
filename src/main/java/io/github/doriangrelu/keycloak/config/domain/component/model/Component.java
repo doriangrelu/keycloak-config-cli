@@ -43,6 +43,12 @@ import java.util.Set;
 public record Component(Key key, String id, String providerId, Map<String, List<String>> config)
         implements Resource<Component.Key> {
 
+    /** Provider types of the components Keycloak creates and depends on. */
+    static final Set<String> TECHNICAL_PROVIDER_TYPES = Set.of(
+            "org.keycloak.keys.KeyProvider",
+            "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy",
+            "org.keycloak.userprofile.UserProfileProvider");
+
     /**
      * Identity of a component.
      *
@@ -83,6 +89,14 @@ public record Component(Key key, String id, String providerId, Map<String, List<
     }
 
     /** This component once {@code desired} is applied on it. */
+    /**
+     * Whether this component belongs to Keycloak, never deleted (ADR-007): the keys of the realm, the client
+     * registration policies and the user profile. Deleting a key provider would invalidate every token of the realm.
+     */
+    public boolean isOwnedByKeycloak() {
+        return this.key.isTopLevel() && TECHNICAL_PROVIDER_TYPES.contains(this.key.providerType());
+    }
+
     /**
      * Whether both components have the same provider and configuration, whatever their ids and the order of the values
      * of their configuration: Keycloak does not keep that order.

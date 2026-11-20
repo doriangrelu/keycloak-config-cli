@@ -1,19 +1,87 @@
 # Protected Resources
 
-Keycloak Config CLI protects certain built-in and critical resources from accidental deletion, even when using `managed: full` mode.
+keycloak-config-cli deletes the resources of a declared type that no import file declares (see [Managed Resources](../concepts/managed-resources.md)). Some resources are never deleted:
 
-## Overview
+- **Users**, whatever the files say
+- **Technical resources** Keycloak creates, listed [below](#technical-resources)
+- **Resources matched by a `protectedResources` rule** of the import files
 
-Protected resources are resources that:
-- Are essential for Keycloak operation
-- Were created by Keycloak itself
-- Could break functionality if deleted
+Protection only prevents deletion. A protected resource that a file declares is still created and updated.
 
-These resources are **never deleted** by the CLI, regardless of management mode.
+## The `protectedResources` Rules
 
-## Protected Clients
+An import file can list rules that protect resources from deletion, whatever their type. Each rule has two fields:
 
-The following built-in clients are protected:
+| Field | Values | Description |
+|-------|--------|-------------|
+| `rule` | `EQUALS` | `matcher` is compared with the resource name exactly |
+| | `PATTERN` | `matcher` is a Java regular expression matched against the whole name |
+| `matcher` | string | The name, or the regular expression |
+
+The name is the identifier of the resource in the import files: the client id of a client, the alias of an authentication flow, authenticator config, required action or identity provider, the client or client scope of a scope mapping, the locale of a message bundle, the name otherwise.
+
+A rule applies to every resource type: `legacy-app` protects a client, a role or a group named `legacy-app` alike.
+
+### JSON
+
+```json
+{
+  "realm": "my-realm",
+  "protectedResources": [
+    { "rule": "EQUALS", "matcher": "legacy-app" },
+    { "rule": "PATTERN", "matcher": "team-.*" }
+  ],
+  "clients": [
+    { "clientId": "my-app" }
+  ]
+}
+```
+
+### YAML
+
+```yaml
+realm: my-realm
+protectedResources:
+  - rule: EQUALS
+    matcher: legacy-app
+  - rule: PATTERN
+    matcher: "team-.*"
+clients:
+  - clientId: my-app
+```
+
+With these rules and the `clients` key declared:
+
+| Client in Keycloak | Result |
+|--------------------|--------|
+| `my-app` | Created or updated |
+| `legacy-app` | Kept (`EQUALS` rule) |
+| `team-billing` | Kept (`PATTERN` rule) |
+| `my-team-billing` | Deleted: the pattern must match the whole name |
+| `old-app` | Deleted |
+| `account`, `admin-cli`, ... | Kept (technical resources) |
+
+### Regular Expressions
+
+`PATTERN` uses the Java regular expression syntax and must match the whole name, as if it started with `^` and ended with `$`:
+
+| Matcher | Matches | Does not match |
+|---------|---------|----------------|
+| `team-.*` | `team-a`, `team-backend` | `my-team-a` |
+| `.*-legacy` | `app-legacy` | `app-legacy-2` |
+| `(app1\|app2)` | `app1`, `app2` | `app10` |
+
+In YAML, quote matchers that contain special characters.
+
+### Several Files
+
+When several files target the same realm, the rules of all the files apply.
+
+## Technical Resources
+
+The resources Keycloak creates for its own use are never deleted, even when their type is declared and no file declares them. There is no option to change this.
+
+### Clients
 
 | Client ID | Purpose |
 |-----------|---------|
@@ -23,159 +91,57 @@ The following built-in clients are protected:
 | `broker` | Identity brokering |
 | `realm-management` | Realm administration |
 | `security-admin-console` | Admin console |
+| `admin-permissions` | Fine-grained admin permissions |
+| `<realm>-realm` | Administration of each realm, in the `master` realm only |
 
-### Example
+These clients are recognised by their client id, whatever their display name.
 
-```yaml
-import:
-  managed:
-    client: full  # Won't delete protected clients
-
-clients:
-  - clientId: my-app
-    # ...
-```
-
-Even with `full` mode, the protected clients remain untouched.
-
-## Protected Roles
-
-Built-in realm roles are protected:
+### Roles
 
 | Role | Purpose |
 |------|---------|
 | `offline_access` | Offline token access |
 | `uma_authorization` | UMA authorization |
-| `default-roles-{realm}` | Default role assignments |
+| `default-roles-<realm>` | Default role assignments |
 
-### Default Client Roles
+The client roles of the Keycloak clients above (for example `manage-account` of `account`, `view-users` of `realm-management`) are kept as well.
 
-Each built-in client has default roles that are protected:
-
-**account client:**
-- `manage-account`
-- `manage-account-links`
-- `view-profile`
-
-**realm-management client:**
-- `view-realm`
-- `manage-realm`
-- `view-users`
-- `manage-users`
-- And many more...
-
-## Protected Client Scopes
-
-Built-in client scopes:
+### Client Scopes
 
 | Scope | Purpose |
 |-------|---------|
 | `profile` | User profile claims |
 | `email` | Email claim |
-| `address` | Address claims |
-| `phone` | Phone claim |
-| `offline_access` | Refresh tokens |
 | `roles` | Role claims |
 | `web-origins` | CORS origins |
-| `microprofile-jwt` | MicroProfile JWT |
+| `offline_access` | Refresh tokens |
+| `basic` | Basic claims |
 | `acr` | Authentication context |
+| `address` | Address claims |
+| `phone` | Phone claim |
+| `microprofile-jwt` | MicroProfile JWT |
+| `organization` | Organization claims |
+| `role_list` | SAML role list |
+| `saml_organization` | SAML organization claims |
+| `service_account` | Service account claims |
 
-## Protected Groups
+The default and optional client scopes of the realm are kept as well.
 
-Groups with certain prefixes are protected:
+### Authentication Flows
 
-```java
-// Protected prefixes
-"_keycloak_"
-```
+The built-in authentication flows (`browser`, `direct grant`, `registration`, `reset credentials`, `clients`, `docker auth`, `first broker login`, ...) and the authenticator configs they use are kept.
 
-### Example
+### Required Actions
 
-```yaml
-groups:
-  - name: _keycloak_internal
-    # This group is protected - won't be deleted
-```
+Built-in required actions are kept. To stop using one, declare it with `enabled: false`.
 
-## Protected Authentication Flows
+### Scope Mappings
 
-Built-in authentication flows:
+The `offline_access` scope mapping and the `account-console` client scope mapping are kept.
 
-| Flow | Purpose |
-|------|---------|
-| `browser` | Standard browser login |
-| `direct grant` | Resource owner password |
-| `registration` | User registration |
-| `reset credentials` | Password reset |
-| `clients` | Client authentication |
-| `docker auth` | Docker registry auth |
-| `http challenge` | HTTP challenge |
+### Components
 
-## Customizing Protection
-
-### Using Prefixes
-
-Create your own protection patterns:
-
-```yaml
-# Groups with special prefix
-groups:
-  - name: _protected_admin_group
-    # Use a naming convention for critical groups
-```
-
-Then document that groups starting with `_protected_` should not be removed.
-
-### Environment-Specific Protection
-
-Use different configurations per environment:
-
-```yaml
-# production.yaml
-import:
-  managed:
-    client: no-delete  # Never delete clients in production
-    group: full        # But manage groups fully
-```
-
-```yaml
-# development.yaml
-import:
-  managed:
-    client: full
-    group: full
-```
-
-## Behavior Matrix
-
-| Resource Type | `no-delete` | `full` (protected) | `full` (not protected) |
-|---------------|-------------|-------------------|----------------------|
-| Built-in client | Keep | Keep | Keep |
-| Custom client | Keep | Keep | Delete if not in config |
-| Built-in role | Keep | Keep | Keep |
-| Custom role | Keep | Keep | Delete if not in config |
-| Protected group | Keep | Keep | Keep |
-| Custom group | Keep | Keep | Delete if not in config |
-
-## Detecting Protected Resources
-
-### In Logs
-
-Protected resources are logged when encountered:
-
-```
-DEBUG Skipping protected client 'account'
-DEBUG Skipping protected role 'offline_access'
-```
-
-### Verification
-
-To see what would be deleted (dry run isn't available, but you can):
-
-1. Export current configuration
-2. Compare with your import files
-3. The difference shows potential deletions
-4. Protected resources won't be in that list
+The components that hold the realm keys (`KeyProvider`), the client registration policies and the user profile are kept.
 
 ## Common Questions
 
@@ -188,7 +154,7 @@ Built-in clients are required for Keycloak functionality:
 
 ### Can I disable a built-in client instead?
 
-Yes, you can disable them:
+Yes:
 
 ```yaml
 clients:
@@ -210,7 +176,11 @@ browserFlow: "custom-browser"
 # The built-in "browser" flow remains but is unused
 ```
 
-### What if I really need to delete a protected resource?
+### How do I keep resources managed outside the files?
+
+Either leave their type key out of all the files of the realm (the type is then not touched at all), or protect them with a `protectedResources` rule.
+
+### What if I really need to delete a technical resource?
 
 You must delete it manually via:
 - Keycloak Admin Console
@@ -221,42 +191,28 @@ This is intentional to prevent accidental damage.
 
 ## Best Practices
 
-### 1. Understand Before Managing
+### 1. Run a Dry Run First
 
-Know which resources are protected before using `full` mode:
+Check what an import would delete before applying it:
 
 ```bash
-# List built-in resources
-curl -s http://keycloak:8080/admin/realms/my-realm/clients | \
-  jq '.[] | select(.id != .clientId) | .clientId'
+java -jar keycloak-config-cli.jar \
+  --import.files.locations=realm.yaml \
+  --import.dry-run=true
 ```
+
+See [Dry Run](dry-run.md).
 
 ### 2. Use Naming Conventions
 
-Prefix your custom resources for clarity:
+Prefixes make `PATTERN` rules simple:
 
 ```yaml
-groups:
-  - name: org-engineering    # Organization prefix
-  - name: team-backend       # Team prefix
-
-clients:
-  - clientId: app-frontend   # App prefix
+protectedResources:
+  - rule: PATTERN
+    matcher: "ext-.*"   # Resources managed by another tool
 ```
 
-### 3. Document Protected Resources
+### 3. Prefer `EQUALS` for Single Resources
 
-Maintain documentation of protected resources in your project:
-
-```markdown
-# Protected Resources
-
-The following resources are managed by Keycloak and should not be modified:
-- Client: account, admin-cli, realm-management
-- Roles: offline_access, uma_authorization
-- Scopes: profile, email, roles
-```
-
-### 4. Test Before Production
-
-Always test your full management configuration in a non-production environment to understand what would be deleted.
+An exact rule cannot match more than intended. Keep `PATTERN` for families of resources that share a prefix or suffix.

@@ -50,19 +50,9 @@ public record MessageBundle(String locale, Map<String, String> texts) implements
         return this.locale;
     }
 
-    /**
-     * These texts once {@code desired} is applied.
-     *
-     * @param removeMissingKeys whether keys missing from {@code desired} are removed ({@code full} managed mode), or
-     *     kept ({@code no-delete})
-     */
-    public MessageBundle mergedWith(final MessageBundle desired, final boolean removeMissingKeys) {
-        if (removeMissingKeys) {
-            return new MessageBundle(this.locale, desired.texts);
-        }
-        Map<String, String> merged = new LinkedHashMap<>(this.texts);
-        merged.putAll(desired.texts);
-        return new MessageBundle(this.locale, merged);
+    /** These texts once {@code desired} is applied: keys missing from {@code desired} are removed (ADR-007). */
+    public MessageBundle mergedWith(final MessageBundle desired) {
+        return new MessageBundle(this.locale, desired.texts);
     }
 
     /** Texts of {@code target} that are new or changed compared to these ones. */

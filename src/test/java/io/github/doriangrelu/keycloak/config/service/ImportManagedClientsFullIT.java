@@ -33,9 +33,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = {"import.managed.client=full"})
 class ImportManagedClientsFullIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithManagedClients";
 

@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A realm or client role. Composites are not part of the role yet: they are still imported by the legacy services
@@ -39,6 +40,11 @@ import java.util.Objects;
  */
 public record Role(RoleKey key, String description, Map<String, List<String>> attributes, UnmodeledAttributes unmodeled)
         implements Resource<RoleKey> {
+
+    /** Realm roles Keycloak creates in every realm, besides {@code default-roles-<realm>}. */
+    private static final Set<String> REALM_ROLES = Set.of("offline_access", "uma_authorization");
+
+    private static final String DEFAULT_ROLES_PREFIX = "default-roles-";
 
     public Role {
         Objects.requireNonNull(key, "key");
@@ -72,12 +78,17 @@ public record Role(RoleKey key, String description, Map<String, List<String>> at
      * {@code uma_authorization}...), recognized by their translated description, and the roles of the Keycloak
      * clients.
      */
-    public boolean isOwnedByKeycloak() {
+    public boolean isOwnedByKeycloak(final String realm) {
         if (this.key.belongsToKeycloakClient()) {
             return true;
         }
         String name = this.key.name();
-        if (name.startsWith("default-roles-") && "${role_default-roles}".equals(this.description)) {
+        if (this.key.clientId() == null
+                && (REALM_ROLES.contains(name)
+                        || name.equals(DEFAULT_ROLES_PREFIX + realm.toLowerCase(java.util.Locale.ROOT)))) {
+            return true;
+        }
+        if (name.startsWith(DEFAULT_ROLES_PREFIX) && "${role_default-roles}".equals(this.description)) {
             return true;
         }
         return ("${role_" + name + "}").equals(this.description)

@@ -387,17 +387,9 @@ users:
       - /administrators/super-admins
 ```
 
-## Full Management Mode
+## Cleanup
 
-To ensure groups match exactly:
-
-```yaml
-import:
-  managed:
-    group: full
-    realm-role: full
-    client-role: full
-```
+Because this configuration declares `groups` and `roles`, the groups and roles it does not declare are deleted from the realm, and each declared group keeps exactly the role mappings listed here. Run a [dry run](../advanced/dry-run.md) first to check the deletions. See [Managed Resources](../concepts/managed-resources.md).
 
 ## Best Practices Demonstrated
 

@@ -26,7 +26,6 @@ import io.github.doriangrelu.keycloak.config.application.component.port.Componen
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.component.model.Component;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
@@ -75,7 +74,9 @@ class ComponentReconcilerTest {
     }
 
     private static final Component.Key LDAP = new Component.Key(null, "storage", null, "ldap");
-    private static final Component.Key KEYS = new Component.Key(null, "keys", null, "rsa");
+    private static final Component.Key KEYS = new Component.Key(null, "custom-keys", null, "rsa");
+    private static final Component.Key REALM_KEYS =
+            new Component.Key(null, "org.keycloak.keys.KeyProvider", null, "rsa-generated");
     private static final Component.Key DEFAULT_MAPPER = new Component.Key(LDAP, "mapper", null, "username");
     private static final Component.Key KEY_CHILD = new Component.Key(KEYS, "child", null, "kept");
 
@@ -97,9 +98,8 @@ class ComponentReconcilerTest {
         return new Component(key, null, "provider", config);
     }
 
-    private void run(ManagedMode mode, Component... declared) {
-        RealmContext context = new RealmContext(
-                "test", false, false, Map.of(ResourceType.COMPONENT, mode, ResourceType.SUB_COMPONENT, mode));
+    private void run(Component... declared) {
+        RealmContext context = new RealmContext("test", false, false);
         List<Component> topLevel = java.util.Arrays.stream(declared)
                 .filter(component -> component.key().isTopLevel())
                 .toList();
@@ -128,18 +128,20 @@ class ComponentReconcilerTest {
     }
 
     @Test
-    void fullModeDeletesTheUndeclaredSubComponentsOfDeclaredComponentsOnly() {
+    void deletesTheUndeclaredComponentsAndTheUndeclaredSubComponentsOfDeclaredComponents() {
         Component.Key declaredMapper = new Component.Key(LDAP, "mapper", null, "email");
 
-        run(ManagedMode.FULL, component(LDAP, Map.of()), component(declaredMapper, Map.of()));
+        run(component(LDAP, Map.of()), component(declaredMapper, Map.of()));
 
         assertThat(this.keycloak.components).containsOnlyKeys(LDAP, declaredMapper);
     }
 
     @Test
-    void noDeleteModeKeepsUndeclaredComponents() {
-        run(ManagedMode.NO_DELETE, component(LDAP, Map.of()));
+    void neverDeletesTheKeysOfTheRealm() {
+        this.keycloak.create("test", component(REALM_KEYS, Map.of()));
 
-        assertThat(this.keycloak.components).containsOnlyKeys(LDAP, KEYS, DEFAULT_MAPPER, KEY_CHILD);
+        run(component(LDAP, Map.of()));
+
+        assertThat(this.keycloak.components).containsKey(REALM_KEYS);
     }
 }

@@ -159,19 +159,13 @@ groups:
               - finance-viewer
 ```
 
-## Full Management Mode
+## Cleanup
 
-To enable automatic deletion of groups not in your configuration:
-
-```yaml
-import:
-  managed:
-    group: full
-```
+When at least one import file of the realm has a `groups` key (even `groups: []`), the groups that no file declares are deleted. Without the key, groups are not touched. See [Managed Resources](../concepts/managed-resources.md).
 
 ### How Cleanup Works
 
-When using `full` management mode, the CLI performs two cleanup phases during the `cleanRealm` step:
+The CLI performs two cleanup phases during the `cleanRealm` step:
 
 #### Phase 1: Role Mappings Cleanup
 
@@ -223,13 +217,17 @@ If Keycloak has `/dept-a/team-1`, `/dept-a/team-2`, `/dept-a/team-3`:
 
 ### Protected Groups
 
-Groups with special prefixes are never deleted:
+Groups matched by a `protectedResources` rule are never deleted:
 
 ```yaml
-# These groups won't be deleted even in full mode
-groups:
-  - name: _keycloak_internal  # Protected prefix
+protectedResources:
+  - rule: EQUALS
+    matcher: external-admins
+  - rule: PATTERN
+    matcher: "ext-.*"
 ```
+
+See [Protected Resources](../advanced/protected-resources.md).
 
 ## Updating Groups
 
@@ -283,7 +281,7 @@ groups:
       - name: team-b
 ```
 
-> **Note**: This creates new groups under `engineering`. With `full` mode, old root-level `team-a` and `team-b` are deleted.
+> **Note**: This creates new groups under `engineering`. Since `groups` is declared, the old root-level `team-a` and `team-b` are deleted.
 
 ## Best Practices
 
@@ -321,20 +319,16 @@ groups:
       - name: developers
 ```
 
-### 4. Start with no-delete
+### 4. Declare Groups Only When the Files Hold Them All
 
-```yaml
-import:
-  managed:
-    group: no-delete  # Safe default
-```
+Once a `groups` key is present, every group missing from the files is deleted. Leave the key out while groups are still managed elsewhere, or protect those groups with `protectedResources`.
 
-### 5. Test Full Mode in Development
+### 5. Run a Dry Run First
 
-Before enabling `full` mode in production:
+Before adding the `groups` key in production:
 1. Export current groups from Keycloak
 2. Compare with your configuration
-3. Verify which groups would be deleted
+3. Run a [dry run](../advanced/dry-run.md) to see which groups would be deleted
 4. Test in development environment first
 
 ## Troubleshooting
@@ -349,8 +343,10 @@ Check that:
 
 ### Group Not Deleted
 
-With `full` mode, groups might not delete if:
-- They have a protected prefix
+A group missing from the files might not be deleted if:
+- No import file of the realm has a `groups` key
+- A `protectedResources` rule matches its name
+- Remote state is enabled and keycloak-config-cli did not create it
 - The path doesn't match exactly
 - There's a configuration error
 

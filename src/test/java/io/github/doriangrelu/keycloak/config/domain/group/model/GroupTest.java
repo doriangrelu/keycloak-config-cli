@@ -50,19 +50,18 @@ class GroupTest {
         Group current = group(Set.of("a", "b"), Map.of("app", Set.of("x")));
 
         Group merged = current.mergedWith(
-                new Group("/parent/child", null, Set.of("c"), Map.of("other", Set.of("y")), null, null), false);
+                new Group("/parent/child", null, Set.of("c"), Map.of("other", Set.of("y")), null, null));
 
         assertThat(merged.realmRoles()).containsExactly("c");
         assertThat(merged.clientRoles()).containsExactlyEntriesOf(Map.of("other", Set.of("y")));
     }
 
     @Test
-    void undeclaredRoleMappingsAreKeptOnlyOutsideFullMode() {
+    void undeclaredRoleMappingsAreRemoved() {
         Group current = group(Set.of("a"), Map.of("app", Set.of("x")));
         Group withoutRoles = new Group("/parent/child", null, null, null, null, null);
 
-        assertThat(current.mergedWith(withoutRoles, false)).isEqualTo(current);
-        Group cleaned = current.mergedWith(withoutRoles, true);
+        Group cleaned = current.mergedWith(withoutRoles);
         assertThat(cleaned.realmRoles()).isEmpty();
         assertThat(cleaned.clientRoles()).isEmpty();
     }
@@ -71,8 +70,8 @@ class GroupTest {
     void declaredAttributesReplaceTheCurrentOnes() {
         Group current = group(Set.of(), Map.of());
 
-        Group merged = current.mergedWith(
-                new Group("/parent/child", Map.of("b", List.of("2")), null, null, null, null), false);
+        Group merged =
+                current.mergedWith(new Group("/parent/child", Map.of("b", List.of("2")), null, null, null, null));
 
         assertThat(merged.attributes()).containsExactlyInAnyOrderEntriesOf(Map.of("b", List.of("2")));
     }

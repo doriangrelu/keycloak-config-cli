@@ -1,0 +1,72 @@
+{
+  "enabled": true,
+  "realm": "cleanupGuarantees",
+  "clients": [
+    {
+      "clientId": "app-app",
+      "publicClient": true
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "app-role"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "app-group"
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "app-scope",
+      "protocol": "openid-connect"
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "app-idp",
+      "providerId": "oidc",
+      "enabled": true,
+      "config": {
+        "clientId": "client",
+        "clientSecret": "secret",
+        "tokenUrl": "https://idp.example.org/token",
+        "authorizationUrl": "https://idp.example.org/auth"
+      }
+    }
+  ],
+  "components": {},
+  "requiredActions": [],
+  "authenticationFlows": [],
+  "scopeMappings": [],
+  "clientScopeMappings": {},
+  "protectedResources": [
+    {
+      "rule": "EQUALS",
+      "matcher": "legacy-app"
+    },
+    {
+      "rule": "EQUALS",
+      "matcher": "legacy-role"
+    },
+    {
+      "rule": "EQUALS",
+      "matcher": "legacy-group"
+    },
+    {
+      "rule": "EQUALS",
+      "matcher": "legacy-scope"
+    },
+    {
+      "rule": "EQUALS",
+      "matcher": "legacy-idp"
+    },
+    {
+      "rule": "PATTERN",
+      "matcher": "team-.*"
+    }
+  ]
+}

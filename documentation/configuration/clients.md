@@ -323,13 +323,9 @@ clients:
             - Admin Policy
 ```
 
-## Full Management Mode
+## Cleanup
 
-```yaml
-import:
-  managed:
-    client: full  # Caution: will delete unmanaged clients
-```
+When at least one import file of the realm has an `clients` key, the clients that no file declares are deleted. Without the key, they are not touched. See [Managed Resources](../concepts/managed-resources.md). Run a [dry run](../advanced/dry-run.md) first: deleting a client ends its sessions.
 
 ### Protected Clients
 

@@ -84,7 +84,7 @@ class RequiredActionReconcilerTest {
     void createsUpdatesAndPrunes() {
         this.keycloak.actions.put("CONFIGURE_TOTP", action("CONFIGURE_TOTP", "CONFIGURE_TOTP", false, null));
         this.keycloak.actions.put("orphan", action("orphan", "orphan", true, null));
-        RealmContext context = new RealmContext("test", false, false, Map.of());
+        RealmContext context = new RealmContext("test", false, false);
 
         this.engine.apply(
                 context,
@@ -105,7 +105,7 @@ class RequiredActionReconcilerTest {
         this.keycloak.actions.put("UPDATE_PASSWORD", action("UPDATE_PASSWORD", "UPDATE_PASSWORD", true, config));
 
         this.engine.apply(
-                new RealmContext("test", false, false, Map.of()),
+                new RealmContext("test", false, false),
                 new DesiredState()
                         .declare(
                                 ResourceType.REQUIRED_ACTION,
@@ -119,7 +119,7 @@ class RequiredActionReconcilerTest {
         this.keycloak.actions.put("custom", action("custom", "OLD_PROVIDER", true, null));
 
         this.engine.apply(
-                new RealmContext("test", false, false, Map.of()),
+                new RealmContext("test", false, false),
                 new DesiredState()
                         .declare(ResourceType.REQUIRED_ACTION, List.of(action("custom", "NEW_PROVIDER", true, null))));
 

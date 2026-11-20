@@ -584,10 +584,7 @@ java -jar keycloak-config-cli.jar \
   --keycloak.user=${KEYCLOAK_ADMIN} \
   --keycloak.password=${KEYCLOAK_ADMIN_PASSWORD} \
   --import.files.locations=config/ \
-  --import.var-substitution.enabled=true \
-  --import.managed.group=full \
-  --import.managed.realm-role=full \
-  --import.managed.client-scope=full
+  --import.var-substitution.enabled=true
 
 echo "Import completed successfully!"
 ```

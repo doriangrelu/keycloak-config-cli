@@ -326,4 +326,4 @@ The CLI validates configuration before applying:
 2. **Environment-Specific Files**: Use variable substitution for environment differences
 3. **Logical File Organization**: Group related resources in same file or directory
 4. **Test in Development**: Always test imports in dev before production
-5. **Backup Before Full Mode**: Export current config before using `managed: full`
+5. **Dry Run Before Cleanup**: Export the current config and run a [dry run](../advanced/dry-run.md) before declaring a new resource type, since missing resources of a declared type are deleted

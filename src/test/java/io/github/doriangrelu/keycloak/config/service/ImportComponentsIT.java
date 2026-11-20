@@ -40,9 +40,7 @@ import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentExportRepresentation;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = {"import.managed.component=full"})
 @SuppressWarnings({"java:S5961", "java:S5976", "SameParameterValue", "CommentedOutCode"})
 class ImportComponentsIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithComponents";

@@ -290,8 +290,10 @@ class ImportClientScopeMappingsIT extends AbstractImportIT {
         assertThat(realm.getRealm(), is(REALM_NAME));
         assertThat(realm.isEnabled(), is(true));
 
+        // Only the mapping Keycloak creates is left: the roles of account given to account-console
         Map<String, List<ScopeMappingRepresentation>> clientScopeMappings = realm.getClientScopeMappings();
-        assertThat(clientScopeMappings, nullValue());
+        assertThat(clientScopeMappings.keySet(), contains("account"));
+        assertThat(clientScopeMappings.get("account").get(0).getClient(), is("account-console"));
     }
 
     private ScopeMappingRepresentation fetchScopeMappingByClientScope(

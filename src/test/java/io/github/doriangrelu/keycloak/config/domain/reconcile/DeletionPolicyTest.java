@@ -22,7 +22,6 @@ package io.github.doriangrelu.keycloak.config.domain.reconcile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule.Matching;
 import java.util.List;
@@ -33,22 +32,29 @@ import org.junit.jupiter.api.Test;
 class DeletionPolicyTest {
 
     @Test
-    void fullModeWithoutStateDeletesAnything() {
-        DeletionPolicy policy = new DeletionPolicy(ManagedMode.FULL, Optional.empty(), List.of());
+    void withoutStateDeletesWhatNoRuleProtects() {
+        DeletionPolicy policy = new DeletionPolicy(Optional.empty(), List.of());
 
         assertThat(policy.allowsDeletionOf("anything")).isTrue();
     }
 
     @Test
-    void noDeleteModeNeverDeletes() {
-        DeletionPolicy policy = new DeletionPolicy(ManagedMode.NO_DELETE, Optional.empty(), List.of());
+    void resourcesProtectedByEqualityOrPatternAreNeverDeleted() {
+        DeletionPolicy policy = new DeletionPolicy(
+                Optional.empty(),
+                List.of(
+                        new ProtectionRule(Matching.EQUALS, "legacy-app"),
+                        new ProtectionRule(Matching.PATTERN, "team-.*")));
 
-        assertThat(policy.allowsDeletionOf("anything")).isFalse();
+        assertThat(policy.allowsDeletionOf("legacy-app")).isFalse();
+        assertThat(policy.allowsDeletionOf("team-reader")).isFalse();
+        assertThat(policy.allowsDeletionOf("legacy-app-2")).isTrue();
+        assertThat(policy.allowsDeletionOf("other")).isTrue();
     }
 
     @Test
     void withStateOnlyResourcesCreatedByTheToolAreDeleted() {
-        DeletionPolicy policy = new DeletionPolicy(ManagedMode.FULL, Optional.of(Set.of("created")), List.of());
+        DeletionPolicy policy = new DeletionPolicy(Optional.of(Set.of("created")), List.of());
 
         assertThat(policy.allowsDeletionOf("created")).isTrue();
         assertThat(policy.allowsDeletionOf("created-by-hand")).isFalse();
@@ -57,9 +63,7 @@ class DeletionPolicyTest {
     @Test
     void protectedResourcesAreNeverDeleted() {
         DeletionPolicy policy = new DeletionPolicy(
-                ManagedMode.FULL,
-                Optional.of(Set.of("admin", "app-reader")),
-                List.of(new ProtectionRule(Matching.PATTERN, "app-.*")));
+                Optional.of(Set.of("admin", "app-reader")), List.of(new ProtectionRule(Matching.PATTERN, "app-.*")));
 
         assertThat(policy.allowsDeletionOf("admin")).isTrue();
         assertThat(policy.allowsDeletionOf("app-reader")).isFalse();

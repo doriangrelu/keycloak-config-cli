@@ -1,6 +1,6 @@
 # EPIC-006 — Simplification : les fichiers comme seule vérité
 
-**Statut :** À faire
+**Statut :** En cours
 **ADR :** [ADR-007](../ADR-007-fichiers-seule-verite.md), [ADR-004](../ADR-004-moteur-de-reconciliation.md)
 
 Recentrer l'outil sur son besoin, sur le modèle de `kubectl apply` : créer et mettre à jour les realms décrits par les fichiers, supprimer ce qui n'y figure plus, et variabiliser les valeurs avec Mustache. Les options qui compliquent le moteur ou contredisent ce besoin sont retirées, et les fonctionnalités gardées sont reprises sur le nouveau socle.
@@ -48,7 +48,7 @@ Chaque story est livrée seule, build et tests d'intégration verts, comme penda
 
 ### US-006-01 — Règle de nettoyage unique
 
-**Statut :** À faire
+**Statut :** Terminé
 Retirer les modes gérés (`import.managed.*`, `ManagedMode`, `DeletionPolicy` réduite aux garanties) : un type déclaré est nettoyé, un type non déclaré n'est pas touché. Les garanties restent dans le code : utilisateurs jamais supprimés, ressources techniques (`isOwnedByKeycloak`), ressources protégées, types déclarés en partie.
 
 - Vérifier type par type que `isOwnedByKeycloak` couvre bien ce que Keycloak crée, en particulier pour les types qui étaient en `no-delete` par défaut (client scopes, scope mappings).
@@ -107,3 +107,19 @@ Ranger ce qui reste hors des couches : `provider.KeycloakProvider`, `resource.Ma
 
 **Statut :** À faire
 Mettre à jour la documentation utilisateur (configuration, concepts, ressources gérées, état, parallélisme, dry-run, `features.md`) et le CHANGELOG. Guide de migration : options retirées et leur remplacement, nouvelle règle de suppression, dry-run recommandé avant le premier import en 7.0.0.
+
+## Réalisé
+
+### US-006-01
+
+- `ManagedMode`, `import.managed.*` et `ClientAuthorizationReconciler.Modes` sont retirés. `DeletionPolicy` ne garde que l'état distant (retiré en US-006-02) et les règles de protection. Dans une ressource déclarée, ce qu'elle omet est retiré : rôles d'un groupe, rôles d'un scope mapping, textes d'une langue, ressources, politiques et scopes de l'autorisation d'un client.
+- Ressources techniques, désormais reconnues par le domaine pour chaque type nettoyé, sans dépendre du mode `no-delete` qui les protégeait par défaut :
+  - clients intégrés par leur `clientId` (et non plus seulement par leur nom affiché `${client_…}`), clients `<realm>-realm` du realm master ;
+  - rôles `offline_access`, `uma_authorization` et `default-roles-<realm>` par leur nom, rôles des clients de Keycloak ;
+  - client scopes intégrés, y compris `service_account` (Keycloak 26.5), qui n'est ni un scope par défaut ni optionnel du realm ;
+  - scope mappings `offline_access` et `account-console` ;
+  - required actions intégrées (on les désactive au lieu de les supprimer) ;
+  - composants `KeyProvider`, `ClientRegistrationPolicy` et `UserProfileProvider` : sans cette règle, le retrait de l'état distant aurait permis de supprimer les clés du realm.
+- Tests de garantie : `TechnicalResourcesTest` et `DeletionPolicyTest` (égalité et expression régulière) dans le domaine ; `ImportCleanupGuaranteesIT`, sans état distant, sur un vrai Keycloak : après un second import qui ne déclare plus que `app`, les ressources orphelines de chaque type sont supprimées, tandis que l'utilisateur, toutes les ressources techniques et les ressources protégées par `EQUALS` et par `PATTERN` restent.
+- `ImportManagedNoDeleteIT` est supprimé avec le mode qu'il testait.
+

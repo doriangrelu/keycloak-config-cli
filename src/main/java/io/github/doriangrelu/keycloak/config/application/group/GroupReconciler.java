@@ -23,7 +23,6 @@ package io.github.doriangrelu.keycloak.config.application.group;
 import io.github.doriangrelu.keycloak.config.application.group.port.GroupGateway;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciler;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.group.model.Group;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.Collection;
@@ -66,7 +65,7 @@ public final class GroupReconciler implements Reconciler<String, Group> {
 
     @Override
     public Group merge(final RealmContext context, final Group current, final Group desired) {
-        return current.mergedWith(desired, context.mode(ResourceType.GROUP) == ManagedMode.FULL);
+        return current.mergedWith(desired);
     }
 
     @Override

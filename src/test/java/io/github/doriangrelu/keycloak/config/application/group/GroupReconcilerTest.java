@@ -26,7 +26,6 @@ import io.github.doriangrelu.keycloak.config.application.group.port.GroupGateway
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.common.ProtectionRule.Matching;
 import io.github.doriangrelu.keycloak.config.domain.group.model.Group;
@@ -100,14 +99,14 @@ class GroupReconcilerTest {
         return new Group(path, null, realmRoles, null, subGroups, null);
     }
 
-    private static RealmContext context(ManagedMode mode) {
-        return new RealmContext("test", true, false, Map.of(ResourceType.GROUP, mode));
+    private static RealmContext context() {
+        return new RealmContext("test", true, false);
     }
 
     @Test
     void parentsAreCreatedBeforeChildrenEvenInParallelMode() {
         this.engine.apply(
-                context(ManagedMode.FULL),
+                context(),
                 new DesiredState()
                         .declare(
                                 ResourceType.GROUP,
@@ -117,10 +116,10 @@ class GroupReconcilerTest {
     }
 
     @Test
-    void fullModeRemovesUndeclaredRoleMappingsAndGroups() {
+    void removesUndeclaredRoleMappingsAndGroups() {
         this.keycloak.add("/a", Set.of("reader"));
         this.keycloak.add("/orphan", Set.of());
-        RealmContext context = context(ManagedMode.FULL);
+        RealmContext context = context();
 
         this.engine.apply(context, new DesiredState().declare(ResourceType.GROUP, List.of(declared("/a", null, null))));
         this.engine.prune(context);
@@ -130,24 +129,12 @@ class GroupReconcilerTest {
     }
 
     @Test
-    void noDeleteModeKeepsRoleMappingsAndGroups() {
-        this.keycloak.add("/a", Set.of("reader"));
-        this.keycloak.add("/orphan", Set.of());
-        RealmContext context = context(ManagedMode.NO_DELETE);
-
-        this.engine.apply(context, new DesiredState().declare(ResourceType.GROUP, List.of(declared("/a", null, null))));
-        this.engine.prune(context);
-
-        assertThat(this.keycloak.log).isEmpty();
-    }
-
-    @Test
     void declaredSubGroupsReplaceTheChildrenButSpareProtectedOnes() {
         this.keycloak.add("/a", Set.of());
         this.keycloak.add("/a/kept", Set.of());
         this.keycloak.add("/a/removed", Set.of());
         this.keycloak.add("/a/protected", Set.of());
-        RealmContext context = context(ManagedMode.NO_DELETE);
+        RealmContext context = context();
         context.addProtections(List.of(new ProtectionRule(Matching.EQUALS, "protected")));
 
         this.engine.apply(

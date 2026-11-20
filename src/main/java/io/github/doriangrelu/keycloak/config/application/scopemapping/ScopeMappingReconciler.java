@@ -23,7 +23,6 @@ package io.github.doriangrelu.keycloak.config.application.scopemapping;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.Reconciler;
 import io.github.doriangrelu.keycloak.config.application.scopemapping.port.ScopeMappingGateway;
-import io.github.doriangrelu.keycloak.config.domain.common.ManagedMode;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.scopemapping.model.ScopeMapping;
 import java.util.Collection;
@@ -74,7 +73,7 @@ public final class ScopeMappingReconciler implements Reconciler<ScopeMapping.Key
 
     @Override
     public ScopeMapping merge(final RealmContext context, final ScopeMapping current, final ScopeMapping desired) {
-        return current.mergedWith(desired, context.mode(this.type) == ManagedMode.FULL);
+        return current.mergedWith(desired);
     }
 
     @Override
@@ -111,7 +110,7 @@ public final class ScopeMappingReconciler implements Reconciler<ScopeMapping.Key
 
     @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final ScopeMapping resource) {
-        return false;
+        return resource.isOwnedByKeycloak();
     }
 
     @Override

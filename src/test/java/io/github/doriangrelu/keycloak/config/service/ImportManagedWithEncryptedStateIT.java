@@ -38,8 +38,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
         properties = {
             "import.remote-state.encryption-key=password",
-            "import.remote-state.encryption-salt=0123456789ABCDEF",
-            "import.managed.role=full"
+            "import.remote-state.encryption-salt=0123456789ABCDEF"
         })
 class ImportManagedWithEncryptedStateIT extends AbstractImportIT {
     private static final String REALM_NAME = "realmWithManagedEncryptedSate";

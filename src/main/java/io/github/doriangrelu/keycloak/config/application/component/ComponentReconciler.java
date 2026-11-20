@@ -115,7 +115,7 @@ public final class ComponentReconciler implements Reconciler<Component.Key, Comp
 
     @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final Component resource) {
-        return false;
+        return resource.isOwnedByKeycloak();
     }
 
     /** A sub-component is created once its parent exists. */
