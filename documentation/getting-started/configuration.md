@@ -34,7 +34,6 @@ keycloak:
 | `import.var-substitution.enabled` | `IMPORT_VARSUBSTITUTION_ENABLED` | `true` | Enable variable substitution in files |
 | `import.var-substitution.prefix` | `IMPORT_VARSUBSTITUTION_PREFIX` | `$(` | Variable prefix |
 | `import.var-substitution.suffix` | `IMPORT_VARSUBSTITUTION_SUFFIX` | `)` | Variable suffix |
-| `import.parallel` | `IMPORT_PARALLEL` | `false` | Enable parallel processing |
 | `import.dry-run` | `IMPORT_DRYRUN` | `false` | Plan the changes without applying them, see [Dry Run](../advanced/dry-run.md) |
 | `import.dry-run-format` | `IMPORT_DRYRUNFORMAT` | `text` | Format of the dry run report: `text` or `json` |
 | `import.dry-run-report-file` | `IMPORT_DRYRUNREPORTFILE` | - | File the dry run report is also written to |
@@ -52,9 +51,6 @@ import:
     enabled: true
     prefix: "${"
     suffix: "}"
-  parallel: true
-  state: true
-  force: false
 ```
 
 ## Cleanup
@@ -211,14 +207,6 @@ java -jar keycloak-config-cli.jar \
   --keycloak.user=admin \
   --keycloak.password=admin \
   --import.files.locations=/config/realm.yaml
-
-# Parallel processing
-java -jar keycloak-config-cli.jar \
-  --keycloak.url=http://localhost:8080 \
-  --keycloak.user=admin \
-  --keycloak.password=admin \
-  --import.files.locations=/config/ \
-  --import.parallel=true
 
 # Using configuration file
 java -jar keycloak-config-cli.jar \

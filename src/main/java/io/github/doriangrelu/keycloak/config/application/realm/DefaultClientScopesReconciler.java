@@ -114,10 +114,4 @@ public final class DefaultClientScopesReconciler implements Reconciler<DefaultCl
     public boolean prunes() {
         return false;
     }
-
-    /** Both kinds share the same scopes: one kind at a time. */
-    @Override
-    public boolean appliesInParallel() {
-        return false;
-    }
 }

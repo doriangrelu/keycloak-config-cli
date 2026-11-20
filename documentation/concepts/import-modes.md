@@ -67,42 +67,6 @@ import:
 
 Every run compares configuration with live Keycloak state (no caching).
 
-## Parallel vs Sequential Processing
-
-### Sequential Processing (Default)
-
-Resources are processed one at a time:
-
-```yaml
-import:
-  parallel: false
-```
-
-Pros:
-- Simpler error handling
-- Easier to debug
-- Deterministic ordering
-
-Cons:
-- Slower for large configurations
-
-### Parallel Processing
-
-Resources are processed concurrently:
-
-```yaml
-import:
-  parallel: true
-```
-
-Pros:
-- Significantly faster for large imports
-- Better utilization of Keycloak server
-
-Cons:
-- More complex error handling
-- May require retry logic for newly created resources
-
 ## File Processing
 
 ### Single File Import
@@ -304,7 +268,7 @@ groups:
 
 ### Continue on Error
 
-By default, the CLI stops on first error. For bulk imports where partial success is acceptable, consider using parallel mode which has more resilient error handling.
+By default, the CLI stops on first error.
 
 ### Retry Logic
 

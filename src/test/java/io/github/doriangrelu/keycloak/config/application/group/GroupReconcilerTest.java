@@ -100,11 +100,11 @@ class GroupReconcilerTest {
     }
 
     private static RealmContext context() {
-        return new RealmContext("test", true);
+        return new RealmContext("test");
     }
 
     @Test
-    void parentsAreCreatedBeforeChildrenEvenInParallelMode() {
+    void parentsAreCreatedBeforeChildren() {
         this.engine.apply(
                 context(),
                 new DesiredState()

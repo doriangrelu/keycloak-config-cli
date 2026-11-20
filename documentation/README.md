@@ -32,7 +32,6 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 
 ### Advanced Topics
 - [Dry Run](advanced/dry-run.md)
-- [Parallel Processing](advanced/parallel-processing.md)
 - [Normalization](advanced/normalization.md)
 - [Protected Resources](advanced/protected-resources.md)
 
@@ -62,7 +61,6 @@ Keycloak Config CLI is a command-line tool that allows you to:
 - **Idempotent Operations**: Run the same import multiple times safely
 - **Incremental Updates**: Only apply changes when necessary
 - **Full Resource Management**: Optionally delete resources not in your configuration
-- **Parallel Processing**: Speed up imports with parallel execution
 - **Multiple File Formats**: Support for JSON and YAML
 
 ## Quick Example

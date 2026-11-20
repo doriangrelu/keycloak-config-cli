@@ -110,7 +110,7 @@ class ReconciliationEngineTest {
     private final List<String> log = new ArrayList<>();
 
     private static RealmContext context() {
-        return new RealmContext("test", false);
+        return new RealmContext("test");
     }
 
     @Test

@@ -99,7 +99,7 @@ class ComponentReconcilerTest {
     }
 
     private void run(Component... declared) {
-        RealmContext context = new RealmContext("test", false);
+        RealmContext context = new RealmContext("test");
         List<Component> topLevel = java.util.Arrays.stream(declared)
                 .filter(component -> component.key().isTopLevel())
                 .toList();

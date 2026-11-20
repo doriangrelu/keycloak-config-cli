@@ -100,6 +100,6 @@ class MessageBundleReconcilerTest {
     }
 
     private static RealmContext context() {
-        return new RealmContext("test", false);
+        return new RealmContext("test");
     }
 }

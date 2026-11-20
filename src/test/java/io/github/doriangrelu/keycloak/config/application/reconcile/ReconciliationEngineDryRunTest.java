@@ -95,7 +95,7 @@ class ReconciliationEngineDryRunTest {
     }
 
     private static RealmContext dryRun() {
-        return new RealmContext("realm", false, true);
+        return new RealmContext("realm", true);
     }
 
     @Test

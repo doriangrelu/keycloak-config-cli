@@ -76,7 +76,7 @@ class ScopeMappingReconcilerTest {
     }
 
     private void run(ScopeMapping... declared) {
-        RealmContext context = new RealmContext("test", true);
+        RealmContext context = new RealmContext("test");
         this.engine.apply(context, new DesiredState().declare(ResourceType.SCOPE_MAPPING, List.of(declared)));
         this.engine.prune(context);
     }

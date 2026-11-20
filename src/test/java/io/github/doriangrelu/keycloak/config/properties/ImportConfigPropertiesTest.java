@@ -40,7 +40,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @TestPropertySource(
         properties = {
             "spring.main.log-startup-info=false",
-            "import.parallel=true",
             "import.validate=false",
             "import.files.locations=other",
             "import.files.include-hidden-files=true",
@@ -63,7 +62,6 @@ class ImportConfigPropertiesTest {
     @SuppressWarnings({"java:S2699", "java:S5961"})
     void shouldPopulateConfigurationProperties() {
         assertThat(properties.isValidate(), is(false));
-        assertThat(properties.isParallel(), is(true));
         assertThat(properties.getFiles().getLocations(), contains("other"));
         assertThat(properties.getFiles().getExcludes(), contains("exclude1", "exclude2"));
         assertThat(properties.getFiles().isIncludeHiddenFiles(), is(true));

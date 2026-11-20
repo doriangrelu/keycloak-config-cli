@@ -94,10 +94,4 @@ public final class AuthenticationFlowReconciler implements Reconciler<String, Au
     public boolean isOwnedByKeycloak(final RealmContext context, final AuthenticationFlow resource) {
         return resource.builtIn();
     }
-
-    /** Recreating a flow moves the realm bindings to a temporary flow shared by all flows. */
-    @Override
-    public boolean appliesInParallel() {
-        return false;
-    }
 }

@@ -89,7 +89,7 @@ class ClientReconcilerTest {
     void neverPrunesAClientAFileOnlyGivesByName() {
         // Created from a declaration without client id: Keycloak generated one
         this.keycloak.clients.put("generated-id", client("generated-id", "By name", null));
-        RealmContext context = new RealmContext("test", false);
+        RealmContext context = new RealmContext("test");
         DesiredState desired = new DesiredState()
                 .declare(ResourceType.CLIENT, List.of(client(null, "By name", null), client("app", "App", "s1")));
 
@@ -101,7 +101,7 @@ class ClientReconcilerTest {
 
     @Test
     void createsUpdatesAndPrunesSparingKeycloakClients() {
-        RealmContext context = new RealmContext("test", false);
+        RealmContext context = new RealmContext("test");
 
         this.engine.apply(
                 context,
@@ -120,7 +120,7 @@ class ClientReconcilerTest {
         DesiredState part =
                 new DesiredState().declare(ResourceType.CLIENT, List.of(client("realm-management", null, null)));
 
-        assertThatThrownBy(() -> this.engine.apply(new RealmContext("test", false), part))
+        assertThatThrownBy(() -> this.engine.apply(new RealmContext("test"), part))
                 .isInstanceOf(ClientRejectedException.class)
                 .hasMessage("Cannot create system client 'realm-management' in realm 'test': System clients should be"
                         + " auto-created by Keycloak");

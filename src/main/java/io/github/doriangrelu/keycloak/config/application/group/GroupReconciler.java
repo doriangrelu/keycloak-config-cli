@@ -37,7 +37,7 @@ import java.util.Set;
  * <ul>
  *   <li>deletions do not depend on the remote state, and spare protected groups;
  *   <li>a group declaring its subgroups loses the other children, whatever the managed mode;
- *   <li>groups are applied one by one, parents first, even with {@code import.parallel}.
+ *   <li>groups are applied one by one, parents first.
  * </ul>
  */
 public final class GroupReconciler implements Reconciler<String, Group> {
@@ -93,11 +93,6 @@ public final class GroupReconciler implements Reconciler<String, Group> {
 
     @Override
     public boolean isOwnedByKeycloak(final RealmContext context, final Group resource) {
-        return false;
-    }
-
-    @Override
-    public boolean appliesInParallel() {
         return false;
     }
 }

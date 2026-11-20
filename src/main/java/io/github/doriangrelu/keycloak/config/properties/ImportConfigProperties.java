@@ -41,9 +41,6 @@ public class ImportConfigProperties {
     @NotNull
     private final boolean validate;
 
-    @NotNull
-    private final boolean parallel;
-
     /** Computes and reports the changes of the import without applying them. */
     @NotNull
     private final boolean dryRun;
@@ -68,7 +65,6 @@ public class ImportConfigProperties {
 
     public ImportConfigProperties(
             @DefaultValue("true") final boolean validate,
-            @DefaultValue("false") final boolean parallel,
             @DefaultValue("false") final boolean dryRun,
             @DefaultValue("TEXT") final DryRunFormat dryRunFormat,
             final String dryRunReportFile,
@@ -77,7 +73,6 @@ public class ImportConfigProperties {
             @DefaultValue final ImportMustacheProperties mustache,
             @DefaultValue final ImportBehaviorsProperties behaviors) {
         this.validate = validate;
-        this.parallel = parallel;
         this.dryRun = dryRun;
         this.dryRunFormat = dryRunFormat;
         this.dryRunReportFile = dryRunReportFile;
@@ -89,10 +84,6 @@ public class ImportConfigProperties {
 
     public boolean isValidate() {
         return this.validate;
-    }
-
-    public boolean isParallel() {
-        return this.parallel;
     }
 
     public boolean isDryRun() {

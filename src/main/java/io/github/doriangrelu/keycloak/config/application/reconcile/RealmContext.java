@@ -27,7 +27,6 @@ import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -44,25 +43,23 @@ import java.util.Set;
 public final class RealmContext {
 
     private final String realm;
-    private final boolean parallel;
     private final boolean dryRun;
-    private volatile boolean realmMissing;
+    private boolean realmMissing;
 
-    private final List<ProtectionRule> protections = Collections.synchronizedList(new ArrayList<>());
+    private final List<ProtectionRule> protections = new ArrayList<>();
     private final Map<ResourceType, Map<Object, Resource<?>>> desired = new EnumMap<>(ResourceType.class);
     private final Map<ResourceType, Set<String>> scopes = new EnumMap<>(ResourceType.class);
-    private final List<PlannedChange> plan = Collections.synchronizedList(new ArrayList<>());
+    private final List<PlannedChange> plan = new ArrayList<>();
     private boolean pruned;
 
-    public RealmContext(final String realm, final boolean parallel) {
-        this(realm, parallel, false);
+    public RealmContext(final String realm) {
+        this(realm, false);
     }
 
     /** @param dryRun whether the changes are only planned, never applied (EPIC-004) */
-    public RealmContext(final String realm, final boolean parallel, final boolean dryRun) {
-        this.dryRun = dryRun;
+    public RealmContext(final String realm, final boolean dryRun) {
         this.realm = Objects.requireNonNull(realm, "realm");
-        this.parallel = parallel;
+        this.dryRun = dryRun;
     }
 
     public String realm() {
@@ -86,10 +83,6 @@ public final class RealmContext {
         this.realmMissing = true;
     }
 
-    public boolean isParallel() {
-        return this.parallel;
-    }
-
     public void addProtections(final Collection<ProtectionRule> rules) {
         this.protections.addAll(rules);
     }
@@ -101,9 +94,7 @@ public final class RealmContext {
 
     /** Whether a protection rule of the import files covers this name. */
     public boolean isProtected(final String name) {
-        synchronized (this.protections) {
-            return this.protections.stream().anyMatch(rule -> rule.protects(name));
-        }
+        return this.protections.stream().anyMatch(rule -> rule.protects(name));
     }
 
     /**
@@ -111,12 +102,12 @@ public final class RealmContext {
      *
      * @throws ConflictingDefinitionException when a key is already declared with a different content
      */
-    public synchronized void declare(final ResourceType type, final Collection<? extends Resource<?>> resources) {
+    public void declare(final ResourceType type, final Collection<? extends Resource<?>> resources) {
         declare(type, resources, Set.of());
     }
 
     /** Same as {@link #declare(ResourceType, Collection)}, with the scopes the file declares for a scoped type. */
-    public synchronized void declare(
+    public void declare(
             final ResourceType type,
             final Collection<? extends Resource<?>> resources,
             final Set<String> declaredScopes) {
@@ -131,16 +122,16 @@ public final class RealmContext {
     }
 
     /** Scopes declared by the import files for a scoped type, such as the clients of the client roles. */
-    public synchronized Set<String> scopes(final ResourceType type) {
+    public Set<String> scopes(final ResourceType type) {
         return Set.copyOf(this.scopes.getOrDefault(type, Set.of()));
     }
 
-    public synchronized boolean isDeclared(final ResourceType type) {
+    public boolean isDeclared(final ResourceType type) {
         return this.desired.containsKey(type);
     }
 
     @SuppressWarnings("unchecked")
-    synchronized <T extends Resource<?>> List<T> desired(final ResourceType type) {
+    <T extends Resource<?>> List<T> desired(final ResourceType type) {
         return this.desired.getOrDefault(type, Map.of()).values().stream()
                 .map(resource -> (T) resource)
                 .toList();
@@ -151,13 +142,11 @@ public final class RealmContext {
     }
 
     public List<PlannedChange> plan() {
-        synchronized (this.plan) {
-            return List.copyOf(this.plan);
-        }
+        return List.copyOf(this.plan);
     }
 
     /** @return {@code true} the first time only: the clean phase runs once per realm and run */
-    synchronized boolean startPruning() {
+    boolean startPruning() {
         if (this.pruned) {
             return false;
         }

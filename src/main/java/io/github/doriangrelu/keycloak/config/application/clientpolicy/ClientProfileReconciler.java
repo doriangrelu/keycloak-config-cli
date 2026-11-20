@@ -81,9 +81,4 @@ public final class ClientProfileReconciler implements Reconciler<String, ClientP
     public boolean isOwnedByKeycloak(final RealmContext context, final ClientProfile resource) {
         return false;
     }
-
-    @Override
-    public boolean appliesInParallel() {
-        return false;
-    }
 }

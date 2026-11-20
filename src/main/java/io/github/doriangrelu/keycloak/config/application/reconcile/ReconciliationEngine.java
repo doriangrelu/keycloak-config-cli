@@ -160,11 +160,7 @@ public final class ReconciliationEngine {
             final Reconciler<?, ?> reconciler,
             final List<Change<T>> changes,
             final Consumer<Change<T>> action) {
-        if (context.isParallel() && reconciler.appliesInParallel()) {
-            changes.parallelStream().forEach(action);
-        } else {
-            changes.forEach(action);
-        }
+        changes.forEach(action);
     }
 
     private static void record(final RealmContext context, final ResourceType type, final Change<?> change) {

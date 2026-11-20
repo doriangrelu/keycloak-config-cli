@@ -206,7 +206,7 @@ public class RealmImportReconciliation {
     private synchronized RealmContext contextOf(final RealmImport realmImport) {
         String realm = realmImport.getRealm();
         return this.contexts.computeIfAbsent(realm, unused -> {
-            RealmContext created = new RealmContext(realm, this.properties.isParallel(), this.properties.isDryRun());
+            RealmContext created = new RealmContext(realm, this.properties.isDryRun());
             return created;
         });
     }

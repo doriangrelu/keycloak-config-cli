@@ -150,7 +150,7 @@ class RealmReconcilersTest {
     void aScopeChangingKindLeavesTheOtherKindFirst() {
         InMemoryRealm keycloak = new InMemoryRealm();
         ReconciliationEngine engine = new ReconciliationEngine(List.of(new DefaultClientScopesReconciler(keycloak)));
-        RealmContext context = new RealmContext("realm", false);
+        RealmContext context = new RealmContext("realm");
 
         engine.apply(
                 context,
@@ -171,7 +171,7 @@ class RealmReconcilersTest {
         InMemoryRealm keycloak = new InMemoryRealm();
         ReconciliationEngine engine =
                 new ReconciliationEngine(List.of(new RealmSettingsReconciler(keycloak, OBSOLETE)));
-        RealmContext context = new RealmContext("realm", false);
+        RealmContext context = new RealmContext("realm");
 
         engine.apply(
                 context,

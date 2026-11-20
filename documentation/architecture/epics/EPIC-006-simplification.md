@@ -67,7 +67,7 @@ Retirer `import.cache.*`, `import.behaviors.checksum-with-cache-key`, `import.be
 
 ### US-006-04 — Retrait de l'import parallèle
 
-**Statut :** À faire
+**Statut :** Terminé
 Retirer `import.parallel`, le hook `appliesInParallel`, l'application parallèle du moteur et `ImportParallelImportIT`.
 
 ### US-006-05 — Mustache, seul moteur de template
@@ -140,4 +140,9 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
 - Retirés : `import.cache.*`, `import.behaviors.checksum-with-cache-key`, `import.behaviors.checksum-changed`, `ChecksumService`, `ChecksumChangedException`, le code de sortie `5`, le checksum des fichiers lus et la dépendance `commons-codec`. Chaque import compare tous les fichiers avec Keycloak : une modification manuelle est défaite au prochain import, et le dry-run la montre toujours.
 - Tous les attributs que keycloak-config-cli écrivait dans les realms (préfixe `io.github.doriangrelu.keycloak.config.` : état et checksums) sont supprimés par tout import. `RealmSettings.mergedWith` ne garde plus d'attribut propre à l'outil.
 - Tests supprimés avec le cache : `AbstractChecksumServiceIT`, `DefaultChecksumKeyIT`, `PerResourceChecksumKeyIT`, `FailWhenChecksumChangedIT`, `ImportRealmCustomImportKeyIT`. La page `state-management.md`, qui décrivait le cache (avec des propriétés `import.state` et `import.force` qui n'existaient pas), est supprimée.
+
+### US-006-04
+
+- Retirés : `import.parallel`, le hook `Reconciler.appliesInParallel` (et ses six surcharges), `RealmContext.isParallel`, l'application en `parallelStream` du moteur, `ImportParallelImportIT` et la page `parallel-processing.md`.
+- `RealmContext` n'est plus partagé entre threads : ses verrous (`synchronized`, listes synchronisées, `volatile`) sont retirés. Constructeurs : `RealmContext(realm)` et `RealmContext(realm, dryRun)`.
 
