@@ -16,13 +16,14 @@ java -jar keycloak-config-cli.jar \
 
 ### NORMALIZE Mode
 
-Exports the current Keycloak configuration to files:
+Turns realm exports of Keycloak into minimal import files (see [Normalization](../advanced/normalization.md)):
 
 ```bash
 java -jar keycloak-config-cli.jar \
   --run.operation=NORMALIZE \
+  --normalization.files.input-locations=/exports/*.json \
   --normalization.files.output-directory=/output/ \
-  --normalization.files.output-format=YAML
+  --normalization.output-format=YAML
 ```
 
 ## Import Strategies

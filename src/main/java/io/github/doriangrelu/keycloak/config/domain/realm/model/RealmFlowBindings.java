@@ -36,6 +36,17 @@ public record RealmFlowBindings(Map<String, String> flows) implements Resource<S
         return KEY;
     }
 
+    /** The bindings that differ from the ones of {@code reference} (normalization). */
+    public RealmFlowBindings withoutValuesOf(final RealmFlowBindings reference) {
+        Map<String, String> differing = new LinkedHashMap<>(this.flows);
+        differing.entrySet().removeIf(binding -> binding.getValue().equals(reference.flows.get(binding.getKey())));
+        return new RealmFlowBindings(differing);
+    }
+
+    public boolean isEmpty() {
+        return this.flows.isEmpty();
+    }
+
     /** These bindings once {@code desired} is applied on them. */
     public RealmFlowBindings mergedWith(final RealmFlowBindings desired) {
         Map<String, String> merged = new LinkedHashMap<>(this.flows);

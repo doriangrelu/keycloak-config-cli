@@ -4,26 +4,31 @@ Detailed technical documentation for the realm normalization feature.
 
 ## Configuration Options
 
-| Option | Description | Example |
-|--------|-------------|---------|
-| `run.operation` | Set to NORMALIZE | `NORMALIZE` |
-| `normalization.files.input-locations` | Input realm files | See import patterns |
-| `normalization.files.output-directory` | Output directory | `./exports/out` |
-| `normalization.output-format` | Output format | `YAML` or `JSON` |
-| `normalization.fallback-version` | Baseline version fallback | `19.0.3` |
+See [Normalization](../advanced/normalization.md#properties).
+
+## Comparison
+
+The export and the reference realm are read into the business objects of the import, without their Keycloak ids, and compared resource by resource, by business key: name, client id, group path, alias... The rules are those of the domain (`ReferenceComparison`, and the `withoutValuesOf` methods of the realm settings, flow bindings and clients); see [What is kept](../advanced/normalization.md#what-is-kept).
+
+- For the realm settings and the clients, a value of the reference that the export lacks is no difference: an import cannot remove it.
+- The values of the configuration of a component are compared whatever their order: Keycloak does not keep it.
+- Built-in flows are compared like the others, and kept when they changed.
 
 ## Current Limitations
 
-### Not Yet Implemented
-
-- **Components**: The `components` section is not processed (LDAP federation, Key providers)
-- **Users**: User normalization is not currently supported
+- **User profile**: the user profile component is left out.
+- **Users**: users are not normalized.
+- **Removed defaults**: a resource of the reference missing from the export is only logged.
 
 ## Data Cleaning
 
 ### SAML Attributes on OIDC Clients
 
 OpenID Connect clients from older Keycloak versions may contain SAML-related attributes. These are automatically filtered out.
+
+### Key Providers
+
+Key providers hold the keys Keycloak generated for the realm: they are left out.
 
 ### Unused Authentication Flows
 
@@ -90,8 +95,7 @@ WHERE execution.auth_flow_id IS NOT NULL
 ### Missing Default Components
 
 ```
-Default realm requiredAction 'webauthn-register-passwordless' was deleted in exported realm.
-It may be reintroduced during import
+Default realm required action 'webauthn-register-passwordless' was deleted in exported realm 'my-realm'. It may be reintroduced during import!
 ```
 
 This often appears when normalizing exports from older Keycloak versions against newer baselines.

@@ -58,7 +58,6 @@
         <!-- Dependencies -->
         <commons-text.version>1.12.0</commons-text.version>
         <failsafe.version>3.3.2</failsafe.version>
-        <javers.version>7.6.3</javers.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
         <resteasy.version>6.2.10.Final</resteasy.version>
@@ -221,12 +220,6 @@
             <groupId>dev.failsafe</groupId>
             <artifactId>failsafe</artifactId>
             <version>${failsafe.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.javers</groupId>
-            <artifactId>javers-core</artifactId>
-            <version>${javers.version}</version>
         </dependency>
 
         <dependency>

@@ -1,0 +1,255 @@
+{
+  "accessTokenLifespan" : 60,
+  "authenticationFlows" : [ {
+    "alias" : "browser",
+    "authenticationExecutions" : [ {
+      "authenticator" : "auth-cookie",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 10,
+      "requirement" : "ALTERNATIVE",
+      "userSetupAllowed" : false
+    }, {
+      "authenticator" : "auth-spnego",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 20,
+      "requirement" : "DISABLED",
+      "userSetupAllowed" : false
+    }, {
+      "authenticator" : "identity-provider-redirector",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 25,
+      "requirement" : "ALTERNATIVE",
+      "userSetupAllowed" : false
+    }, {
+      "authenticatorFlow" : true,
+      "autheticatorFlow" : true,
+      "flowAlias" : "forms",
+      "priority" : 30,
+      "requirement" : "ALTERNATIVE",
+      "userSetupAllowed" : false
+    } ],
+    "builtIn" : true,
+    "description" : "browser based authentication",
+    "providerId" : "basic-flow",
+    "topLevel" : true
+  }, {
+    "alias" : "first broker login",
+    "authenticationExecutions" : [ {
+      "authenticator" : "idp-review-profile",
+      "authenticatorConfig" : "review profile config",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 10,
+      "requirement" : "REQUIRED",
+      "userSetupAllowed" : false
+    }, {
+      "authenticatorFlow" : true,
+      "autheticatorFlow" : true,
+      "flowAlias" : "User creation or linking",
+      "priority" : 20,
+      "requirement" : "REQUIRED",
+      "userSetupAllowed" : false
+    } ],
+    "builtIn" : true,
+    "description" : "Actions taken after first broker login with identity provider account, which is not yet linked to any Keycloak account",
+    "providerId" : "basic-flow",
+    "topLevel" : true
+  } ],
+  "authenticatorConfig" : [ {
+    "alias" : "review profile config",
+    "config" : {
+      "update.profile.on.first.login" : "missing"
+    }
+  } ],
+  "clients" : [ {
+    "bearerOnly" : true,
+    "clientId" : "master-realm",
+    "frontchannelLogout" : false,
+    "fullScopeAllowed" : false,
+    "name" : "master Realm",
+    "nodeReRegistrationTimeout" : 0,
+    "optionalClientScopes" : [ "address", "microprofile-jwt", "offline_access", "phone" ],
+    "publicClient" : false,
+    "redirectUris" : [ ],
+    "webOrigins" : [ ]
+  }, {
+    "clientId" : "account",
+    "optionalClientScopes" : [ "address", "microprofile-jwt", "offline_access", "phone" ],
+    "protocol" : "openid-connect",
+    "publicClient" : true
+  }, {
+    "clientId" : "account-console",
+    "optionalClientScopes" : [ "address", "microprofile-jwt", "offline_access", "phone" ],
+    "protocol" : "openid-connect",
+    "protocolMappers" : [ {
+      "config" : { },
+      "consentRequired" : false,
+      "name" : "audience resolve",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-audience-resolve-mapper"
+    } ],
+    "publicClient" : true
+  }, {
+    "clientId" : "admin-cli",
+    "optionalClientScopes" : [ "address", "microprofile-jwt", "offline_access", "phone" ],
+    "protocol" : "openid-connect",
+    "publicClient" : true
+  }, {
+    "clientId" : "broker",
+    "optionalClientScopes" : [ "address", "microprofile-jwt", "offline_access", "phone" ],
+    "protocol" : "openid-connect",
+    "publicClient" : false
+  }, {
+    "clientId" : "security-admin-console",
+    "optionalClientScopes" : [ "address", "microprofile-jwt", "offline_access", "phone" ],
+    "protocol" : "openid-connect",
+    "protocolMappers" : [ {
+      "config" : {
+        "access.token.claim" : "true",
+        "claim.name" : "locale",
+        "id.token.claim" : "true",
+        "introspection.token.claim" : "true",
+        "jsonType.label" : "String",
+        "user.attribute" : "locale",
+        "userinfo.token.claim" : "true"
+      },
+      "consentRequired" : false,
+      "name" : "locale",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-usermodel-attribute-mapper"
+    } ],
+    "publicClient" : true
+  } ],
+  "defaultDefaultClientScopes" : [ "acr", "basic", "email", "profile", "role_list", "roles", "web-origins" ],
+  "defaultOptionalClientScopes" : [ "address", "microprofile-jwt", "offline_access", "phone" ],
+  "displayName" : "Keycloak",
+  "displayNameHtml" : "<div class=\"kc-logo-text\"><span>Keycloak</span></div>",
+  "enabled" : true,
+  "id" : "55629008-ce2b-4083-8543-aab9be5c8770",
+  "realm" : "master",
+  "roles" : {
+    "client" : {
+      "master-realm" : [ {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_create-client}",
+        "name" : "create-client"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_impersonation}",
+        "name" : "impersonation"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-authorization}",
+        "name" : "manage-authorization"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-clients}",
+        "name" : "manage-clients"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-events}",
+        "name" : "manage-events"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-identity-providers}",
+        "name" : "manage-identity-providers"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-realm}",
+        "name" : "manage-realm"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-users}",
+        "name" : "manage-users"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_query-clients}",
+        "name" : "query-clients"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_query-groups}",
+        "name" : "query-groups"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_query-realms}",
+        "name" : "query-realms"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_query-users}",
+        "name" : "query-users"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_view-authorization}",
+        "name" : "view-authorization"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_view-events}",
+        "name" : "view-events"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_view-identity-providers}",
+        "name" : "view-identity-providers"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_view-realm}",
+        "name" : "view-realm"
+      }, {
+        "clientRole" : true,
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "master-realm" : [ "query-clients" ]
+          }
+        },
+        "description" : "${role_view-clients}",
+        "name" : "view-clients"
+      }, {
+        "clientRole" : true,
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "master-realm" : [ "query-groups", "query-users" ]
+          }
+        },
+        "description" : "${role_view-users}",
+        "name" : "view-users"
+      } ]
+    },
+    "realm" : [ {
+      "clientRole" : false,
+      "composite" : false,
+      "description" : "${role_create-realm}",
+      "name" : "create-realm"
+    }, {
+      "clientRole" : false,
+      "composite" : true,
+      "composites" : {
+        "client" : {
+          "master-realm" : [ "create-client", "impersonation", "manage-authorization", "manage-clients", "manage-events", "manage-identity-providers", "manage-realm", "manage-users", "query-clients", "query-groups", "query-realms", "query-users", "view-authorization", "view-clients", "view-events", "view-identity-providers", "view-realm", "view-users" ]
+        },
+        "realm" : [ "create-realm" ]
+      },
+      "description" : "${role_admin}",
+      "name" : "admin"
+    } ]
+  }
+}

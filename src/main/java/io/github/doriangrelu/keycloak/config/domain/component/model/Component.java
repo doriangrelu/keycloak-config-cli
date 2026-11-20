@@ -22,10 +22,13 @@ package io.github.doriangrelu.keycloak.config.domain.component.model;
 
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A component of a realm, such as a key provider or a user storage, or a sub-component of another component, such as
@@ -80,6 +83,21 @@ public record Component(Key key, String id, String providerId, Map<String, List<
     }
 
     /** This component once {@code desired} is applied on it. */
+    /**
+     * Whether both components have the same provider and configuration, whatever their ids and the order of the values
+     * of their configuration: Keycloak does not keep that order.
+     */
+    public boolean hasSameContentAs(final Component other) {
+        return Objects.equals(this.providerId, other.providerId)
+                && unordered(this.config).equals(unordered(other.config));
+    }
+
+    private static Map<String, Set<String>> unordered(final Map<String, List<String>> config) {
+        Map<String, Set<String>> unordered = new HashMap<>();
+        config.forEach((name, values) -> unordered.put(name, values == null ? Set.of() : new HashSet<>(values)));
+        return unordered;
+    }
+
     public Component mergedWith(final Component desired) {
         Map<String, List<String>> mergedConfig = new LinkedHashMap<>(this.config);
         mergedConfig.putAll(desired.config);

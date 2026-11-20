@@ -26,10 +26,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.RealmExportNormalizer;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationKeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakExportProvider;
-import io.github.doriangrelu.keycloak.config.service.normalize.RealmNormalizationService;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -52,7 +52,7 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
     private static final Logger logger = LoggerFactory.getLogger(KeycloakConfigNormalizationRunner.class);
     private static final long START_TIME = System.currentTimeMillis();
 
-    private final RealmNormalizationService normalizationService;
+    private final RealmExportNormalizer normalizer;
     private final KeycloakExportProvider exportProvider;
     private final NormalizationConfigProperties normalizationConfigProperties;
     private final YAMLMapper yamlMapper;
@@ -61,12 +61,12 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
 
     @Autowired
     public KeycloakConfigNormalizationRunner(
-            RealmNormalizationService normalizationService,
+            RealmExportNormalizer normalizer,
             KeycloakExportProvider exportProvider,
             NormalizationConfigProperties normalizationConfigProperties,
             YAMLMapper yamlMapper,
             ObjectMapper objectMapper) {
-        this.normalizationService = normalizationService;
+        this.normalizer = normalizer;
         this.exportProvider = exportProvider;
         this.normalizationConfigProperties = normalizationConfigProperties;
         this.yamlMapper = yamlMapper;
@@ -92,7 +92,7 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
                 for (var export : exportLocations.entrySet()) {
                     logger.info("Normalizing file '{}'", export.getKey());
                     for (var realm : export.getValue()) {
-                        var normalizedRealm = normalizationService.normalizeRealm(realm);
+                        var normalizedRealm = normalizer.normalize(realm);
                         var suffix = normalizationConfigProperties.getOutputFormat() == YAML ? "yaml" : "json";
                         var outputFile =
                                 outputLocation.resolve(String.format("%s.%s", normalizedRealm.getRealm(), suffix));

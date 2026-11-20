@@ -1,300 +1,75 @@
-# Normalization (Export)
+# Normalization
 
-Keycloak Config CLI can export existing Keycloak configurations to normalized YAML or JSON files, enabling you to adopt Configuration as Code for existing deployments.
+Normalization turns a full realm export of Keycloak into a minimal import file: it keeps only what was configured, and leaves out everything Keycloak creates by itself. Use it to adopt keycloak-config-cli on an existing realm.
 
-## What is Normalization?
+## How it works
 
-Normalization exports your current Keycloak realm configuration:
-- Removes auto-generated fields (IDs, timestamps)
-- Organizes resources consistently
-- Produces files ready for version control
-- Enables migration to declarative configuration
+1. Export the realm from Keycloak, as a file: `kc.sh export --realm my-realm --file my-realm.json`, or the partial export of the admin console.
+2. keycloak-config-cli reads the export and compares it with the **reference realm** of its Keycloak version: a realm as Keycloak creates it, that nobody changed. The reference realms are shipped with keycloak-config-cli.
+3. It writes one import file per realm, holding what differs from the reference.
 
-## Running Normalization
+Normalization works on files only: it never connects to Keycloak.
 
-### Basic Export
+## Running it
 
 ```bash
 java -jar keycloak-config-cli.jar \
   --run.operation=NORMALIZE \
-  --keycloak.url=http://localhost:8080 \
-  --keycloak.user=admin \
-  --keycloak.password=admin \
-  --normalization.files.output-directory=/output
+  --normalization.files.input-locations=./exports/*.json \
+  --normalization.files.output-directory=./config \
+  --normalization.output-format=YAML
 ```
 
-### Configuration
+## Properties
 
-```yaml
-run:
-  operation: NORMALIZE
+| Property | Environment variable | Default | Description |
+|---|---|---|---|
+| `run.operation` | `RUN_OPERATION` | `IMPORT` | Set to `NORMALIZE` |
+| `normalization.files.input-locations` | `NORMALIZATION_FILES_INPUTLOCATIONS` | - | Realm exports to normalize, with the same patterns as the import files |
+| `normalization.files.excludes` | `NORMALIZATION_FILES_EXCLUDES` | - | Files to leave out |
+| `normalization.files.include-hidden-files` | `NORMALIZATION_FILES_INCLUDEHIDDENFILES` | `false` | Whether hidden files are read |
+| `normalization.files.output-directory` | `NORMALIZATION_FILES_OUTPUTDIRECTORY` | - | Directory of the normalized files, created when missing |
+| `normalization.output-format` | `NORMALIZATION_OUTPUTFORMAT` | `YAML` | `YAML` or `JSON` |
+| `normalization.fallback-version` | `NORMALIZATION_FALLBACKVERSION` | - | Reference realm to use when there is none for the version of an export |
 
-keycloak:
-  url: http://localhost:8080
-  user: admin
-  password: admin
+## What is kept
 
-normalization:
-  files:
-    output-directory: /output/realms
-    output-format: YAML  # or JSON
+| Resource | Kept |
+|---|---|
+| Realm settings | Only the settings that differ from the reference, attributes compared one by one. The realm name and whether it is enabled are always kept |
+| Flow bindings of the realm | Only the bindings that differ |
+| Clients | New clients, and clients of the reference with a value that differs. A client keeps only its differing values, plus its client id, protocol, public flag, protocol mappers, flow bindings (by alias) and authorization settings. A new client is compared with a client created with default values |
+| Roles | New or changed roles, with their composites |
+| Groups | A new or changed group, with the whole tree of its top-level group |
+| Components (user federation, client registration policies...) | A new or changed component, with all its sub-components |
+| Authentication flows | New or changed flows, built-in ones included, with the authenticator configs they use. A changed config of the reference is kept too |
+| Client scopes, identity providers and their mappers, required actions, client policies and profiles, scope mappings, default client scopes, default groups | New or changed ones, whole |
+
+Left out:
+
+- Keycloak ids, and the `containerId` of roles.
+- Key providers: they hold the keys Keycloak generated for the realm.
+- The user profile, users and their credentials.
+- Authentication flows that no top-level flow uses, and authenticator configs no flow uses: they are logged.
+- SAML attributes that older versions of Keycloak give to OpenID Connect clients.
+
+A resource of the reference missing from the export is logged: an import of the normalized file would not remove it.
+
+```text
+Default realm client 'broker' was deleted in exported realm 'my-realm'. It may be reintroduced during import!
 ```
 
-## Output Format
+## Reference realms
 
-### YAML (Recommended)
+keycloak-config-cli ships reference realms for Keycloak `19.0.3`, `20.0.3`, `25.0.5`, `26.0.5` and `26.5.3`. An export is compared with the reference of its version (`keycloakVersion` of the export). When there is none:
 
-```yaml
-normalization:
-  files:
-    output-format: YAML
-```
+1. the reference of `normalization.fallback-version`, when set;
+2. else the closest reference: the greatest lower version of the same major version, else the lowest greater version of the same major version, else the greatest lower version.
 
-Produces readable, editable files:
+The closer the reference, the smaller the result: a reference of another version shows the changes Keycloak made between both versions as configuration.
 
-```yaml
-realm: my-realm
-enabled: true
-groups:
-  - name: administrators
-    realmRoles:
-      - admin
-```
+## After normalizing
 
-### JSON
-
-```yaml
-normalization:
-  files:
-    output-format: JSON
-```
-
-Produces:
-
-```json
-{
-  "realm": "my-realm",
-  "enabled": true,
-  "groups": [
-    {
-      "name": "administrators",
-      "realmRoles": ["admin"]
-    }
-  ]
-}
-```
-
-## Exported Content
-
-Normalization exports:
-
-| Resource | Exported |
-|----------|----------|
-| Realm settings | Yes |
-| Roles (realm & client) | Yes |
-| Groups | Yes |
-| Clients | Yes |
-| Client Scopes | Yes |
-| Identity Providers | Yes |
-| Authentication Flows | Yes |
-| Users | Partial* |
-| Credentials | No (security) |
-
-*Users are exported without sensitive data like passwords.
-
-## Use Cases
-
-### 1. Adopting Config-as-Code
-
-Export existing configuration to start managing it declaratively:
-
-```bash
-# Export current state
-java -jar keycloak-config-cli.jar \
-  --run.operation=NORMALIZE \
-  --normalization.files.output-directory=./config
-
-# Review and commit
-git add config/
-git commit -m "Initial Keycloak configuration export"
-
-# Now manage via import
-java -jar keycloak-config-cli.jar \
-  --run.operation=IMPORT \
-  --import.files.locations=./config
-```
-
-### 2. Environment Migration
-
-Copy configuration between environments:
-
-```bash
-# Export from production
-java -jar keycloak-config-cli.jar \
-  --run.operation=NORMALIZE \
-  --keycloak.url=https://keycloak.prod.example.com \
-  --keycloak.user=admin \
-  --keycloak.password=${PROD_PASSWORD} \
-  --normalization.files.output-directory=./prod-config
-
-# Import to staging
-java -jar keycloak-config-cli.jar \
-  --run.operation=IMPORT \
-  --keycloak.url=https://keycloak.staging.example.com \
-  --keycloak.user=admin \
-  --keycloak.password=${STAGING_PASSWORD} \
-  --import.files.locations=./prod-config
-```
-
-### 3. Backup and Recovery
-
-Create configuration backups:
-
-```bash
-# Daily backup script
-DATE=$(date +%Y%m%d)
-java -jar keycloak-config-cli.jar \
-  --run.operation=NORMALIZE \
-  --normalization.files.output-directory=./backups/$DATE
-```
-
-### 4. Auditing and Comparison
-
-Export configurations for diff/comparison:
-
-```bash
-# Export current state
-java -jar keycloak-config-cli.jar \
-  --run.operation=NORMALIZE \
-  --normalization.files.output-directory=./current
-
-# Compare with expected
-diff -r ./expected ./current
-```
-
-## Post-Export Processing
-
-### 1. Review and Clean
-
-The exported files may need adjustment:
-
-```yaml
-# Remove environment-specific values
-clients:
-  - clientId: my-app
-    # Replace with variable
-    rootUrl: "${APP_URL}"  # Was: https://prod.example.com
-```
-
-### 2. Add Variables
-
-Replace hardcoded values with variables:
-
-```yaml
-# Before
-smtpServer:
-  host: smtp.production.example.com
-  password: actual-password-here
-
-# After
-smtpServer:
-  host: "${SMTP_HOST}"
-  password: "${SMTP_PASSWORD}"
-```
-
-### 3. Remove Auto-Generated Fields
-
-The export should remove these, but verify:
-
-```yaml
-# These should NOT be in exported files:
-# - id
-# - containerId
-# - authenticationFlowBindingOverrides (if empty)
-```
-
-### 4. Organize Files
-
-Split large exports into logical files:
-
-```bash
-# Single large export
-output/my-realm.yaml
-
-# Split into manageable files
-config/
-├── 00-realm.yaml
-├── 01-roles.yaml
-├── 02-groups.yaml
-├── 03-clients.yaml
-└── 04-identity-providers.yaml
-```
-
-## Normalization vs. Export
-
-| Aspect | Normalization | Keycloak Export |
-|--------|--------------|-----------------|
-| Purpose | Config-as-Code | Backup/Migration |
-| Format | Clean YAML/JSON | Keycloak JSON |
-| IDs | Removed | Included |
-| Secrets | Excluded | Included (encrypted) |
-| Readability | High | Low |
-| Version Control | Yes | Difficult |
-
-## Limitations
-
-### Not Exported
-
-- User passwords and credentials
-- Session data
-- Event logs
-- Keycloak internal state
-
-### Requires Manual Adjustment
-
-- Environment-specific URLs
-- Secrets and credentials
-- Client secrets (need re-generation)
-
-## Best Practices
-
-### 1. Export Regularly
-
-Set up scheduled exports for audit trails:
-
-```bash
-# cron: 0 0 * * * /opt/scripts/export-keycloak.sh
-```
-
-### 2. Version Control Exports
-
-Commit exports to track changes over time:
-
-```bash
-git add config/
-git commit -m "Keycloak config: $(date +%Y-%m-%d)"
-```
-
-### 3. Sanitize Before Committing
-
-Remove sensitive data before version control:
-
-```bash
-# Use a script to replace secrets with placeholders
-./sanitize-config.sh config/
-```
-
-### 4. Test Import After Export
-
-Verify exports can be re-imported:
-
-```bash
-# Export
-java -jar keycloak-config-cli.jar --run.operation=NORMALIZE ...
-
-# Import to test instance
-java -jar keycloak-config-cli.jar --run.operation=IMPORT ...
-
-# Verify
-curl -s http://test-keycloak:8080/admin/realms/my-realm | jq .
-```
+- Replace the values that depend on the environment, and the secrets, with variables: see `import.var-substitution` in the [configuration](../getting-started/configuration.md).
+- Split the file by resource type if it helps: keycloak-config-cli imports several files of the same realm.
+- Try the import on a test instance, or run a [dry run](dry-run.md) against the realm the export comes from and review the changes it plans.

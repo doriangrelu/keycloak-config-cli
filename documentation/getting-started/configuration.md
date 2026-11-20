@@ -113,8 +113,12 @@ Used when `run.operation=NORMALIZE` for exporting realm configurations.
 
 | Property | Environment Variable | Default | Description |
 |----------|---------------------|---------|-------------|
+| `normalization.files.input-locations` | `NORMALIZATION_FILES_INPUTLOCATIONS` | - | Realm exports to normalize |
 | `normalization.files.output-directory` | `NORMALIZATION_FILES_OUTPUTDIRECTORY` | - | Output directory for normalized files |
-| `normalization.files.output-format` | `NORMALIZATION_FILES_OUTPUTFORMAT` | `YAML` | Output format: `YAML` or `JSON` |
+| `normalization.output-format` | `NORMALIZATION_OUTPUTFORMAT` | `YAML` | Output format: `YAML` or `JSON` |
+| `normalization.fallback-version` | `NORMALIZATION_FALLBACKVERSION` | - | Reference realm used when there is none for the version of an export |
+
+See [Normalization](../advanced/normalization.md).
 
 ### Example
 
@@ -124,8 +128,9 @@ run:
 
 normalization:
   files:
+    input-locations: /exports/*.json
     output-directory: /output/realms
-    output-format: YAML
+  output-format: YAML
 ```
 
 ## Logging Properties

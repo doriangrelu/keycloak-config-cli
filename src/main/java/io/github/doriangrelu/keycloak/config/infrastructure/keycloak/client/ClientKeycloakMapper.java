@@ -83,6 +83,7 @@ public abstract class ClientKeycloakMapper {
     // Business methods, that MapStruct takes for fluent setters
     @Mapping(target = "mergedWith", ignore = true)
     @Mapping(target = "withClientId", ignore = true)
+    @Mapping(target = "withoutValuesOf", ignore = true)
     protected abstract Client toClient(ClientRepresentation representation, UnmodeledAttributes unmodeled);
 
     /**

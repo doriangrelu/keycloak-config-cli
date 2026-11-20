@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Fields of a Keycloak resource that the domain does not model, carried as is (ADR-002). No domain rule reads them:
@@ -57,6 +58,42 @@ public record UnmodeledAttributes(Map<String, Object> values) {
         Map<String, Object> merged = new LinkedHashMap<>(this.values);
         merged.putAll(overrides.values);
         return new UnmodeledAttributes(merged);
+    }
+
+    /**
+     * The attributes whose value differs from the one of {@code reference}: the others, and the ones without value,
+     * are left out (normalization).
+     *
+     * @param comparedByEntry keys whose map value is compared entry by entry: only its differing entries are kept
+     * @param alwaysKept keys kept whatever their value
+     */
+    public UnmodeledAttributes differingFrom(
+            final UnmodeledAttributes reference, final Set<String> comparedByEntry, final Set<String> alwaysKept) {
+        Map<String, Object> differing = new LinkedHashMap<>();
+        this.values.forEach((key, value) -> {
+            Object referenceValue = reference.values.get(key);
+            if (value == null) {
+                return;
+            }
+            if (alwaysKept.contains(key)) {
+                differing.put(key, value);
+            } else if (comparedByEntry.contains(key)
+                    && value instanceof Map<?, ?> entries
+                    && referenceValue instanceof Map<?, ?> referenceEntries) {
+                Map<Object, Object> changed = new LinkedHashMap<>();
+                entries.forEach((name, entry) -> {
+                    if (entry != null && !entry.equals(referenceEntries.get(name))) {
+                        changed.put(name, entry);
+                    }
+                });
+                if (!changed.isEmpty()) {
+                    differing.put(key, changed);
+                }
+            } else if (!value.equals(referenceValue)) {
+                differing.put(key, value);
+            }
+        });
+        return differing.isEmpty() ? none() : new UnmodeledAttributes(differing);
     }
 
     private static void requireSimpleJson(final String key, final Object value) {

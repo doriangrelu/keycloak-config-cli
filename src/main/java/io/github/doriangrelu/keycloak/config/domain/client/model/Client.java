@@ -65,6 +65,9 @@ public record Client(
 
     private static final String NAME_PREFIX = "name:";
 
+    /** Unmodeled field holding the protocol of the client: {@code openid-connect} when absent. */
+    static final String PROTOCOL = "protocol";
+
     public Client {
         if (clientId == null && name == null) {
             throw new InvalidClientException("clients require client id or name.");
@@ -143,6 +146,50 @@ public record Client(
                 this.publicClient,
                 this.serviceAccountsEnabled,
                 this.unmodeled);
+    }
+
+    /**
+     * This client without what it shares with {@code reference} (normalization): the attributes, client scopes and
+     * fields of the reference are left out. The client id, the protocol, the public flag and the protocol mappers are
+     * always kept: they tell what the client is.
+     */
+    public Client withoutValuesOf(final Client reference) {
+        Map<String, String> differingAttributes = null;
+        if (this.attributes != null) {
+            Map<String, String> referenceAttributes = reference.attributes == null ? Map.of() : reference.attributes;
+            differingAttributes = new LinkedHashMap<>();
+            for (Map.Entry<String, String> attribute : this.attributes.entrySet()) {
+                if (attribute.getValue() != null
+                        && !attribute.getValue().equals(referenceAttributes.get(attribute.getKey()))) {
+                    differingAttributes.put(attribute.getKey(), attribute.getValue());
+                }
+            }
+            differingAttributes = differingAttributes.isEmpty() ? null : differingAttributes;
+        }
+        return new Client(
+                this.clientId,
+                differing(this.name, reference.name),
+                differingAttributes,
+                differing(this.defaultClientScopes, reference.defaultClientScopes),
+                differing(this.optionalClientScopes, reference.optionalClientScopes),
+                this.protocolMappers,
+                differing(this.secret, reference.secret),
+                differing(this.bearerOnly, reference.bearerOnly),
+                this.publicClient,
+                differing(this.serviceAccountsEnabled, reference.serviceAccountsEnabled),
+                this.unmodeled.differingFrom(reference.unmodeled, Set.of(), Set.of(PROTOCOL)));
+    }
+
+    /**
+     * Whether a value of this client differs from the one of {@code reference}. A value the reference has and this
+     * client has not is no difference: an import file cannot remove it.
+     */
+    public boolean hasValuesDifferentFrom(final Client reference) {
+        return !withoutValuesOf(reference).equals(reference.withoutValuesOf(reference));
+    }
+
+    private static <T> T differing(final T value, final T reference) {
+        return value == null || value.equals(reference) ? null : value;
     }
 
     public boolean isSystemClient() {

@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * The settings of a realm, identified by its name: everything an import declares at the top level of the realm except
@@ -36,6 +37,8 @@ import java.util.Objects;
 public record RealmSettings(String realm, UnmodeledAttributes settings) implements Resource<String> {
 
     static final String ATTRIBUTES = "attributes";
+
+    static final String ENABLED = "enabled";
 
     public RealmSettings {
         Objects.requireNonNull(realm, "realm");
@@ -50,6 +53,15 @@ public record RealmSettings(String realm, UnmodeledAttributes settings) implemen
     @Override
     public String stateName() {
         return this.realm;
+    }
+
+    /**
+     * These settings without the values of {@code reference} (normalization). The {@code attributes} are compared one
+     * by one, and whether the realm is enabled is always kept.
+     */
+    public RealmSettings withoutValuesOf(final RealmSettings reference) {
+        return new RealmSettings(
+                this.realm, this.settings.differingFrom(reference.settings, Set.of(ATTRIBUTES), Set.of(ENABLED)));
     }
 
     /**

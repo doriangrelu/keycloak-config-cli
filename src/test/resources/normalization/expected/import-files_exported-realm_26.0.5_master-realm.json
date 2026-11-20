@@ -1,0 +1,372 @@
+{
+  "accessTokenLifespan" : 60,
+  "authenticationFlows" : [ {
+    "alias" : "browser",
+    "authenticationExecutions" : [ {
+      "authenticator" : "auth-cookie",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 10,
+      "requirement" : "ALTERNATIVE",
+      "userSetupAllowed" : false
+    }, {
+      "authenticator" : "auth-spnego",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 20,
+      "requirement" : "DISABLED",
+      "userSetupAllowed" : false
+    }, {
+      "authenticator" : "identity-provider-redirector",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 25,
+      "requirement" : "ALTERNATIVE",
+      "userSetupAllowed" : false
+    }, {
+      "authenticatorFlow" : true,
+      "autheticatorFlow" : true,
+      "flowAlias" : "forms",
+      "priority" : 30,
+      "requirement" : "ALTERNATIVE",
+      "userSetupAllowed" : false
+    } ],
+    "builtIn" : true,
+    "description" : "Browser based authentication",
+    "providerId" : "basic-flow",
+    "topLevel" : true
+  }, {
+    "alias" : "first broker login",
+    "authenticationExecutions" : [ {
+      "authenticator" : "idp-review-profile",
+      "authenticatorConfig" : "review profile config",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 10,
+      "requirement" : "REQUIRED",
+      "userSetupAllowed" : false
+    }, {
+      "authenticatorFlow" : true,
+      "autheticatorFlow" : true,
+      "flowAlias" : "User creation or linking",
+      "priority" : 20,
+      "requirement" : "REQUIRED",
+      "userSetupAllowed" : false
+    } ],
+    "builtIn" : true,
+    "description" : "Actions taken after first broker login with identity provider account, which is not yet linked to any Keycloak account",
+    "providerId" : "basic-flow",
+    "topLevel" : true
+  }, {
+    "alias" : "registration form",
+    "authenticationExecutions" : [ {
+      "authenticator" : "registration-password-action",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 50,
+      "requirement" : "REQUIRED",
+      "userSetupAllowed" : false
+    }, {
+      "authenticator" : "registration-recaptcha-action",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 60,
+      "requirement" : "DISABLED",
+      "userSetupAllowed" : false
+    }, {
+      "authenticator" : "registration-terms-and-conditions",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 70,
+      "requirement" : "DISABLED",
+      "userSetupAllowed" : false
+    }, {
+      "authenticator" : "registration-user-creation",
+      "authenticatorFlow" : false,
+      "autheticatorFlow" : false,
+      "priority" : 20,
+      "requirement" : "REQUIRED",
+      "userSetupAllowed" : false
+    } ],
+    "builtIn" : true,
+    "description" : "Registration form",
+    "providerId" : "form-flow",
+    "topLevel" : false
+  }, {
+    "alias" : "registration",
+    "authenticationExecutions" : [ {
+      "authenticator" : "registration-page-form",
+      "authenticatorFlow" : true,
+      "autheticatorFlow" : true,
+      "flowAlias" : "registration form",
+      "priority" : 10,
+      "requirement" : "REQUIRED",
+      "userSetupAllowed" : false
+    } ],
+    "builtIn" : true,
+    "description" : "Registration flow",
+    "providerId" : "basic-flow",
+    "topLevel" : true
+  } ],
+  "authenticatorConfig" : [ {
+    "alias" : "review profile config",
+    "config" : {
+      "update.profile.on.first.login" : "missing"
+    }
+  } ],
+  "clientScopes" : [ {
+    "attributes" : {
+      "consent.screen.text" : "${organizationScopeConsentText}",
+      "display.on.consent.screen" : "true",
+      "include.in.token.scope" : "true"
+    },
+    "description" : "Additional claims about the organization a subject belongs to",
+    "name" : "organization",
+    "protocol" : "openid-connect",
+    "protocolMappers" : [ {
+      "config" : {
+        "access.token.claim" : "true",
+        "claim.name" : "organization",
+        "id.token.claim" : "true",
+        "introspection.token.claim" : "true",
+        "jsonType.label" : "String",
+        "multivalued" : "true"
+      },
+      "consentRequired" : false,
+      "name" : "organization",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-organization-membership-mapper"
+    } ]
+  }, {
+    "attributes" : {
+      "display.on.consent.screen" : "false",
+      "include.in.token.scope" : "false"
+    },
+    "description" : "OpenID Connect scope for add acr (authentication context class reference) to the token",
+    "name" : "acr",
+    "protocol" : "openid-connect",
+    "protocolMappers" : [ {
+      "config" : {
+        "access.token.claim" : "true",
+        "id.token.claim" : "true",
+        "introspection.token.claim" : "true"
+      },
+      "consentRequired" : false,
+      "name" : "acr loa level",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-acr-mapper"
+    } ]
+  }, {
+    "attributes" : {
+      "display.on.consent.screen" : "false",
+      "include.in.token.scope" : "false"
+    },
+    "description" : "OpenID Connect scope for add all basic claims to the token",
+    "name" : "basic",
+    "protocol" : "openid-connect",
+    "protocolMappers" : [ {
+      "config" : {
+        "access.token.claim" : "true",
+        "claim.name" : "auth_time",
+        "id.token.claim" : "true",
+        "introspection.token.claim" : "true",
+        "jsonType.label" : "long",
+        "user.session.note" : "AUTH_TIME"
+      },
+      "consentRequired" : false,
+      "name" : "auth_time",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-usersessionmodel-note-mapper"
+    }, {
+      "config" : {
+        "access.token.claim" : "true",
+        "introspection.token.claim" : "true"
+      },
+      "consentRequired" : false,
+      "name" : "sub",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-sub-mapper"
+    } ]
+  }, {
+    "attributes" : {
+      "display.on.consent.screen" : "false",
+      "include.in.token.scope" : "true"
+    },
+    "description" : "Microprofile - JWT built-in scope",
+    "name" : "microprofile-jwt",
+    "protocol" : "openid-connect",
+    "protocolMappers" : [ {
+      "config" : {
+        "access.token.claim" : "true",
+        "claim.name" : "groups",
+        "id.token.claim" : "true",
+        "introspection.token.claim" : "true",
+        "jsonType.label" : "String",
+        "multivalued" : "true",
+        "user.attribute" : "foo"
+      },
+      "consentRequired" : false,
+      "name" : "groups",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-usermodel-realm-role-mapper"
+    }, {
+      "config" : {
+        "access.token.claim" : "true",
+        "claim.name" : "upn",
+        "id.token.claim" : "true",
+        "introspection.token.claim" : "true",
+        "jsonType.label" : "String",
+        "user.attribute" : "username",
+        "userinfo.token.claim" : "true"
+      },
+      "consentRequired" : false,
+      "name" : "upn",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-usermodel-attribute-mapper"
+    } ]
+  } ],
+  "clients" : [ {
+    "attributes" : {
+      "realm_client" : "true"
+    },
+    "bearerOnly" : true,
+    "clientId" : "master-realm",
+    "frontchannelLogout" : false,
+    "fullScopeAllowed" : false,
+    "name" : "master Realm",
+    "nodeReRegistrationTimeout" : 0,
+    "publicClient" : false,
+    "redirectUris" : [ ],
+    "webOrigins" : [ ]
+  } ],
+  "displayName" : "Keycloak",
+  "displayNameHtml" : "<div class=\"kc-logo-text\"><span>Keycloak</span></div>",
+  "enabled" : true,
+  "id" : "36c94278-f00f-498e-a0f6-705da2e849be",
+  "keycloakVersion" : "26.0.0",
+  "realm" : "master",
+  "roles" : {
+    "client" : {
+      "master-realm" : [ {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_create-client}",
+        "name" : "create-client"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_impersonation}",
+        "name" : "impersonation"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-authorization}",
+        "name" : "manage-authorization"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-clients}",
+        "name" : "manage-clients"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-events}",
+        "name" : "manage-events"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-identity-providers}",
+        "name" : "manage-identity-providers"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-realm}",
+        "name" : "manage-realm"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_manage-users}",
+        "name" : "manage-users"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_query-clients}",
+        "name" : "query-clients"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_query-groups}",
+        "name" : "query-groups"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_query-realms}",
+        "name" : "query-realms"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_query-users}",
+        "name" : "query-users"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_view-authorization}",
+        "name" : "view-authorization"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_view-events}",
+        "name" : "view-events"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_view-identity-providers}",
+        "name" : "view-identity-providers"
+      }, {
+        "clientRole" : true,
+        "composite" : false,
+        "description" : "${role_view-realm}",
+        "name" : "view-realm"
+      }, {
+        "clientRole" : true,
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "master-realm" : [ "query-clients" ]
+          }
+        },
+        "description" : "${role_view-clients}",
+        "name" : "view-clients"
+      }, {
+        "clientRole" : true,
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "master-realm" : [ "query-groups", "query-users" ]
+          }
+        },
+        "description" : "${role_view-users}",
+        "name" : "view-users"
+      } ]
+    },
+    "realm" : [ {
+      "clientRole" : false,
+      "composite" : false,
+      "description" : "${role_create-realm}",
+      "name" : "create-realm"
+    }, {
+      "clientRole" : false,
+      "composite" : true,
+      "composites" : {
+        "client" : {
+          "master-realm" : [ "create-client", "impersonation", "manage-authorization", "manage-clients", "manage-events", "manage-identity-providers", "manage-realm", "manage-users", "query-clients", "query-groups", "query-realms", "query-users", "view-authorization", "view-clients", "view-events", "view-identity-providers", "view-realm", "view-users" ]
+        },
+        "realm" : [ "create-realm" ]
+      },
+      "description" : "${role_admin}",
+      "name" : "admin"
+    } ]
+  },
+  "webAuthnPolicyPasswordlessSignatureAlgorithms" : [ "ES256", "RS256" ],
+  "webAuthnPolicySignatureAlgorithms" : [ "ES256", "RS256" ]
+}

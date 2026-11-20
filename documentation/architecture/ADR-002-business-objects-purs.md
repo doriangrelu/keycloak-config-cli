@@ -39,7 +39,7 @@ Décision : **(c)**.
 - Chaque BO porte un objet valeur `UnmodeledAttributes`, qui enveloppe une `Map<String, Object>` immuable (types JSON simples uniquement : chaînes, nombres, booléens, listes et maps de ces types).
 - Le diff compare ces attributs comme un bloc : une différence produit une mise à jour, sans détail par champ dans le rapport au-delà du nom des clés modifiées.
 - On type en priorité les champs utilisés par une règle (identité, références, protection, mode géré), puis on enrichit au fil des versions. Un champ qui devient typé sort de `UnmodeledAttributes`.
-- Aucune règle du domaine ne lit `UnmodeledAttributes`.
+- Aucune règle du domaine ne lit `UnmodeledAttributes`. Les règles de comparaison (diff, normalisation) les comparent clé par clé sans interpréter leurs valeurs ; elles ne nomment une clé que pour la garder ou la comparer entrée par entrée (`attributes`, `enabled` d'un realm, `protocol` d'un client).
 
 ## Conséquences
 

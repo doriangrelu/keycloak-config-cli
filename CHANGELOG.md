@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Reference realm of Keycloak `26.5.3` for the normalization.
 - Dry run with `import.dry-run=true`: the import is compared with Keycloak, clean phase included, and the changes it would make are reported by realm (creations, updates with their changed fields, deletions) without applying anything. Text or JSON report (`import.dry-run-format`), optionally written to a file (`import.dry-run-report-file`); field values are never shown. Exit code `10` when changes are pending, `0` otherwise. See [Dry Run](documentation/advanced/dry-run.md).
 - Mustache templating support with CLI-provided variables via `import.mustache.enabled` and `import.mustache.variables.*`
     - Variables can be passed as CLI arguments (`--import.mustache.variables.key=value`), environment variables (`IMPORT_MUSTACHE_VARIABLES_KEY=value`), or in configuration files
@@ -28,6 +29,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- **BREAKING**: Normalization (`run.operation=NORMALIZE`) reads the export into the business objects of the import and compares them with the reference realm of the Keycloak version. The normalized files are smaller and can differ from the previous ones: a client keeps only its values that differ from its own reference (default clients) or from a client with default values (new clients); client attributes are compared one by one; roles lose their `containerId`; built-in flows that changed are kept; user federation and other components are kept, with all their sub-components, except key providers and the user profile; a group is kept with the whole tree of its top-level group. See [Normalization](documentation/advanced/normalization.md).
+- Normalization uses the closest reference realm when there is none for the version of an export, instead of failing: the greatest lower version of the same major version, else the lowest greater one of the same major version, else the greatest lower one. `normalization.fallback-version` still takes precedence.
+- Javers is no longer a dependency.
 - **BREAKING**: Realm roles, client roles and their composites are imported by the new reconciliation engine. When several files target the same realm, a role defined twice with different content is now rejected (exit code `2`) instead of the last file winning.
 - Client profiles and client policies are imported by the new reconciliation engine, one at a time.
 - **BREAKING**: The realm settings, the default client scopes and the default groups of the realm are imported by the new reconciliation engine. The realm is only updated when a declared setting changed; settings an import omits keep their value, events and their expiration included. A realm Keycloak refuses to create or update raises `RealmRejectedException` instead of `KeycloakRepositoryException`, and a missing default client scope or default group raises `UnknownRealmReferenceException` instead of `ImportProcessingException` and `InvalidImportException`; messages are unchanged (exit code `2`). When several files of a realm declare default client scopes or default groups differently, the import is rejected instead of the last file winning.
@@ -58,6 +62,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- Normalizing an export of the master realm no longer fails on its clients without protocol.
+- Normalization keeps every scope mapping held by a client (`scopeMappings` entries with `client` instead of `clientScope`): only one of them was kept.
 - The clean phase only deletes resource types declared by at least one import file of the realm, follows the `import.managed.*` setting of each type, and with remote state enabled only deletes resources created by keycloak-config-cli.
 - Re-running an unchanged import (same checksum) no longer deletes its clients, roles and groups.
 - Removing the undeclared roles of a declared scope mapping follows `import.managed.scope-mapping` instead of `import.managed.client-scope`.
