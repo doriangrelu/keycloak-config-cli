@@ -20,7 +20,7 @@
 | Normalisation : ignorer d'autres valeurs par défaut que celles de la référence | `TODO` de l'ancien `RealmNormalizationService` (EPIC-005) |
 | Normalisation : ignorer des clients par expression régulière | `TODO` de l'ancien `RealmNormalizationService` (EPIC-005) |
 | Normalisation : profil utilisateur et utilisateurs | Limites de l'EPIC-005 |
-| Mode interactif avec Spring Shell, repris comme adapter d'entrée de `infrastructure/cli` | Branche `feature/1-feature-interactive-cli-mode-with-spring-shell-for-realm-configuration`, conservée telle quelle |
+| Mode interactif avec Spring Shell, repris comme adapter d'entrée de `infrastructure/cli`, une fois l'EPIC-006 terminé | Branche `feature/1-feature-interactive-cli-mode-with-spring-shell-for-realm-configuration`, conservée telle quelle |
 
 ## Principe de migration
 

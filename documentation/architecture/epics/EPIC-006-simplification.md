@@ -9,6 +9,41 @@ Non négociable à chaque story : les utilisateurs, les ressources techniques de
 
 Chaque story est livrée seule, build et tests d'intégration verts, comme pendant l'EPIC-003.
 
+## Répartition cible des paquets hérités
+
+À la fin de l'EPIC, le code ne contient plus que `domain`, `application` et `infrastructure`, plus la classe de démarrage `KeycloakConfigApplication`, qui reste à la racine pour que Spring trouve tous les composants. `ArchitectureTest` le vérifie.
+
+| Paquet hérité | Contenu | Destination |
+|---|---|---|
+| `service` | `RealmImportService` : orchestration d'un import | `application.importation` : le cas d'usage, sur des ports ; ce qui appelle Keycloak passe dans des gateways de `infrastructure.keycloak` |
+| `provider` | `KeycloakImportProvider`, `FileUtils` : lecture des fichiers (motifs, zip, URL distantes) | `infrastructure.source` |
+| `provider` | `KeycloakExportProvider` : lecture des exports à normaliser | `infrastructure.source`, partagé avec l'import |
+| `provider` | `KeycloakProvider` : client Keycloak, version du serveur | `infrastructure.keycloak.sdk` |
+| `mustache` | `MustacheContextWithDefaults` | `infrastructure.source` : étape de préparation des fichiers |
+| `model` | `RealmImport`, `AuthenticationFlowImport` (sous-classes de représentations Keycloak) | `infrastructure.keycloak.importation` : voir le point de vigilance sur le format des fichiers |
+| `model` | `ImportResource`, `KeycloakImport` : fichiers lus | `infrastructure.source` |
+| `model` | `ProtectedResource` | Supprimé au profit de `ProtectionRule` du domaine (US-006-06) |
+| `properties` | Binding des propriétés Spring Boot | `infrastructure.cli` ; l'application reçoit des options simples (records), jamais les classes de propriétés |
+| `configuration` | Beans Spring (`KeycloakConfigConfiguration`, `NormalizationConfiguration`) | Le paquet d'infrastructure dont ils créent les beans |
+| `resource` | `ManagementPermissions` (proxy de l'API d'administration) | `infrastructure.keycloak.sdk` |
+| `util` | `ResteasyUtil` et ses filtres | `infrastructure.keycloak.sdk` |
+| `util` | `CloneUtil`, `JsonUtil`, `VersionUtil` | `infrastructure.keycloak` (seuls utilisateurs) |
+| `util` | `CryptoUtil` | Supprimé avec l'état distant (US-006-02) |
+| `util` | `LocalizationUtil` | Supprimé : plus utilisé |
+| `exception` | `KeycloakProviderException`, `KeycloakRepositoryException` | `infrastructure.keycloak.sdk`, ou fusion avec `KeycloakAccessException` |
+| `exception` | `InvalidImportException`, `ImportProcessingException` | `infrastructure.source` (fichier invalide) ; les erreurs de configuration vues par l'application restent des exceptions de `application` (ADR-005) |
+| `exception` | `NormalizationException` | `infrastructure.keycloak.normalization` |
+| `exception` | `KeycloakVersionUnsupportedException` | Supprimé : plus utilisé |
+| Racine | `KeycloakConfigRunner`, `KeycloakConfigNormalizationRunner` | `infrastructure.cli` |
+
+### Points de vigilance
+
+- **Le format des fichiers est celui de Keycloak.** `RealmImport` hérite de `RealmRepresentation` ; or `infrastructure.source` ne doit pas dépendre du SDK Keycloak (ADR-001, vérifié par ArchUnit). Partage retenu : `infrastructure.source` lit et prépare les fichiers (motifs, zip, URL, Mustache) et rend des documents bruts ; leur lecture en `RealmImport` puis en BOs reste dans `infrastructure.keycloak.importation`. Ne pas assouplir la règle ArchUnit pour aller plus vite.
+- **L'application ne voit ni Spring Boot ni Jackson.** Le cas d'usage d'import reçoit ses options et ses fichiers par des types de l'application ; seules les annotations `org.springframework.stereotype` y sont permises.
+- **Pas de cycle entre les paquets d'infrastructure.** `infrastructure.cli` appelle l'application ; `infrastructure.keycloak` et `infrastructure.source` restent indépendants l'un de l'autre.
+- **Un paquet à la fois**, build et tests d'intégration verts à chaque étape. Les tests suivent leurs classes.
+- **La ligne de commande reste un adapter d'entrée.** Rien de ce qui est déplacé dans `infrastructure.cli` ne doit porter de logique d'import : c'est ce qui permettra d'ajouter plus tard Spring Shell comme second adapter d'entrée, sans toucher à l'application (voir `TASKS.md`, « Après la refonte »).
+
 ## Stories
 
 ### US-006-01 — Règle de nettoyage unique
