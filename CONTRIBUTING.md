@@ -7,7 +7,7 @@ Please also review our [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Polic
 ## Before you start
 
 - For small fixes and documentation improvements, feel free to open a pull request directly.
-- For larger changes, new features, or behavior changes, please open an issue first to discuss your proposal: https://github.com/adorsys/keycloak-config-cli/issues
+- For larger changes, new features, or behavior changes, please open an issue first to discuss your proposal: https://github.com/doriangrelu/keycloak-config-cli/issues
   - This helps validate the approach, avoid duplicate work, and get early feedback.
 
 ## Finding something to work on

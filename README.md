@@ -1,9 +1,6 @@
-[![CI](https://github.com/adorsys/keycloak-config-cli/actions/workflows/ci.yaml/badge.svg)](https://github.com/adorsys/keycloak-config-cli/actions/workflows/ci.yaml?query=branch%3Amain)
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/adorsys/keycloak-config-cli?logo=github&sort=semver)](https://github.com/adorsys/keycloak-config-cli/releases/latest)
-[![GitHub All Releases](https://img.shields.io/github/downloads/adorsys/keycloak-config-cli/total?logo=github)](https://github.com/adorsys/keycloak-config-cli/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/adorsys/keycloak-config-cli?logo=docker)](https://hub.docker.com/r/adorsys/keycloak-config-cli)
-[![codecov](https://codecov.io/gh/adorsys/keycloak-config-cli/branch/main/graph/badge.svg)](https://codecov.io/gh/adorsys/keycloak-config-cli)
-[![GitHub license](https://img.shields.io/github/license/adorsys/keycloak-config-cli)](https://github.com/adorsys/keycloak-config-cli/blob/main/LICENSE.txt)
+[![CI](https://github.com/doriangrelu/keycloak-config-cli/actions/workflows/ci.yaml/badge.svg)](https://github.com/doriangrelu/keycloak-config-cli/actions/workflows/ci.yaml?query=branch%3Amain)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/doriangrelu/keycloak-config-cli?logo=github&sort=semver)](https://github.com/doriangrelu/keycloak-config-cli/releases/latest)
+[![GitHub license](https://img.shields.io/github/license/doriangrelu/keycloak-config-cli)](https://github.com/doriangrelu/keycloak-config-cli/blob/main/LICENSE.txt)
 
 ---
 
@@ -35,10 +32,8 @@ Quick links:
 - [Run Integration Tests](#run-integration-tests)
 - [Run this Project](#run-this-project)
 - [Docker](#docker)
-- [Helm](#helm)
 - [Configuration](#configuration)
 - [Perform Release](#perform-release)
-- [Commercial Support](#commercial-support)
 
 # keycloak-config-cli
 
@@ -52,40 +47,31 @@ Like `kubectl apply`, every run compares the files with Keycloak: for each resou
 ## Help and community
 
 - Documentation: see [`documentation/`](./documentation/README.md) folder
-- Report an issue: https://github.com/adorsys/keycloak-config-cli/issues
+- Report an issue: https://github.com/doriangrelu/keycloak-config-cli/issues
 - Security vulnerability? Please follow `SECURITY.md`
 - Code of Conduct: `CODE_OF_CONDUCT.md`
-- Questions and help: Join [#keycloak-config-cli](https://cloud-native.slack.com/archives/C09SPL5G3MY) on Slack for design discussions and questions. Create an account at https://slack.cncf.io/.
 
 ## Quick start
 
-Using Docker:
+Build the JAR (or download one from the [releases](https://github.com/doriangrelu/keycloak-config-cli/releases)), then point it to Keycloak and to your import files:
 
 ```bash
-docker run --rm \
-  -e KEYCLOAK_URL="http://localhost:8080" \
-  -e KEYCLOAK_USER=admin \
-  -e KEYCLOAK_PASSWORD=admin123 \
-  -e IMPORT_FILES_LOCATIONS='/config/*' \
-  -v "$PWD/contrib/example-config":/config \
-  adorsys/keycloak-config-cli:latest
-```
+./mvnw clean package -DskipTests
 
-Using the JAR (after building or downloading a release):
-
-```bash
 java -jar ./target/keycloak-config-cli.jar \
   --keycloak.url=http://localhost:8080 \
   --keycloak.user=admin \
   --keycloak.password=admin123 \
-  --import.files.locations=./contrib/example-config/moped.json
+  --import.files.locations='./config/*'
 ```
+
+See the [Quick Start](./documentation/getting-started/quick-start.md) for a first realm file, and [Docker](#docker) to run it in a container.
 
 # Config files
 
 The config files are based on the keycloak export files. You can use them to re-import your settings. But keep your files as small as possible. Remove all UUIDs and all stuff which is default set by keycloak.
 
-[moped.json](./contrib/example-config/moped.json) is a full working example file you can consider. Other examples are located in the [test resources](./src/test/resources/import-files).
+The [examples](./documentation/examples/basic-realm.md) of the documentation, up to a [full realm](./documentation/examples/full-realm-example.md), are working files you can start from. Other examples are located in the [test resources](./src/test/resources/import-files).
 
 ## Templating with Mustache
 
@@ -186,7 +172,10 @@ mvnw.cmd verify
 Start a local keycloak on port 8080:
 
 ```shell script
-docker-compose down --remove-orphans && docker-compose up keycloak
+docker run --rm -p 8080:8080 \
+    -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+    -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin123 \
+    quay.io/keycloak/keycloak:26.5.3 start-dev
 ```
 
 before performing following command:
@@ -197,30 +186,22 @@ java -jar ./target/keycloak-config-cli.jar \
     --keycloak.ssl-verify=true \
     --keycloak.user=admin \
     --keycloak.password=admin123 \
-    --import.files.locations=./contrib/example-config/moped.json
+    --import.files.locations='./config/*'
 ```
 
 ## Docker
 
-A docker images is available at [DockerHub](https://hub.docker.com/r/adorsys/keycloak-config-cli) (docker.io/adorsys/keycloak-config-cli)
-and [quay.io](https://quay.io/repository/adorsys/keycloak-config-cli) (quay.io/adorsys/keycloak-config-cli)
+No container image is published for now. Build one from the JAR, with a Java 25 runtime:
 
-Available docker tags
+```dockerfile
+FROM eclipse-temurin:25-jre
+COPY target/keycloak-config-cli.jar /app/keycloak-config-cli.jar
+ENTRYPOINT ["java", "-jar", "/app/keycloak-config-cli.jar"]
+```
 
-| Tag            | Description                                                                                                   |
-|----------------|---------------------------------------------------------------------------------------------------------------|
-| `latest`       | latest available release of keycloak-config-cli which is built against the latest supported Keycloak release. |
-| `latest-x.y.z` | latest available release of keycloak-config-cli which is built against the Keycloak version `x.y.z`.          |
-| `edge`         | latest commit on the main branch and which is built against the latest supported Keycloak release.            |
-| `a.b.c`        | keycloak-config-cli version `a.b.c` which is built against the latest supported Keycloak release.             |
-| `a.b.c-x.y.z`  | keycloak-config-cli version `a.b.c` which is built against the Keycloak version `x.y.z`.                      |
-| `maven`        | See below                                                                                                     |
-
-Additionally, the tag `maven` contains the source code and compile keycloak-config-cli at runtime. This has the advantage to keycloak-config-cli with
-Keycloak versions, that not official supported., e.g.:
-
-```bash
-docker run --rm -ti -v $PWD:/config/ -eKEYCLOAK_VERSION=23.0.1 -eMAVEN_CLI_OPTS="-B -ntp -q" adorsys/keycloak-config-cli:edge-build
+```shell
+./mvnw clean package -DskipTests
+docker build -t keycloak-config-cli .
 ```
 
 ### Docker run
@@ -236,24 +217,8 @@ docker run \
     -e KEYCLOAK_AVAILABILITYCHECK_TIMEOUT=120s \
     -e IMPORT_FILES_LOCATIONS='/config/*' \
     -v <your config path>:/config \
-    adorsys/keycloak-config-cli:latest
+    keycloak-config-cli
 ```
-
-### Docker build
-
-You can build an own docker image by running
-
-```shell
-docker build -t keycloak-config-cli .
-```
-
-## Helm
-
-We provide a helm chart [here](./contrib/charts/keycloak-config-cli).
-
-Since it makes no sense to deploy keycloak-config-cli as standalone application, you could add it as dependency to your chart deployment.
-
-Checkout helm docs about [chart dependencies](https://helm.sh/docs/topics/charts/#chart-dependencies)!
 
 # Configuration
 
@@ -352,7 +317,3 @@ Create release via [maven release plugin](https://maven.apache.org/maven-release
 ./mvnw -Dresume=false release:prepare release:clean
 git push --follow-tags
 ```
-
-# Commercial support
-
-Checkout https://adorsys.com/en/products/keycloak-config-cli/ for commercial support.

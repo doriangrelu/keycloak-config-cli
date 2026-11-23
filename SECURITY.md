@@ -83,4 +83,4 @@ We encourage responsible disclosure of vulnerabilities to improve the security o
 
 The **Keycloak Config CLI** adheres to strict security practices to ensure secure and reliable Keycloak configuration management. By leveraging its features and adhering to recommended best practices, users can mitigate risks associated with configuration and operational vulnerabilities.
 
-For more information, visit the [GitHub repository](https://github.com/adorsys/keycloak-config-cli).
+For more information, visit the [GitHub repository](https://github.com/doriangrelu/keycloak-config-cli).
