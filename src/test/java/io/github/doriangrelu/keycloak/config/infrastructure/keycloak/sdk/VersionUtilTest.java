@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.util;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
 import static org.junit.jupiter.api.Assertions.*;
 

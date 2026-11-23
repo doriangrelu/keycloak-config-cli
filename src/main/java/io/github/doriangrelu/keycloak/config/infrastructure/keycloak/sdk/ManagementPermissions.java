@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.resource;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;

@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.util;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.NullNode;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 

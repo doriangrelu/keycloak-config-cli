@@ -18,17 +18,14 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.util;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
-import java.util.Map;
-import org.keycloak.admin.client.resource.RealmLocalizationResource;
+public class KeycloakProviderException extends RuntimeException {
+    public KeycloakProviderException(String message) {
+        super(message);
+    }
 
-public class LocalizationUtil {
-
-    private LocalizationUtil() {}
-
-    public static Map<String, String> getRealmLocalizationTexts(
-            RealmLocalizationResource localizationResource, String locale) {
-        return localizationResource.getRealmLocalizationTexts(locale);
+    public KeycloakProviderException(Throwable cause) {
+        super(cause);
     }
 }

@@ -26,13 +26,12 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
 import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakProviderException;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
-import io.github.doriangrelu.keycloak.config.exception.NormalizationException;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.properties.ImportConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.ImportProcessingException;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.NormalizationException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakFailure;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProviderException;
 import jakarta.validation.Validation;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
@@ -111,11 +110,8 @@ class ExitCodeResolverTest {
     }
 
     @Test
-    void legacyImportErrorsAreInvalidConfiguration() {
+    void importAndNormalizationErrorsAreInvalidConfiguration() {
         assertThat(ExitCodeResolver.resolve(new InvalidImportException("Unable to parse file")))
-                .isEqualTo(ExitCode.INVALID_CONFIGURATION);
-        assertThat(ExitCodeResolver.resolve(
-                        new KeycloakRepositoryException("Cannot find client by clientId '%s'", "x")))
                 .isEqualTo(ExitCode.INVALID_CONFIGURATION);
         assertThat(ExitCodeResolver.resolve(new NormalizationException("unsupported")))
                 .isEqualTo(ExitCode.INVALID_CONFIGURATION);

@@ -18,9 +18,8 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.util;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
-import io.github.doriangrelu.keycloak.config.util.resteasy.CookieClientFilter;
 import java.net.URL;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;

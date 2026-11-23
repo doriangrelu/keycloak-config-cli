@@ -100,7 +100,7 @@ Déplacer les runners (`KeycloakConfigRunner`, `KeycloakConfigNormalizationRunne
 
 ### US-006-10 — Derniers paquets hérités
 
-**Statut :** À faire
+**Statut :** Terminé
 Ranger ce qui reste hors des couches : `provider.KeycloakProvider`, `resource.ManagementPermissions` et `util.ResteasyUtil` dans `infrastructure.keycloak.sdk` ; `provider.KeycloakExportProvider` avec la normalisation ; `exception`, `configuration` et les `util` restants à leur couche, ou supprimés s'ils ne servent plus. Durcir `ArchitectureTest` : plus aucune classe hors de `domain`, `application`, `infrastructure`, à part la classe de démarrage.
 
 ### US-006-11 — Documentation et migration
@@ -198,4 +198,13 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
 - La constante des attributs obsolètes (`io.github.doriangrelu.keycloak.config.`) quitte `ImportConfigProperties` pour `ReconciliationConfiguration`, son seul utilisateur.
 - Nouvelle règle ArchUnit `onlyTheCommandLineSeesTheCommandLine` : ni le domaine, ni l'application, ni `infrastructure.source`, ni `infrastructure.keycloak` ne dépendent de `infrastructure.cli`. Supprimés : les paquets `properties`, `service` et `provider`.
 - Les groupes de journalisation `keycloak-config-cli` et `kcc` visent désormais `application.importation`, `infrastructure.cli` et `KeycloakProvider`.
+
+### US-006-10
+
+- `infrastructure.keycloak.sdk` : `ManagementPermissions`, `ResteasyUtil`, `CookieClientFilter`, `VersionUtil`, `KeycloakProviderException` (`KeycloakProvider` y était déjà, depuis US-006-09).
+- `infrastructure.keycloak.mapping` : `CloneUtil`, `JsonUtil` et `ImportProcessingException`, leurs seuls utilisateurs étant l'infrastructure Keycloak.
+- `infrastructure.keycloak.normalization` : `NormalizationConfiguration` (les mappers JSON et YAML de sortie) et `NormalizationException`. `KeycloakExportProvider` avait déjà disparu en US-006-07.
+- `infrastructure.source` : `KeycloakConfigConfiguration` devient `SourceConfiguration` (le résolveur de motifs de fichiers).
+- Supprimés car plus utilisés : `KeycloakRepositoryException` (plus rien ne la levait ; `ExitCodeResolver` ne la traite plus), `KeycloakVersionUnsupportedException`, `LoggingClientFilter`, et `LocalizationUtil` (simple délégation, remplacée par un appel direct dans son seul test).
+- Nouvelle règle ArchUnit `everyClassBelongsToALayer` : plus aucune classe hors de `domain`, `application` et `infrastructure`, à part `KeycloakConfigApplication`. Il ne reste aucun paquet hérité.
 

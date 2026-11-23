@@ -33,11 +33,10 @@ import com.tngtech.archunit.lang.ArchRule;
 /**
  * Layering rules of ADR-001.
  *
- * <p>The layers are the {@code domain}, {@code application} and {@code infrastructure} packages. The other packages
- * hold what is not migrated yet, such as the Keycloak client ({@code provider}). The command line
- * ({@code infrastructure.cli}) is the outermost adapter: it binds the properties and gives the other layers plain
- * options. No package of the code base is part of a
- * dependency cycle.
+ * <p>The code base holds the {@code domain}, {@code application} and {@code infrastructure} layers, and the class that
+ * starts the application, nothing else. The command line ({@code infrastructure.cli}) is the outermost adapter: it
+ * binds the properties and gives the other layers plain options. No package of the code base is part of a dependency
+ * cycle.
  */
 @AnalyzeClasses(packages = ArchitectureTest.ROOT, importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
@@ -50,6 +49,13 @@ class ArchitectureTest {
     private static final String INFRASTRUCTURE_CLI = ROOT + ".infrastructure.cli..";
     private static final String INFRASTRUCTURE_SOURCE = ROOT + ".infrastructure.source..";
     private static final String INFRASTRUCTURE_KEYCLOAK = ROOT + ".infrastructure.keycloak..";
+
+    @ArchTest
+    static final ArchRule everyClassBelongsToALayer = classes()
+            .that()
+            .doNotHaveFullyQualifiedName(ROOT + ".KeycloakConfigApplication")
+            .should()
+            .resideInAnyPackage(DOMAIN, APPLICATION, INFRASTRUCTURE);
 
     @ArchTest
     static final ArchRule dependenciesPointInwards = layeredArchitecture()

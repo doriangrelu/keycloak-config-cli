@@ -24,7 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.VersionUtil;
 import java.io.IOException;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;

@@ -26,7 +26,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.VersionUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

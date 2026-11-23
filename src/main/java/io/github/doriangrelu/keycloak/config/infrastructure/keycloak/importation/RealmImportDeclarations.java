@@ -47,6 +47,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.component.ComponentKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.group.GroupKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.identityprovider.IdentityProviderKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.CloneUtil;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.UnmodeledAttributesConverter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.realm.RealmKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
@@ -55,7 +56,6 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.Keycloa
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user.UserKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.userprofile.UserProfileKeycloakMapper;
-import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

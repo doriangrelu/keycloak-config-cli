@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.configuration;
+package io.github.doriangrelu.keycloak.config.infrastructure.source;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -27,11 +27,11 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
-public class KeycloakConfigConfiguration {
+public class SourceConfiguration {
     private final ResourceLoader resourceLoader;
 
     @Autowired
-    public KeycloakConfigConfiguration(ResourceLoader resourceLoader) {
+    public SourceConfiguration(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 

@@ -31,7 +31,7 @@ import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.application.realm.RealmRejectedException;
 import io.github.doriangrelu.keycloak.config.application.realm.UnknownRealmReferenceException;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.VersionUtil;
 import java.io.IOException;
 import java.util.Map;
 import org.junit.jupiter.api.Order;
@@ -203,13 +203,11 @@ class ImportSimpleRealmIT extends AbstractImportIT {
     @Test
     @Order(9)
     void shouldNotUpdateSimpleRealmWithInvalidName() {
-        // Pre-Keycloak 26.2.0 throws KeycloakRepositoryException immediately
-        // Keycloak 26.2.0+ fails at database level due to value exceeding VARCHAR(255),
-        // either way it should be wrapped in a KeycloakRepositoryException
+        // Pre-Keycloak 26.2.0 rejects the realm immediately
+        // Keycloak 26.2.0+ fails at database level due to value exceeding VARCHAR(255)
         Throwable thrown =
                 assertThrows(Throwable.class, () -> doImport("09_update_simple-realm_with_invalid_property.json"));
 
-        // Could be direct KeycloakRepositoryException or wrapped SQL exception
         if (VersionUtil.lt(KEYCLOAK_VERSION, "26.2.0")) {
             assertEquals(RealmRejectedException.class, thrown.getClass());
         } else {

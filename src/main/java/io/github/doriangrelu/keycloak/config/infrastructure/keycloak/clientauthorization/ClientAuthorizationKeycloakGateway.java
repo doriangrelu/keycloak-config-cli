@@ -22,6 +22,8 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientauth
 
 import io.github.doriangrelu.keycloak.config.application.clientauthorization.port.ClientAuthorizationGateway;
 import io.github.doriangrelu.keycloak.config.domain.clientauthorization.model.ClientAuthorization;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.CloneUtil;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.JsonUtil;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.UnmodeledAttributesConverter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
@@ -29,8 +31,6 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.Cli
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.GroupApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.IdentityProviderApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
-import io.github.doriangrelu.keycloak.config.util.CloneUtil;
-import io.github.doriangrelu.keycloak.config.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

@@ -25,7 +25,6 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.util.LocalizationUtil;
 import java.io.IOException;
 import java.util.Map;
 import org.junit.jupiter.api.Order;
@@ -194,6 +193,6 @@ class ImportMessageBundlesIT extends AbstractImportIT {
         RealmLocalizationResource realmLocalizationResource =
                 keycloakProvider.getInstance().realm(REALM_NAME).localization();
 
-        return LocalizationUtil.getRealmLocalizationTexts(realmLocalizationResource, locale);
+        return realmLocalizationResource.getRealmLocalizationTexts(locale);
     }
 }

@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.exception;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping;
 
 public class ImportProcessingException extends RuntimeException {
     public ImportProcessingException(String message) {

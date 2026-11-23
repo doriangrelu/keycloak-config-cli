@@ -27,9 +27,8 @@ import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.VersionUtil;
 import io.github.doriangrelu.keycloak.config.test.util.SubGroupUtil;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -2334,7 +2333,7 @@ class ImportGroupsIT extends AbstractImportIT {
         GroupRepresentation groupRepresentation = groupsResource.groups().stream()
                 .filter(g -> Objects.equals(groupPath, g.getPath()))
                 .findFirst()
-                .orElseThrow(() -> new KeycloakRepositoryException("Can't find group '%s'.", groupPath));
+                .orElseThrow(() -> new IllegalStateException("Can't find group '" + groupPath + "'."));
 
         return groupsResource.group(groupRepresentation.getId()).toRepresentation();
     }
@@ -2346,7 +2345,7 @@ class ImportGroupsIT extends AbstractImportIT {
             GroupRepresentation user = loadGroup(groupPath);
 
             maybeGroup = Optional.of(user);
-        } catch (KeycloakRepositoryException e) {
+        } catch (IllegalStateException e) {
             maybeGroup = Optional.empty();
         }
 

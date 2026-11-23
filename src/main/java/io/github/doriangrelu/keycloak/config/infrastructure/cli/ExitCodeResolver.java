@@ -22,11 +22,10 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakProviderException;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
-import io.github.doriangrelu.keycloak.config.exception.NormalizationException;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.NormalizationException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakErrorTranslator;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProviderException;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.Optional;
@@ -62,7 +61,6 @@ public final class ExitCodeResolver {
             case ProcessingException sdk -> exitCodeOf(KeycloakErrorTranslator.translate(sdk));
             case BindException _ -> Optional.of(ExitCode.INVALID_CONFIGURATION);
             case BindValidationException _ -> Optional.of(ExitCode.INVALID_CONFIGURATION);
-            case KeycloakRepositoryException _ -> Optional.of(ExitCode.INVALID_CONFIGURATION);
             case NormalizationException _ -> Optional.of(ExitCode.INVALID_CONFIGURATION);
             case KeycloakProviderException _ -> Optional.of(ExitCode.KEYCLOAK_UNAVAILABLE);
             default -> Optional.empty();

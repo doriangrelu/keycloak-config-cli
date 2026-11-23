@@ -50,7 +50,6 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.Rol
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ScopeMappingApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.UserApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.UserProfileApi;
-import io.github.doriangrelu.keycloak.config.resource.ManagementPermissions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

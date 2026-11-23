@@ -18,12 +18,11 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.util;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;

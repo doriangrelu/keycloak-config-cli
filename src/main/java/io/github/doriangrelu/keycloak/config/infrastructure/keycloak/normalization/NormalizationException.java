@@ -2,7 +2,7 @@
  * ---license-start
  * keycloak-config-cli
  * ---
- * Copyright (C) 2017 - 2021 adorsys GmbH & Co. KG @ https://adorsys.com
+ * Copyright (C) 2017 - 2022 adorsys GmbH & Co. KG @ https://adorsys.com
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.exception;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization;
 
-public class KeycloakRepositoryException extends RuntimeException {
-    public KeycloakRepositoryException(String format, Object... args) {
-        super(String.format(format, args));
+public class NormalizationException extends RuntimeException {
+    public NormalizationException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public KeycloakRepositoryException(String message, Throwable cause) {
-        super(message, cause);
+    public NormalizationException(String message) {
+        super(message);
     }
 }

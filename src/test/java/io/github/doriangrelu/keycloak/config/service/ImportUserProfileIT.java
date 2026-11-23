@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.util.JsonUtil;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.JsonUtil;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.VersionUtil;
 import java.io.IOException;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Order;

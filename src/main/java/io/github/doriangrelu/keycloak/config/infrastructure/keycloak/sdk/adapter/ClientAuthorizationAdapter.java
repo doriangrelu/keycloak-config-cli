@@ -20,8 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.adapter;
 
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.ManagementPermissions;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientAuthorizationApi;
-import io.github.doriangrelu.keycloak.config.resource.ManagementPermissions;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;

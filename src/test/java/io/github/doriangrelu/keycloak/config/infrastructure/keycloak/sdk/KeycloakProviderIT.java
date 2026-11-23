@@ -25,8 +25,6 @@ import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.KeycloakProviderException;
-import io.github.doriangrelu.keycloak.config.resource.ManagementPermissions;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.ProcessingException;
 import java.net.SocketTimeoutException;

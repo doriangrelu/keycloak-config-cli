@@ -27,7 +27,7 @@ import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.DryRunReport;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
-import io.github.doriangrelu.keycloak.config.util.CloneUtil;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.CloneUtil;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.MethodOrderer;

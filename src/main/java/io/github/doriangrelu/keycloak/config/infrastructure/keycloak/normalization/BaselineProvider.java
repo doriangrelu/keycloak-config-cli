@@ -21,8 +21,7 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.doriangrelu.keycloak.config.exception.NormalizationException;
-import io.github.doriangrelu.keycloak.config.util.VersionUtil;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
