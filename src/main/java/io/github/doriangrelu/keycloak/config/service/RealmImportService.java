@@ -24,8 +24,8 @@ import io.github.doriangrelu.keycloak.config.application.component.port.Componen
 import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway;
 import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportReconciliation;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import java.util.Collection;

@@ -34,8 +34,8 @@ import com.tngtech.archunit.lang.ArchRule;
  * Layering rules of ADR-001.
  *
  * <p>The layers are the {@code domain}, {@code application} and {@code infrastructure} packages. The other packages
- * hold the command line itself: reading the import files ({@code model}, {@code provider}), the configuration
- * ({@code properties}) and the orchestration of an import ({@code service}). No package of the code base is part of a
+ * hold what is not migrated yet: the Keycloak client ({@code provider}), the configuration ({@code properties}) and the
+ * orchestration of an import ({@code service}). No package of the code base is part of a
  * dependency cycle.
  */
 @AnalyzeClasses(packages = ArchitectureTest.ROOT, importOptions = ImportOption.DoNotIncludeTests.class)

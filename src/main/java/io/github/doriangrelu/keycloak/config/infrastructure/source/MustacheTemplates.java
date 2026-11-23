@@ -18,11 +18,11 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.provider;
+package io.github.doriangrelu.keycloak.config.infrastructure.source;
 
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.MustacheException;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import java.util.Map;
 import java.util.Objects;
 

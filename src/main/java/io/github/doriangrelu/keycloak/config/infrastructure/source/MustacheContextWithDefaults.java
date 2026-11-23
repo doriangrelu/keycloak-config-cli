@@ -1,4 +1,4 @@
-package io.github.doriangrelu.keycloak.config.provider;
+package io.github.doriangrelu.keycloak.config.infrastructure.source;
 
 import java.util.AbstractMap;
 import java.util.Map;

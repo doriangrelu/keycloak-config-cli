@@ -31,7 +31,7 @@ import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.role.UnknownClientException;
 import io.github.doriangrelu.keycloak.config.application.role.UnknownRoleException;
 import io.github.doriangrelu.keycloak.config.application.user.UnknownUserReferenceException;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Nested;

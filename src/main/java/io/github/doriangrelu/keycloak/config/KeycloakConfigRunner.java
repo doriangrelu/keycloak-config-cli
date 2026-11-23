@@ -20,14 +20,15 @@
 
 package io.github.doriangrelu.keycloak.config;
 
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
+import io.github.doriangrelu.keycloak.config.application.importation.port.ImportFileSource;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.DryRunReport;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
-import io.github.doriangrelu.keycloak.config.model.KeycloakImport;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportParser;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
-import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,8 +39,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +60,8 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
     private static final Logger logger = LoggerFactory.getLogger(KeycloakConfigRunner.class);
     private static final long START_TIME = System.currentTimeMillis();
 
-    private final KeycloakImportProvider keycloakImportProvider;
+    private final ImportFileSource importFileSource;
+    private final RealmImportParser realmImportParser;
     private final RealmImportService realmImportService;
     private final ImportConfigProperties importConfigProperties;
 
@@ -69,10 +69,12 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
 
     @Autowired
     public KeycloakConfigRunner(
-            KeycloakImportProvider keycloakImportProvider,
+            ImportFileSource importFileSource,
+            RealmImportParser realmImportParser,
             RealmImportService realmImportService,
             ImportConfigProperties importConfigProperties) {
-        this.keycloakImportProvider = keycloakImportProvider;
+        this.importFileSource = importFileSource;
+        this.realmImportParser = realmImportParser;
         this.realmImportService = realmImportService;
         this.importConfigProperties = importConfigProperties;
     }
@@ -87,19 +89,11 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
         try {
             Collection<String> importLocations =
                     importConfigProperties.getFiles().getLocations();
-            KeycloakImport keycloakImport = keycloakImportProvider.readFromLocations(importLocations);
-
-            Map<String, Map<String, List<RealmImport>>> realmImports = keycloakImport.getRealmImports();
-
+            // Every file is read and parsed before anything is changed in Keycloak
             final Collection<RealmImport> importedRealm = new ArrayList<>();
-
-            for (Map<String, List<RealmImport>> realmImportLocations : realmImports.values()) {
-                for (Map.Entry<String, List<RealmImport>> realmImport : realmImportLocations.entrySet()) {
-                    logger.info("Importing file '{}'", realmImport.getKey());
-                    for (RealmImport realmImportParts : realmImport.getValue()) {
-                        importedRealm.add(realmImportParts);
-                    }
-                }
+            for (ImportFile file : importFileSource.read(importLocations)) {
+                logger.info("Importing file '{}'", file.name());
+                importedRealm.addAll(realmImportParser.parse(file));
             }
             realmImportService.importAll(importedRealm);
             if (importConfigProperties.isDryRun()) {

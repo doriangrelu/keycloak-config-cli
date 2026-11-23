@@ -24,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
+import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
 import io.github.doriangrelu.keycloak.config.exception.ImportProcessingException;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakProviderException;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakRepositoryException;
 import io.github.doriangrelu.keycloak.config.exception.NormalizationException;

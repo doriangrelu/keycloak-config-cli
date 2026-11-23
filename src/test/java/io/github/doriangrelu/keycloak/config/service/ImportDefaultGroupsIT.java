@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.realm.UnknownRealmReferenceException;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Order;

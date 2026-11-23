@@ -26,7 +26,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import java.io.IOException;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;

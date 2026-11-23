@@ -24,12 +24,14 @@ import static io.github.doriangrelu.keycloak.config.properties.NormalizationConf
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.RealmExportNormalizer;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.RealmExportParser;
+import io.github.doriangrelu.keycloak.config.infrastructure.source.ExportFileReader;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.NormalizationKeycloakConfigProperties;
-import io.github.doriangrelu.keycloak.config.provider.KeycloakExportProvider;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -53,7 +55,8 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
     private static final long START_TIME = System.currentTimeMillis();
 
     private final RealmExportNormalizer normalizer;
-    private final KeycloakExportProvider exportProvider;
+    private final ExportFileReader exportFileReader;
+    private final RealmExportParser realmExportParser;
     private final NormalizationConfigProperties normalizationConfigProperties;
     private final YAMLMapper yamlMapper;
     private final ObjectMapper objectMapper;
@@ -62,12 +65,14 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
     @Autowired
     public KeycloakConfigNormalizationRunner(
             RealmExportNormalizer normalizer,
-            KeycloakExportProvider exportProvider,
+            ExportFileReader exportFileReader,
+            RealmExportParser realmExportParser,
             NormalizationConfigProperties normalizationConfigProperties,
             YAMLMapper yamlMapper,
             ObjectMapper objectMapper) {
         this.normalizer = normalizer;
-        this.exportProvider = exportProvider;
+        this.exportFileReader = exportFileReader;
+        this.realmExportParser = realmExportParser;
         this.normalizationConfigProperties = normalizationConfigProperties;
         this.yamlMapper = yamlMapper;
         this.objectMapper = objectMapper;
@@ -88,20 +93,17 @@ public class KeycloakConfigNormalizationRunner implements CommandLineRunner, Exi
                 return;
             }
 
-            for (var exportLocations : exportProvider.readFromLocations().values()) {
-                for (var export : exportLocations.entrySet()) {
-                    logger.info("Normalizing file '{}'", export.getKey());
-                    for (var realm : export.getValue()) {
-                        var normalizedRealm = normalizer.normalize(realm);
-                        var suffix = normalizationConfigProperties.getOutputFormat() == YAML ? "yaml" : "json";
-                        var outputFile =
-                                outputLocation.resolve(String.format("%s.%s", normalizedRealm.getRealm(), suffix));
-                        try (var os = new FileOutputStream(outputFile.toFile())) {
-                            if (normalizationConfigProperties.getOutputFormat() == YAML) {
-                                yamlMapper.writeValue(os, normalizedRealm);
-                            } else {
-                                objectMapper.writeValue(os, normalizedRealm);
-                            }
+            for (ImportFile export : exportFileReader.read()) {
+                logger.info("Normalizing file '{}'", export.name());
+                for (var realm : realmExportParser.parse(export)) {
+                    var normalizedRealm = normalizer.normalize(realm);
+                    var suffix = normalizationConfigProperties.getOutputFormat() == YAML ? "yaml" : "json";
+                    var outputFile = outputLocation.resolve(String.format("%s.%s", normalizedRealm.getRealm(), suffix));
+                    try (var os = new FileOutputStream(outputFile.toFile())) {
+                        if (normalizationConfigProperties.getOutputFormat() == YAML) {
+                            yamlMapper.writeValue(os, normalizedRealm);
+                        } else {
+                            objectMapper.writeValue(os, normalizedRealm);
                         }
                     }
                 }

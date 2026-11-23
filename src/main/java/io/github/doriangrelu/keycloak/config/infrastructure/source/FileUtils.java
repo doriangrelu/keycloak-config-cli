@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.provider;
+package io.github.doriangrelu.keycloak.config.infrastructure.source;
 
 import java.io.File;
 import java.nio.file.Path;

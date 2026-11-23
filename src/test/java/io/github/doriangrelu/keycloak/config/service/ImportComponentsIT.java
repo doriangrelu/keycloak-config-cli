@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.component.ComponentRejectedException;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;

@@ -85,7 +85,7 @@ Retirer `import.parallel`, le hook `appliesInParallel`, l'application parallèle
 
 ### US-006-07 — Lecture des fichiers dans `infrastructure.source`
 
-**Statut :** À faire
+**Statut :** Terminé
 Déplacer la lecture des fichiers (`KeycloakImportProvider`, `FileUtils`, `ImportResource`, `KeycloakImport`, `RealmImport`, `AuthenticationFlowImport`) et Mustache (`MustacheContextWithDefaults`) dans `infrastructure.source`, derrière un port de l'application. Mustache y devient une étape explicite de la préparation des fichiers, testée seule.
 
 ### US-006-08 — Cas d'usage d'import dans `application.importation`
@@ -161,4 +161,18 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
 - Option retenue : champ `type` facultatif, une valeur de `ResourceType`. Une règle sans type protège tous les types, comme avant. `DeletionPolicy.allowsDeletionOf(type, name)` et `RealmContext.isProtected(type, name)` reçoivent le type ; le moteur passe celui du reconciler, `GroupReconciler` celui des groupes pour les sous-groupes retirés.
 - La déclaration du fichier (`RealmImport.ProtectedResourceDeclaration`) reste provisoirement dans `model` avec `RealmImport` : US-006-07 et 08 déplacent la lecture et l'analyse des fichiers.
 - Tests : `ProtectionRuleTest`, `DeletionPolicyTest` et un cas de `ImportCleanupGuaranteesIT` (règle restreinte aux clients, expression invalide sans aucune modification).
+
+### US-006-07
+
+- Port de l'application `application.importation.port.ImportFileSource` : `read(locations)` rend des `ImportFile` (emplacement configuré, nom du fichier, contenu), documents bruts préparés, sans Jackson ni SDK Keycloak. `InvalidImportException` devient une exception de l'application (`application.importation`, sous-classe d'`ApplicationException`) : la source comme l'analyse des fichiers la lèvent, sans dépendance entre `infrastructure.source` et `infrastructure.keycloak`.
+- `infrastructure.source` :
+  - `FileLocations` lit les fichiers d'une liste d'emplacements (motifs, expressions régulières, zip, class path, URL avec authentification, fichiers cachés, exclusions, tri par nom, fichiers vides ignorés). Il remplace le code dupliqué de `KeycloakImportProvider` et de `KeycloakExportProvider`.
+  - `ImportFileReader` implémente le port : lecture, puis préparation, une étape explicite qui rend le fichier avec `MustacheTemplates` quand `import.mustache.enabled` est actif.
+  - `ExportFileReader` lit les exports à normaliser avec le même `FileLocations`, sans template.
+  - `SourceConfiguration` crée ces beans selon l'opération (import ou normalisation). `FileUtils`, `MustacheTemplates` et `MustacheContextWithDefaults` y sont déplacés.
+- `infrastructure.keycloak` : `RealmImport` et `AuthenticationFlowImport` sont déplacés dans `importation` (ce ne sont plus des beans Spring) ; `RealmImportParser` et `normalization.RealmExportParser` analysent les documents avec `mapping.RealmDocuments` (JSON ou YAML multi-documents, propriétés inconnues refusées).
+- Supprimés : `KeycloakImportProvider`, `KeycloakExportProvider`, `KeycloakImport`, `ImportResource`, `exception.InvalidImportException` et le paquet `model`. `ExitCodeResolver` n'a plus de cas dédié : l'exception est une `ApplicationException`.
+- Les deux lanceurs lisent puis analysent tous les fichiers avant de modifier Keycloak ; ils seront déplacés dans `infrastructure.cli` en US-006-09.
+- Correction : les exclusions ne s'appliquaient jamais sous Windows (chemin avec antislashs et lettre de lecteur comparé à des motifs Ant).
+- Tests : `FileLocationsTest`, `ImportFileReaderTest` (étape Mustache seule), `RealmDocumentsTest` ; `KeycloakImportProviderIT` devient `ImportFileReaderIT` ; `KeycloakExportProviderTest`, test boîte blanche à base de mocks, est remplacé par `FileLocationsTest`.
 

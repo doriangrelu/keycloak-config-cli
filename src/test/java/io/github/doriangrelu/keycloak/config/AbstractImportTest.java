@@ -22,10 +22,11 @@ package io.github.doriangrelu.keycloak.config;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import io.github.doriangrelu.keycloak.config.application.importation.port.ImportFileSource;
 import io.github.doriangrelu.keycloak.config.configuration.TestConfiguration;
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
-import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportParser;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakAuthentication;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakRepository;
@@ -53,7 +54,10 @@ public abstract class AbstractImportTest {
     public RealmImportService realmImportService;
 
     @Autowired
-    public KeycloakImportProvider keycloakImportProvider;
+    public ImportFileSource importFileSource;
+
+    @Autowired
+    public RealmImportParser realmImportParser;
 
     @Autowired
     public KeycloakRepository keycloakRepository;
@@ -89,9 +93,6 @@ public abstract class AbstractImportTest {
 
     public List<RealmImport> getImport(String fileName) {
         String location = "classpath:" + this.resourcePath + '/' + fileName;
-        return keycloakImportProvider.readFromLocations(location).getRealmImports().get(location).entrySet().stream()
-                .findFirst()
-                .orElseThrow()
-                .getValue();
+        return realmImportParser.parse(importFileSource.read(List.of(location)).getFirst());
     }
 }

@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.user.UnknownUserReferenceException;
 import io.github.doriangrelu.keycloak.config.domain.user.model.InvalidUserException;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
 import jakarta.ws.rs.NotAuthorizedException;
 import java.io.IOException;
 import java.util.List;

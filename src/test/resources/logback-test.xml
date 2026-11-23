@@ -26,7 +26,7 @@
 
     <logger name="org.springframework" level="ERROR"/>
     <logger name="io.github.doriangrelu.keycloak.config" level="DEBUG"/>
-    <logger name="io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider" level="WARN"/>
+    <logger name="io.github.doriangrelu.keycloak.config.infrastructure.source.FileLocations" level="WARN"/>
     <logger name="org.testcontainers" level="INFO"/>
     <logger name="com.github.dockerjava" level="WARN"/>
     <logger name="org.mockserver.log.MockServerEventLog" level="WARN"/>

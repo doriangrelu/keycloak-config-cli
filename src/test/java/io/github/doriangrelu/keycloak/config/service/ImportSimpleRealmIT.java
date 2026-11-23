@@ -28,9 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.application.realm.RealmRejectedException;
 import io.github.doriangrelu.keycloak.config.application.realm.UnknownRealmReferenceException;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
 import java.util.Map;

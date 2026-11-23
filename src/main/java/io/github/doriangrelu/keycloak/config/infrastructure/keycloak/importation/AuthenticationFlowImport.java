@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.model;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation;
 
 import java.io.Serializable;
 import java.util.Comparator;
@@ -26,14 +26,10 @@ import java.util.List;
 import org.apache.commons.lang3.ObjectUtils;
 import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
 import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
 /**
  * Represents a {@link AuthenticationFlowRepresentation} with authenticationExecutions which are sorted by its priority
  */
-@Component
-@ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class AuthenticationFlowImport extends AuthenticationFlowRepresentation {
     private static final Comparator<AuthenticationExecutionExportRepresentation> COMPARATOR =
             new AuthenticationExecutionExportRepresentationComparator();

@@ -71,6 +71,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- `import.files.excludes` and `normalization.files.excludes` now apply on Windows: the patterns were matched against paths with backslashes and a drive letter, and never matched.
 - A client a file only gives by name is no longer deleted by the clean phase of the run that creates it.
 - Normalizing an export of the master realm no longer fails on its clients without protocol.
 - Normalization keeps every scope mapping held by a client (`scopeMappings` entries with `client` instead of `clientScope`): only one of them was kept.

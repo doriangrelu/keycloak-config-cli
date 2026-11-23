@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.core.Is.is;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
-import io.github.doriangrelu.keycloak.config.model.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
 import java.io.IOException;
 import java.util.Optional;
 import org.junit.jupiter.api.Order;

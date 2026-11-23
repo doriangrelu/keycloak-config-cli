@@ -27,7 +27,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockserver.model.HttpRequest.request;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportTest;
-import io.github.doriangrelu.keycloak.config.provider.KeycloakImportProvider;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.service.RealmImportService;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakMock;
@@ -42,9 +41,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 @MockServerTest("keycloak.url=http://localhost:${mockServerPort}")
 class CookieMockIT extends AbstractImportTest {
     private MockServerClient mockServerClient;
-
-    @Autowired
-    public KeycloakImportProvider keycloakImportProvider;
 
     @Autowired
     public RealmImportService realmImportService;

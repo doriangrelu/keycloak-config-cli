@@ -18,14 +18,14 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.provider;
+package io.github.doriangrelu.keycloak.config.infrastructure.source;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.doriangrelu.keycloak.config.exception.InvalidImportException;
+import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;

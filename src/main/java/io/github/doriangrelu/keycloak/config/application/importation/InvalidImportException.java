@@ -2,7 +2,7 @@
  * ---license-start
  * keycloak-config-cli
  * ---
- * Copyright (C) 2017 - 2021 adorsys GmbH & Co. KG @ https://adorsys.com
+ * Copyright (C) 2017 - 2026 keycloak-config-cli contributors
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,21 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.exception;
+package io.github.doriangrelu.keycloak.config.application.importation;
 
-public class InvalidImportException extends RuntimeException {
-    public InvalidImportException(String message) {
+import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
+
+/**
+ * An import file cannot be used: missing location, unreadable or unparsable file, invalid template, undefined variable
+ * (ADR-005). Reported as an invalid configuration.
+ */
+public final class InvalidImportException extends ApplicationException {
+
+    public InvalidImportException(final String message) {
         super(message);
     }
 
-    public InvalidImportException(String message, Throwable cause) {
+    public InvalidImportException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }
