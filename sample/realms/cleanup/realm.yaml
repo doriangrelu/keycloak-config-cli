@@ -1,0 +1,30 @@
+# Second version: orphan-app, the writer role and the user alice are no longer declared.
+# Clients and roles are cleaned; users are never deleted; protected resources stay.
+realm: sample
+enabled: true
+displayName: "{{displayName:Sample realm}}"
+
+clients:
+  - clientId: frontend
+    description: The web application
+    publicClient: true
+    redirectUris:
+      - "{{appUrl}}/*"
+
+roles:
+  realm:
+    - name: reader
+
+groups:
+  - name: team
+    realmRoles:
+      - reader
+
+users: []
+
+protectedResources:
+  - rule: EQUALS
+    matcher: legacy-app
+    type: CLIENT
+  - rule: PATTERN
+    matcher: "ext-.*"

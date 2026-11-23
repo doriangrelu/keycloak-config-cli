@@ -1,0 +1,44 @@
+# A throwaway Keycloak and keycloak-config-cli, to try the CLI end to end.
+# Test credentials only: never reuse them outside this sample.
+name: kcc-sample
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.3
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "18080:8080"
+    healthcheck:
+      # The image has no curl: ask the management port for readiness with bash alone
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"UP"' <&3
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+
+  # Runs one import: docker compose run --rm cli [--option=value...]
+  cli:
+    build:
+      context: ..
+      dockerfile: sample/Dockerfile
+    profiles: ["cli"]
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 60s
+    volumes:
+      - ./realms:/config:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy

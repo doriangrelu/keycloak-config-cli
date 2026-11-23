@@ -67,6 +67,8 @@ java -jar ./target/keycloak-config-cli.jar \
 
 See the [Quick Start](./documentation/getting-started/quick-start.md) for a first realm file, and [Docker](#docker) to run it in a container.
 
+To try the CLI end to end, the [sample](./sample/README.md) starts a throwaway Keycloak with Docker Compose and runs scripted scenarios against it: dry run, import, clean phase, protected resources and exit codes.
+
 # Config files
 
 The config files are based on the keycloak export files. You can use them to re-import your settings. But keep your files as small as possible. Remove all UUIDs and all stuff which is default set by keycloak.

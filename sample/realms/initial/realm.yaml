@@ -1,0 +1,43 @@
+# First version of the sample realm.
+# The appUrl variable is given on the command line; displayName falls back to its default value.
+# Mustache also renders comments: a placeholder written here would be rendered too.
+realm: sample
+enabled: true
+displayName: "{{displayName:Sample realm}}"
+
+clients:
+  - clientId: frontend
+    description: The web application
+    publicClient: true
+    redirectUris:
+      - "{{appUrl}}/*"
+  - clientId: orphan-app
+    description: Removed by the next version of the file
+    publicClient: true
+
+roles:
+  realm:
+    - name: reader
+    - name: writer
+
+groups:
+  - name: team
+    realmRoles:
+      - reader
+
+users:
+  - username: alice
+    enabled: true
+    email: alice@example.org
+    firstName: Alice
+    lastName: Sample
+    groups:
+      - team
+
+# Never deleted, even though no file declares them
+protectedResources:
+  - rule: EQUALS
+    matcher: legacy-app
+    type: CLIENT
+  - rule: PATTERN
+    matcher: "ext-.*"

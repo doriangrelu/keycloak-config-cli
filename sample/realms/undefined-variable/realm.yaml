@@ -1,0 +1,8 @@
+# The clientSecret variable has no value and no default: the import fails before changing anything.
+realm: sample
+enabled: true
+displayName: "Must not be applied"
+
+clients:
+  - clientId: backend
+    secret: "{{clientSecret}}"

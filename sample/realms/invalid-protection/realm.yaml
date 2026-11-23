@@ -1,0 +1,8 @@
+# An invalid regular expression: the import fails when the file is read, before changing anything.
+realm: sample
+enabled: true
+displayName: "Must not be applied"
+
+protectedResources:
+  - rule: PATTERN
+    matcher: "ext-("

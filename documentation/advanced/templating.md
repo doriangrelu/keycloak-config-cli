@@ -84,6 +84,8 @@ Undefined variable 'secret' in file 'realm.json' at line 12: set import.mustache
 
 An undefined variable is never replaced by an empty value: an empty secret or redirect URI is worse than an error.
 
+The whole file is rendered, YAML comments included: a placeholder written in a comment, such as `# {{secret}} comes from the vault`, must be defined too. Describe variables in comments without the braces.
+
 ### Escaping
 
 Values are escaped as the content of a double-quoted string, which is the same in JSON and in YAML:
