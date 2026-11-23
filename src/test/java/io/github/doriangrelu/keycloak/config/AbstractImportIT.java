@@ -21,7 +21,7 @@
 package io.github.doriangrelu.keycloak.config;
 
 import io.github.doriangrelu.keycloak.config.extensions.ContainerLogsExtension;
-import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.time.Duration;
 import java.util.ArrayList;

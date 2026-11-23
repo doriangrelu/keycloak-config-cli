@@ -21,13 +21,10 @@
 package io.github.doriangrelu.keycloak.config;
 
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
-import io.github.doriangrelu.keycloak.config.properties.RunConfigProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication(proxyBeanMethods = false)
-@EnableConfigurationProperties(RunConfigProperties.class)
 public class KeycloakConfigApplication {
     public static void main(String[] args) {
         int exitCode;

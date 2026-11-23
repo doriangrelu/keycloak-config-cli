@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.properties;
+package io.github.doriangrelu.keycloak.config.infrastructure.cli.properties;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -32,11 +32,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @SuppressWarnings({"java:S107"})
 public class ImportConfigProperties {
-    /**
-     * Prefix of the realm attributes where former versions kept their remote state and checksums, removed by any import
-     * (ADR-007).
-     */
-    public static final String REALM_OBSOLETE_ATTRIBUTE_PREFIX = "io.github.doriangrelu.keycloak.config.";
 
     @NotNull
     private final boolean validate;

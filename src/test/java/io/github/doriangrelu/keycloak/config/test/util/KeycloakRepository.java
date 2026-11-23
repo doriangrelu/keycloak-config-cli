@@ -23,7 +23,7 @@ package io.github.doriangrelu.keycloak.config.test.util;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

@@ -39,6 +39,7 @@ import io.github.doriangrelu.keycloak.config.domain.scopemapping.model.ScopeMapp
 import io.github.doriangrelu.keycloak.config.domain.user.model.InvalidUserException;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import io.github.doriangrelu.keycloak.config.domain.userprofile.model.UserProfile;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.KeycloakImportOptions;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.authenticationflow.AuthenticationFlowKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientpolicy.ClientPolicyKeycloakMapper;
@@ -50,11 +51,10 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.Unm
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.realm.RealmKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user.UserKeycloakMapper;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.userprofile.UserProfileKeycloakMapper;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
-import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.util.CloneUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -107,7 +107,7 @@ public class RealmImportDeclarations implements RealmDeclarationParser {
     private final KeycloakProvider keycloakProvider;
     private final ClientScopeKeycloakMapper clientScopeMapper;
     private final RequiredActionKeycloakMapper requiredActionMapper;
-    private final ImportConfigProperties properties;
+    private final KeycloakImportOptions options;
 
     public RealmImportDeclarations(
             final RealmImportParser parser,
@@ -126,7 +126,7 @@ public class RealmImportDeclarations implements RealmDeclarationParser {
             final KeycloakProvider keycloakProvider,
             final ClientScopeKeycloakMapper clientScopeMapper,
             final RequiredActionKeycloakMapper requiredActionMapper,
-            final ImportConfigProperties properties) {
+            final KeycloakImportOptions options) {
         this.parser = parser;
         this.roleMapper = roleMapper;
         this.clientMapper = clientMapper;
@@ -143,7 +143,7 @@ public class RealmImportDeclarations implements RealmDeclarationParser {
         this.keycloakProvider = keycloakProvider;
         this.clientScopeMapper = clientScopeMapper;
         this.requiredActionMapper = requiredActionMapper;
-        this.properties = properties;
+        this.options = options;
     }
 
     @Override
@@ -437,7 +437,7 @@ public class RealmImportDeclarations implements RealmDeclarationParser {
         List<Client> clients = new ArrayList<>();
         for (ClientRepresentation representation : realmImport.getClients()) {
             Client client = this.clientMapper.toClient(representation);
-            if (this.properties.isValidate() && representation.getAuthorizationSettings() != null) {
+            if (this.options.validate() && representation.getAuthorizationSettings() != null) {
                 client.requireSupportForAuthorizationSettings(realm);
             }
             if (client.clientId() == null && clientIdsByName.containsKey(client.name())) {

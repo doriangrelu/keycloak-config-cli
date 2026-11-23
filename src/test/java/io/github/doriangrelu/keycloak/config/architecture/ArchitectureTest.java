@@ -34,8 +34,9 @@ import com.tngtech.archunit.lang.ArchRule;
  * Layering rules of ADR-001.
  *
  * <p>The layers are the {@code domain}, {@code application} and {@code infrastructure} packages. The other packages
- * hold what is not migrated yet: the Keycloak client ({@code provider}), the configuration ({@code properties}) and the
- * orchestration of an import ({@code service}). No package of the code base is part of a
+ * hold what is not migrated yet, such as the Keycloak client ({@code provider}). The command line
+ * ({@code infrastructure.cli}) is the outermost adapter: it binds the properties and gives the other layers plain
+ * options. No package of the code base is part of a
  * dependency cycle.
  */
 @AnalyzeClasses(packages = ArchitectureTest.ROOT, importOptions = ImportOption.DoNotIncludeTests.class)
@@ -105,6 +106,14 @@ class ArchitectureTest {
             .should()
             .dependOnClassesThat()
             .resideInAPackage(INFRASTRUCTURE_KEYCLOAK);
+
+    @ArchTest
+    static final ArchRule onlyTheCommandLineSeesTheCommandLine = noClasses()
+            .that()
+            .resideInAnyPackage(DOMAIN, APPLICATION, INFRASTRUCTURE_SOURCE, INFRASTRUCTURE_KEYCLOAK)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(INFRASTRUCTURE_CLI);
 
     @ArchTest
     static final ArchRule packagesAreFreeOfCycles =

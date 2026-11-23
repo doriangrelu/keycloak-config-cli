@@ -95,7 +95,7 @@ Remplacer `RealmImportService` (package `service`) par le cas d'usage « appliqu
 
 ### US-006-09 — Ligne de commande dans `infrastructure.cli`
 
-**Statut :** À faire
+**Statut :** Terminé
 Déplacer les runners (`KeycloakConfigRunner`, `KeycloakConfigNormalizationRunner`) et le binding des propriétés (`properties`) dans `infrastructure.cli`. Les runners ne font plus que lire la configuration, appeler le cas d'usage et traduire le résultat en code de sortie.
 
 ### US-006-10 — Derniers paquets hérités
@@ -189,4 +189,13 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
 - Le rafraîchissement du jeton après la création d'un realm descend dans `RealmAdapter.createRealm` : c'est un détail du client Keycloak.
 - Supprimé : `RealmImportService` et le paquet `service`. Le cas d'usage est créé par `ReconciliationConfiguration`, en attendant `infrastructure.cli` (US-006-09).
 - Tests : `ImportRealmsTest` (ordre d'application, nettoyage une fois tous les fichiers appliqués, import sans nettoyage, dry-run sur un realm absent, synchronisation des fédérations, ressources protégées, fichiers tous analysés avant toute modification). Les tests d'intégration passent par le cas d'usage.
+
+### US-006-09
+
+- Les lanceurs passent dans `infrastructure.cli` : `ImportRunner` (ex-`KeycloakConfigRunner`) lit la configuration, appelle `ImportRealms` et traduit le résultat en code de sortie ; `NormalizationRunner` (ex-`KeycloakConfigNormalizationRunner`) lit les exports, les fait normaliser et écrire (`NormalizedRealmFiles`, `infrastructure.keycloak.normalization`), puis traduit l'échec éventuel en code de sortie.
+- Le binding des propriétés de la ligne de commande passe dans `infrastructure.cli.properties` (`import.*`, `normalization.*`, `normalize.*`, `run.*`). Les classes de configuration `ImportCommandConfiguration`, `NormalizationCommandConfiguration` et `CommandLineConfiguration` les activent et les traduisent en options simples pour les autres couches : `ImportOptions` (application), `KeycloakImportOptions` et `NormalizationOptions` (infrastructure Keycloak), `FileLocations` et `MustacheTemplates` (sources). `SourceConfiguration` disparaît : le cas d'usage et les lecteurs de fichiers sont assemblés par la ligne de commande.
+- Écart avec le tableau cible : `KeycloakConfigProperties` (`keycloak.*`, la connexion au serveur) ne va pas dans `infrastructure.cli` mais dans `infrastructure.keycloak.sdk`, avec `KeycloakProvider`, son seul utilisateur, qui y est avancé (prévu en US-006-10) : sinon `infrastructure.keycloak` dépendrait de la ligne de commande, et `KeycloakProvider`, resté dans `provider`, formait un cycle avec `infrastructure`. Elle est activée par `KeycloakClientFactory`.
+- La constante des attributs obsolètes (`io.github.doriangrelu.keycloak.config.`) quitte `ImportConfigProperties` pour `ReconciliationConfiguration`, son seul utilisateur.
+- Nouvelle règle ArchUnit `onlyTheCommandLineSeesTheCommandLine` : ni le domaine, ni l'application, ni `infrastructure.source`, ni `infrastructure.keycloak` ne dépendent de `infrastructure.cli`. Supprimés : les paquets `properties`, `service` et `provider`.
+- Les groupes de journalisation `keycloak-config-cli` et `kcc` visent désormais `application.importation`, `infrastructure.cli` et `KeycloakProvider`.
 

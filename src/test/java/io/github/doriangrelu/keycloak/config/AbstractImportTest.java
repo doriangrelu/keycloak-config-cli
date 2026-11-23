@@ -86,7 +86,7 @@ public abstract class AbstractImportTest {
     }
 
     /**
-     * Imports like one run of the command line does (see {@code KeycloakConfigRunner}): fresh execution context,
+     * Imports like one run of the command line does (see {@code ImportRunner}): fresh execution context,
      * import of every part, then the clean phase that deletes resources missing from the import.
      */
     public void runImport(List<RealmImport> realmImports) {

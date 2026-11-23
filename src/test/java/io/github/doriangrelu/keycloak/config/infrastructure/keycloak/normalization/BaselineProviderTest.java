@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.doriangrelu.keycloak.config.exception.NormalizationException;
-import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -33,10 +32,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class BaselineProviderTest {
 
     private static BaselineProvider provider(final String fallbackVersion) {
-        return new BaselineProvider(
-                new ObjectMapper(),
-                new NormalizationConfigProperties(
-                        null, NormalizationConfigProperties.OutputFormat.YAML, fallbackVersion));
+        return new BaselineProvider(new ObjectMapper(), new NormalizationOptions(null, fallbackVersion));
     }
 
     @ParameterizedTest

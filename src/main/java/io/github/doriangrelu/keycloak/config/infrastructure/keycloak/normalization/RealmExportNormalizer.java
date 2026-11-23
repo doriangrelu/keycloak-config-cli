@@ -23,7 +23,6 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalizat
 import io.github.doriangrelu.keycloak.config.application.normalization.NormalizedRealm;
 import io.github.doriangrelu.keycloak.config.application.normalization.RealmNormalization;
 import io.github.doriangrelu.keycloak.config.application.normalization.port.ReferenceRealmGateway;
-import io.github.doriangrelu.keycloak.config.properties.NormalizationKeycloakConfigProperties;
 import java.util.Objects;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.slf4j.Logger;
@@ -41,17 +40,17 @@ public class RealmExportNormalizer {
 
     private static final Logger logger = LoggerFactory.getLogger(RealmExportNormalizer.class);
 
-    private final NormalizationKeycloakConfigProperties keycloakConfigProperties;
+    private final NormalizationOptions options;
     private final RealmExportReader reader;
     private final RealmExportWriter writer;
     private final RealmNormalization normalization;
 
     RealmExportNormalizer(
-            final NormalizationKeycloakConfigProperties keycloakConfigProperties,
+            final NormalizationOptions options,
             final RealmExportReader reader,
             final RealmExportWriter writer,
             final ReferenceRealmGateway referenceRealms) {
-        this.keycloakConfigProperties = keycloakConfigProperties;
+        this.options = options;
         this.reader = reader;
         this.writer = writer;
         this.normalization = new RealmNormalization(referenceRealms);
@@ -59,7 +58,7 @@ public class RealmExportNormalizer {
 
     public RealmRepresentation normalize(final RealmRepresentation exported) {
         String exportVersion = exported.getKeycloakVersion();
-        String keycloakVersion = this.keycloakConfigProperties.getVersion();
+        String keycloakVersion = this.options.keycloakVersion();
         if (!Objects.equals(exportVersion, keycloakVersion)) {
             logger.warn(
                     "Keycloak-Config-CLI keycloak version {} and export keycloak version {} are not equal."

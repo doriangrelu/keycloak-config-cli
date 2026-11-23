@@ -40,10 +40,6 @@ import io.github.doriangrelu.keycloak.config.application.group.port.GroupGateway
 import io.github.doriangrelu.keycloak.config.application.identityprovider.IdentityProviderMapperReconciler;
 import io.github.doriangrelu.keycloak.config.application.identityprovider.IdentityProviderReconciler;
 import io.github.doriangrelu.keycloak.config.application.identityprovider.port.IdentityProviderGateway;
-import io.github.doriangrelu.keycloak.config.application.importation.ImportOptions;
-import io.github.doriangrelu.keycloak.config.application.importation.ImportRealms;
-import io.github.doriangrelu.keycloak.config.application.importation.port.ImportFileSource;
-import io.github.doriangrelu.keycloak.config.application.importation.port.RealmDeclarationParser;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.port.MessageBundleGateway;
 import io.github.doriangrelu.keycloak.config.application.realm.DefaultClientScopesReconciler;
@@ -65,7 +61,7 @@ import io.github.doriangrelu.keycloak.config.application.user.UserReconciler;
 import io.github.doriangrelu.keycloak.config.application.user.port.UserGateway;
 import io.github.doriangrelu.keycloak.config.application.userprofile.UserProfileReconciler;
 import io.github.doriangrelu.keycloak.config.application.userprofile.port.UserProfileGateway;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.KeycloakImportOptions;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -75,6 +71,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
 public class ReconciliationConfiguration {
+
+    /**
+     * Prefix of the realm attributes where former versions kept their remote state and checksums, removed by any import
+     * (ADR-007).
+     */
+    static final String OBSOLETE_ATTRIBUTE_PREFIX = "io.github.doriangrelu.keycloak.config.";
 
     @Bean
     public ReconciliationEngine reconciliationEngine(
@@ -93,9 +95,9 @@ public class ReconciliationConfiguration {
             final AuthenticationFlowGateway authenticationFlowGateway,
             final ClientAuthorizationGateway clientAuthorizationGateway,
             final RealmGateway realmGateway,
-            final ImportConfigProperties properties) {
+            final KeycloakImportOptions options) {
         return new ReconciliationEngine(List.of(
-                new RealmSettingsReconciler(realmGateway, ImportConfigProperties.REALM_OBSOLETE_ATTRIBUTE_PREFIX),
+                new RealmSettingsReconciler(realmGateway, OBSOLETE_ATTRIBUTE_PREFIX),
                 new DefaultClientScopesReconciler(realmGateway),
                 new DefaultGroupsReconciler(realmGateway),
                 new RealmFlowBindingsReconciler(realmGateway),
@@ -110,8 +112,7 @@ public class ReconciliationConfiguration {
                 new UserReconciler(
                         userGateway,
                         new UserImportRules(
-                                properties.getBehaviors().isRemoveDefaultRoleFromUser(),
-                                properties.getBehaviors().isSkipAttributesForFederatedUser())),
+                                options.removeDefaultRoleFromUser(), options.skipAttributesForFederatedUser())),
                 new IdentityProviderReconciler(identityProviderGateway),
                 new IdentityProviderMapperReconciler(identityProviderGateway),
                 new ClientProfileReconciler(clientPolicyGateway),
@@ -125,24 +126,5 @@ public class ReconciliationConfiguration {
                 new AuthenticatorConfigReconciler(authenticationFlowGateway),
                 new ClientFlowBindingsReconciler(authenticationFlowGateway),
                 new ClientAuthorizationReconciler(clientAuthorizationGateway)));
-    }
-
-    /** The import use case (ADR-007), on its ports. */
-    @Bean
-    public ImportRealms importRealms(
-            final ImportFileSource importFileSource,
-            final RealmDeclarationParser realmDeclarationParser,
-            final RealmGateway realmGateway,
-            final ComponentGateway componentGateway,
-            final ReconciliationEngine reconciliationEngine,
-            final ImportConfigProperties properties) {
-        return new ImportRealms(
-                importFileSource,
-                realmDeclarationParser,
-                realmGateway,
-                componentGateway,
-                reconciliationEngine,
-                new ImportOptions(
-                        properties.isDryRun(), properties.getBehaviors().isSyncUserFederation()));
     }
 }

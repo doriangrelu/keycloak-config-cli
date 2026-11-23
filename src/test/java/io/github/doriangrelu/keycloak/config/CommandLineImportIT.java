@@ -29,6 +29,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ImportRunner;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -97,7 +98,7 @@ class CommandLineImportIT extends AbstractImportIT {
 
                 KeycloakConfigApplication.main(new String[] {
                     "--import.files.locations=invalid",
-                    "--logging.level.io.github.doriangrelu.keycloak.config.KeycloakConfigRunner=error",
+                    "--logging.level.io.github.doriangrelu.keycloak.config.infrastructure.cli.ImportRunner=error",
                 });
 
                 verify(runtime).exit(ExitCode.INVALID_CONFIGURATION.code());
@@ -113,7 +114,7 @@ class CommandLineImportIT extends AbstractImportIT {
             })
     class CommandLineImportInvalidIT extends AbstractImportIT {
         @Autowired
-        KeycloakConfigRunner runner;
+        ImportRunner runner;
 
         @Test
         void testInvalidFileFormatException() {
@@ -128,7 +129,7 @@ class CommandLineImportIT extends AbstractImportIT {
     @TestPropertySource(properties = {"import.files.locations=invalid"})
     class CommandLineImportNotExistsExceptionIT extends AbstractImportIT {
         @Autowired
-        KeycloakConfigRunner runner;
+        ImportRunner runner;
 
         @Test
         void testInvalidImportException() {

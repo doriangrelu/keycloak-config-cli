@@ -18,38 +18,27 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.infrastructure.source;
+package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
-import io.github.doriangrelu.keycloak.config.application.importation.port.ImportFileSource;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
-import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
-import java.util.Optional;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.properties.NormalizationConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.properties.NormalizationKeycloakConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.NormalizationOptions;
+import io.github.doriangrelu.keycloak.config.infrastructure.source.ExportFileReader;
+import io.github.doriangrelu.keycloak.config.infrastructure.source.FileLocations;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-/** The readers of the files: import files for an import, exports for a normalization. */
+/** The normalization command: binds the {@code normalization.*} and {@code normalize.*} properties. */
 @Configuration(proxyBeanMethods = false)
-public class SourceConfiguration {
-
-    @Bean
-    @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
-    public ImportFileSource importFileSource(
-            final PathMatchingResourcePatternResolver patternResolver, final ImportConfigProperties properties) {
-        FileLocations locations = new FileLocations(
-                patternResolver,
-                properties.getFiles().getExcludes(),
-                properties.getFiles().isIncludeHiddenFiles());
-        Optional<MustacheTemplates> templates = properties.getMustache().isEnabled()
-                ? Optional.of(new MustacheTemplates(properties.getMustache().getVariables()))
-                : Optional.empty();
-        return new ImportFileReader(locations, templates);
-    }
+@ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
+@EnableConfigurationProperties({NormalizationConfigProperties.class, NormalizationKeycloakConfigProperties.class})
+public class NormalizationCommandConfiguration {
 
     /** The exports to normalize, never rendered as templates. */
     @Bean
-    @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "NORMALIZE")
     public ExportFileReader exportFileReader(
             final PathMatchingResourcePatternResolver patternResolver, final NormalizationConfigProperties properties) {
         return new ExportFileReader(
@@ -58,5 +47,11 @@ public class SourceConfiguration {
                         properties.getFiles().getExcludes(),
                         properties.getFiles().isIncludeHiddenFiles()),
                 properties.getFiles().getInputLocations());
+    }
+
+    @Bean
+    public NormalizationOptions normalizationOptions(
+            final NormalizationKeycloakConfigProperties keycloak, final NormalizationConfigProperties properties) {
+        return new NormalizationOptions(keycloak.getVersion(), properties.getFallbackVersion());
     }
 }

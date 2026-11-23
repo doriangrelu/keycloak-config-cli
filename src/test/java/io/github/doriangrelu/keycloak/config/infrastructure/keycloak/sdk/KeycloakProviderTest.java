@@ -18,12 +18,11 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.provider;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.lang.reflect.Constructor;

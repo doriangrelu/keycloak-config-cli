@@ -24,7 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.properties.ImportConfigProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

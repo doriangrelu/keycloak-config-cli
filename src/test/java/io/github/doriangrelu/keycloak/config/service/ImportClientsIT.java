@@ -47,7 +47,7 @@ import io.github.doriangrelu.keycloak.config.application.clientauthorization.Unk
 import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.InvalidAuthenticationFlowException;
 import io.github.doriangrelu.keycloak.config.domain.client.model.InvalidClientException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
-import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.test.util.SubGroupUtil;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;

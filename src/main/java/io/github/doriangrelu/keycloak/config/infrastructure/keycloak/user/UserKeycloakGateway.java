@@ -23,13 +23,13 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user;
 import io.github.doriangrelu.keycloak.config.application.user.UnknownUserReferenceException;
 import io.github.doriangrelu.keycloak.config.application.user.port.UserGateway;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.KeycloakImportOptions;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakFailure;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.ClientApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.GroupApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.UserApi;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -61,7 +61,7 @@ public class UserKeycloakGateway implements UserGateway {
     private final GroupApi groupApi;
     private final ClientApi clientApi;
     private final UserKeycloakMapper mapper;
-    private final ImportConfigProperties properties;
+    private final KeycloakImportOptions options;
 
     public UserKeycloakGateway(
             final UserApi userApi,
@@ -69,13 +69,13 @@ public class UserKeycloakGateway implements UserGateway {
             final GroupApi groupApi,
             final ClientApi clientApi,
             final UserKeycloakMapper mapper,
-            final ImportConfigProperties properties) {
+            final KeycloakImportOptions options) {
         this.userApi = userApi;
         this.roleApi = roleApi;
         this.groupApi = groupApi;
         this.clientApi = clientApi;
         this.mapper = mapper;
-        this.properties = properties;
+        this.options = options;
     }
 
     @Override
@@ -159,7 +159,7 @@ public class UserKeycloakGateway implements UserGateway {
 
     private UserRepresentation toRepresentation(final User user) {
         UserRepresentation representation = this.mapper.toRepresentation(user);
-        if (user.federationLink() != null && this.properties.getBehaviors().isSkipAttributesForFederatedUser()) {
+        if (user.federationLink() != null && this.options.skipAttributesForFederatedUser()) {
             representation.setAttributes(null);
         }
         return representation;

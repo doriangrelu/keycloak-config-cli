@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.properties;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

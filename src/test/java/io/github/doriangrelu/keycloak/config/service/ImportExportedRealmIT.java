@@ -35,7 +35,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
         properties = {
-            "logging.level.io.github.doriangrelu.keycloak.config.KeycloakConfigRunner=INFO",
+            "logging.level.io.github.doriangrelu.keycloak.config.infrastructure.cli.ImportRunner=INFO",
         })
 @Timeout(value = 60, unit = SECONDS)
 class ImportExportedRealmIT extends AbstractImportIT {

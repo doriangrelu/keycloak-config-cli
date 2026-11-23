@@ -20,8 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.configuration;
 
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
-import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.properties.ImportConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakConfigProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;

@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import io.github.doriangrelu.keycloak.config.domain.user.model.Credential;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.KeycloakImportOptions;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.UnmodeledAttributesConverter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakFailure;
@@ -39,7 +40,6 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.Cli
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.GroupApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.RoleApi;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.api.UserApi;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +48,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.mockito.Answers;
 
 class UserKeycloakGatewayTest {
 
@@ -61,14 +60,13 @@ class UserKeycloakGatewayTest {
     @BeforeEach
     void setUp() {
         this.userApi = mock(UserApi.class);
-        ImportConfigProperties properties = mock(ImportConfigProperties.class, Answers.RETURNS_DEEP_STUBS);
         this.gateway = new UserKeycloakGateway(
                 this.userApi,
                 mock(RoleApi.class),
                 mock(GroupApi.class),
                 mock(ClientApi.class),
                 new UserKeycloakMapper(new UnmodeledAttributesConverter()),
-                properties);
+                new KeycloakImportOptions(false, false, false));
         UserRepresentation existing = new UserRepresentation();
         existing.setId("id");
         existing.setUsername("u");

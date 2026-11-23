@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.provider;
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import io.github.doriangrelu.keycloak.config.exception.KeycloakProviderException;
-import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.util.ResteasyUtil;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import jakarta.ws.rs.WebApplicationException;

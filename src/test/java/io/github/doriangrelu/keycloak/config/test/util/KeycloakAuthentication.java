@@ -20,7 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.test.util;
 
-import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakConfigProperties;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Autowired;

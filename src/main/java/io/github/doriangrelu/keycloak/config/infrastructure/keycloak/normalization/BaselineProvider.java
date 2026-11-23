@@ -22,7 +22,6 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalizat
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.doriangrelu.keycloak.config.exception.NormalizationException;
-import io.github.doriangrelu.keycloak.config.properties.NormalizationConfigProperties;
 import io.github.doriangrelu.keycloak.config.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,9 +54,9 @@ public class BaselineProvider {
     private final java.util.Set<String> warned = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     @Autowired
-    public BaselineProvider(ObjectMapper objectMapper, NormalizationConfigProperties normalizationConfigProperties) {
+    public BaselineProvider(ObjectMapper objectMapper, NormalizationOptions options) {
         this.objectMapper = objectMapper;
-        this.fallbackVersion = normalizationConfigProperties.getFallbackVersion();
+        this.fallbackVersion = options.fallbackVersion();
     }
 
     public RealmRepresentation getRealm(String version, String realmName) {

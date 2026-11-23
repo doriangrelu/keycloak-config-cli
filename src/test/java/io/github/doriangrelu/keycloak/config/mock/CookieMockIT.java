@@ -27,7 +27,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockserver.model.HttpRequest.request;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportTest;
-import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakMock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

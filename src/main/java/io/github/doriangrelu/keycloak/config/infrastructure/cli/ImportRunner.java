@@ -18,15 +18,11 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config;
+package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
 import io.github.doriangrelu.keycloak.config.application.importation.ImportRealms;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
-import io.github.doriangrelu.keycloak.config.infrastructure.cli.DryRunReport;
-import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
-import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
-import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
-import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.properties.ImportConfigProperties;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +36,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -50,9 +45,8 @@ import org.springframework.stereotype.Component;
  * for backwards compatibility
  */
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
-@EnableConfigurationProperties({ImportConfigProperties.class, KeycloakConfigProperties.class})
-public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerator {
-    private static final Logger logger = LoggerFactory.getLogger(KeycloakConfigRunner.class);
+public class ImportRunner implements CommandLineRunner, ExitCodeGenerator {
+    private static final Logger logger = LoggerFactory.getLogger(ImportRunner.class);
     private static final long START_TIME = System.currentTimeMillis();
 
     private final ImportRealms importRealms;
@@ -61,7 +55,7 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
     private int exitCode = 0;
 
     @Autowired
-    public KeycloakConfigRunner(ImportRealms importRealms, ImportConfigProperties importConfigProperties) {
+    public ImportRunner(ImportRealms importRealms, ImportConfigProperties importConfigProperties) {
         this.importRealms = importRealms;
         this.importConfigProperties = importConfigProperties;
     }
