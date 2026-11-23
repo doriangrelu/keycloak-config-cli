@@ -4,7 +4,7 @@ keycloak-config-cli is compatible with Red Hat SSO (based on Keycloak).
 
 ## Requirements
 
-- Java JDK 8+
+- Java JDK 25+
 - Access to Red Hat Maven repositories
 
 ## Building for RH SSO

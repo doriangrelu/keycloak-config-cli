@@ -11,7 +11,7 @@
 | [EPIC-003](documentation/architecture/epics/EPIC-003-migration-ressources.md) | Migration des autres types de ressources | Terminé |
 | [EPIC-004](documentation/architecture/epics/EPIC-004-dry-run.md) | Dry-run et rapport des changements | Terminé |
 | [EPIC-005](documentation/architecture/epics/EPIC-005-normalisation.md) | Normalisation sur le nouveau socle | Terminé |
-| [EPIC-006](documentation/architecture/epics/EPIC-006-simplification.md) | Simplification : les fichiers comme seule vérité, Mustache seul moteur de template | En cours (US-006-01 à 10 terminées) |
+| [EPIC-006](documentation/architecture/epics/EPIC-006-simplification.md) | Simplification : les fichiers comme seule vérité, Mustache seul moteur de template | Terminé |
 
 ## Après la refonte
 
@@ -20,7 +20,7 @@
 | Normalisation : ignorer d'autres valeurs par défaut que celles de la référence | `TODO` de l'ancien `RealmNormalizationService` (EPIC-005) |
 | Normalisation : ignorer des clients par expression régulière | `TODO` de l'ancien `RealmNormalizationService` (EPIC-005) |
 | Normalisation : profil utilisateur et utilisateurs | Limites de l'EPIC-005 |
-| Mode interactif avec Spring Shell, repris comme adapter d'entrée de `infrastructure/cli`, une fois l'EPIC-006 terminé | Branche `feature/1-feature-interactive-cli-mode-with-spring-shell-for-realm-configuration`, conservée telle quelle |
+| Mode interactif avec Spring Shell, repris comme adapter d'entrée de `infrastructure/cli`, maintenant que l'EPIC-006 est terminé | Branche `feature/1-feature-interactive-cli-mode-with-spring-shell-for-realm-configuration`, conservée telle quelle |
 
 ## Principe de migration
 

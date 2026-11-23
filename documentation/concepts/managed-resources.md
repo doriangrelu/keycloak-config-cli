@@ -41,6 +41,11 @@ Inside a declared resource, the files describe the whole resource:
 - The roles of a scope mapping are exactly the declared ones
 - The texts of a message bundle locale are exactly the declared ones
 
+Two exceptions:
+
+- A component that declares at least one sub-component has exactly those; a component that declares none keeps its own, such as the mappers Keycloak creates with an LDAP user storage
+- A client with `allowRemoteResourceManagement` (the Keycloak default) keeps the authorization resources the files do not declare, except the `Default Resource`
+
 Settings the files do not mention at all, such as a realm attribute absent from the import, keep their value.
 
 ## Guarantees

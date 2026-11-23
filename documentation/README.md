@@ -8,6 +8,7 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 - [Installation](getting-started/installation.md)
 - [Quick Start](getting-started/quick-start.md)
 - [Configuration Properties](getting-started/configuration.md)
+- [Migrating to 7.0.0](getting-started/migration-7.md)
 
 ### Core Concepts
 - [Overview](concepts/overview.md)
@@ -51,18 +52,22 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 
 Keycloak Config CLI is a command-line tool that allows you to:
 
-- **Import** realm configurations into Keycloak from JSON or YAML files
-- **Update** existing configurations with incremental changes
-- **Manage** the full lifecycle of Keycloak resources (create, update, delete)
-- **Automate** Keycloak configuration in CI/CD pipelines
+- **Apply** realm configurations to Keycloak from JSON or YAML files, like `kubectl apply` with manifests
+- **Update** existing configurations: only what differs from Keycloak is changed
+- **Delete** what the files no longer declare, for the resource types they declare, except users, technical resources of Keycloak and protected resources
+- **Preview** the changes with a dry run before applying them
+- **Automate** Keycloak configuration in CI/CD pipelines, with distinct exit codes
 
 ## Key Features
 
-- **Declarative Configuration**: Define your Keycloak setup as code
+- **Declarative Configuration**: The import files are the only source of truth
 - **Idempotent Operations**: Run the same import multiple times safely
 - **Incremental Updates**: Only apply changes when necessary
-- **Full Resource Management**: Optionally delete resources not in your configuration
+- **Safe Cleanup**: Users, technical resources and protected resources are never deleted
+- **Templating**: Mustache variables for the values that differ between environments
 - **Multiple File Formats**: Support for JSON and YAML
+
+Upgrading from 6.x? Read [Migrating to 7.0.0](getting-started/migration-7.md).
 
 ## Quick Example
 
@@ -92,8 +97,8 @@ java -jar keycloak-config-cli.jar \
 
 ## Requirements
 
-- Java 21 or higher
-- Keycloak 22.x or higher (compatible with the Keycloak version specified in your build)
+- Java 25 or higher
+- Keycloak 26.x (built and tested against Keycloak 26.5.3)
 
 ## License
 

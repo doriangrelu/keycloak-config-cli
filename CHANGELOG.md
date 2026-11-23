@@ -6,96 +6,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased] (7.0.0)
 
+Version 7.0.0 makes the import files the only source of truth, like `kubectl apply` with manifests: what the files declare is created or updated, and what they no longer declare is deleted, except users, technical resources of Keycloak and protected resources. Read the [migration guide](documentation/getting-started/migration-7.md) and run a [dry run](documentation/advanced/dry-run.md) before the first import with this version.
+
 ### Added
 
-- A `protectedResources` rule can be restricted to one resource type with the optional `type` field (`CLIENT`, `REALM_ROLE`, `GROUP`...). Rules without `type` still protect every type.
-- Reference realm of Keycloak `26.5.3` for the normalization.
 - Dry run with `import.dry-run=true`: the import is compared with Keycloak, clean phase included, and the changes it would make are reported by realm (creations, updates with their changed fields, deletions) without applying anything. Text or JSON report (`import.dry-run-format`), optionally written to a file (`import.dry-run-report-file`); field values are never shown. Exit code `10` when changes are pending, `0` otherwise. See [Dry Run](documentation/advanced/dry-run.md).
-- Mustache templating support with CLI-provided variables via `import.mustache.enabled` and `import.mustache.variables.*`
-    - Variables can be passed as CLI arguments (`--import.mustache.variables.key=value`), environment variables (`IMPORT_MUSTACHE_VARIABLES_KEY=value`), or in configuration files
-    - Templates use `{{key}}` syntax in import files (JSON/YAML)
-    - Undefined variables resolve to an empty string by default
-    - Support for default values with `{{key:default_value}}` syntax
-- Cleanup of orphaned group role mappings (realm and client roles) during `cleanRealm` phase via `deleteRoleMappingMissingOnImport` in `GroupImportService`
-    - Realm roles assigned to groups in Keycloak but absent from import configuration are now removed
-    - Client roles assigned to groups in Keycloak but absent from import configuration are now removed
-    - Supports full group hierarchy (subgroups are traversed recursively)
-    - Cleanup runs before group deletion to ensure consistent state
-- Recursive deletion of orphaned subgroups in `GroupImportService` - groups not present in import configuration are now properly deleted at all hierarchy levels
-- Deletion of orphaned realm roles in `RoleImportService` via `deleteRealmRolesMissingInImport` using ExecutionContextHolder
-- Deletion of orphaned client roles in `RoleImportService` via `deleteClientRolesMissingInImport` with per-client tracking
-- Deletion of orphaned clients in `ClientImportService` via `deleteClientsMissingInImport` with protection for system clients
-- Complete user documentation in `/documentation` folder with guides, examples, and reference material
-- Technical reference documentation merged from legacy `/docs` folder
+- Mustache templating with `import.mustache.enabled` and `import.mustache.variables.*` (command line arguments, environment variables or configuration files). `{{name}}` is replaced by the value, `{{name:default}}` falls back to a default value, and `{{{name}}}` inserts a value as it is. A variable neither defined nor given a default fails the import, with the name of the variable, the file and the line. Values are escaped as the content of a double-quoted JSON or YAML string; HTML is not escaped. See [Templating with Mustache](documentation/advanced/templating.md).
+- A `protectedResources` rule can be restricted to one resource type with the optional `type` field (`CLIENT`, `REALM_ROLE`, `GROUP`...). Rules without `type` protect every type. See [Protected Resources](documentation/advanced/protected-resources.md).
+- Distinct exit codes per kind of failure: invalid configuration `2`, Keycloak unavailable `3`, Keycloak refused `4`, instead of `1` for every failure. Failures are logged once and reported through the exit code, also with debug logging. See [Exit Codes](documentation/reference/exit-codes.md).
+- Reference realm of Keycloak `26.5.3` for the normalization.
+- Complete user documentation in the `documentation` folder: guides, concepts, configuration reference, examples, advanced topics and technical reference, including a [migration guide](documentation/getting-started/migration-7.md).
 
 ### Changed
 
-- An invalid regular expression in `protectedResources` fails the import when the files are read, before anything is changed in Keycloak, with the exit code of an invalid configuration. A rule without `rule` compares by equality; a rule without `matcher` is rejected.
-- **BREAKING**: Mustache is the only template engine. The `$(...)` substitution is removed (`import.var-substitution.*`, and the `env:`, `sys:` and `file:` lookups): give the values as `import.mustache.variables.*` and write `{{name}}` in the files. A configuration that still sets `import.var-substitution.*` fails at startup.
-- **BREAKING**: A Mustache variable that is neither defined nor given a default value (`{{name:default}}`) fails the import, with the name of the variable, the file and the line, instead of rendering an empty value.
-- **BREAKING**: Mustache values are escaped as the content of a double-quoted JSON or YAML string (quotes, backslashes, line breaks), and no longer as HTML: `&` and `<` stay as they are. `{{{name}}}` inserts a value as it is, to inject a JSON or YAML fragment.
-- **BREAKING**: The parallel import is removed (`import.parallel`): the changes are applied one at a time, in the order of their dependencies. A configuration that still sets this property fails at startup.
-- **BREAKING**: The checksum cache is removed (`import.cache.enabled`, `import.cache.key`, `import.behaviors.checksum-with-cache-key`, `import.behaviors.checksum-changed`, and exit code `5`): every import compares every file with Keycloak, so a change made by hand in Keycloak is undone by the next import, and a dry run always shows it. The realm attributes where the checksums were stored (`io.github.doriangrelu.keycloak.config.import-checksum-*`) are removed by the next import. A configuration that still sets one of these properties fails at startup.
-- **BREAKING**: The remote state is removed (`import.remote-state.enabled`, `import.remote-state.encryption-key`, `import.remote-state.encryption-salt`): deletions follow the import files only, with their guarantees (users, resources of Keycloak and protected resources are never deleted). The realm attributes where it was stored (`io.github.doriangrelu.keycloak.config.state-*`) are removed by the next import. A configuration that still sets one of these properties fails at startup. Spring Security is no longer a dependency. Two rules replace what the remote state used to spare: a component that declares no sub-component keeps its own (such as the default mappers of an LDAP user storage), and a client that allows remote resource management (`allowRemoteResourceManagement`, the Keycloak default) keeps the authorization resources the files do not declare, except the `Default Resource`.
-- **BREAKING**: The per-type managed modes are removed: every `import.managed.*` property (`full` / `no-delete`) no longer exists, and a configuration that still sets one fails at startup, since unknown `import.*` properties are rejected. A single cleanup rule replaces them, like `kubectl apply` with manifests: for each realm, a resource type declared by at least one import file (key present, even with an empty list) is cleaned, and every resource of that type that no file declares is deleted; a type absent from all files is not touched. Inside a declared resource, what it omits is removed too (role mappings of a group, roles of a scope mapping, texts of a message bundle locale). Three guarantees are fixed, with no option: users are never deleted; technical resources created by Keycloak (built-in clients, roles, client scopes, flows, required actions, key providers...) are never deleted; resources matched by the `protectedResources` rules (`EQUALS` or `PATTERN`) of the import files are never deleted. Run a [dry run](documentation/advanced/dry-run.md) before applying. See [Managed Resources](documentation/concepts/managed-resources.md).
-- **BREAKING**: Normalization (`run.operation=NORMALIZE`) reads the export into the business objects of the import and compares them with the reference realm of the Keycloak version. The normalized files are smaller and can differ from the previous ones: a client keeps only its values that differ from its own reference (default clients) or from a client with default values (new clients); client attributes are compared one by one; roles lose their `containerId`; built-in flows that changed are kept; user federation and other components are kept, with all their sub-components, except key providers and the user profile; a group is kept with the whole tree of its top-level group. See [Normalization](documentation/advanced/normalization.md).
+- **BREAKING**: A single cleanup rule replaces the per-type managed modes and the remote state. For each realm, a resource type declared by at least one import file (key present, even with an empty list) is cleaned: every resource of that type that no file declares is deleted, and inside a declared resource what it omits is removed too (role mappings of a group, roles of a scope mapping, texts of a message bundle locale). A type absent from all files is not touched. Three guarantees are fixed, with no option: users are never deleted; technical resources created by Keycloak (built-in clients, roles, client scopes, flows, required actions, key providers...) are never deleted; resources matched by the `protectedResources` rules of the files are never deleted. A component that declares no sub-component keeps its own (such as the mappers of an LDAP user storage), and a client allowing remote resource management (`allowRemoteResourceManagement`, the Keycloak default) keeps the authorization resources the files do not declare, except the `Default Resource`. See [Managed Resources](documentation/concepts/managed-resources.md).
+- **BREAKING**: Every import compares every file with Keycloak: a change made by hand in Keycloak, on something the files declare, is undone by the next import. The realm attributes where former versions kept their state and checksums (`io.github.doriangrelu.keycloak.config.*`) are removed by the next import.
+- **BREAKING**: Every file is read, rendered and parsed before anything is changed in Keycloak: an invalid file changes nothing.
+- **BREAKING**: When several files of a realm define the same resource (role, group, client, default client scopes, default groups...) with different content, the import is rejected (exit code `2`) instead of the last file winning.
+- **BREAKING**: The import runs on a reconciliation engine: each resource type is compared with Keycloak, created, updated, then cleaned once every file of the realm is applied. The realm is only updated when a declared setting changed, and settings an import omits keep their value. The error messages are unchanged; failures caused by the configuration exit with code `2`.
+- **BREAKING**: An invalid regular expression in `protectedResources` fails the import when the files are read (exit code `2`). A rule without `rule` compares by equality; a rule without `matcher` is rejected.
+- **BREAKING**: Normalization (`run.operation=NORMALIZE`) compares the export with the reference realm of the Keycloak version through the business objects of the import. The normalized files are smaller and can differ from the previous ones: a client keeps only its values that differ from its own reference (default clients) or from a client with default values (new clients); client attributes are compared one by one; roles lose their `containerId`; built-in flows that changed are kept; user federation and other components are kept, with all their sub-components, except key providers and the user profile; a group is kept with the whole tree of its top-level group. See [Normalization](documentation/advanced/normalization.md).
 - Normalization uses the closest reference realm when there is none for the version of an export, instead of failing: the greatest lower version of the same major version, else the lowest greater one of the same major version, else the greatest lower one. `normalization.fallback-version` still takes precedence.
-- Javers is no longer a dependency.
-- **BREAKING**: Realm roles, client roles and their composites are imported by the new reconciliation engine. When several files target the same realm, a role defined twice with different content is now rejected (exit code `2`) instead of the last file winning.
-- Client profiles and client policies are imported by the new reconciliation engine, one at a time.
-- **BREAKING**: The realm settings, the default client scopes and the default groups of the realm are imported by the new reconciliation engine. The realm is only updated when a declared setting changed; settings an import omits keep their value, events and their expiration included. A realm Keycloak refuses to create or update raises `RealmRejectedException` instead of `KeycloakRepositoryException`, and a missing default client scope or default group raises `UnknownRealmReferenceException` instead of `ImportProcessingException` and `InvalidImportException`; messages are unchanged (exit code `2`). When several files of a realm declare default client scopes or default groups differently, the import is rejected instead of the last file winning.
-- **BREAKING**: The authorization settings of clients are imported by the new reconciliation engine. A resource or policy naming a missing client, group, realm role or identity provider through a placeholder, or a placeholder of an unsupported type, raises `UnknownAuthorizationReferenceException` instead of `ImportProcessingException`; messages are unchanged (exit code `2`). The answers Keycloak gives when the fine-grained admin permissions of version 2 are active are tolerated as before.
-- **BREAKING**: Authentication flows, authenticator configs and the flow binding overrides of clients are imported by the new reconciliation engine. Flows missing from the import are deleted in the clean phase, after the identity providers are imported: a flow the same import stops using as first or post broker login flow is now deleted. An invalid flow (missing sub-flow, authenticator on a sub-flow that is not a form, built-in flag changed) raises `InvalidAuthenticationFlowException`, a flow, execution or sub-flow refused by Keycloak raises `AuthenticationFlowRejectedException`, and an authenticator config no execution uses, or used but not declared, raises `UnknownAuthenticatorConfigException`, instead of `InvalidImportException`, `ImportProcessingException` and `KeycloakRepositoryException`; messages are unchanged (exit code `2`). Unused authenticator configs are also deleted when a file declares authenticator configs without flows.
-- **BREAKING**: Components, their sub-components and the user profile configuration are imported by the new reconciliation engine. Components missing from the import are deleted in the clean phase instead of right after the import of components. A component refused by Keycloak raises `ComponentRejectedException` instead of `ImportProcessingException`; the message is unchanged (exit code `2`).
-- Identity providers and their mappers are imported by the new reconciliation engine. Those missing from the import are deleted in the clean phase, after the other resources, instead of before the import of identity providers.
-- **BREAKING**: Scope mappings and client scope mappings are imported by the new reconciliation engine. A mapping referring to a missing client, client scope or role raises `UnknownScopeMappingReferenceException` instead of `KeycloakRepositoryException`; messages are unchanged (exit code `2`).
-- **BREAKING**: Users are imported by the new reconciliation engine. A user referring to a missing role, client or group raises `UnknownUserReferenceException`, and a username differing from the email while the realm uses the email as username raises `InvalidUserException`, instead of `ImportProcessingException`, `KeycloakRepositoryException` and `InvalidImportException`; messages are unchanged (exit code `2`).
-- **BREAKING**: Groups are imported by the new reconciliation engine. A group mapped to a missing realm or client role raises `UnknownGroupRoleException` (exit code `2`), and a group defined twice with different content across the files of a realm is rejected.
-- **BREAKING**: A client refused by Keycloak raises `ClientRejectedException`, and an invalid client (no client id nor name, unsupported authorization settings) raises `InvalidClientException`, instead of `ImportProcessingException`; messages are unchanged (exit code `2`).
-- **BREAKING**: A protocol mapper of a client scope refused by Keycloak raises `ProtocolMapperRejectedException` instead of `ImportProcessingException`, with the same message (exit code `2`).
-- **BREAKING**: A role declared for a missing client raises `UnknownClientException`, and a composite including a missing role raises `UnknownRoleException`; the messages are unchanged and both exit with code `2`.
-- **BREAKING**: Distinct exit codes per kind of failure (invalid configuration `2`, Keycloak unavailable `3`, Keycloak refused `4`, checksum changed `5`), instead of `1` for every failure. See [Exit Codes](documentation/reference/exit-codes.md).
-    - Failures are no longer re-thrown when debug logging is enabled: they are logged once and reported through the exit code.
-    - A changed checksum with `import.behaviors.checksum-changed=fail` now raises `ChecksumChangedException` instead of `InvalidImportException`.
-- **BREAKING**: No default value is shipped any more for `import.remote-state.encryption-salt`. It is now required when `import.remote-state.encryption-key` is set, and the tool refuses to start otherwise.
-    - To keep reading a state encrypted by a previous version, set `import.remote-state.encryption-salt=2B521C795FBE2F2425DB150CD3700BA9` (the former default), or start over with a salt of your own.
-- **BREAKING**: Refactored `GroupImportService` to use functional programming with Java Streams
-- **BREAKING**: Refactored `RoleImportService` to track imported roles via ExecutionContextHolder for managed deletion
-- **BREAKING**: Refactored `ClientImportService` to track imported clients via ExecutionContextHolder for managed deletion
-- Renamed `tryRecursivelyDeletingDanglingSubGroups` to `deleteOrphanedSubGroupsRecursively` for clarity
-- Replaced mutable `buildGroupPathLookupMap` with immutable `flattenGroupHierarchy` returning a Stream
-- `RoleImportService` now stores imported roles in ExecutionContext for later cleanup phase
-- `ClientImportService` now stores imported clients in ExecutionContext for later cleanup phase
-- Enhanced FGAP V2 handling: `admin-permissions` client is now properly skipped during import and deletion
-- Updated README with prominent documentation links
+- The `keycloak-config-cli` and `kcc` logging groups cover the import use case, the command line and the Keycloak client.
+- Internal: hexagonal architecture (domain, application, infrastructure) checked by ArchUnit; Javers, commons-codec, commons-text and Spring Security are no longer dependencies.
+
+### Removed
+
+- **BREAKING**: The per-type managed modes (`import.managed.*`). See the cleanup rule above.
+- **BREAKING**: The remote state (`import.remote-state.enabled`, `import.remote-state.encryption-key`, `import.remote-state.encryption-salt`).
+- **BREAKING**: The checksum cache (`import.cache.enabled`, `import.cache.key`, `import.behaviors.checksum-with-cache-key`, `import.behaviors.checksum-changed`).
+- **BREAKING**: The parallel import (`import.parallel`): changes are applied one at a time, in the order of their dependencies.
+- **BREAKING**: The `$(...)` variable substitution (`import.var-substitution.*` and its `env:`, `sys:`, `file:` lookups): use Mustache templating.
+- A configuration that still sets one of these properties fails at startup with exit code `2`, since unknown `import.*` properties are rejected.
 
 ### Fixed
 
 - `import.files.excludes` and `normalization.files.excludes` now apply on Windows: the patterns were matched against paths with backslashes and a drive letter, and never matched.
+- Re-running an unchanged import no longer deletes its clients, roles and groups.
 - A client a file only gives by name is no longer deleted by the clean phase of the run that creates it.
+- A recreated authentication flow keeps its id, and clients overriding a binding with it are bound to it again instead of to a deleted id.
+- Authentication flow binding overrides removed from the import are cleared in Keycloak again.
+- A file declaring neither client profiles nor client policies no longer resets those of the realm.
+- The `admin-permissions` client is skipped during import and clean phase when the fine-grained admin permissions of version 2 are active; only the `*-realm` clients of the `master` realm are spared among the realm administration clients.
 - Normalizing an export of the master realm no longer fails on its clients without protocol.
 - Normalization keeps every scope mapping held by a client (`scopeMappings` entries with `client` instead of `clientScope`): only one of them was kept.
-- The clean phase only deletes resource types declared by at least one import file of the realm, follows the `import.managed.*` setting of each type, and with remote state enabled only deletes resources created by keycloak-config-cli.
-- Re-running an unchanged import (same checksum) no longer deletes its clients, roles and groups.
-- Removing the undeclared roles of a declared scope mapping follows `import.managed.scope-mapping` instead of `import.managed.client-scope`.
-- Removing the undeclared sub-components of a newly created component follows `import.managed.sub-component` instead of `import.managed.component`.
-- A recreated authentication flow keeps its id, and clients overriding a binding with it are bound to it again instead of to a deleted id.
-- A file declaring neither client profiles nor client policies no longer resets those of the realm, which wiped the ones of the other files of the realm.
-- Clients are deleted regardless of FGAP v2, and only the `*-realm` clients of the `master` realm are spared.
-- Authentication flow binding overrides removed from the import are cleared in Keycloak again.
-
-### Documentation
-
-- Added comprehensive JavaDoc to `GroupImportService` class
-- Added comprehensive JavaDoc to `ClientImportService` class
-- Created full documentation structure:
-    - Getting Started: installation, quick-start, configuration
-    - Concepts: overview, managed-resources, import-modes
-    - Configuration: realms, clients, groups, roles, users, authentication-flows, identity-providers, client-scopes
-    - Examples: basic-realm, groups-and-roles, client-configuration, full-realm-example
-    - Advanced: parallel-processing, state-management, normalization, protected-resources
-    - Reference: features, import-patterns, managed-resources, normalization-details, rhsso-compatibility, skip-server-info
-- Removed legacy `/docs` folder (content merged into `/documentation/reference`)
 
 ## [6.4.1] - 2026-01-28
 

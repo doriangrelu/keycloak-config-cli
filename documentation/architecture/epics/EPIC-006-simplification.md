@@ -1,6 +1,6 @@
 # EPIC-006 — Simplification : les fichiers comme seule vérité
 
-**Statut :** En cours
+**Statut :** Terminé
 **ADR :** [ADR-007](../ADR-007-fichiers-seule-verite.md), [ADR-004](../ADR-004-moteur-de-reconciliation.md)
 
 Recentrer l'outil sur son besoin, sur le modèle de `kubectl apply` : créer et mettre à jour les realms décrits par les fichiers, supprimer ce qui n'y figure plus, et variabiliser les valeurs avec Mustache. Les options qui compliquent le moteur ou contredisent ce besoin sont retirées, et les fonctionnalités gardées sont reprises sur le nouveau socle.
@@ -105,7 +105,7 @@ Ranger ce qui reste hors des couches : `provider.KeycloakProvider`, `resource.Ma
 
 ### US-006-11 — Documentation et migration
 
-**Statut :** À faire
+**Statut :** Terminé
 Mettre à jour la documentation utilisateur (configuration, concepts, ressources gérées, état, parallélisme, dry-run, `features.md`) et le CHANGELOG. Guide de migration : options retirées et leur remplacement, nouvelle règle de suppression, dry-run recommandé avant le premier import en 7.0.0.
 
 ## Réalisé
@@ -207,4 +207,10 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
 - `infrastructure.source` : `KeycloakConfigConfiguration` devient `SourceConfiguration` (le résolveur de motifs de fichiers).
 - Supprimés car plus utilisés : `KeycloakRepositoryException` (plus rien ne la levait ; `ExitCodeResolver` ne la traite plus), `KeycloakVersionUnsupportedException`, `LoggingClientFilter`, et `LocalizationUtil` (simple délégation, remplacée par un appel direct dans son seul test).
 - Nouvelle règle ArchUnit `everyClassBelongsToALayer` : plus aucune classe hors de `domain`, `application` et `infrastructure`, à part `KeycloakConfigApplication`. Il ne reste aucun paquet hérité.
+
+### US-006-11
+
+- Guide de migration `documentation/getting-started/migration-7.md` : options retirées et leur remplacement (avec les variables d'environnement), règle de nettoyage et ses garanties, ce que l'état distant épargnait (sous-composants, ressources d'autorisation créées à l'exécution), attributs résiduels purgés, comparaison de tous les fichiers à chaque exécution, passage de `$(...)` à Mustache, liste de contrôle avec un dry-run avant le premier import en 7.0.0.
+- CHANGELOG : la section 7.0.0 est réécrite en notes de version par rapport à la 6.x (ajouté, modifié, retiré, corrigé). Elle ne décrit plus les états intermédiaires de la refonte (code de sortie `5`, sel de l'état distant, modes gérés, variables Mustache vides) ni les classes internes disparues (`*ImportService`, `ExecutionContextHolder`).
+- Documentation utilisateur alignée sur le comportement de la 7.0.0 : configuration, concepts, ressources gérées, exemples, référence des fonctionnalités, README ; prérequis Java 25 et Keycloak 26.x.
 

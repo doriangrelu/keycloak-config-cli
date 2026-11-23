@@ -11,7 +11,7 @@ Imports configuration from files into Keycloak:
 ```bash
 java -jar keycloak-config-cli.jar \
   --run.operation=IMPORT \
-  --import.files.locations=/config/
+  --import.files.locations='/config/*'
 ```
 
 ### NORMALIZE Mode
@@ -26,46 +26,17 @@ java -jar keycloak-config-cli.jar \
   --normalization.output-format=YAML
 ```
 
-## Import Strategies
+## How an Import Works
 
-### Standard Import
+An import has no strategy to choose: every run does the same thing, like `kubectl apply`.
 
-The default behavior: compare and update.
+1. **Read**: all the import files are read, rendered (when [Mustache templating](../advanced/templating.md) is enabled) and parsed before anything is changed in Keycloak. An invalid file (unreadable, unparsable, undefined template variable, invalid `protectedResources` regular expression) fails the import with exit code `2`, and Keycloak is left unchanged.
+2. **Merge**: the files that target the same realm are merged into one declaration of the realm.
+3. **Compare**: the declaration is compared with the current content of Keycloak. There is no checksum and no state stored between runs: every file is compared with Keycloak on every run.
+4. **Apply**: what the files declare is created or updated, one change at a time, in the order of their dependencies.
+5. **Clean**: for each resource type the files of the realm declare (key present, even as an empty list), the resources of that type that no file declares are deleted. Types no file declares are not touched. Users, technical resources created by Keycloak and [protected resources](../advanced/protected-resources.md) are never deleted. See [Managed Resources](managed-resources.md).
 
-```yaml
-import:
-  force: false  # Default
-  state: true   # Default
-```
-
-1. Load configuration files
-2. Compare with current Keycloak state
-3. Apply only necessary changes
-
-### Force Import
-
-Bypass state checking and apply all configurations:
-
-```yaml
-import:
-  force: true
-```
-
-Use cases:
-- After manual changes in Keycloak
-- When state has become inconsistent
-- During initial migration
-
-### Stateless Import
-
-Disable state management entirely:
-
-```yaml
-import:
-  state: false
-```
-
-Every run compares configuration with live Keycloak state (no caching).
+Because Keycloak is compared on every run, a change made by hand in Keycloak to a declared resource is undone by the next import. Run a [dry run](../advanced/dry-run.md) (`--import.dry-run=true`) to see the changes an import would make, deletions included, without applying them.
 
 ## File Processing
 
@@ -87,13 +58,13 @@ Import multiple specific files:
 
 ### Directory Import
 
-Import all files from a directory:
+Import all files of a directory with a pattern (a directory name alone matches no file):
 
 ```bash
---import.files.locations=/config/
+--import.files.locations='/config/*'
 ```
 
-Files are processed in alphabetical order by filename.
+The files of a location are read in alphabetical order by filename.
 
 ### Glob Pattern Import
 
@@ -203,41 +174,21 @@ config/
 Import with:
 
 ```bash
---import.files.locations=/config/realm-a/,/config/realm-b/
+--import.files.locations='/config/realm-a/*,/config/realm-b/*'
 ```
 
 ### File Ordering
 
-Files are processed alphabetically. Use numeric prefixes to control order:
+The files of a realm are merged before anything is applied, so their order does not matter: keycloak-config-cli applies the changes in the order of their dependencies (roles before the groups and users that use them, client scopes before the clients that use them, and so on). Numeric prefixes can still help readers find their way:
 
 ```
-00-realm.yaml      # Realm settings first
-01-roles.yaml      # Roles before groups
-02-groups.yaml     # Groups before users
-03-clients.yaml    # Clients
-04-users.yaml      # Users last
+00-realm.yaml
+01-roles.yaml
+02-groups.yaml
+03-clients.yaml
 ```
 
-## Handling Dependencies
-
-Some resources depend on others:
-
-| Resource | Dependencies |
-|----------|--------------|
-| Groups | Realm roles, Client roles |
-| Users | Groups, Roles |
-| Client Scope Mappings | Clients, Client Scopes |
-| Role Composites | Other roles |
-
-### Recommended Import Order
-
-1. Realm settings
-2. Roles (realm and client)
-3. Groups
-4. Client Scopes
-5. Clients
-6. Users
-7. Identity Providers
+A resource defined twice with different content in the files of a realm is rejected (exit code `2`).
 
 ### Using Multiple Files
 
@@ -267,25 +218,15 @@ groups:
       - admin
 ```
 
+A type declared in one file of the realm is cleaned over all the files of the realm: a group declared in another file of the same realm is not deleted.
+
 ## Error Handling
 
-### Continue on Error
+The import stops on the first error, and the exit code tells what kind of error it was (invalid configuration, Keycloak unavailable, Keycloak refused): see [Exit Codes](../reference/exit-codes.md).
 
-By default, the CLI stops on first error.
+Since every file is read and parsed first, an invalid file changes nothing in Keycloak. A reference to a missing resource (a role, client, group or client scope that neither the files nor Keycloak have) fails the import with exit code `2`.
 
-### Retry Logic
-
-The CLI includes built-in retry logic for:
-- Newly created resources not immediately available
-- Temporary network issues
-- Rate limiting responses
-
-### Validation
-
-The CLI validates configuration before applying:
-- Required fields
-- Reference integrity (roles exist before assignment)
-- Format validation
+With `keycloak.availability-check.enabled=true`, keycloak-config-cli waits for Keycloak to be available before importing (up to `keycloak.availability-check.timeout`).
 
 ## Best Practices
 

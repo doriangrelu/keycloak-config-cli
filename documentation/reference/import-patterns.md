@@ -38,8 +38,8 @@ Pattern matching rules:
 # Multiple files
 --import.files.locations=realm.yaml,clients.yaml,groups.yaml
 
-# Directory
---import.files.locations=/config/
+# Every file of a directory (a directory name alone matches no file)
+--import.files.locations='/config/*'
 
 # Pattern
 --import.files.locations=/config/**/*.yaml
@@ -56,12 +56,12 @@ export IMPORT_FILES_LOCATIONS="/config/*.yaml"
 
 ## File Processing Order
 
-Files are processed in alphabetical order. Use numeric prefixes to control order:
+The files of a location are read in alphabetical order. The files that target the same realm are merged before anything is applied, and the changes are applied in the order of their dependencies, so the file order does not matter. Numeric prefixes can still keep a directory readable:
 
 ```
 config/
-├── 00-realm.yaml       # Processed first
+├── 00-realm.yaml
 ├── 01-roles.yaml
 ├── 02-groups.yaml
-└── 03-clients.yaml     # Processed last
+└── 03-clients.yaml
 ```

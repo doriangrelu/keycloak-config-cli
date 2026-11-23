@@ -35,7 +35,7 @@ This document lists all features supported by Keycloak Config CLI with their ver
 | Remove groups | 1.3.0 | Remove existing groups while updating realms |
 | Add/Remove group attributes | 1.3.0 | Add or remove group attributes in existing groups |
 | Add/Remove group roles | 1.3.0 | Add or remove roles to/from existing groups |
-| Cleanup group role mappings | 7.1.0 | Remove orphaned realm and client role mappings from groups during cleanup phase |
+| Cleanup group role mappings | 7.0.0 | Remove the realm and client role mappings of a declared group that the files do not declare |
 | Update/Remove subgroups | 1.3.0 | Like groups, subgroups may also be added/updated and removed |
 | Add scope-mappings | 1.0.0 | Add scope-mappings while creating or updating realms |
 | Add roles to scope-mappings | 1.0.0 | Add roles to existing scope-mappings |
@@ -60,6 +60,10 @@ This document lists all features supported by Keycloak Config CLI with their ver
 | Synchronize client-policies | 5.6.0 | Synchronize the client-policies (clientProfiles and clientPolicies) |
 | Synchronize message bundles | 5.12.0 | Synchronize message bundles defined on the realm configuration |
 | Mustache templating | 7.0.0 | Use `{{variable}}` placeholders in import files with CLI-provided context variables; the only template engine since `$(...)` variable substitution was removed |
+| Delete what the files no longer declare | 7.0.0 | Like `kubectl apply`: for each resource type the files of a realm declare, the resources that no file declares are deleted; types no file declares are not touched. Users are never deleted. See [Managed Resources](../concepts/managed-resources.md) |
+| Protected resources | 7.0.0 | `protectedResources` rules (`EQUALS` or `PATTERN`, optionally restricted to one `type`) keep resources from being deleted. See [Protected Resources](../advanced/protected-resources.md) |
+| Dry run | 7.0.0 | Report the creations, updates and deletions an import would make without applying them (`import.dry-run`). See [Dry Run](../advanced/dry-run.md) |
+| Distinct exit codes | 7.0.0 | One exit code per kind of failure. See [Exit Codes](exit-codes.md) |
 | Normalize realm exports | - | Normalize a full realm export to be more minimal |
 
 ## Specificities

@@ -9,7 +9,7 @@ java -jar keycloak-config-cli.jar \
   --keycloak.url=http://localhost:8080 \
   --keycloak.user=admin \
   --keycloak.password=admin \
-  --import.files.locations=/config/ \
+  --import.files.locations='/config/*' \
   --import.dry-run=true
 ```
 
@@ -89,7 +89,7 @@ Run the dry run on a merge request to show the changes it brings, and fail when 
 ```bash
 set +e
 java -jar keycloak-config-cli.jar \
-  --import.files.locations=/config/ \
+  --import.files.locations='/config/*' \
   --import.dry-run=true \
   --import.dry-run-format=json \
   --import.dry-run-report-file=dry-run.json

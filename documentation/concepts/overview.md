@@ -26,8 +26,9 @@ Keycloak Config CLI solves these problems by allowing you to define your entire 
 
 1. **Define** your configuration in YAML or JSON files
 2. **Run** Keycloak Config CLI with your files
-3. **CLI compares** the desired state with the current Keycloak state
-4. **CLI applies** only the necessary changes
+3. **CLI reads** every file before changing anything: an invalid file changes nothing in Keycloak
+4. **CLI compares** the desired state with the current Keycloak state, on every run
+5. **CLI applies** only the necessary changes, and deletes the resources of the declared types that no file declares (see [Managed Resources](managed-resources.md))
 
 ## Core Principles
 
@@ -42,12 +43,13 @@ groups:
   - name: users
   - name: guests
 
-# The CLI figures out: "Create administrators, update users, keep guests"
+# The CLI figures out: "Create administrators, update users, keep guests,
+# delete every other group that is not protected"
 ```
 
 ### Idempotency
 
-Running the same import multiple times produces the same result. If nothing changed in your configuration, nothing changes in Keycloak.
+Running the same import multiple times produces the same result. If nothing changed in your configuration nor in Keycloak, nothing changes in Keycloak. If someone changed a declared resource by hand in Keycloak, the next import undoes the change.
 
 ### Incremental Updates
 
@@ -61,43 +63,9 @@ Third run:  (added 1 group) → Create 1 group only
 
 ## Architecture
 
-Keycloak Config CLI is built on Spring Boot and consists of several layers:
+Keycloak Config CLI is a Spring Boot command line application. It reads and parses the import files, builds the desired state of each realm, and a reconciliation engine compares it with Keycloak through the Keycloak Admin REST API, then creates, updates and deletes what differs.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Import Services                          │
-│  (RealmImportService, GroupImportService, ClientImport...) │
-├─────────────────────────────────────────────────────────────┤
-│                     Repositories                            │
-│  (RealmRepository, GroupRepository, ClientRepository...)    │
-├─────────────────────────────────────────────────────────────┤
-│                   Keycloak Admin Client                     │
-│              (REST API Communication)                       │
-├─────────────────────────────────────────────────────────────┤
-│                     Keycloak Server                         │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Import Services
-
-Each resource type has a dedicated import service that handles:
-- Creating new resources
-- Updating existing resources
-- Deleting the resources of declared types that no file declares (see [Managed Resources](managed-resources.md))
-
-### Repositories
-
-Repositories abstract the Keycloak Admin Client API and provide:
-- CRUD operations for each resource type
-- Query methods for finding resources
-- Bulk operations where applicable
-
-### State Management
-
-The CLI can track the state of previous imports to:
-- Skip unchanged configurations
-- Detect external changes
-- Optimize import performance
+Nothing is stored between runs: no checksum, no cache, no state in Keycloak. Every run compares every file with Keycloak.
 
 ## Supported Resources
 
@@ -118,5 +86,5 @@ The CLI can track the state of previous imports to:
 ## Next Steps
 
 - [Managed Resources](managed-resources.md) - Learn about resource lifecycle management
-- [Import Modes](import-modes.md) - Understand different import strategies
+- [Import Modes](import-modes.md) - How an import works, file selection and templating
 - [Quick Start](../getting-started/quick-start.md) - Get hands-on experience

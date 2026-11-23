@@ -165,16 +165,14 @@ When at least one import file of the realm has a `groups` key (even `groups: []`
 
 ### How Cleanup Works
 
-The CLI performs two cleanup phases during the `cleanRealm` step:
+Each declared group has exactly the role mappings and subgroups the files give it.
 
-#### Phase 1: Role Mappings Cleanup
+#### Role Mappings
 
-Before deleting any group, the CLI removes orphaned role mappings from all imported groups:
+For each declared group, including its subgroups:
 
-1. **Flattens the group hierarchy** into a path-based map (including all subgroups)
-2. **For each imported group**, fetches its current state from Keycloak
-3. **Compares realm roles**: any realm role present in Keycloak but absent from the import is removed
-4. **Compares client roles**: for each client, roles present in Keycloak but absent from the import are removed. If an entire client is absent from the import, all its roles are removed from the group
+- Realm roles mapped in Keycloak but absent from the files are removed from the group
+- Client roles mapped in Keycloak but absent from the files are removed from the group. If a client is absent from the `clientRoles` of the group, all its roles are removed from the group
 
 Example:
 ```yaml
@@ -193,13 +191,9 @@ If Keycloak has:
 - Client roles for `my-api`: `read`, `write` -> `write` will be removed
 - Client roles for `old-client`: `view` -> all roles for `old-client` will be removed
 
-#### Phase 2: Orphaned Groups Deletion
+#### Groups and Subgroups
 
-After role mappings cleanup, the CLI deletes orphaned groups:
-
-1. **Builds a path map** of all groups in your configuration (including subgroups)
-2. **Compares with Keycloak** groups at each level
-3. **Deletes orphaned groups** recursively from leaf to root
+Top-level groups that no file declares are deleted, and so are the subgroups missing from a declared group, at every level of the hierarchy.
 
 Example:
 ```yaml

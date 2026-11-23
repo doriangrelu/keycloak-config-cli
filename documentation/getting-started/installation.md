@@ -4,8 +4,8 @@ This guide covers the different ways to install and run Keycloak Config CLI.
 
 ## Prerequisites
 
-- **Java 21** or higher
-- A running **Keycloak** instance (version 22.x or higher)
+- **Java 25** or higher
+- A running **Keycloak** instance (this version is built and tested against Keycloak 26.5.3, see [Compatibility with Keycloak](../../README.md#compatibility-with-keycloak))
 - Network access to the Keycloak Admin API
 
 ## Installation Methods
@@ -17,7 +17,7 @@ Download the latest release from the [releases page](https://github.com/doriangr
 ```bash
 # Download the JAR
 curl -L -o keycloak-config-cli.jar \
-  https://github.com/doriangrelu/keycloak-config-cli/releases/download/v6.4.1/keycloak-config-cli-6.4.1.jar
+  https://github.com/doriangrelu/keycloak-config-cli/releases/download/v7.0.0/keycloak-config-cli-7.0.0.jar
 
 # Run it
 java -jar keycloak-config-cli.jar --help
@@ -60,7 +60,7 @@ If you want to integrate keycloak-config-cli into your own application:
 <dependency>
     <groupId>io.github.doriangrelu.keycloak</groupId>
     <artifactId>keycloak-config-cli</artifactId>
-    <version>6.4.1</version>
+    <version>7.0.0</version>
 </dependency>
 ```
 
@@ -78,3 +78,4 @@ You should see the available command-line options and their descriptions.
 
 - [Quick Start Guide](quick-start.md) - Get up and running quickly
 - [Configuration Properties](configuration.md) - Learn about all available options
+- [Migrating to 7.0.0](migration-7.md) - Upgrading from 6.x

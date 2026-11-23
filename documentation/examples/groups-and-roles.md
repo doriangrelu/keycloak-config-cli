@@ -316,7 +316,7 @@ java -jar keycloak-config-cli.jar \
 Or use a single directory:
 ```bash
 java -jar keycloak-config-cli.jar \
-  --import.files.locations=config/
+  --import.files.locations='config/*'
 ```
 
 ## Resulting Structure

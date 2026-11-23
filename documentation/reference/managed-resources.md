@@ -19,6 +19,7 @@ Deletions never apply to:
 1. Users
 2. Technical resources created by Keycloak (see [Protected Resources](../advanced/protected-resources.md#technical-resources))
 3. Resources matched by a `protectedResources` rule of the import files
+4. The realm itself
 
 ## Removed Properties
 

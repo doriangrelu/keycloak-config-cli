@@ -17,7 +17,7 @@ java -jar keycloak-config-cli.jar \
   --keycloak.user=my-user \
   --keycloak.password=my-password \
   --keycloak.skip-server-info=true \
-  --import.files.locations=config/
+  --import.files.locations='config/*'
 ```
 
 ## Consequences
@@ -39,5 +39,5 @@ java -jar keycloak-config-cli.jar \
   --keycloak.login-realm=my-realm \
   --keycloak.skip-server-info=true \
   --keycloak.version=26.4.0 \
-  --import.files.locations=config/
+  --import.files.locations='config/*'
 ```

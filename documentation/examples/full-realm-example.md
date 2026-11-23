@@ -583,7 +583,7 @@ java -jar keycloak-config-cli.jar \
   --keycloak.url=${KEYCLOAK_URL} \
   --keycloak.user=${KEYCLOAK_ADMIN} \
   --keycloak.password=${KEYCLOAK_ADMIN_PASSWORD} \
-  --import.files.locations=config/ \
+  --import.files.locations='config/*' \
   --import.mustache.enabled=true \
   --import.mustache.variables.smtpHost="${SMTP_HOST}" \
   --import.mustache.variables.smtpPort="${SMTP_PORT:-587}" \

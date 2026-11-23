@@ -41,9 +41,10 @@ infrastructure  ──▶  application  ──▶  domain
 
 ## Changements incompatibles de la 7.0.0
 
-À reprendre dans le CHANGELOG :
+Repris dans le [CHANGELOG](CHANGELOG.md) et le [guide de migration](documentation/getting-started/migration-7.md) :
 
 - fusion des fichiers d'un même realm (le dernier fichier ne l'emporte plus) ;
 - codes de sortie distincts (seul `1` existait) ;
-- plus de sel de chiffrement de l'état distant par défaut ;
-- règle de suppression unique, sans état distant ni modes gérés ; options retirées : cache par checksum, état distant, modes gérés, import parallèle, substitution `$(...)` (ADR-007).
+- tous les fichiers lus et analysés avant toute modification ;
+- règle de suppression unique, sans état distant ni modes gérés ; options retirées : cache par checksum, état distant, modes gérés, import parallèle, substitution `$(...)` (ADR-007) ;
+- Mustache seul moteur de template : une variable manquante sans valeur par défaut fait échouer l'import, plus d'échappement HTML.

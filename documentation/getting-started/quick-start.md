@@ -111,8 +111,10 @@ java -jar keycloak-config-cli.jar --spring.config.location=application.yaml
 Simply modify your YAML file and run the import again. Keycloak Config CLI will:
 
 - **Create** new resources that don't exist
-- **Update** existing resources that have changed
-- **Skip** resources that are identical
+- **Update** existing resources that differ from the file
+- **Leave** resources that already match the file as they are
+
+Every run compares the files with Keycloak itself (there is no cache): a change made by hand in Keycloak to an imported resource is undone by the next import.
 
 ```yaml
 # Updated my-realm.yaml with a new group
