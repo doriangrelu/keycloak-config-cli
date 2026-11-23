@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportRealms;
 import io.github.doriangrelu.keycloak.config.application.role.UnknownClientException;
 import io.github.doriangrelu.keycloak.config.application.role.UnknownRoleException;
 import io.github.doriangrelu.keycloak.config.application.user.UnknownUserReferenceException;
@@ -1046,12 +1047,12 @@ class ImportRolesIT extends AbstractImportIT {
     class RemoveDefaultRoleTest {
 
         @Autowired
-        public RealmImportService realmImportService;
+        public ImportRealms importRealms;
 
         @Test
         @Order(0)
         void shouldCreateUserAndRemoveDefaultRole() throws IOException {
-            doImport("60_update_realm__add_user_with_realm_role.json", realmImportService);
+            doImport("60_update_realm__add_user_with_realm_role.json", importRealms);
 
             RealmRepresentation realm =
                     keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);

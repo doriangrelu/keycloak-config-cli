@@ -48,6 +48,8 @@ public class RealmAdapter extends AbstractAdapter implements RealmApi {
     @Override
     public void createRealm(final RealmRepresentation realm) {
         execute(() -> keycloak().realms().create(realm));
+        // The access token only grants the realms that existed when it was issued: refresh it for the new realm
+        execute(() -> keycloak().tokenManager().refreshToken());
     }
 
     @Override

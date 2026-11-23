@@ -20,24 +20,19 @@
 
 package io.github.doriangrelu.keycloak.config;
 
-import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
-import io.github.doriangrelu.keycloak.config.application.importation.port.ImportFileSource;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportRealms;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.DryRunReport;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
-import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
-import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportParser;
 import io.github.doriangrelu.keycloak.config.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.properties.KeycloakConfigProperties;
-import io.github.doriangrelu.keycloak.config.service.RealmImportService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,22 +55,14 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
     private static final Logger logger = LoggerFactory.getLogger(KeycloakConfigRunner.class);
     private static final long START_TIME = System.currentTimeMillis();
 
-    private final ImportFileSource importFileSource;
-    private final RealmImportParser realmImportParser;
-    private final RealmImportService realmImportService;
+    private final ImportRealms importRealms;
     private final ImportConfigProperties importConfigProperties;
 
     private int exitCode = 0;
 
     @Autowired
-    public KeycloakConfigRunner(
-            ImportFileSource importFileSource,
-            RealmImportParser realmImportParser,
-            RealmImportService realmImportService,
-            ImportConfigProperties importConfigProperties) {
-        this.importFileSource = importFileSource;
-        this.realmImportParser = realmImportParser;
-        this.realmImportService = realmImportService;
+    public KeycloakConfigRunner(ImportRealms importRealms, ImportConfigProperties importConfigProperties) {
+        this.importRealms = importRealms;
         this.importConfigProperties = importConfigProperties;
     }
 
@@ -87,17 +74,10 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
     @Override
     public void run(String... args) {
         try {
-            Collection<String> importLocations =
-                    importConfigProperties.getFiles().getLocations();
-            // Every file is read and parsed before anything is changed in Keycloak
-            final Collection<RealmImport> importedRealm = new ArrayList<>();
-            for (ImportFile file : importFileSource.read(importLocations)) {
-                logger.info("Importing file '{}'", file.name());
-                importedRealm.addAll(realmImportParser.parse(file));
-            }
-            realmImportService.importAll(importedRealm);
+            ImportReport report =
+                    importRealms.importFiles(importConfigProperties.getFiles().getLocations());
             if (importConfigProperties.isDryRun()) {
-                exitCode = reportDryRun().code();
+                exitCode = reportDryRun(report).code();
             }
         } catch (Exception e) {
             // Single place where import failures are caught and turned into an exit code (ADR-005)
@@ -113,8 +93,8 @@ public class KeycloakConfigRunner implements CommandLineRunner, ExitCodeGenerato
      * Shows what the import would change (EPIC-004): on the standard output, and in the report file when one is
      * configured. Pending changes give exit code {@code 10} (ADR-005).
      */
-    private ExitCode reportDryRun() {
-        DryRunReport report = DryRunReport.of(realmImportService.plans());
+    private ExitCode reportDryRun(final ImportReport importReport) {
+        DryRunReport report = DryRunReport.of(importReport.plans());
         String content = importConfigProperties.getDryRunFormat() == ImportConfigProperties.DryRunFormat.JSON
                 ? report.toJson()
                 : report.toText();

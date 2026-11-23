@@ -49,7 +49,7 @@ class ImportDryRunIT extends AbstractImportIT {
     }
 
     private List<PlannedChange> plan() {
-        return realmImportService.plans().getOrDefault(REALM_NAME, List.of());
+        return lastImport.plan(REALM_NAME);
     }
 
     private static boolean has(List<PlannedChange> plan, ResourceType type, String key, PlannedChange.Kind kind) {

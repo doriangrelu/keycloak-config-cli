@@ -28,22 +28,17 @@ import static org.mockserver.model.HttpRequest.request;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportTest;
 import io.github.doriangrelu.keycloak.config.provider.KeycloakProvider;
-import io.github.doriangrelu.keycloak.config.service.RealmImportService;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakMock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.Cookie;
 import org.mockserver.springtest.MockServerTest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @MockServerTest("keycloak.url=http://localhost:${mockServerPort}")
 class CookieMockIT extends AbstractImportTest {
     private MockServerClient mockServerClient;
-
-    @Autowired
-    public RealmImportService realmImportService;
 
     @MockitoSpyBean
     public KeycloakProvider keycloakProvider;
@@ -87,6 +82,6 @@ class CookieMockIT extends AbstractImportTest {
         });
 
         // Import only: the clean phase would send requests this mock does not answer
-        realmImportService.doImport(getFirstImport("00_create_simple-realm.json"));
+        runImportWithoutCleanup(getFirstImport("00_create_simple-realm.json"));
     }
 }

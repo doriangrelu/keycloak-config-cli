@@ -22,12 +22,15 @@ package io.github.doriangrelu.keycloak.config;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import io.github.doriangrelu.keycloak.config.application.importation.ImportRealms;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
+import io.github.doriangrelu.keycloak.config.application.importation.RealmDeclaration;
 import io.github.doriangrelu.keycloak.config.application.importation.port.ImportFileSource;
 import io.github.doriangrelu.keycloak.config.configuration.TestConfiguration;
 import io.github.doriangrelu.keycloak.config.extensions.GithubActionsExtension;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImport;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportDeclarations;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.RealmImportParser;
-import io.github.doriangrelu.keycloak.config.service.RealmImportService;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakAuthentication;
 import io.github.doriangrelu.keycloak.config.test.util.KeycloakRepository;
 import java.io.IOException;
@@ -51,7 +54,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @Timeout(value = 30, unit = SECONDS)
 public abstract class AbstractImportTest {
     @Autowired
-    public RealmImportService realmImportService;
+    public ImportRealms importRealms;
+
+    @Autowired
+    public RealmImportDeclarations realmImportDeclarations;
+
+    /** What the last import of the test changed. */
+    public ImportReport lastImport;
 
     @Autowired
     public ImportFileSource importFileSource;
@@ -68,11 +77,12 @@ public abstract class AbstractImportTest {
     public String resourcePath;
 
     public void doImport(String fileName) throws IOException {
-        doImport(fileName, realmImportService);
+        runImport(getImport(fileName));
     }
 
-    public void doImport(String fileName, RealmImportService _realmImportService) throws IOException {
-        runImport(getImport(fileName), _realmImportService);
+    /** Imports with the use case of another Spring context, such as the one of a nested test with other properties. */
+    public void doImport(String fileName, ImportRealms _importRealms) throws IOException {
+        lastImport = _importRealms.importRealms(declarationsOf(getImport(fileName)));
     }
 
     /**
@@ -80,11 +90,16 @@ public abstract class AbstractImportTest {
      * import of every part, then the clean phase that deletes resources missing from the import.
      */
     public void runImport(List<RealmImport> realmImports) {
-        runImport(realmImports, realmImportService);
+        lastImport = importRealms.importRealms(declarationsOf(realmImports));
     }
 
-    public void runImport(List<RealmImport> realmImports, RealmImportService _realmImportService) {
-        _realmImportService.importAll(realmImports);
+    /** Imports without the clean phase: nothing is deleted. */
+    public void runImportWithoutCleanup(RealmImport realmImport) {
+        lastImport = importRealms.importRealmsWithoutCleanup(declarationsOf(List.of(realmImport)));
+    }
+
+    private List<RealmDeclaration> declarationsOf(List<RealmImport> realmImports) {
+        return realmImports.stream().map(realmImportDeclarations::declarationOf).toList();
     }
 
     public RealmImport getFirstImport(String fileName) throws IOException {

@@ -626,7 +626,7 @@ class ImportComponentsIT extends AbstractImportIT {
         RealmImport foundImport = getFirstImport("12_update_realm__try-to-create-component.json");
 
         ComponentRejectedException thrown =
-                assertThrows(ComponentRejectedException.class, () -> realmImportService.doImport(foundImport));
+                assertThrows(ComponentRejectedException.class, () -> runImportWithoutCleanup(foundImport));
 
         assertThat(
                 thrown.getMessage(),

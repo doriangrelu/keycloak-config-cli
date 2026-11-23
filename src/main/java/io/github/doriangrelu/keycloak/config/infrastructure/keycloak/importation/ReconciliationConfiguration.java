@@ -40,6 +40,10 @@ import io.github.doriangrelu.keycloak.config.application.group.port.GroupGateway
 import io.github.doriangrelu.keycloak.config.application.identityprovider.IdentityProviderMapperReconciler;
 import io.github.doriangrelu.keycloak.config.application.identityprovider.IdentityProviderReconciler;
 import io.github.doriangrelu.keycloak.config.application.identityprovider.port.IdentityProviderGateway;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportOptions;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportRealms;
+import io.github.doriangrelu.keycloak.config.application.importation.port.ImportFileSource;
+import io.github.doriangrelu.keycloak.config.application.importation.port.RealmDeclarationParser;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.MessageBundleReconciler;
 import io.github.doriangrelu.keycloak.config.application.messagebundle.port.MessageBundleGateway;
 import io.github.doriangrelu.keycloak.config.application.realm.DefaultClientScopesReconciler;
@@ -121,5 +125,24 @@ public class ReconciliationConfiguration {
                 new AuthenticatorConfigReconciler(authenticationFlowGateway),
                 new ClientFlowBindingsReconciler(authenticationFlowGateway),
                 new ClientAuthorizationReconciler(clientAuthorizationGateway)));
+    }
+
+    /** The import use case (ADR-007), on its ports. */
+    @Bean
+    public ImportRealms importRealms(
+            final ImportFileSource importFileSource,
+            final RealmDeclarationParser realmDeclarationParser,
+            final RealmGateway realmGateway,
+            final ComponentGateway componentGateway,
+            final ReconciliationEngine reconciliationEngine,
+            final ImportConfigProperties properties) {
+        return new ImportRealms(
+                importFileSource,
+                realmDeclarationParser,
+                realmGateway,
+                componentGateway,
+                reconciliationEngine,
+                new ImportOptions(
+                        properties.isDryRun(), properties.getBehaviors().isSyncUserFederation()));
     }
 }

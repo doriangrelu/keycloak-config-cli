@@ -66,7 +66,7 @@ class ImportRequiredActionsIT extends AbstractImportIT {
     void shouldFailIfAddingInvalidRequiredActionName() throws IOException {
         RealmImport foundImport = getFirstImport("01_update_realm__try_adding_invalid_required-action.json");
 
-        realmImportService.doImport(foundImport);
+        runImportWithoutCleanup(foundImport);
 
         RealmRepresentation updatedRealm =
                 keycloakProvider.getInstance().realm(REALM_NAME).partialExport(true, true);

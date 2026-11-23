@@ -20,10 +20,10 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation;
 
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
+import io.github.doriangrelu.keycloak.config.application.importation.RealmDeclaration;
+import io.github.doriangrelu.keycloak.config.application.importation.port.RealmDeclarationParser;
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
-import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
-import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
-import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.domain.authenticationflow.model.ClientFlowBindings;
 import io.github.doriangrelu.keycloak.config.domain.client.model.Client;
 import io.github.doriangrelu.keycloak.config.domain.clientauthorization.model.ClientAuthorization;
@@ -31,6 +31,7 @@ import io.github.doriangrelu.keycloak.config.domain.group.model.Group;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultClientScopes;
 import io.github.doriangrelu.keycloak.config.domain.realm.model.DefaultGroups;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ProtectionRule;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
 import io.github.doriangrelu.keycloak.config.domain.role.model.Role;
 import io.github.doriangrelu.keycloak.config.domain.role.model.RoleComposites;
@@ -77,25 +78,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Transitional glue between the legacy import, which works file by file on {@link RealmImport}, and the
- * reconciliation engine, for the resource types already migrated (EPIC-002). Removed when the import runs on the
- * engine only (EPIC-003).
- *
- * <p>The {@link RealmContext} of each realm is kept in the legacy execution context of the run: only this class
- * reads it, and passes it explicitly to the engine.
+ * Reads the realms of the import files, in the format of Keycloak ({@link RealmImport}), and translates what they
+ * declare into the desired state of the reconciliation engine.
  */
 @Component
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "IMPORT", matchIfMissing = true)
-public class RealmImportReconciliation {
+public class RealmImportDeclarations implements RealmDeclarationParser {
 
-    private static final Logger logger = LoggerFactory.getLogger(RealmImportReconciliation.class);
+    private static final Logger logger = LoggerFactory.getLogger(RealmImportDeclarations.class);
 
     /** Realm attribute that enables the management of the user profile configuration. */
     static final String USER_PROFILE_ENABLED = "userProfileEnabled";
 
-    private final ReconciliationEngine engine;
-    /** Context of each realm during the current run. */
-    private final Map<String, RealmContext> contexts = new java.util.LinkedHashMap<>();
+    private final RealmImportParser parser;
 
     private final RoleKeycloakMapper roleMapper;
     private final ClientKeycloakMapper clientMapper;
@@ -114,8 +109,8 @@ public class RealmImportReconciliation {
     private final RequiredActionKeycloakMapper requiredActionMapper;
     private final ImportConfigProperties properties;
 
-    public RealmImportReconciliation(
-            final ReconciliationEngine engine,
+    public RealmImportDeclarations(
+            final RealmImportParser parser,
             final RoleKeycloakMapper roleMapper,
             final ClientKeycloakMapper clientMapper,
             final GroupKeycloakMapper groupMapper,
@@ -132,7 +127,7 @@ public class RealmImportReconciliation {
             final ClientScopeKeycloakMapper clientScopeMapper,
             final RequiredActionKeycloakMapper requiredActionMapper,
             final ImportConfigProperties properties) {
-        this.engine = engine;
+        this.parser = parser;
         this.roleMapper = roleMapper;
         this.clientMapper = clientMapper;
         this.groupMapper = groupMapper;
@@ -151,61 +146,60 @@ public class RealmImportReconciliation {
         this.properties = properties;
     }
 
-    /**
-     * Prepares the import of one file: adds what the file declares, and its protection rules, to the desired state of
-     * its realm. Called for every file.
-     *
-     * @param realmExists whether the realm already exists in Keycloak
-     */
-    public void startFile(final RealmImport realmImport, final boolean realmExists) {
-        RealmContext context = contextOf(realmImport);
-        if (!realmExists && context.isDryRun()) {
-            // A dry run never creates the realm: nothing can be read from it
-            context.realmIsMissing();
+    @Override
+    public List<RealmDeclaration> parse(final ImportFile file) {
+        return this.parser.parse(file).stream().map(this::declarationOf).toList();
+    }
+
+    /** The declaration of a realm already read. */
+    public RealmDeclaration declarationOf(final RealmImport realmImport) {
+        if (realmImport.getUsers() != null && realmImport.getUsers().isEmpty()) {
+            logger.warn("Purging users isn't supported in keycloak-config-cli!");
         }
-        context.addProtections(realmImport.getProtectedResources());
-        this.engine.register(context, desiredStateOf(realmImport, realmExists));
+        return new Declaration(realmImport);
     }
 
-    /**
-     * Creates and updates what one file declares for some of the migrated types. The legacy import calls it at the
-     * place each type had, so that the types it still handles find what they rely on.
-     */
-    public void apply(final RealmImport realmImport, final Set<ResourceType> types) {
-        // The realm settings come first, before the realm may exist: nothing else is read from Keycloak for them
-        RealmContext context = contextOf(realmImport);
-        DesiredState desired = types.equals(Set.of(ResourceType.REALM_SETTINGS))
-                ? realmSettingsStateOf(realmImport, new DesiredState())
-                : desiredStateOf(realmImport, !context.isRealmMissing());
-        this.engine.apply(context, desired, types);
-    }
+    /** A realm of an import file: its desired state is computed when the import needs it. */
+    private final class Declaration implements RealmDeclaration {
 
-    /** Deletes, once per realm, the managed resources of the migrated types missing from every file of the realm. */
-    public void prune(final RealmImport realmImport) {
-        this.engine.prune(contextOf(realmImport));
-    }
+        private static final String USER_STORAGE_PROVIDER = "org.keycloak.storage.UserStorageProvider";
 
-    /**
-     * Starts a run of the command line: forgets the contexts of the previous run, if any. The clean phase of a run
-     * relies on what every file of the run declared.
-     */
-    public synchronized void startRun() {
-        this.contexts.clear();
-    }
+        private final RealmImport realmImport;
 
-    /** Changes of the current run, by realm in import order: applied, or only planned in a dry run. */
-    public synchronized Map<String, List<PlannedChange>> plans() {
-        Map<String, List<PlannedChange>> plans = new java.util.LinkedHashMap<>();
-        this.contexts.forEach((realm, context) -> plans.put(realm, context.plan()));
-        return plans;
-    }
+        private Declaration(final RealmImport realmImport) {
+            this.realmImport = realmImport;
+        }
 
-    private synchronized RealmContext contextOf(final RealmImport realmImport) {
-        String realm = realmImport.getRealm();
-        return this.contexts.computeIfAbsent(realm, unused -> {
-            RealmContext created = new RealmContext(realm, this.properties.isDryRun());
-            return created;
-        });
+        @Override
+        public String realm() {
+            return this.realmImport.getRealm();
+        }
+
+        @Override
+        public String source() {
+            return this.realmImport.getSource();
+        }
+
+        @Override
+        public List<ProtectionRule> protections() {
+            return this.realmImport.getProtectedResources();
+        }
+
+        @Override
+        public DesiredState settings() {
+            return realmSettingsStateOf(this.realmImport, new DesiredState());
+        }
+
+        @Override
+        public DesiredState desiredState(final boolean realmExists) {
+            return desiredStateOf(this.realmImport, realmExists);
+        }
+
+        @Override
+        public boolean declaresUserStorage() {
+            return this.realmImport.getComponents() != null
+                    && this.realmImport.getComponents().containsKey(USER_STORAGE_PROVIDER);
+        }
     }
 
     private List<ClientAuthorization> clientAuthorizationsOf(final RealmImport realmImport) {

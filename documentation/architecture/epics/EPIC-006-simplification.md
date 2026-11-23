@@ -90,7 +90,7 @@ Déplacer la lecture des fichiers (`KeycloakImportProvider`, `FileUtils`, `Impor
 
 ### US-006-08 — Cas d'usage d'import dans `application.importation`
 
-**Statut :** À faire
+**Statut :** Terminé
 Remplacer `RealmImportService` (package `service`) par le cas d'usage « appliquer les fichiers » dans `application.importation` : fusion des fichiers par realm, création du realm, application puis nettoyage par le moteur, dry-run. La synchronisation des fédérations d'utilisateurs devient un appel de gateway. `RealmImportReconciliation` perd ce qui relève de l'orchestration.
 
 ### US-006-09 — Ligne de commande dans `infrastructure.cli`
@@ -175,4 +175,18 @@ Mettre à jour la documentation utilisateur (configuration, concepts, ressources
 - Les deux lanceurs lisent puis analysent tous les fichiers avant de modifier Keycloak ; ils seront déplacés dans `infrastructure.cli` en US-006-09.
 - Correction : les exclusions ne s'appliquaient jamais sous Windows (chemin avec antislashs et lettre de lecteur comparé à des motifs Ant).
 - Tests : `FileLocationsTest`, `ImportFileReaderTest` (étape Mustache seule), `RealmDocumentsTest` ; `KeycloakImportProviderIT` devient `ImportFileReaderIT` ; `KeycloakExportProviderTest`, test boîte blanche à base de mocks, est remplacé par `FileLocationsTest`.
+
+### US-006-08
+
+- Cas d'usage `application.importation.ImportRealms` (« appliquer les fichiers », comme `kubectl apply`), sans Spring ni Jackson :
+  - `importFiles(locations)` lit et analyse **tous** les fichiers avant toute modification : un fichier invalide ne change rien ;
+  - pour chaque realm déclaré, dans l'ordre des fichiers : inscription de l'état désiré (pour le nettoyage), réglages du realm (qui le créent), puis les types étape par étape, synchronisation des fédérations d'utilisateurs entre les composants et le profil utilisateur ;
+  - une fois tous les fichiers appliqués, nettoyage de chaque realm par le moteur ;
+  - le résultat est un `ImportReport` (changements par realm, appliqués ou seulement prévus en dry-run). Les `RealmContext` sont locaux à un import : plus d'état entre deux exécutions dans un bean.
+- Ports : `ImportFileSource` (US-006-07), `RealmDeclarationParser` (fichier vers `RealmDeclaration`), `RealmGateway`, `ComponentGateway` (synchronisation des fédérations, appel de gateway) ; options simples `ImportOptions(dryRun, syncUserFederation)`.
+- `RealmDeclaration` : un realm tel qu'un fichier le déclare (nom, source, règles de protection, réglages seuls, état désiré selon que le realm existe, présence d'un stockage d'utilisateurs). L'état désiré est calculé une fois par fichier après les réglages, et non plus à chaque étape.
+- `RealmImportReconciliation` devient `RealmImportDeclarations` (`infrastructure.keycloak.importation`) : il ne garde que la traduction d'un `RealmImport` en état désiré et implémente `RealmDeclarationParser`. L'orchestration (contextes, étapes, nettoyage, plans) passe dans le cas d'usage.
+- Le rafraîchissement du jeton après la création d'un realm descend dans `RealmAdapter.createRealm` : c'est un détail du client Keycloak.
+- Supprimé : `RealmImportService` et le paquet `service`. Le cas d'usage est créé par `ReconciliationConfiguration`, en attendant `infrastructure.cli` (US-006-09).
+- Tests : `ImportRealmsTest` (ordre d'application, nettoyage une fois tous les fichiers appliqués, import sans nettoyage, dry-run sur un realm absent, synchronisation des fédérations, ressources protégées, fichiers tous analysés avant toute modification). Les tests d'intégration passent par le cas d'usage.
 
