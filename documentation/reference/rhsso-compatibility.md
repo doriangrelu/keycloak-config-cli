@@ -1,46 +1,15 @@
 # Red Hat SSO Compatibility
 
-keycloak-config-cli is compatible with Red Hat SSO (based on Keycloak).
+## Red Hat SSO 7.x
 
-## Requirements
+Red Hat SSO 7.x is based on Keycloak 18 and older ([version mapping](https://access.redhat.com/articles/2342881)). keycloak-config-cli 7.0.0 targets Keycloak 26 and Java 25, and is not compatible with it.
 
-- Java JDK 25+
-- Access to Red Hat Maven repositories
+## Red Hat build of Keycloak
 
-## Building for RH SSO
-
-### 1. Clone Repository
+The Red Hat build of Keycloak follows the versions of Keycloak. Its 26.x versions are the ones keycloak-config-cli targets, but only the community Keycloak 26.5.3 is tested. To check a server, run the integration tests against its Keycloak version:
 
 ```bash
-git clone https://github.com/doriangrelu/keycloak-config-cli.git
-cd keycloak-config-cli
+./mvnw verify -Dkeycloak.version=<version>
 ```
 
-### 2. Find Correct Version
-
-1. Check RH SSO version mapping: https://access.redhat.com/articles/2342881
-2. Find Maven artifact version: https://mvnrepository.com/artifact/org.keycloak/keycloak-core?repo=redhat-ga
-
-Example: For Keycloak 9.0.13, use `9.0.13.redhat-00006`
-
-### 3. Build
-
-```bash
-./mvnw clean package -Prh-sso -Dkeycloak.version=9.0.13.redhat-00006
-```
-
-### 4. Use
-
-```bash
-java -jar target/keycloak-config-cli.jar \
-  --keycloak.url=http://localhost:8080 \
-  --keycloak.user=admin \
-  --keycloak.password=admin123 \
-  --import.files.locations=realm.yaml
-```
-
-## Notes
-
-- Not officially supported, but community-tested
-- Breaking changes in RH SSO may cause compilation errors
-- Version-specific compatibility not guaranteed
+See [Compatibility with Keycloak](../../README.md#compatibility-with-keycloak).

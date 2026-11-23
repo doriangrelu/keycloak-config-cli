@@ -124,11 +124,20 @@ See: [documentation/reference/features.md](./documentation/reference/features.md
 
 # Compatibility with keycloak
 
-Since keycloak-config-cli 4.0 will support the latest 4 releases of keycloak, if possible.
-There are some exceptions:
+| Component | Version |
+|-----------|---------|
+| Keycloak server | 26.x: every change is built and tested against Keycloak 26.5.3 |
+| Keycloak admin client | 26.0.13 |
+| Java | 25 or higher |
+| Normalization | Exports of Keycloak 19 to 26: reference realms of 19.0.3, 20.0.3, 25.0.5, 26.0.5 and 26.5.3, the closest one being used for other versions (see [Normalization](./documentation/advanced/normalization.md)) |
 
-- keycloak-config-cli will try the keep an extended support for [RH-SSO](https://access.redhat.com/articles/2342881)
-- keycloak-config-cli will cut the support if keycloak introduces some breaking changes
+At startup, keycloak-config-cli reads the version of the server and logs a warning when its major version differs from the one it was built for; it does not refuse to run. Other versions of Keycloak are not tested. To check one, run the integration tests against it:
+
+```shell
+./mvnw verify -Dkeycloak.version=<version>
+```
+
+Red Hat SSO 7.x, based on Keycloak 18 and older, is not supported. See [Red Hat SSO Compatibility](./documentation/reference/rhsso-compatibility.md).
 
 # Build this project
 
