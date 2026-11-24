@@ -43,7 +43,7 @@ Spring Shell 4.0.x dans `infrastructure.cli.shell`. `run.operation=SHELL`, dossi
 
 ### US-007-02 — Lecture d'un dossier de realm
 
-**Statut :** À faire
+**Statut :** Terminé
 Modèle de définition dans `domain.definition` (`ClientDefinition`, `RoleDefinition`, `GroupDefinition`, `TemplatedValue`) ; port `RealmDefinitions` et son adapter dans `infrastructure.source.definition`. Chargement de tous les fichiers d'un dossier (JSON et YAML, sans rendu Mustache), avec l'origine de chaque élément (fichier, position). Traduction des clés du format d'export vers le modèle ; type d'application déduit des options, « personnalisé » sinon. Type d'application déduit strictement selon le tableau de l'ADR-008. Un fichier non analysable avant rendu (placeholder sans guillemets) met tout le realm en lecture seule, avec le fichier et la ligne à corriger. Rôles et clients créés par Keycloak connus par le realm de référence de la version (`baseline/<version>`). Commandes `realm list` (les dossiers de la racine), `realm open <dossier>`, `realm show` (les éléments par type, avec leur fichier).
 
 ### US-007-03 — Écriture des fichiers et `realm format`
@@ -116,4 +116,12 @@ Documentation utilisateur (en anglais) : lancement du shell, commandes, variable
 - Hors du mode SHELL, `CommandLineConfiguration` déclare un `springShellApplicationRunner` qui ne fait rien : sans lui, l'auto-configuration de Spring Shell lancerait un shell interactif après un import ou une normalisation, et une CI attendrait une commande sur l'entrée standard. `ShellLauncherIT` le vérifie pour les trois opérations.
 - Port `Questions` (`application.definition.port`) : réponse libre, choix numéroté avec son explication (`Choice`), oui ou non. `ConsoleQuestions` les pose sur la console à travers l'`InputReader` de Spring Shell, redemande une réponse invalide, et lève `MissingAnswerException` (code `2`) quand il n'y a aucune réponse, comme en mode script. Les choix sont numérotés : la sélection aux flèches demanderait JLine, et pourra venir plus tard.
 - Règle ArchUnit `shellIgnoresTheOtherAdapters` : `infrastructure.cli.shell` ne dépend ni de `infrastructure.source` ni de `infrastructure.keycloak`.
+
+### US-007-02
+
+- Modèle de définition dans `domain.definition` : `ClientDefinition` (type d'application dans `applicationType`, déduit strictement de ses flows par `ApplicationType.of(ClientFlows)` selon le tableau de l'ADR-008, `CUSTOM` sinon ; une clé absente vaut la valeur par défaut de Keycloak, `ClientFlows.KEYCLOAK_DEFAULTS`), `RoleDefinition`, `GroupDefinition` (par chemin), `ElementDefinition` scellée, `RealmDefinition` (origine de chaque élément, types déclarés, fichiers illisibles). `TemplatedValue` garde la valeur telle qu'écrite et vérifie ses placeholders (`{{nom}}`, `{{nom:défaut}}`, valeurs composées ; `{{{…}}}` refusé).
+- Lecture avant rendu (`infrastructure.source.definition`) : `DocumentTrees` lit un fichier en arbre, SnakeYAML avec commentaires ou Jackson avec la ligne de chaque objet, derrière une même interface `TreeObject`. Un placeholder hors guillemets rend le fichier illisible, avec sa ligne : il est cherché ligne par ligne hors chaînes et commentaires, car en YAML `{{{x}}}` s'analyse sans erreur comme des dictionnaires imbriqués.
+- `RealmDefinitionFiles` implémente le port `RealmDefinitions` : un dossier par realm sous `shell.root`, ses fichiers YAML et JSON lus par ordre de nom ; un fichier illisible met le realm en lecture seule sans empêcher la lecture des autres. Un client donné par son seul nom est connu par ce nom.
+- Commandes `realm list`, `realm open <dossier>`, `realm show` sur le cas d'usage `ReadRealms` ; `ShellSession` garde le realm ouvert. Les adapters sont assemblés dans `infrastructure.cli` (`ShellAdaptersConfiguration`) : le shell ne voit que l'application.
+- Report : les rôles et clients créés par Keycloak (realm de référence `baseline/<version>`) viendront avec la cohérence du realm (US-007-06) et les groupes (US-007-09), leurs premiers utilisateurs.
 
