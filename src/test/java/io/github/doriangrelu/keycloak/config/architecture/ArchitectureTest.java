@@ -113,6 +113,15 @@ class ArchitectureTest {
             .dependOnClassesThat()
             .resideInAPackage(INFRASTRUCTURE_KEYCLOAK);
 
+    /** The shell is an input adapter (ADR-008): it calls the application, never the other adapters. */
+    @ArchTest
+    static final ArchRule shellIgnoresTheOtherAdapters = noClasses()
+            .that()
+            .resideInAPackage(ROOT + ".infrastructure.cli.shell..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(INFRASTRUCTURE_SOURCE, INFRASTRUCTURE_KEYCLOAK);
+
     @ArchTest
     static final ArchRule onlyTheCommandLineSeesTheCommandLine = noClasses()
             .that()
