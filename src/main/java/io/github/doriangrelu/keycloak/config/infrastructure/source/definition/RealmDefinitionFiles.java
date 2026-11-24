@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
+import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
@@ -36,6 +37,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -224,7 +226,10 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         tree.root().setText("realm", realm);
         tree.root().setBool("enabled", true);
         try {
-            Files.createDirectories(this.root.resolve(folder));
+            Files.createDirectories(this.root);
+            Files.createDirectory(this.root.resolve(folder));
+        } catch (FileAlreadyExistsException e) {
+            throw new RealmFolderExistsException(folder);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

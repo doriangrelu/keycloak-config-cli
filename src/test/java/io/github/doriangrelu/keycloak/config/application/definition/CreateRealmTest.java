@@ -51,7 +51,7 @@ class CreateRealmTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"../x", ".x", "a/b", "a\\b", "", "..", "-x"})
+    @ValueSource(strings = {"../x", ".x", "a/b", "a\\b", "", "..", "-x", "demo."})
     void anInvalidFolderNameIsRefusedBeforeAnyWrite(final String folder) {
         assertThatThrownBy(() -> this.createRealm.create(folder, REALM, DefinitionFormat.YAML))
                 .isInstanceOf(InvalidRealmFolderException.class);
@@ -64,6 +64,14 @@ class CreateRealmTest {
         assertThatThrownBy(() -> this.createRealm.create("demo", REALM, DefinitionFormat.JSON))
                 .isInstanceOf(RealmFolderExistsException.class)
                 .hasMessage("Realm folder 'demo' already exists: use 'realm open demo'");
+
+        assertThat(this.definitions.created).isEmpty();
+    }
+
+    @Test
+    void aFolderThatDiffersByCaseOnlyIsRefusedBeforeAnyWrite() {
+        assertThatThrownBy(() -> this.createRealm.create("Demo", REALM, DefinitionFormat.JSON))
+                .isInstanceOf(RealmFolderExistsException.class);
 
         assertThat(this.definitions.created).isEmpty();
     }

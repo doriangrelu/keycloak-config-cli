@@ -23,13 +23,14 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
 /** Creates the folder of a new realm, with its realm file. */
 public final class CreateRealm {
 
-    private static final Pattern FOLDER = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._-]*");
+    private static final Pattern FOLDER = Pattern.compile("[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9_-])?");
 
     private final RealmDefinitions definitions;
 
@@ -46,7 +47,8 @@ public final class CreateRealm {
         if (folder == null || !FOLDER.matcher(folder).matches()) {
             throw new InvalidRealmFolderException(folder);
         }
-        if (this.definitions.folders().contains(folder)) {
+        if (this.definitions.folders().stream()
+                .anyMatch(existing -> existing.toLowerCase(Locale.ROOT).equals(folder.toLowerCase(Locale.ROOT)))) {
             throw new RealmFolderExistsException(folder);
         }
         return this.definitions.createRealm(folder, realm, format);

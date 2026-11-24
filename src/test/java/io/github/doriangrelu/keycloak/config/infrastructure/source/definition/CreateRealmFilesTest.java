@@ -21,13 +21,16 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -62,5 +65,40 @@ class CreateRealmFilesTest {
         assertThat(content).contains("\"realm\"").contains("{{env}}-mon-realm").contains("\"enabled\"");
         assertThat(files.load("mon-realm").orElseThrow().realm()).contains(REALM);
         assertThat(files.unformattedFiles("mon-realm")).isEmpty();
+    }
+
+    @Test
+    void anExistingFolderIsNeverTouched() throws IOException {
+        Files.createDirectories(this.root.resolve("demo"));
+        Path existing = this.root.resolve("demo/00-realm.yaml");
+        Files.writeString(existing, "realm: kept\n", StandardCharsets.UTF_8);
+        RealmDefinitionFiles files = new RealmDefinitionFiles(this.root);
+
+        assertThatThrownBy(() -> files.createRealm("demo", REALM, DefinitionFormat.YAML))
+                .isInstanceOf(RealmFolderExistsException.class);
+        assertThat(Files.readString(existing, StandardCharsets.UTF_8)).isEqualTo("realm: kept\n");
+    }
+
+    @Test
+    void aPlainFileOfTheNameIsNotReplaced() throws IOException {
+        Files.writeString(this.root.resolve("plain"), "x", StandardCharsets.UTF_8);
+        RealmDefinitionFiles files = new RealmDefinitionFiles(this.root);
+
+        assertThatThrownBy(() -> files.createRealm("plain", REALM, DefinitionFormat.YAML))
+                .isInstanceOf(RealmFolderExistsException.class);
+    }
+
+    @Test
+    void aFolderThatDiffersByCaseOnlyIsNotWrittenOnACaseInsensitiveFileSystem() throws IOException {
+        Files.createDirectories(this.root.resolve("demo"));
+        Path existing = this.root.resolve("demo/00-realm.yaml");
+        Files.writeString(existing, "realm: kept\n", StandardCharsets.UTF_8);
+        Assumptions.assumeTrue(Files.exists(this.root.resolve("Demo")), "a case-sensitive file system");
+        RealmDefinitionFiles files = new RealmDefinitionFiles(this.root);
+
+        assertThatThrownBy(() -> files.createRealm("Demo", REALM, DefinitionFormat.YAML))
+                .isInstanceOf(RealmFolderExistsException.class);
+
+        assertThat(Files.readString(existing, StandardCharsets.UTF_8)).isEqualTo("realm: kept\n");
     }
 }
