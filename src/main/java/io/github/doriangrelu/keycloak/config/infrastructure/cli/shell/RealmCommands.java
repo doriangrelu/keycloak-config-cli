@@ -20,32 +20,89 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.Choice;
+import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
+import io.github.doriangrelu.keycloak.config.application.definition.UnknownFormatException;
+import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Defined;
+import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.GroupDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
+import org.springframework.shell.core.command.CommandContext;
 import org.springframework.shell.core.command.annotation.Argument;
 import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
 
 /** Lists, opens and shows the realms of the root (ADR-008). */
 public class RealmCommands {
 
     private final ReadRealms readRealms;
     private final FormatRealm formatRealm;
+    private final CreateRealm createRealm;
     private final ShellSession session;
 
-    public RealmCommands(final ReadRealms readRealms, final FormatRealm formatRealm, final ShellSession session) {
+    public RealmCommands(
+            final ReadRealms readRealms,
+            final FormatRealm formatRealm,
+            final CreateRealm createRealm,
+            final ShellSession session) {
         this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
         this.formatRealm = Objects.requireNonNull(formatRealm, "formatRealm");
+        this.createRealm = Objects.requireNonNull(createRealm, "createRealm");
         this.session = Objects.requireNonNull(session, "session");
+    }
+
+    @Command(
+            name = {"realm", "create"},
+            group = "Realms",
+            description =
+                    "Create a realm folder with its realm file, and open it: what the options do not give is asked")
+    public String create(
+            final CommandContext context,
+            @Option(longName = "folder", description = "the folder of the realm", required = false)
+                    final String folderOption,
+            @Option(longName = "realm", description = "the name of the realm, placeholders allowed", required = false)
+                    final String realmOption,
+            @Option(longName = "format", description = "yaml or json", required = false) final String formatOption) {
+        Questions questions = new ConsoleQuestions(context.inputReader(), context.outputWriter());
+        Optional<DefinitionFormat> format = given(formatOption).map(RealmCommands::formatOf);
+        String folder = given(folderOption).orElseGet(() -> questions.ask("Folder of the realm", Optional.empty()));
+        TemplatedValue realm = given(realmOption)
+                .map(TemplatedValue::of)
+                .orElseGet(() -> questions.askValue("Name of the realm", Optional.of(TemplatedValue.of(folder))));
+        DefinitionFormat chosen = format.orElseGet(() -> questions.choose(
+                "Format of the files",
+                List.of(
+                        new Choice<>(DefinitionFormat.YAML, "YAML", "readable, accepts comments"),
+                        new Choice<>(DefinitionFormat.JSON, "JSON", "no comment")),
+                Optional.empty()));
+        String file = this.createRealm.create(folder, realm, chosen);
+        this.session.open(folder);
+        return "Realm '%s' created: %s/%s".formatted(folder, folder, file);
+    }
+
+    private static Optional<String> given(final String option) {
+        return Optional.ofNullable(option).map(String::strip).filter(value -> !value.isEmpty());
+    }
+
+    private static DefinitionFormat formatOf(final String format) {
+        return switch (format.toLowerCase(Locale.ROOT)) {
+            case "yaml" -> DefinitionFormat.YAML;
+            case "json" -> DefinitionFormat.JSON;
+            default -> throw new UnknownFormatException(format);
+        };
     }
 
     @Command(

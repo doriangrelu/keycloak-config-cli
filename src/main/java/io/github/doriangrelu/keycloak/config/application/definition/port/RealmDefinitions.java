@@ -20,10 +20,12 @@
 
 package io.github.doriangrelu.keycloak.config.application.definition.port;
 
+import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +62,13 @@ public interface RealmDefinitions {
      * @return the file written
      */
     String save(String folder, ElementDefinition definition, Optional<Origin> existing);
+
+    /**
+     * Creates the folder of a new realm and its {@code 00-realm} file, with the {@code realm} key and {@code enabled}.
+     *
+     * @return the name of the file written
+     */
+    String createRealm(String folder, TemplatedValue realm, DefinitionFormat format);
 
     /** The text of each definition file of a realm, as written (comments included), by file name. */
     Map<String, String> sources(String folder);

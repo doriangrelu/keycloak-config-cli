@@ -1,10 +1,12 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
+import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -19,6 +21,7 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     final Map<ElementType, String> files = new EnumMap<>(ElementType.class);
     final List<String> formatted = new ArrayList<>();
     final List<ElementDefinition> saved = new ArrayList<>();
+    final List<String> created = new ArrayList<>();
 
     FakeRealmDefinitions(final RealmDefinition realm) {
         this.realm = realm;
@@ -59,5 +62,11 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     public String save(final String folder, final ElementDefinition definition, final Optional<Origin> existing) {
         this.saved.add(definition);
         return existing.map(Origin::file).orElse(definition.type().fileName() + ".yaml");
+    }
+
+    @Override
+    public String createRealm(final String folder, final TemplatedValue realm, final DefinitionFormat format) {
+        this.created.add(folder);
+        return "00-realm" + format.extension();
     }
 }

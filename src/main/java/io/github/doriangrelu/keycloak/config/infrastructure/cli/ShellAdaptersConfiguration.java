@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
+import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
@@ -51,6 +52,11 @@ public class ShellAdaptersConfiguration {
     @Bean
     public FormatRealm formatRealm(final RealmDefinitions realmDefinitions) {
         return new FormatRealm(realmDefinitions);
+    }
+
+    @Bean
+    public CreateRealm createRealm(final RealmDefinitions realmDefinitions) {
+        return new CreateRealm(realmDefinitions);
     }
 
     @Bean

@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
@@ -46,8 +47,11 @@ public class ShellCommandConfiguration {
 
     @Bean
     public RealmCommands realmCommands(
-            final ReadRealms readRealms, final FormatRealm formatRealm, final ShellSession shellSession) {
-        return new RealmCommands(readRealms, formatRealm, shellSession);
+            final ReadRealms readRealms,
+            final FormatRealm formatRealm,
+            final CreateRealm createRealm,
+            final ShellSession shellSession) {
+        return new RealmCommands(readRealms, formatRealm, createRealm, shellSession);
     }
 
     @Bean

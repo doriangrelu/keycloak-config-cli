@@ -217,6 +217,21 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         return name;
     }
 
+    @Override
+    public String createRealm(final String folder, final TemplatedValue realm, final DefinitionFormat format) {
+        String name = "00-realm" + format.extension();
+        DocumentTree tree = DocumentTrees.parse(name, "");
+        tree.root().setText("realm", realm);
+        tree.root().setBool("enabled", true);
+        try {
+            Files.createDirectories(this.root.resolve(folder));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        writeFile(this.root.resolve(folder).resolve(name), tree.render());
+        return name;
+    }
+
     private static TreeObject existingOrNew(
             final TreeObject root, final String listKey, final Optional<Origin> existing) {
         return existing.flatMap(at -> root.objects(listKey).stream()
