@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /** The keys of the groups in the export format: nested {@code subGroups}, read as paths, parents first. */
@@ -40,6 +41,54 @@ final class GroupKeys {
         List<Defined<GroupDefinition>> read = new ArrayList<>();
         flatten(groups, "", file, read);
         return read;
+    }
+
+    /**
+     * Writes a group at its path: under {@code groups}, or in the {@code subGroups} of its parent, which must be
+     * written already. Roles keep their order when the set of roles does not change.
+     */
+    static void write(final GroupDefinition group, final TreeObject root, final Optional<Integer> line) {
+        String[] names = group.path().substring(1).split("/");
+        TreeObject holder = root;
+        String listKey = "groups";
+        for (int i = 0; i < names.length - 1; i++) {
+            String parent = names[i];
+            holder = holder.objects(listKey).stream()
+                    .filter(found -> found.text("name").filter(parent::equals).isPresent())
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "The parent of group '" + group.path() + "' is not written: " + parent));
+            listKey = "subGroups";
+        }
+        TreeObject parentHolder = holder;
+        String parentListKey = listKey;
+        TreeObject object = line.flatMap(at -> parentHolder.objects(parentListKey).stream()
+                        .filter(found -> found.line() == at)
+                        .findFirst())
+                .orElseGet(() -> parentHolder.append(parentListKey));
+        object.setText("name", group.name());
+        writeRoles(object, "realmRoles", group.realmRoles(), object.texts("realmRoles"));
+        if (group.clientRoles().isEmpty()) {
+            object.remove("clientRoles");
+            return;
+        }
+        Map<String, List<String>> current = object.textLists("clientRoles");
+        TreeObject clientRoles = object.objectOrCreate("clientRoles");
+        current.keySet().stream()
+                .filter(client -> !group.clientRoles().containsKey(client))
+                .forEach(clientRoles::remove);
+        group.clientRoles()
+                .forEach((client, roles) ->
+                        writeRoles(clientRoles, client, roles, current.getOrDefault(client, List.of())));
+    }
+
+    private static void writeRoles(
+            final TreeObject object, final String key, final Set<String> roles, final List<String> current) {
+        if (roles.isEmpty()) {
+            object.remove(key);
+        } else if (!Set.copyOf(current).equals(roles)) {
+            object.setTexts(key, roles.stream().sorted().map(TemplatedValue::of).toList());
+        }
     }
 
     private static void flatten(

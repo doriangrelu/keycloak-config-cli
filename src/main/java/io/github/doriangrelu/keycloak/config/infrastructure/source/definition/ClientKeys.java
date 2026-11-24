@@ -55,6 +55,42 @@ final class ClientKeys {
                 attributes);
     }
 
+    /**
+     * Writes the keys the editing model manages; the other keys of the client stay. The flows of a custom client are
+     * left as they are, and {@code bearerOnly} is never written.
+     */
+    static void write(final ClientDefinition client, final TreeObject object) {
+        object.setText("clientId", client.clientId());
+        setOrRemove(object, "name", client.name());
+        setOrRemove(object, "description", client.description());
+        if (client.applicationType() != ApplicationType.CUSTOM) {
+            ClientFlows flows = ClientFlows.of(client.applicationType());
+            object.setBool("publicClient", flows.publicClient());
+            object.setBool("standardFlowEnabled", flows.standardFlow());
+            object.setBool("implicitFlowEnabled", flows.implicitFlow());
+            object.setBool("directAccessGrantsEnabled", flows.directAccessGrants());
+            object.setBool("serviceAccountsEnabled", flows.serviceAccounts());
+        }
+        setOrRemove(object, "redirectUris", client.redirectUris());
+        setOrRemove(object, "webOrigins", client.webOrigins());
+        if (!client.attributes().isEmpty()) {
+            TreeObject attributes = object.objectOrCreate("attributes");
+            client.attributes().forEach(attributes::setText);
+        }
+    }
+
+    static void setOrRemove(final TreeObject object, final String key, final Optional<TemplatedValue> value) {
+        value.ifPresentOrElse(text -> object.setText(key, text), () -> object.remove(key));
+    }
+
+    static void setOrRemove(final TreeObject object, final String key, final java.util.List<TemplatedValue> values) {
+        if (values.isEmpty()) {
+            object.remove(key);
+        } else {
+            object.setTexts(key, values);
+        }
+    }
+
     private static Optional<TemplatedValue> optional(final TreeObject object, final String key) {
         return object.text(key).map(TemplatedValue::of);
     }

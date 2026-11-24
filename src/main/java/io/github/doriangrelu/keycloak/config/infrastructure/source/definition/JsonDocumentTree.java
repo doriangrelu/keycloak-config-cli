@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -235,6 +236,42 @@ final class JsonDocumentTree implements DocumentTree {
         @Override
         public int line() {
             return this.lines.getOrDefault(this.node, 1);
+        }
+
+        @Override
+        public void setText(final String key, final TemplatedValue value) {
+            this.node.put(key, value.raw());
+        }
+
+        @Override
+        public void setBool(final String key, final boolean value) {
+            this.node.put(key, value);
+        }
+
+        @Override
+        public void setTexts(final String key, final List<TemplatedValue> values) {
+            ArrayNode array = NODES.arrayNode();
+            values.forEach(value -> array.add(value.raw()));
+            this.node.set(key, array);
+        }
+
+        @Override
+        public void remove(final String key) {
+            this.node.remove(key);
+        }
+
+        @Override
+        public TreeObject objectOrCreate(final String key) {
+            JsonNode current = this.node.get(key);
+            ObjectNode object = current instanceof ObjectNode existing ? existing : this.node.putObject(key);
+            return new JsonObject(object, this.lines);
+        }
+
+        @Override
+        public TreeObject append(final String listKey) {
+            JsonNode current = this.node.get(listKey);
+            ArrayNode array = current instanceof ArrayNode existing ? existing : this.node.putArray(listKey);
+            return new JsonObject(array.addObject(), this.lines);
         }
 
         private static Optional<String> scalar(final JsonNode value) {

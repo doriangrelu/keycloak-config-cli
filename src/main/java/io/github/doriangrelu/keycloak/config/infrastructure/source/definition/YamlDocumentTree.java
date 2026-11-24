@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -36,10 +37,12 @@ import org.yaml.snakeyaml.error.MarkedYAMLException;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.NodeId;
 import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.SequenceNode;
 import org.yaml.snakeyaml.nodes.Tag;
+import org.yaml.snakeyaml.resolver.Resolver;
 
 /** A YAML definition file, as a SnakeYAML node tree that keeps the comments. */
 final class YamlDocumentTree implements DocumentTree {
@@ -110,6 +113,8 @@ final class YamlDocumentTree implements DocumentTree {
 
     /** An object of a YAML file. */
     static final class YamlObject implements TreeObject {
+
+        private static final Resolver RESOLVER = new Resolver();
 
         private final MappingNode node;
 
@@ -203,6 +208,117 @@ final class YamlDocumentTree implements DocumentTree {
             return this.node.getStartMark() == null
                     ? 1
                     : this.node.getStartMark().getLine() + 1;
+        }
+
+        @Override
+        public void setText(final String key, final TemplatedValue value) {
+            Optional<Node> current = value(key);
+            if (current.flatMap(YamlObject::scalar).filter(value.raw()::equals).isPresent()
+                    && current.get().getTag() == Tag.STR) {
+                return;
+            }
+            put(key, textNode(value, current), current);
+        }
+
+        @Override
+        public void setBool(final String key, final boolean value) {
+            Optional<Node> current = value(key);
+            if (current.flatMap(YamlObject::scalar)
+                    .filter(String.valueOf(value)::equals)
+                    .isPresent()) {
+                return;
+            }
+            put(
+                    key,
+                    new ScalarNode(Tag.BOOL, String.valueOf(value), null, null, DumperOptions.ScalarStyle.PLAIN),
+                    current);
+        }
+
+        @Override
+        public void setTexts(final String key, final List<TemplatedValue> values) {
+            Optional<Node> current = value(key);
+            List<String> raws = values.stream().map(TemplatedValue::raw).toList();
+            if (current.isPresent()
+                    && current.get() instanceof SequenceNode
+                    && scalars(current.get()).equals(raws)) {
+                return;
+            }
+            DumperOptions.FlowStyle style = current.filter(SequenceNode.class::isInstance)
+                    .map(node -> ((SequenceNode) node).getFlowStyle())
+                    .orElse(DumperOptions.FlowStyle.BLOCK);
+            List<Node> items = new ArrayList<>();
+            for (TemplatedValue value : values) {
+                items.add(textNode(value, Optional.empty()));
+            }
+            put(key, new SequenceNode(Tag.SEQ, items, style), current);
+        }
+
+        @Override
+        public void remove(final String key) {
+            this.node
+                    .getValue()
+                    .removeIf(tuple -> tuple.getKeyNode() instanceof ScalarNode scalar
+                            && scalar.getValue().equals(key));
+        }
+
+        @Override
+        public TreeObject objectOrCreate(final String key) {
+            Optional<Node> current = value(key);
+            if (current.isPresent() && current.get() instanceof MappingNode mapping) {
+                return new YamlObject(mapping);
+            }
+            MappingNode created = new MappingNode(Tag.MAP, new ArrayList<>(), DumperOptions.FlowStyle.BLOCK);
+            put(key, created, current);
+            return new YamlObject(created);
+        }
+
+        @Override
+        public TreeObject append(final String listKey) {
+            Optional<Node> current = value(listKey);
+            SequenceNode list;
+            if (current.isPresent() && current.get() instanceof SequenceNode sequence) {
+                list = sequence;
+            } else {
+                list = new SequenceNode(Tag.SEQ, new ArrayList<>(), DumperOptions.FlowStyle.BLOCK);
+                put(listKey, list, current);
+            }
+            if (list.getFlowStyle() == DumperOptions.FlowStyle.FLOW
+                    && list.getValue().isEmpty()) {
+                list.setFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            }
+            MappingNode created = new MappingNode(Tag.MAP, new ArrayList<>(), DumperOptions.FlowStyle.BLOCK);
+            list.getValue().add(created);
+            return new YamlObject(created);
+        }
+
+        /** Replaces the value of a key, keeping its key node (and the comments above it) and its comment at the end. */
+        private void put(final String key, final Node value, final Optional<Node> current) {
+            current.ifPresent(old -> value.setInLineComments(old.getInLineComments()));
+            List<NodeTuple> tuples = this.node.getValue();
+            for (int i = 0; i < tuples.size(); i++) {
+                if (tuples.get(i).getKeyNode() instanceof ScalarNode scalar
+                        && scalar.getValue().equals(key)) {
+                    tuples.set(i, new NodeTuple(scalar, value));
+                    return;
+                }
+            }
+            tuples.add(new NodeTuple(new ScalarNode(Tag.STR, key, null, null, DumperOptions.ScalarStyle.PLAIN), value));
+        }
+
+        /**
+         * A string scalar: between double quotes when it holds a placeholder or would be read as another type, else in
+         * the style of the value it replaces.
+         */
+        private static ScalarNode textNode(final TemplatedValue value, final Optional<Node> current) {
+            DumperOptions.ScalarStyle style;
+            if (value.isTemplated() || RESOLVER.resolve(NodeId.scalar, value.raw(), true) != Tag.STR) {
+                style = DumperOptions.ScalarStyle.DOUBLE_QUOTED;
+            } else {
+                style = current.filter(ScalarNode.class::isInstance)
+                        .map(node -> ((ScalarNode) node).getScalarStyle())
+                        .orElse(DumperOptions.ScalarStyle.PLAIN);
+            }
+            return new ScalarNode(Tag.STR, value.raw(), null, null, style);
         }
 
         private static Optional<String> scalar(final Node node) {

@@ -23,7 +23,6 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import java.util.List;
 import java.util.Optional;
@@ -35,27 +34,7 @@ class ReadRealmsTest {
     private static final RealmDefinition DEMO =
             new RealmDefinition("demo", Optional.empty(), List.of(), List.of(), List.of(), Set.of(), List.of());
 
-    private final ReadRealms readRealms = new ReadRealms(new RealmDefinitions() {
-        @Override
-        public List<String> folders() {
-            return List.of("demo");
-        }
-
-        @Override
-        public Optional<RealmDefinition> load(final String folder) {
-            return folder.equals("demo") ? Optional.of(DEMO) : Optional.empty();
-        }
-
-        @Override
-        public List<String> unformattedFiles(final String folder) {
-            return List.of();
-        }
-
-        @Override
-        public List<String> format(final String folder) {
-            return List.of();
-        }
-    });
+    private final ReadRealms readRealms = new ReadRealms(new FakeRealmDefinitions(DEMO));
 
     @Test
     void theRealmsAreTheFoldersOfTheRoot() {

@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,4 +57,21 @@ public interface TreeObject {
 
     /** The first line of this object, from 1. */
     int line();
+
+    /** Writes a scalar; a value holding a placeholder is written between double quotes. Unchanged when equal. */
+    void setText(String key, TemplatedValue value);
+
+    /** Writes a boolean. Unchanged when equal. */
+    void setBool(String key, boolean value);
+
+    /** Writes a list of scalars, in the style of the list it replaces. Unchanged when equal. */
+    void setTexts(String key, List<TemplatedValue> values);
+
+    void remove(String key);
+
+    /** The object of a key, created empty when absent. */
+    TreeObject objectOrCreate(String key);
+
+    /** Adds an empty object at the end of a list, created when absent. */
+    TreeObject append(String listKey);
 }

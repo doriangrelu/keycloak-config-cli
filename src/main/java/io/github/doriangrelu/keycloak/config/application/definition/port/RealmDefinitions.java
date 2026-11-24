@@ -20,6 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.application.definition.port;
 
+import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
+import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import java.util.List;
 import java.util.Optional;
@@ -43,4 +46,17 @@ public interface RealmDefinitions {
      * @return the files changed
      */
     List<String> format(String folder);
+
+    /** The file of a realm that holds the elements of a type: the first one, by name, that declares it. */
+    Optional<String> fileOf(String folder, ElementType type);
+
+    /**
+     * Writes an element: in its file when it exists, else in the file that holds its type, else in the standard
+     * numbered file of its type, created with the {@code realm} key of the realm. Only the keys the editing model
+     * manages are written: the other keys of the element stay as they are.
+     *
+     * @param existing where the element is written, when it exists
+     * @return the file written
+     */
+    String save(String folder, ElementDefinition definition, Optional<Origin> existing);
 }

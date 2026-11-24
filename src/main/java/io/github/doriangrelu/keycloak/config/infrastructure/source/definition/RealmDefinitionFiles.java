@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Defined;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
+import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.GroupDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
@@ -101,12 +102,10 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
                         clients.add(new Defined<>(ClientKeys.read(client), new Origin(name, client.line())));
                     }
                 }
-                Optional<TreeObject> declaredRoles = document.object(ElementType.ROLE.key());
-                if (declaredRoles.isPresent()
-                        && (declaredRoles.get().has("realm")
-                                || declaredRoles.get().has("client"))) {
+                if (declares(document, ElementType.ROLE)) {
                     declared.add(ElementType.ROLE);
-                    roles.addAll(RoleKeys.read(declaredRoles.get(), name));
+                    roles.addAll(RoleKeys.read(
+                            document.object(ElementType.ROLE.key()).orElseThrow(), name));
                 }
                 if (document.has(ElementType.GROUP.key())) {
                     declared.add(ElementType.GROUP);
@@ -149,6 +148,79 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
             }
         }
         return changed;
+    }
+
+    @Override
+    public Optional<String> fileOf(final String folder, final ElementType type) {
+        for (Path file : definitionFiles(this.root.resolve(folder))) {
+            String name = file.getFileName().toString();
+            try {
+                if (declares(DocumentTrees.parse(name, readFile(file)).root(), type)) {
+                    return Optional.of(name);
+                }
+            } catch (UnreadableDocumentException e) {
+                // A file the shell cannot read holds nothing it can write to
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public String save(final String folder, final ElementDefinition definition, final Optional<Origin> existing) {
+        Path directory = this.root.resolve(folder);
+        String name = existing.map(Origin::file)
+                .or(() -> fileOf(folder, definition.type()))
+                .orElseGet(
+                        () -> definition.type().fileName() + formatOf(directory).extension());
+        Path file = directory.resolve(name);
+        DocumentTree tree;
+        if (Files.exists(file)) {
+            tree = DocumentTrees.parse(name, readFile(file));
+        } else {
+            tree = DocumentTrees.parse(name, "");
+            TemplatedValue realm = load(folder)
+                    .flatMap(RealmDefinition::realm)
+                    .orElseThrow(() -> new IllegalStateException("No file of realm '" + folder + "' gives its name"));
+            tree.root().setText("realm", realm);
+        }
+        TreeObject root = tree.root();
+        Optional<Integer> line = existing.map(Origin::line);
+        switch (definition) {
+            case ClientDefinition client ->
+                ClientKeys.write(client, existingOrNew(root, ElementType.CLIENT.key(), line));
+            case RoleDefinition role -> RoleKeys.write(role, root.objectOrCreate(ElementType.ROLE.key()), line);
+            case GroupDefinition group -> GroupKeys.write(group, root, line);
+        }
+        writeFile(file, tree.render());
+        return name;
+    }
+
+    private static TreeObject existingOrNew(final TreeObject root, final String listKey, final Optional<Integer> line) {
+        return line.flatMap(at -> root.objects(listKey).stream()
+                        .filter(found -> found.line() == at)
+                        .findFirst())
+                .orElseGet(() -> root.append(listKey));
+    }
+
+    private static boolean declares(final TreeObject document, final ElementType type) {
+        return switch (type) {
+            case CLIENT, GROUP -> document.has(type.key());
+            case ROLE ->
+                document.object(type.key())
+                        .filter(roles -> roles.has("realm") || roles.has("client"))
+                        .isPresent();
+        };
+    }
+
+    /** The format of the realm: the one of its {@code 00-realm} file, else of its first file, else YAML. */
+    private static DefinitionFormat formatOf(final Path directory) {
+        List<Path> files = definitionFiles(directory);
+        return files.stream()
+                .filter(file -> file.getFileName().toString().startsWith("00-realm."))
+                .findFirst()
+                .or(() -> files.stream().findFirst())
+                .flatMap(file -> DefinitionFormat.ofFileName(file.getFileName().toString()))
+                .orElse(DefinitionFormat.YAML);
     }
 
     /**

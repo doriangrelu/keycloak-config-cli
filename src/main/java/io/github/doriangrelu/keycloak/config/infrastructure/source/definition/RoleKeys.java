@@ -47,6 +47,21 @@ final class RoleKeys {
         return read;
     }
 
+    /**
+     * Writes a role in {@code roles.realm}, or in {@code roles.client.<clientId>} for a client role: at the line of the
+     * existing role, else at the end of the list.
+     */
+    static void write(final RoleDefinition role, final TreeObject roles, final Optional<Integer> line) {
+        TreeObject holder = role.clientId().isEmpty() ? roles : roles.objectOrCreate("client");
+        String listKey = role.clientId().map(TemplatedValue::raw).orElse("realm");
+        TreeObject object = line.flatMap(at -> holder.objects(listKey).stream()
+                        .filter(found -> found.line() == at)
+                        .findFirst())
+                .orElseGet(() -> holder.append(listKey));
+        object.setText("name", role.name());
+        ClientKeys.setOrRemove(object, "description", role.description());
+    }
+
     private static Defined<RoleDefinition> defined(
             final TreeObject role, final Optional<TemplatedValue> clientId, final String file) {
         return new Defined<>(
