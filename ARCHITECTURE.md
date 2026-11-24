@@ -21,6 +21,7 @@ infrastructure  ──▶  application  ──▶  domain
 | [ADR-005](documentation/architecture/ADR-005-erreurs-et-codes-de-sortie.md) | Erreurs et codes de sortie | Accepté |
 | [ADR-006](documentation/architecture/ADR-006-conversions-mapstruct.md) | Conversions avec MapStruct | Accepté |
 | [ADR-007](documentation/architecture/ADR-007-fichiers-seule-verite.md) | Les fichiers d'import comme seule vérité : nettoyage unique, Mustache seul moteur de template, options retirées | Accepté |
+| [ADR-008](documentation/architecture/ADR-008-shell-edition-des-definitions.md) | Shell interactif (Spring Shell) et édition guidée des définitions de realm, hors ligne, avec règles de configuration | Accepté |
 
 ## Décisions du 17/11/2026
 
