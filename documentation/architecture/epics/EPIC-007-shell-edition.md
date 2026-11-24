@@ -53,7 +53,7 @@ Réécriture d'un fichier depuis son arbre : SnakeYAML avec commentaires pour le
 
 ### US-007-04 — Création d'un realm
 
-**Statut :** À faire
+**Statut :** Terminé
 `realm create` : nom du dossier, nom du realm (valeur, variable ou valeur composée), format. Écrit `00-realm` avec la clé `realm`, `enabled: true` et les valeurs par défaut des règles du realm, s'il y en a. Refuse un dossier déjà existant. Ouvre le realm créé.
 
 ### US-007-05 — Variables
@@ -139,4 +139,12 @@ Documentation utilisateur (en anglais) : lancement du shell, commandes, variable
 - `Questions.askValue` : une valeur en dur, une variable ou une valeur composée ; un placeholder invalide est expliqué et redemandé en session, et fait échouer la commande en mode script.
 - `variables list` (cas d'usage `ListVariables`, port `RealmDefinitions.sources`) : chaque variable du realm ouvert, sa valeur par défaut et ses fichiers, triée par nom (`Variables.of`, `VariableUse`). Le texte des fichiers est lu tel qu'écrit, commentaires compris, puisque Mustache rend aussi les commentaires à l'import. Une même variable avec deux valeurs par défaut différentes est signalée (`defaults differ`) ; avec et sans valeur par défaut, elle ne l'est pas. Un placeholder invalide est ignoré : `realm open` signale déjà le fichier.
 - Exécutée par des sous-agents (implémenteur et relecteur de tâche sur un modèle standard). Points mineurs reportés : double lecture des fichiers par `ListVariables`, tests absents pour les formats de sortie `default:` et `defaults differ:` et pour un placeholder invalide ignoré, valeur par défaut contenant `{` ou `}` non reconnue.
+
+### US-007-04
+
+- `realm create [--folder] [--realm] [--format yaml|json]` (cas d'usage `CreateRealm`, port `RealmDefinitions.createRealm`) : un nouveau dossier de realm sous la racine, avec son fichier `00-realm` au format choisi (YAML proposé en premier), puis le realm est ouvert.
+- Le nom du realm est demandé avec `askValue` : une valeur en dur, une variable ou une valeur composée (`{{env}}-mon-realm`).
+- Le dossier est vérifié dès qu'il est connu, avant les autres questions (`CreateRealm.checkFolder`) : nom de dossier portable, pas de point final, et aucun dossier existant, même avec une autre casse. En session, un dossier refusé est expliqué et redemandé ; passé avec `--folder`, il fait échouer la commande (code 2) sans rien écrire. L'adaptateur crée le dossier de façon atomique (`Files.createDirectory`) et ne touche jamais un dossier ou un fichier existant.
+- Un format autre que `yaml` ou `json` (casse ignorée) fait échouer la commande (code 2).
+- Exécutée par des sous-agents ; la revue finale de la branche (US-007-04 et 05) a relevé un point important, la vérification tardive du dossier, corrigé avant la fusion. Points mineurs reportés : `variables list` affiche la valeur par défaut d'une variable qu'un autre fichier utilise sans valeur par défaut, placeholders rendus par l'import mais ignorés par le shell, cas limites de l'affichage (`default: ` vide, valeurs contenant `, `), tests de l'affichage de `variables list` et du code de sortie des échecs de `realm create`, dossier vide laissé si l'écriture du fichier du realm échoue, noms réservés de Windows (`con`, `nul`…) refusés par le système avec le code 1, double lecture et double résolution de chemin.
 
