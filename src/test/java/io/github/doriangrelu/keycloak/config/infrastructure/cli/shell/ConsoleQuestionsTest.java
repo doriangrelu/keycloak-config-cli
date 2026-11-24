@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.doriangrelu.keycloak.config.application.definition.Choice;
 import io.github.doriangrelu.keycloak.config.application.definition.MissingAnswerException;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
@@ -108,5 +109,31 @@ class ConsoleQuestionsTest {
         assertThatThrownBy(() -> answering().choose("Application type", TYPES, Optional.of("spa")))
                 .isInstanceOf(MissingAnswerException.class)
                 .hasMessageContaining("Application type");
+    }
+
+    @Test
+    void aValueMayHoldVariables() {
+        assertThat(answering("{{env}}-mon-realm").askValue("Realm name", Optional.empty()))
+                .isEqualTo(TemplatedValue.of("{{env}}-mon-realm"));
+    }
+
+    @Test
+    void anInvalidPlaceholderIsAskedAgain() {
+        assertThat(answering("{{env-mon-realm", "{{env}}-mon-realm").askValue("Realm name", Optional.empty()))
+                .isEqualTo(TemplatedValue.of("{{env}}-mon-realm"));
+        assertThat(this.output.toString()).contains("Invalid value '{{env-mon-realm'");
+    }
+
+    @Test
+    void anEmptyValueTakesTheProposedOne() {
+        assertThat(answering("").askValue("Application URL", Optional.of(TemplatedValue.of("{{appUrl}}"))))
+                .isEqualTo(TemplatedValue.of("{{appUrl}}"));
+    }
+
+    @Test
+    void aMissingValueFailsInsteadOfWaiting() {
+        assertThatThrownBy(() -> answering().askValue("Realm name", Optional.empty()))
+                .isInstanceOf(MissingAnswerException.class)
+                .hasMessageContaining("Realm name");
     }
 }

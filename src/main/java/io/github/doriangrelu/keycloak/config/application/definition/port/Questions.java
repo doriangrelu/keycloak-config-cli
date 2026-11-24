@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.application.definition.port;
 
 import io.github.doriangrelu.keycloak.config.application.definition.Choice;
 import io.github.doriangrelu.keycloak.config.application.definition.MissingAnswerException;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +39,13 @@ public interface Questions {
 
     /** One of the choices; an empty answer takes {@code proposed}, and is asked again when nothing is proposed. */
     <T> T choose(String question, List<Choice<T>> choices, Optional<T> proposed);
+
+    /**
+     * A value written in a definition file: plain, a variable ({@code {{appUrl}}}, {@code {{appUrl:default}}}) or a
+     * value composed with variables ({@code {{env}}-my-realm}). A value whose placeholder is invalid is asked again;
+     * an empty answer takes {@code proposed}.
+     */
+    TemplatedValue askValue(String question, Optional<TemplatedValue> proposed);
 
     /** Yes or no; an empty answer takes {@code byDefault}. */
     boolean confirm(String question, boolean byDefault);

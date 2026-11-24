@@ -23,6 +23,8 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 import io.github.doriangrelu.keycloak.config.application.definition.Choice;
 import io.github.doriangrelu.keycloak.config.application.definition.MissingAnswerException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
+import io.github.doriangrelu.keycloak.config.domain.definition.InvalidTemplatedValueException;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Locale;
@@ -61,6 +63,18 @@ public final class ConsoleQuestions implements Questions {
                 return proposed.get();
             }
             this.writer.println("  An answer is required.");
+        }
+    }
+
+    @Override
+    public TemplatedValue askValue(final String question, final Optional<TemplatedValue> proposed) {
+        while (true) {
+            String answer = ask(question, proposed.map(TemplatedValue::raw));
+            try {
+                return TemplatedValue.of(answer);
+            } catch (InvalidTemplatedValueException e) {
+                this.writer.println("  " + e.getMessage());
+            }
         }
     }
 
