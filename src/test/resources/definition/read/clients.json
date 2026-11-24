@@ -1,0 +1,26 @@
+{
+  "realm": "{{env}}-mon-realm",
+  "clients": [
+    {
+      "clientId": "frontend",
+      "publicClient": true,
+      "redirectUris": ["{{appUrl}}/*"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "batch",
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "roles": {
+    "client": {
+      "frontend": [
+        {
+          "name": "viewer"
+        }
+      ]
+    }
+  }
+}

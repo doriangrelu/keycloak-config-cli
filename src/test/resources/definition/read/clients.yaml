@@ -1,0 +1,17 @@
+# Clients of the realm
+realm: "{{env}}-mon-realm"
+
+clients:
+  # The web application
+  - clientId: frontend
+    publicClient: true # a SPA cannot keep a secret
+    redirectUris:
+      - "{{appUrl}}/*"
+    attributes:
+      pkce.code.challenge.method: S256
+  - clientId: batch
+    serviceAccountsEnabled: true
+roles:
+  client:
+    frontend:
+      - name: viewer
