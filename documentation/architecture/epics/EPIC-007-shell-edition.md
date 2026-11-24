@@ -58,7 +58,7 @@ Réécriture d'un fichier depuis son arbre : SnakeYAML avec commentaires pour le
 
 ### US-007-05 — Variables
 
-**Statut :** À faire
+**Statut :** Terminé
 `TemplatedValue` : reconnaissance des placeholders dans une saisie (`{{nom}}`, `{{nom:défaut}}`, valeurs composées), validation de la syntaxe (accolades, nom valide, pas de triple moustache), écriture en chaîne entre guillemets. Utilisée par toutes les questions. `variables list` : nom, valeur par défaut, fichiers où chaque variable apparaît ; signale une même variable avec deux valeurs par défaut différentes.
 
 ### US-007-06 — Règles de configuration
@@ -132,4 +132,11 @@ Documentation utilisateur (en anglais) : lancement du shell, commandes, variable
 - Enregistrement d'un élément (`RealmDefinitions.save`) : dans son fichier, à sa position (ligne et colonne, pour distinguer deux éléments d'une liste écrite sur une ligne, et pour permettre un renommage), sinon dans le premier fichier qui déclare son type (`fileOf`), sinon dans le fichier numéroté standard, créé avec la clé `realm` et le format du realm. Seules les clés du modèle sont écrites ; une valeur dont le texte ne change pas n'est jamais réécrite, quel que soit son type, et une valeur réécrite garde son commentaire de fin de ligne ; un placeholder est écrit entre guillemets doubles. Un flow n'est écrit que si sa valeur effective (écrite, ou par défaut dans Keycloak) diffère de celle du type ; `bearerOnly` n'est jamais écrit. Un flow écrit avec un placeholder (ou autrement qu'en booléen) rend le client « personnalisé », et n'est jamais réécrit.
 - Cas d'usage `SaveElement` : refuse un realm en lecture seule, un fichier cible pas encore au format (« Run 'realm format' first »), et la première déclaration sans confirmation. La première déclaration suit le grain de l'import : les clients, les groupes, les rôles du realm, et les rôles de chaque client à part (`RealmDefinition.declares`), car l'import nettoie les rôles de chaque client séparément.
 - Revue de la branche par un relecteur indépendant : cinq points importants corrigés, chacun par un test d'abord en échec (première déclaration des rôles, éléments sur une même ligne, flow variable, `run.operation=shell` sensible à la casse, nombres et booléens réécrits en chaînes). Points mineurs reportés : `realm format` non atomique sur plusieurs fichiers, certains refus sortant en code `1` au lieu de `2`, BOM UTF-8 en JSON, précision des décimaux JSON, suppression d'un attribut ou déplacement d'un élément (latents tant qu'aucune commande ne le fait).
+
+### US-007-05
+
+- Réalisée avant US-007-04, qui en a besoin pour demander le nom du realm.
+- `Questions.askValue` : une valeur en dur, une variable ou une valeur composée ; un placeholder invalide est expliqué et redemandé en session, et fait échouer la commande en mode script.
+- `variables list` (cas d'usage `ListVariables`, port `RealmDefinitions.sources`) : chaque variable du realm ouvert, sa valeur par défaut et ses fichiers, triée par nom (`Variables.of`, `VariableUse`). Le texte des fichiers est lu tel qu'écrit, commentaires compris, puisque Mustache rend aussi les commentaires à l'import. Une même variable avec deux valeurs par défaut différentes est signalée (`defaults differ`) ; avec et sans valeur par défaut, elle ne l'est pas. Un placeholder invalide est ignoré : `realm open` signale déjà le fichier.
+- Exécutée par des sous-agents (implémenteur et relecteur de tâche sur un modèle standard). Points mineurs reportés : double lecture des fichiers par `ListVariables`, tests absents pour les formats de sortie `default:` et `defaults differ:` et pour un placeholder invalide ignoré, valeur par défaut contenant `{` ou `}` non reconnue.
 
