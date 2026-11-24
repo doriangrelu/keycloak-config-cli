@@ -31,10 +31,21 @@ import java.util.Optional;
 /** The keys of a client in the export format of Keycloak, and the editing model (ADR-008). */
 final class ClientKeys {
 
+    private static final java.util.List<String> FLOW_KEYS = java.util.List.of(
+            "publicClient",
+            "standardFlowEnabled",
+            "implicitFlowEnabled",
+            "directAccessGrantsEnabled",
+            "serviceAccountsEnabled");
+
     private ClientKeys() {}
 
     static ClientDefinition read(final TreeObject client) {
         ClientFlows defaults = ClientFlows.KEYCLOAK_DEFAULTS;
+        // A flow written with a placeholder, or as anything but a boolean, is only known at import: the type cannot be
+        // deduced, and the flows are never rewritten
+        boolean unknownFlow = FLOW_KEYS.stream()
+                .anyMatch(key -> client.has(key) && client.bool(key).isEmpty());
         ClientFlows flows = new ClientFlows(
                 client.bool("publicClient").orElse(defaults.publicClient()),
                 client.bool("standardFlowEnabled").orElse(defaults.standardFlow()),
@@ -49,7 +60,7 @@ final class ClientKeys {
                 TemplatedValue.of(clientId),
                 optional(client, "name"),
                 optional(client, "description"),
-                ApplicationType.of(flows),
+                unknownFlow ? ApplicationType.CUSTOM : ApplicationType.of(flows),
                 client.texts("redirectUris").stream().map(TemplatedValue::of).toList(),
                 client.texts("webOrigins").stream().map(TemplatedValue::of).toList(),
                 attributes);
@@ -65,17 +76,29 @@ final class ClientKeys {
         setOrRemove(object, "description", client.description());
         if (client.applicationType() != ApplicationType.CUSTOM) {
             ClientFlows flows = ClientFlows.of(client.applicationType());
-            object.setBool("publicClient", flows.publicClient());
-            object.setBool("standardFlowEnabled", flows.standardFlow());
-            object.setBool("implicitFlowEnabled", flows.implicitFlow());
-            object.setBool("directAccessGrantsEnabled", flows.directAccessGrants());
-            object.setBool("serviceAccountsEnabled", flows.serviceAccounts());
+            ClientFlows defaults = ClientFlows.KEYCLOAK_DEFAULTS;
+            setFlow(object, "publicClient", flows.publicClient(), defaults.publicClient());
+            setFlow(object, "standardFlowEnabled", flows.standardFlow(), defaults.standardFlow());
+            setFlow(object, "implicitFlowEnabled", flows.implicitFlow(), defaults.implicitFlow());
+            setFlow(object, "directAccessGrantsEnabled", flows.directAccessGrants(), defaults.directAccessGrants());
+            setFlow(object, "serviceAccountsEnabled", flows.serviceAccounts(), defaults.serviceAccounts());
         }
         setOrRemove(object, "redirectUris", client.redirectUris());
         setOrRemove(object, "webOrigins", client.webOrigins());
         if (!client.attributes().isEmpty()) {
             TreeObject attributes = object.objectOrCreate("attributes");
             client.attributes().forEach(attributes::setText);
+        }
+    }
+
+    /**
+     * Writes a flow only when its effective value, as written or else the default of Keycloak, is not the one the type
+     * needs: a file stays minimal, and a diff only shows what changes.
+     */
+    private static void setFlow(
+            final TreeObject object, final String key, final boolean value, final boolean keycloakDefault) {
+        if (object.bool(key).orElse(keycloakDefault) != value) {
+            object.setBool(key, value);
         }
     }
 

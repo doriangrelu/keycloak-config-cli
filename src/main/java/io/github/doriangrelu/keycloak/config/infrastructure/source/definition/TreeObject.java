@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
+import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,14 @@ public interface TreeObject {
 
     /** The first line of this object, from 1. */
     int line();
+
+    /** The first column of this object, from 1. */
+    int column();
+
+    /** Whether this object is the one written at this position. */
+    default boolean isAt(final Origin origin) {
+        return line() == origin.line() && column() == origin.column();
+    }
 
     /** Writes a scalar; a value holding a placeholder is written between double quotes. Unchanged when equal. */
     void setText(String key, TemplatedValue value);

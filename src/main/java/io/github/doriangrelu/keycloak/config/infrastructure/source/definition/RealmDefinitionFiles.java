@@ -40,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -87,6 +88,8 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         List<Defined<RoleDefinition>> roles = new ArrayList<>();
         List<Defined<GroupDefinition>> groups = new ArrayList<>();
         Set<ElementType> declared = EnumSet.noneOf(ElementType.class);
+        boolean declaresRealmRoles = false;
+        Set<String> declaredRoleClients = new LinkedHashSet<>();
         List<UnreadableFile> unreadable = new ArrayList<>();
         for (Path file : definitionFiles(directory)) {
             String name = file.getFileName().toString();
@@ -99,11 +102,19 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
                 if (document.has(ElementType.CLIENT.key())) {
                     declared.add(ElementType.CLIENT);
                     for (TreeObject client : document.objects(ElementType.CLIENT.key())) {
-                        clients.add(new Defined<>(ClientKeys.read(client), new Origin(name, client.line())));
+                        clients.add(new Defined<>(
+                                ClientKeys.read(client), new Origin(name, client.line(), client.column())));
                     }
                 }
                 if (declares(document, ElementType.ROLE)) {
                     declared.add(ElementType.ROLE);
+                    TreeObject declaredRoles =
+                            document.object(ElementType.ROLE.key()).orElseThrow();
+                    declaresRealmRoles |= declaredRoles.has("realm");
+                    declaredRoles
+                            .object("client")
+                            .ifPresent(roleClients -> declaredRoleClients.addAll(
+                                    roleClients.objectLists().keySet()));
                     roles.addAll(RoleKeys.read(
                             document.object(ElementType.ROLE.key()).orElseThrow(), name));
                 }
@@ -119,7 +130,8 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
                 unreadable.add(new UnreadableFile(name, 1, "cannot be read: " + e.getMessage()));
             }
         }
-        return Optional.of(new RealmDefinition(folder, realm, clients, roles, groups, declared, unreadable));
+        return Optional.of(new RealmDefinition(
+                folder, realm, clients, roles, groups, declared, declaresRealmRoles, declaredRoleClients, unreadable));
     }
 
     @Override
@@ -184,20 +196,20 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
             tree.root().setText("realm", realm);
         }
         TreeObject root = tree.root();
-        Optional<Integer> line = existing.map(Origin::line);
         switch (definition) {
             case ClientDefinition client ->
-                ClientKeys.write(client, existingOrNew(root, ElementType.CLIENT.key(), line));
-            case RoleDefinition role -> RoleKeys.write(role, root.objectOrCreate(ElementType.ROLE.key()), line);
-            case GroupDefinition group -> GroupKeys.write(group, root, line);
+                ClientKeys.write(client, existingOrNew(root, ElementType.CLIENT.key(), existing));
+            case RoleDefinition role -> RoleKeys.write(role, root.objectOrCreate(ElementType.ROLE.key()), existing);
+            case GroupDefinition group -> GroupKeys.write(group, root, existing);
         }
         writeFile(file, tree.render());
         return name;
     }
 
-    private static TreeObject existingOrNew(final TreeObject root, final String listKey, final Optional<Integer> line) {
-        return line.flatMap(at -> root.objects(listKey).stream()
-                        .filter(found -> found.line() == at)
+    private static TreeObject existingOrNew(
+            final TreeObject root, final String listKey, final Optional<Origin> existing) {
+        return existing.flatMap(at -> root.objects(listKey).stream()
+                        .filter(found -> found.isAt(at))
                         .findFirst())
                 .orElseGet(() -> root.append(listKey));
     }

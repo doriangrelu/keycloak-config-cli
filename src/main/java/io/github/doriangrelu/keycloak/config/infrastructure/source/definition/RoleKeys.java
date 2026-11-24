@@ -51,11 +51,11 @@ final class RoleKeys {
      * Writes a role in {@code roles.realm}, or in {@code roles.client.<clientId>} for a client role: at the line of the
      * existing role, else at the end of the list.
      */
-    static void write(final RoleDefinition role, final TreeObject roles, final Optional<Integer> line) {
+    static void write(final RoleDefinition role, final TreeObject roles, final Optional<Origin> existing) {
         TreeObject holder = role.clientId().isEmpty() ? roles : roles.objectOrCreate("client");
         String listKey = role.clientId().map(TemplatedValue::raw).orElse("realm");
-        TreeObject object = line.flatMap(at -> holder.objects(listKey).stream()
-                        .filter(found -> found.line() == at)
+        TreeObject object = existing.flatMap(at -> holder.objects(listKey).stream()
+                        .filter(found -> found.isAt(at))
                         .findFirst())
                 .orElseGet(() -> holder.append(listKey));
         object.setText("name", role.name());
@@ -69,6 +69,6 @@ final class RoleKeys {
                         TemplatedValue.of(role.text("name").orElse("")),
                         clientId,
                         role.text("description").map(TemplatedValue::of)),
-                new Origin(file, role.line()));
+                new Origin(file, role.line(), role.column()));
     }
 }

@@ -210,6 +210,90 @@ class SaveTest {
     }
 
     @Test
+    void twoElementsOnOneLineAreToldApart() throws IOException {
+        write("30-roles.yaml", REALM + "roles:\n  realm: [{name: a}, {name: b}]\n");
+        Defined<RoleDefinition> b = realm().roles().get(1);
+
+        this.files.save(
+                "demo",
+                new RoleDefinition(TemplatedValue.of("b"), Optional.empty(), Optional.of(TemplatedValue.of("Second"))),
+                Optional.of(b.origin()));
+
+        assertThat(realm().roles())
+                .extracting(
+                        role -> role.definition().name().raw(),
+                        role -> role.definition().description())
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("a", Optional.empty()),
+                        org.assertj.core.groups.Tuple.tuple("b", Optional.of(TemplatedValue.of("Second"))));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"yaml", "json"})
+    void aTemplatedFlowMakesTheClientCustomAndIsNeverRewritten(final String extension) throws IOException {
+        String name = "20-clients." + extension;
+        write(
+                name,
+                extension.equals("yaml")
+                        // Read with the defaults of Keycloak, these flows would make a web application
+                        ? REALM + "clients:\n  - clientId: app\n    publicClient: \"{{public}}\"\n"
+                                + "    directAccessGrantsEnabled: false\n"
+                        : "{\"realm\": \"x\", \"clients\": [{\"clientId\": \"app\", \"publicClient\": \"{{public}}\","
+                                + " \"directAccessGrantsEnabled\": false}]}");
+        this.files.format("demo");
+        Defined<ClientDefinition> app = realm().client("app").orElseThrow();
+        assertThat(app.definition().applicationType()).isEqualTo(ApplicationType.CUSTOM);
+
+        this.files.save(
+                "demo",
+                new ClientDefinition(
+                        app.definition().clientId(),
+                        Optional.empty(),
+                        Optional.of(TemplatedValue.of("Described")),
+                        ApplicationType.CUSTOM,
+                        List.of(),
+                        List.of(),
+                        Map.of()),
+                Optional.of(app.origin()));
+
+        assertThat(read(name)).contains("{{public}}").contains("Described");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"yaml", "json"})
+    void unchangedNumbersAndBooleansAreNotRewritten(final String extension) throws IOException {
+        String name = "20-clients." + extension;
+        write(
+                name,
+                extension.equals("yaml")
+                        ? REALM + "clients:\n  - clientId: app\n    description: Before\n    publicClient: true\n"
+                                + "    directAccessGrantsEnabled: false\n    attributes:\n"
+                                + "      access.token.lifespan: 300\n      use.refresh.tokens: true\n"
+                        : "{\"realm\": \"x\", \"clients\": [{\"clientId\": \"app\", \"description\": \"Before\","
+                                + " \"publicClient\": true, \"directAccessGrantsEnabled\": false, \"attributes\":"
+                                + " {\"access.token.lifespan\": 300, \"use.refresh.tokens\": \"true\"}}]}");
+        this.files.format("demo");
+        List<String> before = read(name).lines().toList();
+        Defined<ClientDefinition> app = realm().client("app").orElseThrow();
+
+        this.files.save(
+                "demo",
+                new ClientDefinition(
+                        app.definition().clientId(),
+                        app.definition().name(),
+                        Optional.of(TemplatedValue.of("After")),
+                        app.definition().applicationType(),
+                        app.definition().redirectUris(),
+                        app.definition().webOrigins(),
+                        app.definition().attributes()),
+                Optional.of(app.origin()));
+
+        List<String> removed = new ArrayList<>(before);
+        removed.removeAll(read(name).lines().toList());
+        assertThat(removed).singleElement().asString().contains("Before");
+    }
+
+    @Test
     void theFileOfATypeIsTheFirstThatDeclaresIt() throws IOException {
         write("00-realm.yaml", REALM);
         write("20-clients.yaml", REALM + "clients: []\n");

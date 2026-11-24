@@ -38,7 +38,7 @@ public class CommandLineConfiguration {
      * command on the standard input.
      */
     @Bean
-    @ConditionalOnExpression("'${run.operation:IMPORT}' != 'SHELL'")
+    @ConditionalOnExpression("!'${run.operation:IMPORT}'.equalsIgnoreCase('SHELL')")
     public ApplicationRunner springShellApplicationRunner() {
         return arguments -> {};
     }

@@ -47,7 +47,7 @@ final class GroupKeys {
      * Writes a group at its path: under {@code groups}, or in the {@code subGroups} of its parent, which must be
      * written already. Roles keep their order when the set of roles does not change.
      */
-    static void write(final GroupDefinition group, final TreeObject root, final Optional<Integer> line) {
+    static void write(final GroupDefinition group, final TreeObject root, final Optional<Origin> existing) {
         String[] names = group.path().substring(1).split("/");
         TreeObject holder = root;
         String listKey = "groups";
@@ -62,8 +62,8 @@ final class GroupKeys {
         }
         TreeObject parentHolder = holder;
         String parentListKey = listKey;
-        TreeObject object = line.flatMap(at -> parentHolder.objects(parentListKey).stream()
-                        .filter(found -> found.line() == at)
+        TreeObject object = existing.flatMap(at -> parentHolder.objects(parentListKey).stream()
+                        .filter(found -> found.isAt(at))
                         .findFirst())
                 .orElseGet(() -> parentHolder.append(parentListKey));
         object.setText("name", group.name());
@@ -105,7 +105,7 @@ final class GroupKeys {
             read.add(new Defined<>(
                     new GroupDefinition(
                             path, TemplatedValue.of(name), new LinkedHashSet<>(group.texts("realmRoles")), clientRoles),
-                    new Origin(file, group.line())));
+                    new Origin(file, group.line(), group.column())));
             flatten(group.objects("subGroups"), path, file, read);
         }
     }

@@ -48,17 +48,17 @@ final class JsonDocumentTree implements DocumentTree {
     private static final JsonNodeFactory NODES = JsonNodeFactory.instance;
 
     private final ObjectNode root;
-    private final Map<JsonNode, Integer> lines;
+    private final Map<JsonNode, int[]> lines;
     private final String lineSeparator;
 
-    private JsonDocumentTree(final ObjectNode root, final Map<JsonNode, Integer> lines, final String lineSeparator) {
+    private JsonDocumentTree(final ObjectNode root, final Map<JsonNode, int[]> lines, final String lineSeparator) {
         this.root = root;
         this.lines = lines;
         this.lineSeparator = lineSeparator;
     }
 
     static JsonDocumentTree parse(final String content) {
-        Map<JsonNode, Integer> lines = new IdentityHashMap<>();
+        Map<JsonNode, int[]> lines = new IdentityHashMap<>();
         String lineSeparator = content.contains("\r\n") ? "\r\n" : "\n";
         if (content.isBlank()) {
             return new JsonDocumentTree(NODES.objectNode(), lines, lineSeparator);
@@ -84,7 +84,7 @@ final class JsonDocumentTree implements DocumentTree {
     }
 
     /** Reads the value at the current token, remembering the line of each object. */
-    private static JsonNode read(final JsonParser parser, final Map<JsonNode, Integer> lines) throws IOException {
+    private static JsonNode read(final JsonParser parser, final Map<JsonNode, int[]> lines) throws IOException {
         JsonToken token = parser.currentToken();
         if (token == null) {
             throw new UnreadableDocumentException(1, "unexpected end of the file");
@@ -92,7 +92,10 @@ final class JsonDocumentTree implements DocumentTree {
         switch (token) {
             case START_OBJECT -> {
                 ObjectNode object = NODES.objectNode();
-                lines.put(object, parser.currentTokenLocation().getLineNr());
+                lines.put(object, new int[] {
+                    parser.currentTokenLocation().getLineNr(),
+                    parser.currentTokenLocation().getColumnNr()
+                });
                 while (parser.nextToken() == JsonToken.FIELD_NAME) {
                     String name = parser.currentName();
                     parser.nextToken();
@@ -146,9 +149,9 @@ final class JsonDocumentTree implements DocumentTree {
     static final class JsonObject implements TreeObject {
 
         private final ObjectNode node;
-        private final Map<JsonNode, Integer> lines;
+        private final Map<JsonNode, int[]> lines;
 
-        JsonObject(final ObjectNode node, final Map<JsonNode, Integer> lines) {
+        JsonObject(final ObjectNode node, final Map<JsonNode, int[]> lines) {
             this.node = node;
             this.lines = lines;
         }
@@ -235,16 +238,30 @@ final class JsonDocumentTree implements DocumentTree {
 
         @Override
         public int line() {
-            return this.lines.getOrDefault(this.node, 1);
+            int[] position = this.lines.get(this.node);
+            return position == null ? 1 : position[0];
+        }
+
+        @Override
+        public int column() {
+            int[] position = this.lines.get(this.node);
+            return position == null ? 1 : position[1];
         }
 
         @Override
         public void setText(final String key, final TemplatedValue value) {
+            // Whatever its type: an unchanged number or boolean stays as written
+            if (text(key).filter(value.raw()::equals).isPresent()) {
+                return;
+            }
             this.node.put(key, value.raw());
         }
 
         @Override
         public void setBool(final String key, final boolean value) {
+            if (bool(key).filter(current -> current == value).isPresent()) {
+                return;
+            }
             this.node.put(key, value);
         }
 

@@ -1,7 +1,8 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
-import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
+import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 
 /**
  * The element would be the first of its type in the realm: the import would then delete every element of that type
@@ -9,8 +10,18 @@ import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
  */
 public final class FirstDeclarationException extends ApplicationException {
 
-    public FirstDeclarationException(final ElementType type) {
-        super("At the next import, all the " + type.key()
+    public FirstDeclarationException(final ElementDefinition element) {
+        super("At the next import, all the " + cleanedWith(element)
                 + " of Keycloak missing from the files will be deleted. Run a dry run first, then confirm.");
+    }
+
+    /** What the import cleans with this element: its type, or the realm roles, or the roles of its client. */
+    private static String cleanedWith(final ElementDefinition element) {
+        if (element instanceof RoleDefinition role) {
+            return role.clientId()
+                    .map(clientId -> "roles of client '" + clientId.raw() + "'")
+                    .orElse("realm roles");
+        }
+        return element.type().key();
     }
 }

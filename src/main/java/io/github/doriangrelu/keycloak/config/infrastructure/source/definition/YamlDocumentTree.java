@@ -211,10 +211,17 @@ final class YamlDocumentTree implements DocumentTree {
         }
 
         @Override
+        public int column() {
+            return this.node.getStartMark() == null
+                    ? 1
+                    : this.node.getStartMark().getColumn() + 1;
+        }
+
+        @Override
         public void setText(final String key, final TemplatedValue value) {
             Optional<Node> current = value(key);
-            if (current.flatMap(YamlObject::scalar).filter(value.raw()::equals).isPresent()
-                    && current.get().getTag() == Tag.STR) {
+            // Whatever its type: an unchanged number or boolean stays as written
+            if (current.flatMap(YamlObject::scalar).filter(value.raw()::equals).isPresent()) {
                 return;
             }
             put(key, textNode(value, current), current);

@@ -42,8 +42,8 @@ public final class SaveElement {
         if (target.isPresent() && this.definitions.unformattedFiles(folder).contains(target.get())) {
             throw new UnformattedFileException(target.get());
         }
-        if (!realm.declaredTypes().contains(definition.type()) && !declareType) {
-            throw new FirstDeclarationException(definition.type());
+        if (!realm.declares(definition) && !declareType) {
+            throw new FirstDeclarationException(definition);
         }
         return this.definitions.save(folder, definition, existing);
     }

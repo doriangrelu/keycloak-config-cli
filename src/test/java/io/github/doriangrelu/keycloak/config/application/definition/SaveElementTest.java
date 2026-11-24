@@ -55,12 +55,36 @@ class SaveElementTest {
 
         assertThatThrownBy(() -> saveElement.save("demo", READER, Optional.empty(), false))
                 .isInstanceOf(FirstDeclarationException.class)
-                .hasMessage("At the next import, all the roles of Keycloak missing from the files will be deleted."
-                        + " Run a dry run first, then confirm.");
+                .hasMessage("At the next import, all the realm roles of Keycloak missing from the files will be"
+                        + " deleted. Run a dry run first, then confirm.");
         assertThat(definitions.saved).isEmpty();
 
         assertThat(saveElement.save("demo", READER, Optional.empty(), true)).isEqualTo("30-roles.yaml");
         assertThat(definitions.saved).containsExactly(READER);
+    }
+
+    /** The import cleans the realm roles and the roles of each client apart (ADR-007). */
+    @Test
+    void theFirstRoleOfAClientNeedsAConfirmationEvenWhenRealmRolesAreDeclared() {
+        RealmDefinition realm = new RealmDefinition(
+                "demo",
+                Optional.empty(),
+                List.of(),
+                List.of(),
+                List.of(),
+                Set.of(ElementType.ROLE),
+                true,
+                Set.of(),
+                List.of());
+        FakeRealmDefinitions definitions = new FakeRealmDefinitions(realm);
+        RoleDefinition viewer = new RoleDefinition(
+                TemplatedValue.of("viewer"), Optional.of(TemplatedValue.of("frontend")), Optional.empty());
+
+        assertThatThrownBy(() -> new SaveElement(definitions).save("demo", viewer, Optional.empty(), false))
+                .isInstanceOf(FirstDeclarationException.class)
+                .hasMessageContaining("all the roles of client 'frontend' of Keycloak");
+        assertThat(new SaveElement(definitions).save("demo", READER, Optional.empty(), false))
+                .isEqualTo("30-roles.yaml");
     }
 
     @Test

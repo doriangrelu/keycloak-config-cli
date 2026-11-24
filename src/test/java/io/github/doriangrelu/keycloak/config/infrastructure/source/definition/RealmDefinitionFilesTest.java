@@ -59,6 +59,8 @@ class RealmDefinitionFilesTest {
         assertThat(realm.isReadOnly()).isFalse();
         assertThat(realm.declaredTypes())
                 .containsExactlyInAnyOrder(ElementType.CLIENT, ElementType.ROLE, ElementType.GROUP);
+        assertThat(realm.declaresRealmRoles()).isTrue();
+        assertThat(realm.declaredRoleClients()).containsExactly("frontend");
         assertThat(realm.clients())
                 .extracting(
                         client -> client.definition().clientId().raw(),

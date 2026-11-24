@@ -21,9 +21,17 @@
 package io.github.doriangrelu.keycloak.config.domain.definition;
 
 /**
- * Where an element is written.
+ * Where an element is written. Several elements may share a line, such as in a list written on one line: the column
+ * tells them apart.
  *
  * @param file the name of its file in the folder of the realm
  * @param line its first line, from 1
+ * @param column its first column, from 1
  */
-public record Origin(String file, int line) {}
+public record Origin(String file, int line, int column) {
+
+    /** A position known by its line only. */
+    public Origin(final String file, final int line) {
+        this(file, line, 0);
+    }
+}

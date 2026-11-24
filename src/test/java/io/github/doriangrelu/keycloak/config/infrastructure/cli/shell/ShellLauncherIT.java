@@ -65,6 +65,14 @@ class ShellLauncherIT {
     }
 
     @Test
+    void theOperationIsCaseInsensitive() {
+        this.contexts
+                .withPropertyValues("run.operation=shell")
+                .run(context -> assertThat(context.getBean("springShellApplicationRunner"))
+                        .isInstanceOf(ShellLauncher.class));
+    }
+
+    @Test
     void shellModeRegistersTheLauncher() {
         this.contexts
                 .withPropertyValues("run.operation=SHELL")
