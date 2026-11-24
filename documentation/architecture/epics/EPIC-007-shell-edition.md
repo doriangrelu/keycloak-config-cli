@@ -1,6 +1,6 @@
 # EPIC-007 — Shell interactif : édition guidée des définitions de realm
 
-**Statut :** À faire
+**Statut :** En cours
 **ADR :** [ADR-008](../ADR-008-shell-edition-des-definitions.md), [ADR-001](../ADR-001-architecture-en-couches.md), [ADR-007](../ADR-007-fichiers-seule-verite.md)
 
 Donner aux développeurs qui ne connaissent pas bien Keycloak un shell, sur le modèle de la console Doctrine / Symfony, pour créer et modifier les éléments d'un realm par des questions guidées. Le résultat est écrit dans les fichiers de définition, en JSON ou en YAML, sans abîmer ce qui est écrit à la main, avec des variables Mustache, et en respectant des règles de configuration minimale.
@@ -38,7 +38,7 @@ Les libellés et les questions exactes se fixent dans chaque story.
 
 ### US-007-01 — Socle Spring Shell
 
-**Statut :** À faire
+**Statut :** Terminé
 Spring Shell 4.0.x dans `infrastructure.cli.shell`. `run.operation=SHELL`, dossier racine `shell.root` (répertoire courant par défaut). Session interactive et exécution d'une commande sans session, avec les codes de sortie de l'ADR-005. Port `Questions` (saisie, choix commenté, confirmation) dans `application.definition` et son implémentation Spring Shell ; en mode non interactif, une question sans réponse fournie en option est une erreur de configuration (code `2`). Aide des commandes. Règle ArchUnit : `infrastructure.cli.shell` ne dépend ni de `infrastructure.source` ni de `infrastructure.keycloak`. Les lanceurs existants (`ImportRunner`, `NormalizationRunner`) ne changent pas.
 
 ### US-007-02 — Lecture d'un dossier de realm
@@ -106,3 +106,14 @@ Documentation utilisateur (en anglais) : lancement du shell, commandes, variable
 - **Diffs lisibles** : en dehors de `realm format`, une modification ne change que ses propres lignes.
 - **Suppressions à l'import** : déclarer un type pour la première fois dans un realm fera supprimer, à l'import, tout ce que Keycloak contient de ce type hors des fichiers ; le shell doit le dire avant de l'écrire.
 - **Plusieurs clients, plusieurs types** : le type d'application est propre à chaque client, jamais au realm.
+
+## Réalisé
+
+### US-007-01
+
+- Spring Shell 4.0.4, cœur seul (sans JLine). `run.operation=SHELL` ; `shell.root` (répertoire courant par défaut) et `shell.command` (`ShellProperties`).
+- `ShellLauncher`, déclaré sous le nom `springShellApplicationRunner` : avec `shell.command`, exécute cette commande une fois (`CommandParser`, `CommandExecutor`) et rend son code de sortie ; sans, lance la session interactive de Spring Shell. Une commande inconnue ou en échec rend `2`, ou le code de sa cause (ADR-005).
+- Hors du mode SHELL, `CommandLineConfiguration` déclare un `springShellApplicationRunner` qui ne fait rien : sans lui, l'auto-configuration de Spring Shell lancerait un shell interactif après un import ou une normalisation, et une CI attendrait une commande sur l'entrée standard. `ShellLauncherIT` le vérifie pour les trois opérations.
+- Port `Questions` (`application.definition.port`) : réponse libre, choix numéroté avec son explication (`Choice`), oui ou non. `ConsoleQuestions` les pose sur la console à travers l'`InputReader` de Spring Shell, redemande une réponse invalide, et lève `MissingAnswerException` (code `2`) quand il n'y a aucune réponse, comme en mode script. Les choix sont numérotés : la sélection aux flèches demanderait JLine, et pourra venir plus tard.
+- Règle ArchUnit `shellIgnoresTheOtherAdapters` : `infrastructure.cli.shell` ne dépend ni de `infrastructure.source` ni de `infrastructure.keycloak`.
+
