@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.shell.test.ShellInputProvider.providerFor;
 
 import io.github.doriangrelu.keycloak.config.application.definition.InvalidRealmFolderException;
+import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
 import io.github.doriangrelu.keycloak.config.domain.definition.InvalidTemplatedValueException;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.CommandLineConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
@@ -122,6 +123,49 @@ class RealmCreateIT {
 
             assertThatThrownBy(() -> shell.sendCommand("realm create --folder ../x --realm x --format yaml"))
                     .hasRootCauseInstanceOf(InvalidRealmFolderException.class);
+        });
+    }
+
+    @Test
+    void anInvalidFolderOptionFailsBeforeTheOtherQuestionsAndWritesNothing() {
+        contexts().run(context -> {
+            ShellTestClient shell =
+                    new ShellTestClient(context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+
+            assertThatThrownBy(() -> shell.sendCommand("realm create --folder \"my realm\""))
+                    .hasRootCauseInstanceOf(InvalidRealmFolderException.class);
+            assertThat(this.root).isEmptyDirectory();
+        });
+    }
+
+    @Test
+    void anExistingFolderOptionFailsBeforeTheOtherQuestionsAndWritesNothing() throws Exception {
+        Files.createDirectory(this.root.resolve("demo"));
+        contexts().run(context -> {
+            ShellTestClient shell =
+                    new ShellTestClient(context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+
+            assertThatThrownBy(() -> shell.sendCommand("realm create --folder DEMO"))
+                    .hasRootCauseInstanceOf(RealmFolderExistsException.class);
+            assertThat(this.root.resolve("demo")).isEmptyDirectory();
+        });
+    }
+
+    @Test
+    void anInvalidOrExistingFolderAnswerIsAskedAgain() throws Exception {
+        Files.createDirectory(this.root.resolve("demo"));
+        contexts().run(context -> {
+            ShellTestClient shell =
+                    new ShellTestClient(context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+
+            var screen = shell.sendCommand(providerFor("realm create")
+                    .withInput("my realm", "Demo", "{{x", "demo3", "", "1")
+                    .build());
+
+            assertThat(String.join("\n", screen.lines()))
+                    .contains("Invalid realm folder 'my realm'")
+                    .contains("already exists");
+            assertThat(this.root.resolve("demo3/00-realm.yaml")).exists();
         });
     }
 }

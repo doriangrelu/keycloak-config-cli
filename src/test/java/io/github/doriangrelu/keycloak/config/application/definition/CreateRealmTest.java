@@ -75,4 +75,22 @@ class CreateRealmTest {
 
         assertThat(this.definitions.created).isEmpty();
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"my realm", "{{x", "demo.", "../x"})
+    void checkFolderRefusesAnInvalidName(final String folder) {
+        assertThatThrownBy(() -> this.createRealm.checkFolder(folder)).isInstanceOf(InvalidRealmFolderException.class);
+    }
+
+    @Test
+    void checkFolderRefusesAnExistingFolderIgnoringTheCase() {
+        assertThatThrownBy(() -> this.createRealm.checkFolder("DEMO")).isInstanceOf(RealmFolderExistsException.class);
+    }
+
+    @Test
+    void checkFolderAcceptsAFreeFolderAndWritesNothing() {
+        this.createRealm.checkFolder("mon-realm");
+
+        assertThat(this.definitions.created).isEmpty();
+    }
 }

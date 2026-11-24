@@ -39,11 +39,12 @@ public final class CreateRealm {
     }
 
     /**
-     * @return the name of the realm file written, in the folder
+     * Checks that a folder can be created: a plain name that does not exist yet, whatever its case.
+     *
      * @throws InvalidRealmFolderException when the folder is not a plain name
      * @throws RealmFolderExistsException when the folder exists already
      */
-    public String create(final String folder, final TemplatedValue realm, final DefinitionFormat format) {
+    public void checkFolder(final String folder) {
         if (folder == null || !FOLDER.matcher(folder).matches()) {
             throw new InvalidRealmFolderException(folder);
         }
@@ -51,6 +52,15 @@ public final class CreateRealm {
                 .anyMatch(existing -> existing.toLowerCase(Locale.ROOT).equals(folder.toLowerCase(Locale.ROOT)))) {
             throw new RealmFolderExistsException(folder);
         }
+    }
+
+    /**
+     * @return the name of the realm file written, in the folder
+     * @throws InvalidRealmFolderException when the folder is not a plain name
+     * @throws RealmFolderExistsException when the folder exists already
+     */
+    public String create(final String folder, final TemplatedValue realm, final DefinitionFormat format) {
+        checkFolder(folder);
         return this.definitions.createRealm(folder, realm, format);
     }
 }

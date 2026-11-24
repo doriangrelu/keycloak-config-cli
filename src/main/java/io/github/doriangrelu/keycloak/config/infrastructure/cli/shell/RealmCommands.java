@@ -23,7 +23,9 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 import io.github.doriangrelu.keycloak.config.application.definition.Choice;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
+import io.github.doriangrelu.keycloak.config.application.definition.InvalidRealmFolderException;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
+import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
 import io.github.doriangrelu.keycloak.config.application.definition.UnknownFormatException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
@@ -35,6 +37,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -78,7 +81,7 @@ public class RealmCommands {
             @Option(longName = "format", description = "yaml or json", required = false) final String formatOption) {
         Questions questions = new ConsoleQuestions(context.inputReader(), context.outputWriter());
         Optional<DefinitionFormat> format = given(formatOption).map(RealmCommands::formatOf);
-        String folder = given(folderOption).orElseGet(() -> questions.ask("Folder of the realm", Optional.empty()));
+        String folder = folderOf(folderOption, questions, context.outputWriter());
         TemplatedValue realm = given(realmOption)
                 .map(TemplatedValue::of)
                 .orElseGet(() -> questions.askValue("Name of the realm", Optional.of(TemplatedValue.of(folder))));
@@ -91,6 +94,23 @@ public class RealmCommands {
         String file = this.createRealm.create(folder, realm, chosen);
         this.session.open(folder);
         return "Realm '%s' created: %s/%s".formatted(folder, folder, file);
+    }
+
+    private String folderOf(final String option, final Questions questions, final PrintWriter writer) {
+        Optional<String> given = given(option);
+        if (given.isPresent()) {
+            this.createRealm.checkFolder(given.get());
+            return given.get();
+        }
+        while (true) {
+            String answer = questions.ask("Folder of the realm", Optional.empty());
+            try {
+                this.createRealm.checkFolder(answer);
+                return answer;
+            } catch (InvalidRealmFolderException | RealmFolderExistsException e) {
+                writer.println("  " + e.getMessage());
+            }
+        }
     }
 
     private static Optional<String> given(final String option) {
