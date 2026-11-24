@@ -46,6 +46,11 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     }
 
     @Override
+    public Map<String, String> sources(final String folder) {
+        return Map.of();
+    }
+
+    @Override
     public Optional<String> fileOf(final String folder, final ElementType type) {
         return Optional.ofNullable(this.files.get(type));
     }

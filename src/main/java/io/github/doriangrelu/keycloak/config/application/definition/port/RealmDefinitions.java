@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** The definitions of the realms: one folder per realm under a root (ADR-008). */
@@ -59,4 +60,7 @@ public interface RealmDefinitions {
      * @return the file written
      */
     String save(String folder, ElementDefinition definition, Optional<Origin> existing);
+
+    /** The text of each definition file of a realm, as written (comments included), by file name. */
+    Map<String, String> sources(String folder);
 }

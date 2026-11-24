@@ -40,8 +40,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -160,6 +162,15 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
             }
         }
         return changed;
+    }
+
+    @Override
+    public Map<String, String> sources(final String folder) {
+        Map<String, String> sources = new LinkedHashMap<>();
+        for (Path file : definitionFiles(this.root.resolve(folder))) {
+            sources.put(file.getFileName().toString(), readFile(file));
+        }
+        return sources;
     }
 
     @Override

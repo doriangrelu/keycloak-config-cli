@@ -117,4 +117,12 @@ class RealmDefinitionFilesTest {
                 .extracting(client -> client.definition().clientId().raw())
                 .containsExactly("app");
     }
+
+    @Test
+    void sourcesAreTheFilesAsWritten() {
+        Map<String, String> sources = this.files.sources("split");
+
+        assertThat(sources).hasSize(4);
+        assertThat(sources.get("00-realm.yaml")).startsWith("# The realm and its settings");
+    }
 }
