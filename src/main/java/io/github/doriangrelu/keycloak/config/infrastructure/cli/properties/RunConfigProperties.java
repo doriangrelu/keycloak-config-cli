@@ -40,6 +40,8 @@ public class RunConfigProperties {
 
     public enum Operation {
         IMPORT,
-        NORMALIZE
+        NORMALIZE,
+        /** Interactive shell editing the realm definition files (ADR-008). */
+        SHELL
     }
 }
