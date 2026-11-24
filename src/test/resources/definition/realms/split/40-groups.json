@@ -1,0 +1,17 @@
+{
+  "realm": "{{env}}-mon-realm",
+  "groups": [
+    {
+      "name": "team",
+      "realmRoles": ["reader"],
+      "subGroups": [
+        {
+          "name": "devs",
+          "clientRoles": {
+            "frontend": ["viewer"]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+realm: "{{env}}-mon-realm"
+roles:
+  realm:
+    - name: reader
+      description: Reads everything
+  client:
+    frontend:
+      - name: viewer

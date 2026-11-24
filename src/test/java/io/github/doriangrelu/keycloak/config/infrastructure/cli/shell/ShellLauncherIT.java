@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.CommandLineConfiguration;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,8 @@ class ShellLauncherIT {
 
     private final ApplicationContextRunner contexts = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(SpringShellAutoConfiguration.class))
-            .withUserConfiguration(CommandLineConfiguration.class, ShellCommandConfiguration.class);
+            .withUserConfiguration(
+                    CommandLineConfiguration.class, ShellCommandConfiguration.class, ShellAdaptersConfiguration.class);
 
     @Test
     void importModeRegistersAnInactiveShellRunner() {

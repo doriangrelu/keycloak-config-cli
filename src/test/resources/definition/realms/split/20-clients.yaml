@@ -1,0 +1,15 @@
+realm: "{{env}}-mon-realm"
+clients:
+  - clientId: frontend
+    publicClient: true
+    standardFlowEnabled: true
+    directAccessGrantsEnabled: false
+    redirectUris:
+      - "{{appUrl}}/*"
+  - clientId: batch
+    standardFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: true
+  - clientId: legacy
+    publicClient: true
+    directAccessGrantsEnabled: true

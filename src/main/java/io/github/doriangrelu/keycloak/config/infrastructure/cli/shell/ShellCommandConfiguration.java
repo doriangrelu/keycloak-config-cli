@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import java.io.PrintWriter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,6 +36,16 @@ import org.springframework.shell.core.command.CommandRegistry;
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "SHELL")
 @EnableConfigurationProperties(ShellProperties.class)
 public class ShellCommandConfiguration {
+
+    @Bean
+    public ShellSession shellSession() {
+        return new ShellSession();
+    }
+
+    @Bean
+    public RealmCommands realmCommands(final ReadRealms readRealms, final ShellSession shellSession) {
+        return new RealmCommands(readRealms, shellSession);
+    }
 
     /** Named as the runner of Spring Shell, which is then not registered. */
     @Bean
