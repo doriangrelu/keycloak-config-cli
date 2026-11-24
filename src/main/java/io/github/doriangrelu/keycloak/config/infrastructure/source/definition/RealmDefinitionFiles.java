@@ -51,6 +51,8 @@ import java.util.stream.Stream;
  */
 public final class RealmDefinitionFiles implements RealmDefinitions {
 
+    private static final int MAX_FORMAT_PASSES = 4;
+
     private final Path root;
 
     public RealmDefinitionFiles(final Path root) {
@@ -119,6 +121,74 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
             }
         }
         return Optional.of(new RealmDefinition(folder, realm, clients, roles, groups, declared, unreadable));
+    }
+
+    @Override
+    public List<String> unformattedFiles(final String folder) {
+        List<String> unformatted = new ArrayList<>();
+        for (Path file : definitionFiles(this.root.resolve(folder))) {
+            String name = file.getFileName().toString();
+            String content = readFile(file);
+            if (!DocumentTrees.parse(name, content).render().equals(content)) {
+                unformatted.add(name);
+            }
+        }
+        return unformatted;
+    }
+
+    @Override
+    public List<String> format(final String folder) {
+        List<String> changed = new ArrayList<>();
+        for (Path file : definitionFiles(this.root.resolve(folder))) {
+            String name = file.getFileName().toString();
+            String original = readFile(file);
+            String formatted = formatted(name, original);
+            if (!formatted.equals(original)) {
+                writeFile(file, formatted);
+                changed.add(name);
+            }
+        }
+        return changed;
+    }
+
+    /**
+     * The layout of keycloak-config-cli is reached after at most a few rewrites: SnakeYAML moves a comment above a list
+     * item into the item on the first one, and keeps it there on the next ones.
+     */
+    private static String formatted(final String name, final String original) {
+        String current = original;
+        for (int pass = 0; pass < MAX_FORMAT_PASSES; pass++) {
+            String rendered = DocumentTrees.parse(name, current).render();
+            if (rendered.equals(current)) {
+                requireSameContent(name, original, current);
+                return current;
+            }
+            current = rendered;
+        }
+        throw new IllegalStateException(
+                "The layout of " + name + " is not stable after " + MAX_FORMAT_PASSES + " rewrites");
+    }
+
+    private static void requireSameContent(final String name, final String original, final String formatted) {
+        if (!PlainContent.of(name, original).equals(PlainContent.of(name, formatted))) {
+            throw new IllegalStateException("Formatting " + name + " would change its content");
+        }
+    }
+
+    private static String readFile(final Path file) {
+        try {
+            return Files.readString(file, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static void writeFile(final Path file, final String content) {
+        try {
+            Files.writeString(file, content, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static List<Path> definitionFiles(final Path directory) {

@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Defined;
@@ -38,11 +39,28 @@ import org.springframework.shell.core.command.annotation.Command;
 public class RealmCommands {
 
     private final ReadRealms readRealms;
+    private final FormatRealm formatRealm;
     private final ShellSession session;
 
-    public RealmCommands(final ReadRealms readRealms, final ShellSession session) {
+    public RealmCommands(final ReadRealms readRealms, final FormatRealm formatRealm, final ShellSession session) {
         this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
+        this.formatRealm = Objects.requireNonNull(formatRealm, "formatRealm");
         this.session = Objects.requireNonNull(session, "session");
+    }
+
+    @Command(
+            name = {"realm", "format"},
+            group = "Realms",
+            description = "Write the files of the opened realm in the layout of the shell, content unchanged:"
+                    + " run it once and commit it apart")
+    public String format() {
+        List<String> changed = this.formatRealm.format(this.session.requireOpenedRealm());
+        if (changed.isEmpty()) {
+            return "Already formatted";
+        }
+        StringJoiner lines = new StringJoiner(System.lineSeparator());
+        changed.forEach(file -> lines.add("Formatted: " + file));
+        return lines.toString();
     }
 
     @Command(

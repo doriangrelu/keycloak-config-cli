@@ -45,6 +45,16 @@ class ReadRealmsTest {
         public Optional<RealmDefinition> load(final String folder) {
             return folder.equals("demo") ? Optional.of(DEMO) : Optional.empty();
         }
+
+        @Override
+        public List<String> unformattedFiles(final String folder) {
+            return List.of();
+        }
+
+        @Override
+        public List<String> format(final String folder) {
+            return List.of();
+        }
     });
 
     @Test

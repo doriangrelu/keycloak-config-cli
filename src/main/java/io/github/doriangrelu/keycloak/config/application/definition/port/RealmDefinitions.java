@@ -32,4 +32,15 @@ public interface RealmDefinitions {
 
     /** Every file of the folder of a realm, read before rendering; empty when the folder does not exist. */
     Optional<RealmDefinition> load(String folder);
+
+    /** The files of a realm that are not in the layout of keycloak-config-cli yet: writing them would change them. */
+    List<String> unformattedFiles(String folder);
+
+    /**
+     * Writes every file of a realm in the layout of keycloak-config-cli, until it is stable, without changing its
+     * content.
+     *
+     * @return the files changed
+     */
+    List<String> format(String folder);
 }

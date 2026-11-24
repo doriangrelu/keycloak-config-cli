@@ -1,0 +1,21 @@
+# Clients of the realm: one entry per application.
+# The URLs come from the appUrl variable, given at import.
+realm: "{{env}}-mon-realm"
+
+clients:
+  # The web application, reviewed with the security team
+  - clientId: frontend
+    name: Frontend
+    publicClient: true # a SPA cannot keep a secret
+    redirectUris:
+      - "{{appUrl}}/*"
+      - 'https://localhost:3000/*'
+    webOrigins: ["{{appUrl}}", "+"]
+    attributes:
+      pkce.code.challenge.method: S256
+
+  # Machine to machine
+  - clientId: batch
+    secret: "{{batchSecret}}"
+    serviceAccountsEnabled: true
+    standardFlowEnabled: false

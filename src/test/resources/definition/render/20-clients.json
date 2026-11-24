@@ -1,0 +1,21 @@
+{
+  "realm": "{{env}}-mon-realm",
+  "clients": [
+    {
+      "clientId": "frontend",
+      "name": "Frontend",
+      "publicClient": true,
+      "redirectUris": ["{{appUrl}}/*", "https://localhost:3000/*"],
+      "webOrigins": ["{{appUrl}}", "+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "batch",
+      "secret": "{{batchSecret}}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false
+    }
+  ]
+}

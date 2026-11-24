@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import java.io.PrintWriter;
 import org.springframework.beans.factory.ObjectProvider;
@@ -43,8 +44,9 @@ public class ShellCommandConfiguration {
     }
 
     @Bean
-    public RealmCommands realmCommands(final ReadRealms readRealms, final ShellSession shellSession) {
-        return new RealmCommands(readRealms, shellSession);
+    public RealmCommands realmCommands(
+            final ReadRealms readRealms, final FormatRealm formatRealm, final ShellSession shellSession) {
+        return new RealmCommands(readRealms, formatRealm, shellSession);
     }
 
     /** Named as the runner of Spring Shell, which is then not registered. */

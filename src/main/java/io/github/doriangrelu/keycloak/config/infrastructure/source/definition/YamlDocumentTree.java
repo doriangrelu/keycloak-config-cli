@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,12 +45,16 @@ import org.yaml.snakeyaml.nodes.Tag;
 final class YamlDocumentTree implements DocumentTree {
 
     private final MappingNode root;
+    private final DumperOptions.LineBreak lineBreak;
 
-    private YamlDocumentTree(final MappingNode root) {
+    private YamlDocumentTree(final MappingNode root, final DumperOptions.LineBreak lineBreak) {
         this.root = root;
+        this.lineBreak = lineBreak;
     }
 
     static YamlDocumentTree parse(final String content) {
+        DumperOptions.LineBreak lineBreak =
+                content.contains("\r\n") ? DumperOptions.LineBreak.WIN : DumperOptions.LineBreak.UNIX;
         LoaderOptions options = new LoaderOptions();
         options.setProcessComments(true);
         Node node;
@@ -62,12 +67,13 @@ final class YamlDocumentTree implements DocumentTree {
             throw new UnreadableDocumentException(1, e.getMessage());
         }
         if (node == null) {
-            return new YamlDocumentTree(new MappingNode(Tag.MAP, new ArrayList<>(), DumperOptions.FlowStyle.BLOCK));
+            return new YamlDocumentTree(
+                    new MappingNode(Tag.MAP, new ArrayList<>(), DumperOptions.FlowStyle.BLOCK), lineBreak);
         }
         if (!(node instanceof MappingNode mapping)) {
             throw new UnreadableDocumentException(node.getStartMark().getLine() + 1, "the file is not an object");
         }
-        return new YamlDocumentTree(mapping);
+        return new YamlDocumentTree(mapping, lineBreak);
     }
 
     MappingNode node() {
@@ -82,6 +88,24 @@ final class YamlDocumentTree implements DocumentTree {
     @Override
     public DefinitionFormat format() {
         return DefinitionFormat.YAML;
+    }
+
+    @Override
+    public String render() {
+        LoaderOptions loader = new LoaderOptions();
+        loader.setProcessComments(true);
+        DumperOptions dumper = new DumperOptions();
+        dumper.setProcessComments(true);
+        dumper.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        dumper.setIndent(2);
+        dumper.setIndicatorIndent(2);
+        dumper.setIndentWithIndicator(true);
+        dumper.setWidth(120);
+        dumper.setAllowUnicode(true);
+        dumper.setLineBreak(this.lineBreak);
+        StringWriter output = new StringWriter();
+        new Yaml(loader, dumper).serialize(this.root, output);
+        return output.toString();
     }
 
     /** An object of a YAML file. */

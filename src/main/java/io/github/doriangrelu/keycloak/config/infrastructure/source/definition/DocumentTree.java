@@ -28,4 +28,10 @@ public interface DocumentTree {
     TreeObject root();
 
     DefinitionFormat format();
+
+    /**
+     * The file written again from its tree, in the layout of keycloak-config-cli (ADR-008): comments, key order, styles
+     * of the values and placeholders are kept; the line separator of the file is kept.
+     */
+    String render();
 }

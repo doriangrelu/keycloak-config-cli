@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
+import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.shell.ShellProperties;
@@ -44,5 +45,10 @@ public class ShellAdaptersConfiguration {
     @Bean
     public ReadRealms readRealms(final RealmDefinitions realmDefinitions) {
         return new ReadRealms(realmDefinitions);
+    }
+
+    @Bean
+    public FormatRealm formatRealm(final RealmDefinitions realmDefinitions) {
+        return new FormatRealm(realmDefinitions);
     }
 }

@@ -23,6 +23,9 @@ package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -45,16 +48,19 @@ final class JsonDocumentTree implements DocumentTree {
 
     private final ObjectNode root;
     private final Map<JsonNode, Integer> lines;
+    private final String lineSeparator;
 
-    private JsonDocumentTree(final ObjectNode root, final Map<JsonNode, Integer> lines) {
+    private JsonDocumentTree(final ObjectNode root, final Map<JsonNode, Integer> lines, final String lineSeparator) {
         this.root = root;
         this.lines = lines;
+        this.lineSeparator = lineSeparator;
     }
 
     static JsonDocumentTree parse(final String content) {
         Map<JsonNode, Integer> lines = new IdentityHashMap<>();
+        String lineSeparator = content.contains("\r\n") ? "\r\n" : "\n";
         if (content.isBlank()) {
-            return new JsonDocumentTree(NODES.objectNode(), lines);
+            return new JsonDocumentTree(NODES.objectNode(), lines, lineSeparator);
         }
         try (JsonParser parser = MAPPER.createParser(content)) {
             JsonToken first = parser.nextToken();
@@ -67,7 +73,7 @@ final class JsonDocumentTree implements DocumentTree {
                 throw new UnreadableDocumentException(
                         parser.currentTokenLocation().getLineNr(), "unexpected content after the object");
             }
-            return new JsonDocumentTree(root, lines);
+            return new JsonDocumentTree(root, lines, lineSeparator);
         } catch (JsonProcessingException e) {
             int line = e.getLocation() == null ? 1 : e.getLocation().getLineNr();
             throw new UnreadableDocumentException(line, e.getOriginalMessage());
@@ -118,6 +124,21 @@ final class JsonDocumentTree implements DocumentTree {
     @Override
     public DefinitionFormat format() {
         return DefinitionFormat.JSON;
+    }
+
+    @Override
+    public String render() {
+        DefaultIndenter indenter = new DefaultIndenter("  ", this.lineSeparator);
+        DefaultPrettyPrinter printer = new DefaultPrettyPrinter()
+                .withObjectIndenter(indenter)
+                .withArrayIndenter(indenter)
+                .withSeparators(
+                        Separators.createDefaultInstance().withObjectFieldValueSpacing(Separators.Spacing.AFTER));
+        try {
+            return MAPPER.writer(printer).writeValueAsString(this.root) + this.lineSeparator;
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Cannot write a JSON tree", e);
+        }
     }
 
     /** An object of a JSON file. */
