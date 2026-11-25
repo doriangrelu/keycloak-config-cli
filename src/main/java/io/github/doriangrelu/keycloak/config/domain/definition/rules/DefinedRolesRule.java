@@ -36,6 +36,7 @@ public final class DefinedRolesRule implements Rule {
 
     private static final KeyPath REALM_ROLES = KeyPath.parse("realmRoles");
     private static final String CLIENT_ROLES = "clientRoles";
+    private static final String DEFAULT_ROLES = "default-roles-";
 
     @Override
     public String id() {
@@ -90,7 +91,11 @@ public final class DefinedRolesRule implements Rule {
                 } else if (!(client == null
                         ? realmRoleKnown(role.raw(), context)
                         : clientRoleKnown(client, role.raw(), context))) {
-                    failed = true;
+                    if (client == null && role.raw().startsWith(DEFAULT_ROLES) && !realmNameKnown(context)) {
+                        unverifiable = true;
+                    } else {
+                        failed = true;
+                    }
                 }
             }
         }
@@ -98,6 +103,10 @@ public final class DefinedRolesRule implements Rule {
             return Outcome.FAILED;
         }
         return unverifiable ? Outcome.UNVERIFIABLE : Outcome.PASSED;
+    }
+
+    private static boolean realmNameKnown(final RealmContext context) {
+        return context.realm().realm().filter(realm -> !realm.isTemplated()).isPresent();
     }
 
     private static boolean clientKnown(final String clientId, final RealmContext context) {

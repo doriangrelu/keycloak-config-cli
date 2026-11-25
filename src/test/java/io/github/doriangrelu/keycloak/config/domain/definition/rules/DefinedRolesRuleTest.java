@@ -105,6 +105,16 @@ class DefinedRolesRuleTest {
     }
 
     @Test
+    void default_role_of_a_templated_or_unnamed_realm_is_unverifiable() {
+        var templated = new RealmContext(RealmRulesFixtures.namedRealm("{{env}}-demo"), Optional.empty(), BUILT_INS);
+        assertThat(this.rule.check(keys("realmRoles", listed("default-roles-dev-demo")), templated))
+                .isEqualTo(Outcome.UNVERIFIABLE);
+        assertThat(this.rule.check(keys("realmRoles", listed("unknown-role")), templated))
+                .isEqualTo(Outcome.FAILED);
+        assertThat(check(keys("realmRoles", listed("default-roles-demo")))).isEqualTo(Outcome.UNVERIFIABLE);
+    }
+
+    @Test
     void group_without_roles_passes() {
         assertThat(check(ElementKeys.empty())).isEqualTo(Outcome.PASSED);
     }
