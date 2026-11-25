@@ -82,6 +82,14 @@ class CheckTest {
     }
 
     @Test
+    void anObjectKeyIsPresentNotAbsentAndUnverifiableForValues() {
+        assertThat(check(Operator.PRESENT).evaluate(shapeless())).isEqualTo(Outcome.PASSED);
+        assertThat(check(Operator.ABSENT).evaluate(shapeless())).isEqualTo(Outcome.FAILED);
+        assertThat(check(Operator.ONE_OF, "a").evaluate(shapeless())).isEqualTo(Outcome.UNVERIFIABLE);
+        assertThat(check(Operator.MATCHES, "a").evaluate(shapeless())).isEqualTo(Outcome.UNVERIFIABLE);
+    }
+
+    @Test
     void equalsOnListIsUnverifiable() {
         assertThat(check(Operator.EQUALS, "S256").evaluate(listed("S256"))).isEqualTo(Outcome.UNVERIFIABLE);
     }

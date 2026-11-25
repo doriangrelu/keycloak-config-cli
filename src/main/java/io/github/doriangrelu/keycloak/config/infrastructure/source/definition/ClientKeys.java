@@ -31,27 +31,10 @@ import java.util.Optional;
 /** The keys of a client in the export format of Keycloak, and the editing model (ADR-008). */
 final class ClientKeys {
 
-    private static final java.util.List<String> FLOW_KEYS = java.util.List.of(
-            "publicClient",
-            "standardFlowEnabled",
-            "implicitFlowEnabled",
-            "directAccessGrantsEnabled",
-            "serviceAccountsEnabled");
-
     private ClientKeys() {}
 
     static ClientDefinition read(final TreeObject client) {
-        ClientFlows defaults = ClientFlows.KEYCLOAK_DEFAULTS;
-        // A flow written with a placeholder, or as anything but a boolean, is only known at import: the type cannot be
-        // deduced, and the flows are never rewritten
-        boolean unknownFlow = FLOW_KEYS.stream()
-                .anyMatch(key -> client.has(key) && client.bool(key).isEmpty());
-        ClientFlows flows = new ClientFlows(
-                client.bool("publicClient").orElse(defaults.publicClient()),
-                client.bool("standardFlowEnabled").orElse(defaults.standardFlow()),
-                client.bool("implicitFlowEnabled").orElse(defaults.implicitFlow()),
-                client.bool("directAccessGrantsEnabled").orElse(defaults.directAccessGrants()),
-                client.bool("serviceAccountsEnabled").orElse(defaults.serviceAccounts()));
+        ApplicationType type = ApplicationType.deduce(client::text);
         // A client may be given by name only: its name is then how it is known
         String clientId = client.text("clientId").or(() -> client.text("name")).orElse("");
         Map<String, TemplatedValue> attributes = new LinkedHashMap<>();
@@ -60,7 +43,7 @@ final class ClientKeys {
                 TemplatedValue.of(clientId),
                 optional(client, "name"),
                 optional(client, "description"),
-                unknownFlow ? ApplicationType.CUSTOM : ApplicationType.of(flows),
+                type,
                 client.texts("redirectUris").stream().map(TemplatedValue::of).toList(),
                 client.texts("webOrigins").stream().map(TemplatedValue::of).toList(),
                 attributes);

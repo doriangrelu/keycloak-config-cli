@@ -21,6 +21,8 @@
 package io.github.doriangrelu.keycloak.config.domain.definition;
 
 import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * What a client is for, in the words of a developer (ADR-008). Each client of a realm has its own type. A client whose
@@ -37,6 +39,17 @@ public enum ApplicationType {
     API,
     /** Flows that match no type. */
     CUSTOM;
+
+    /**
+     * The type of a client from the text of its flow keys, the one deduction shared by the rules and the editing model.
+     * A key not written takes its Keycloak default; a key holding anything but {@code true} or {@code false} (any
+     * case), a placeholder for instance, makes the client {@link #CUSTOM}: its flows are only known at import.
+     *
+     * @param flowText the text written under a flow key (see {@link ClientFlows#KEYS}), empty when not written
+     */
+    public static ApplicationType deduce(final Function<String, Optional<String>> flowText) {
+        return ClientFlows.read(flowText).map(ApplicationType::of).orElse(CUSTOM);
+    }
 
     /** The type whose flows are exactly these, {@link #CUSTOM} otherwise. */
     public static ApplicationType of(final ClientFlows flows) {

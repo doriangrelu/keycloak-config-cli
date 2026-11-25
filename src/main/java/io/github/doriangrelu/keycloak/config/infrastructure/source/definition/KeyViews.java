@@ -194,9 +194,8 @@ final class KeyViews {
             case OBJECTS -> keys.put(new KeyPath(segments), new KeyValue.Shapeless());
             case OBJECT -> {
                 TreeObject child = object.object(key).orElseThrow();
-                if (child.keys().isEmpty()) {
-                    keys.put(new KeyPath(segments), new KeyValue.Shapeless());
-                }
+                // The object itself is a key too (present, but with no value to compare), beside its leaves
+                keys.put(new KeyPath(segments), new KeyValue.Shapeless());
                 for (String name : child.keys()) {
                     flattenKey(child, name, segments, keys);
                 }

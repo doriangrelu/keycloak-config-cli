@@ -21,7 +21,6 @@
 package io.github.doriangrelu.keycloak.config.domain.definition.rules;
 
 import io.github.doriangrelu.keycloak.config.domain.definition.ApplicationType;
-import io.github.doriangrelu.keycloak.config.domain.definition.ClientFlows;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,12 +48,6 @@ public record DeclarativeRule(
         String message)
         implements Rule {
 
-    private static final KeyPath PUBLIC_CLIENT = KeyPath.parse("publicClient");
-    private static final KeyPath STANDARD_FLOW = KeyPath.parse("standardFlowEnabled");
-    private static final KeyPath IMPLICIT_FLOW = KeyPath.parse("implicitFlowEnabled");
-    private static final KeyPath DIRECT_ACCESS_GRANTS = KeyPath.parse("directAccessGrantsEnabled");
-    private static final KeyPath SERVICE_ACCOUNTS = KeyPath.parse("serviceAccountsEnabled");
-
     public DeclarativeRule {
         if (id == null || id.isBlank()) {
             throw new InvalidRulesException("A rule needs an identifier");
@@ -75,7 +68,7 @@ public record DeclarativeRule(
 
     @Override
     public boolean appliesTo(final ElementKeys keys) {
-        if (this.applicationType.isPresent() && !applicationTypeOf(keys).equals(this.applicationType)) {
+        if (this.applicationType.isPresent() && !this.applicationType.get().equals(applicationTypeOf(keys))) {
             return false;
         }
         return this.conditions.stream().allMatch(condition -> condition.evaluate(keys) == Outcome.PASSED);
@@ -96,42 +89,12 @@ public record DeclarativeRule(
         return result;
     }
 
-    /** The application type of a client view; empty when a flow key is missing, templated or not a boolean. */
-    public static Optional<ApplicationType> applicationTypeOf(final ElementKeys keys) {
-        return flowsOf(keys).map(ApplicationType::of);
-    }
-
-    /** The flows of a client view; empty when one is missing, templated or not a boolean. */
-    private static Optional<ClientFlows> flowsOf(final ElementKeys keys) {
-        Optional<Boolean> publicClient = flag(keys, PUBLIC_CLIENT);
-        Optional<Boolean> standardFlow = flag(keys, STANDARD_FLOW);
-        Optional<Boolean> implicitFlow = flag(keys, IMPLICIT_FLOW);
-        Optional<Boolean> directAccessGrants = flag(keys, DIRECT_ACCESS_GRANTS);
-        Optional<Boolean> serviceAccounts = flag(keys, SERVICE_ACCOUNTS);
-        if (publicClient.isEmpty()
-                || standardFlow.isEmpty()
-                || implicitFlow.isEmpty()
-                || directAccessGrants.isEmpty()
-                || serviceAccounts.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(new ClientFlows(
-                publicClient.get(),
-                standardFlow.get(),
-                implicitFlow.get(),
-                directAccessGrants.get(),
-                serviceAccounts.get()));
-    }
-
-    private static Optional<Boolean> flag(final ElementKeys keys, final KeyPath key) {
-        Optional<KeyValue> value = keys.get(key);
-        if (value.isEmpty() || !(value.get() instanceof KeyValue.Scalar scalar)) {
-            return Optional.empty();
-        }
-        return switch (scalar.value().raw()) {
-            case "true" -> Optional.of(true);
-            case "false" -> Optional.of(false);
-            default -> Optional.empty();
-        };
+    /** The application type of a client view, deduced as the editing model does (see {@link ApplicationType#deduce}). */
+    public static ApplicationType applicationTypeOf(final ElementKeys keys) {
+        return ApplicationType.deduce(flow -> keys.get(KeyPath.parse(flow)).map(value -> switch (value) {
+            case KeyValue.Scalar scalar -> scalar.value().raw();
+            // A flow that is not a plain value is not a boolean
+            default -> "?";
+        }));
     }
 }

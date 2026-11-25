@@ -20,6 +20,10 @@
 
 package io.github.doriangrelu.keycloak.config.domain.definition;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
 /**
  * The flows of a client, as the export format of Keycloak writes them.
  *
@@ -38,6 +42,42 @@ public record ClientFlows(
 
     /** The value of each flow when a file does not write it. */
     public static final ClientFlows KEYCLOAK_DEFAULTS = new ClientFlows(false, true, false, true, false);
+
+    /** The keys of the five flows in a client, in the order of this record. */
+    public static final List<String> KEYS = List.of(
+            "publicClient",
+            "standardFlowEnabled",
+            "implicitFlowEnabled",
+            "directAccessGrantsEnabled",
+            "serviceAccountsEnabled");
+
+    /**
+     * The flows written in a client; a flow not written takes its default. Empty when a flow is not a boolean (a
+     * placeholder, for instance), as the flows are then only known at import. A boolean is read in any case.
+     */
+    public static Optional<ClientFlows> read(final Function<String, Optional<String>> flowText) {
+        boolean[] values = new boolean[KEYS.size()];
+        boolean[] defaults = {
+            KEYCLOAK_DEFAULTS.publicClient(),
+            KEYCLOAK_DEFAULTS.standardFlow(),
+            KEYCLOAK_DEFAULTS.implicitFlow(),
+            KEYCLOAK_DEFAULTS.directAccessGrants(),
+            KEYCLOAK_DEFAULTS.serviceAccounts()
+        };
+        for (int i = 0; i < values.length; i++) {
+            Optional<String> text = flowText.apply(KEYS.get(i));
+            if (text.isEmpty()) {
+                values[i] = defaults[i];
+            } else if ("true".equalsIgnoreCase(text.get())) {
+                values[i] = true;
+            } else if ("false".equalsIgnoreCase(text.get())) {
+                values[i] = false;
+            } else {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(new ClientFlows(values[0], values[1], values[2], values[3], values[4]));
+    }
 
     /** The flows of an application type (ADR-008). */
     public static ClientFlows of(final ApplicationType type) {

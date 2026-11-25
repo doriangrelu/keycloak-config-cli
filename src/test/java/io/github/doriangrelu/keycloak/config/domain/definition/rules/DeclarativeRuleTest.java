@@ -98,6 +98,36 @@ class DeclarativeRuleTest {
     }
 
     @Test
+    void aTemplatedFlowMakesTheClientCustom() {
+        DeclarativeRule custom = new DeclarativeRule(
+                "client.custom",
+                RuleElement.CLIENT,
+                Optional.of(ApplicationType.CUSTOM),
+                List.of(),
+                ElementKeys.empty(),
+                List.of(new Check(KeyPath.parse("name"), Operator.PRESENT, List.of())),
+                Severity.ADVICE,
+                "A custom client is named.");
+        Map<KeyPath, KeyValue> more = Map.of(KeyPath.parse("publicClient"), scalar("{{public}}"));
+
+        assertThat(custom.appliesTo(spa(more))).isTrue();
+        assertThat(PKCE.appliesTo(spa(more))).isFalse();
+    }
+
+    @Test
+    void aBooleanWrittenInAnyCaseIsRead() {
+        Map<KeyPath, KeyValue> more = Map.of(KeyPath.parse("publicClient"), scalar("True"));
+
+        assertThat(PKCE.appliesTo(spa(more))).isTrue();
+    }
+
+    @Test
+    void anotherTextInAFlowMakesTheClientCustom() {
+        assertThat(DeclarativeRule.applicationTypeOf(spa(Map.of(KeyPath.parse("implicitFlowEnabled"), scalar("yes")))))
+                .isEqualTo(ApplicationType.CUSTOM);
+    }
+
+    @Test
     void aMissingFlowDoesNotApplyWhenAnApplicationTypeIsRequired() {
         assertThat(PKCE.appliesTo(ElementKeys.empty())).isFalse();
     }

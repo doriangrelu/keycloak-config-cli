@@ -78,6 +78,15 @@ class KeyViewsTest {
     }
 
     @Test
+    void aKeyHoldingAnObjectIsPresentAndItsLeavesStayReadable() throws IOException {
+        write("20-clients.yaml", REALM + "clients:\n  - clientId: app\n    attributes:\n      owner: team\n");
+
+        ElementKeys client = onlyElement();
+        assertThat(client.get(key("attributes"))).contains(new KeyValue.Shapeless());
+        assertThat(client.get(key("attributes.owner"))).contains(scalar("team"));
+    }
+
+    @Test
     void anAttributeWithDotsIsOneSegment() throws IOException {
         write(
                 "20-clients.yaml",
