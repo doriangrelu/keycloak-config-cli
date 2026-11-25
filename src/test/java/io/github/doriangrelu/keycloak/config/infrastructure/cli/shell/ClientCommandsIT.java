@@ -91,6 +91,51 @@ class ClientCommandsIT {
     }
 
     @Test
+    void noneGivesNoRedirectUriNorWebOrigin() {
+        contexts().run(context -> {
+            ShellTestClient shell = shellOf(context);
+
+            run(
+                    shell,
+                    "client create --id shop --name Shop --description d --type web-application --url https://shop"
+                            + " --redirect-uris NONE --web-origins none --secret none --declare-type");
+
+            assertThat(clients())
+                    .doesNotContain("https://shop")
+                    .doesNotContain("none")
+                    .doesNotContain("NONE");
+        });
+    }
+
+    @Test
+    void aServiceWithASecretVariableIsWrittenQuoted() {
+        contexts().run(context -> {
+            ShellTestClient shell = shellOf(context);
+
+            run(
+                    shell,
+                    "client create --id svc --name S --description d --type service"
+                            + " --secret \"{{svcSecret}}\" --declare-type");
+
+            assertThat(clients()).contains("secret: \"{{svcSecret}}\"").doesNotContain("secret: s3");
+        });
+    }
+
+    @Test
+    void aSecretVariableWithADefaultFails() {
+        contexts().run(context -> {
+            ShellTestClient shell = shellOf(context);
+
+            assertThatThrownBy(() -> run(
+                            shell,
+                            "client create --id svc --name S --description d --type service"
+                                    + " --secret \"{{svcSecret:s3cr3t}}\" --declare-type"))
+                    .hasRootCauseInstanceOf(HardCodedSecretException.class);
+            assertThat(this.root.resolve("demo/20-clients.yaml")).doesNotExist();
+        });
+    }
+
+    @Test
     void aHardCodedSecretOptionFails() {
         contexts().run(context -> {
             ShellTestClient shell = shellOf(context);
@@ -105,7 +150,7 @@ class ClientCommandsIT {
     }
 
     @Test
-    void theFirstClientWithoutDeclareTypeFailsInScriptMode() {
+    void theFirstClientWithoutDeclareTypeIsRefusedWhenNobodyConfirms() {
         contexts().run(context -> {
             ShellTestClient shell = shellOf(context);
 

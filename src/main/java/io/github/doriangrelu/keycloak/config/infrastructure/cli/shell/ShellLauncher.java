@@ -126,11 +126,21 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             return ExitCode.INVALID_CONFIGURATION.code();
         } catch (CommandExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
-            this.output.println(cause.getMessage());
+            this.output.println(messageOf(cause));
             return ExitCodeResolver.resolve(cause).code();
         } finally {
             this.output.flush();
         }
+    }
+
+    /** What to tell the user: the first message of the chain, a wrapper such as an invocation error has none. */
+    private static String messageOf(final Throwable failure) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            if (current.getMessage() != null) {
+                return current.getMessage();
+            }
+        }
+        return failure.toString();
     }
 
     @Override

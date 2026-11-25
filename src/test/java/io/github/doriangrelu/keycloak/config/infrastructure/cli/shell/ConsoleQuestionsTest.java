@@ -106,9 +106,62 @@ class ConsoleQuestionsTest {
         assertThatThrownBy(() -> answering().ask("Client id", Optional.empty()))
                 .isInstanceOf(MissingAnswerException.class)
                 .hasMessageContaining("Client id");
-        assertThatThrownBy(() -> answering().choose("Application type", TYPES, Optional.of("spa")))
+    }
+
+    @Test
+    void withoutAnswerAProposalIsTaken() {
+        ConsoleQuestions script = answering();
+
+        assertThat(script.ask("Client id", Optional.of("frontend"))).isEqualTo("frontend");
+        assertThat(script.askValue("Application URL", Optional.of(TemplatedValue.of("{{appUrl}}"))))
+                .isEqualTo(TemplatedValue.of("{{appUrl}}"));
+        assertThat(script.askOptionalValue("Name", Optional.of(TemplatedValue.of("Shop"))))
+                .contains(TemplatedValue.of("Shop"));
+        assertThat(script.askValues("Redirect URIs", List.of(TemplatedValue.of("a"))))
+                .containsExactly(TemplatedValue.of("a"));
+        assertThat(script.choose("Application type", TYPES, Optional.of("service")))
+                .isEqualTo("service");
+        assertThat(script.confirm("Continue?", false)).isFalse();
+        assertThat(script.confirm("Continue?", true)).isTrue();
+    }
+
+    @Test
+    void withoutAnswerNothingIsGivenWhenNothingIsProposed() {
+        ConsoleQuestions script = answering();
+
+        assertThat(script.askOptionalValue("Name", Optional.empty())).isEmpty();
+        assertThat(script.askValues("Web origins", List.of())).isEmpty();
+    }
+
+    @Test
+    void withoutAnswerAndWithoutProposalTheQuestionFails() {
+        assertThatThrownBy(() -> answering().ask("Client id", Optional.empty()))
+                .isInstanceOf(MissingAnswerException.class);
+        assertThatThrownBy(() -> answering().askValue("Application URL", Optional.empty()))
+                .isInstanceOf(MissingAnswerException.class);
+        assertThatThrownBy(() -> answering().choose("Application type", TYPES, Optional.empty()))
                 .isInstanceOf(MissingAnswerException.class)
                 .hasMessageContaining("Application type");
+    }
+
+    @Test
+    void anOptionalValueSaysHowToKeepAndClearIt() {
+        answering("").askOptionalValue("Name", Optional.of(TemplatedValue.of("Shop")));
+        answering("").askOptionalValue("Description", Optional.empty());
+
+        assertThat(this.output.toString())
+                .contains("? Name [Shop] (Enter keeps it, - for none): ")
+                .contains("? Description (Enter for none): ");
+    }
+
+    @Test
+    void aListSaysHowToKeepAndClearIt() {
+        answering("").askValues("Redirect URIs", List.of(TemplatedValue.of("{{appUrl}}/*")));
+        answering("").askValues("Web origins", List.of());
+
+        assertThat(this.output.toString())
+                .contains("? Redirect URIs [{{appUrl}}/*] (Enter keeps them, - for none): ")
+                .contains("? Web origins (Enter for none): ");
     }
 
     @Test
@@ -169,7 +222,7 @@ class ConsoleQuestionsTest {
     void anEmptyListAnswerTakesTheProposal() {
         List<TemplatedValue> proposed = List.of(TemplatedValue.of("a"), TemplatedValue.of("b"));
         assertThat(answering("").askValues("Redirect URIs", proposed)).isEqualTo(proposed);
-        assertThat(this.output.toString()).contains("? Redirect URIs [a, b]: ");
+        assertThat(this.output.toString()).contains("? Redirect URIs [a, b] (Enter keeps them, - for none): ");
     }
 
     @Test

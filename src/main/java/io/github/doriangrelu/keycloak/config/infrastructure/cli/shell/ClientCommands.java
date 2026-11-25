@@ -87,12 +87,12 @@ public class ClientCommands {
                     final String url,
             @Option(
                             longName = "redirect-uris",
-                            description = "the redirect URIs, separated by commas, - for none",
+                            description = "the redirect URIs, separated by commas, or none",
                             required = false)
                     final String redirectUris,
             @Option(
                             longName = "web-origins",
-                            description = "the web origins, separated by commas, - for none",
+                            description = "the web origins, separated by commas, or none",
                             required = false)
                     final String webOrigins,
             @Option(
@@ -139,12 +139,12 @@ public class ClientCommands {
                     final String type,
             @Option(
                             longName = "redirect-uris",
-                            description = "the redirect URIs, separated by commas, - for none",
+                            description = "the redirect URIs, separated by commas, or none",
                             required = false)
                     final String redirectUris,
             @Option(
                             longName = "web-origins",
-                            description = "the web origins, separated by commas, - for none",
+                            description = "the web origins, separated by commas, or none",
                             required = false)
                     final String webOrigins,
             @Option(
@@ -215,13 +215,18 @@ public class ClientCommands {
 
     private static Optional<List<TemplatedValue>> values(final String option) {
         return given(option)
-                .map(text -> NONE.equals(text)
+                .map(text -> isNone(text)
                         ? List.<TemplatedValue>of()
                         : Arrays.stream(text.split(","))
                                 .map(String::strip)
                                 .filter(item -> !item.isEmpty())
                                 .map(TemplatedValue::of)
                                 .toList());
+    }
+
+    /** "none", or "-" for a shell that lets it through: no value, in the options that take a list. */
+    private static boolean isNone(final String text) {
+        return NONE.equals(text) || "none".equalsIgnoreCase(text);
     }
 
     private static Optional<ApplicationType> typeOf(final String option) {

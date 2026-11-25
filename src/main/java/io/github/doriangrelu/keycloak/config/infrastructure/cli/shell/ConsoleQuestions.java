@@ -37,7 +37,8 @@ import org.springframework.shell.core.InputReader;
 
 /**
  * Asks the questions on the console: free answers, numbered choices with their explanation, yes or no. An invalid
- * answer is asked again; no answer at all (end of input, as in a script) fails with {@link MissingAnswerException}.
+ * answer is asked again. No answer at all (a script) counts as an empty answer: the proposal is taken, a confirmation
+ * takes its default, and a question with nothing to take fails with {@link MissingAnswerException}.
  */
 public final class ConsoleQuestions implements Questions {
 
@@ -59,7 +60,10 @@ public final class ConsoleQuestions implements Questions {
     public String ask(final String question, final Optional<String> proposed) {
         String prompt = promptOf(question, proposed);
         while (true) {
-            String answer = read(question, prompt);
+            String answer = read(prompt);
+            if (answer == null) {
+                return proposed.orElseThrow(() -> new MissingAnswerException(question));
+            }
             if (!answer.isEmpty()) {
                 return answer;
             }
@@ -84,10 +88,10 @@ public final class ConsoleQuestions implements Questions {
 
     @Override
     public Optional<TemplatedValue> askOptionalValue(final String question, final Optional<TemplatedValue> proposed) {
-        String prompt = promptOf(question, proposed.map(TemplatedValue::raw));
+        String prompt = optionalPromptOf(question, proposed.map(TemplatedValue::raw), "it");
         while (true) {
-            String answer = read(question, prompt);
-            if (answer.isEmpty()) {
+            String answer = read(prompt);
+            if (answer == null || answer.isEmpty()) {
                 return proposed;
             }
             if (answer.equals(NONE)) {
@@ -104,10 +108,10 @@ public final class ConsoleQuestions implements Questions {
     @Override
     public List<TemplatedValue> askValues(final String question, final List<TemplatedValue> proposed) {
         String shown = proposed.stream().map(TemplatedValue::raw).collect(Collectors.joining(", "));
-        String prompt = promptOf(question, proposed.isEmpty() ? Optional.empty() : Optional.of(shown));
+        String prompt = optionalPromptOf(question, proposed.isEmpty() ? Optional.empty() : Optional.of(shown), "them");
         while (true) {
-            String answer = read(question, prompt);
-            if (answer.isEmpty()) {
+            String answer = read(prompt);
+            if (answer == null || answer.isEmpty()) {
                 return proposed;
             }
             if (answer.equals(NONE)) {
@@ -135,7 +139,10 @@ public final class ConsoleQuestions implements Questions {
         }
         this.writer.flush();
         while (true) {
-            String answer = read(question, "  Number: ");
+            String answer = read("  Number: ");
+            if (answer == null) {
+                return proposed.orElseThrow(() -> new MissingAnswerException(question));
+            }
             if (answer.isEmpty() && proposed.isPresent()) {
                 return proposed.get();
             }
@@ -151,7 +158,11 @@ public final class ConsoleQuestions implements Questions {
     public boolean confirm(final String question, final boolean byDefault) {
         String prompt = "? " + question + (byDefault ? " [Y/n]" : " [y/N]") + ": ";
         while (true) {
-            String answer = read(question, prompt).toLowerCase(Locale.ROOT);
+            String answer = read(prompt);
+            if (answer == null) {
+                return byDefault;
+            }
+            answer = answer.toLowerCase(Locale.ROOT);
             if (answer.isEmpty()) {
                 return byDefault;
             }
@@ -175,19 +186,24 @@ public final class ConsoleQuestions implements Questions {
         return "? " + question + proposed.map(value -> " [" + value + "]").orElse("") + ": ";
     }
 
-    private String read(final String question, final String prompt) {
+    /** The prompt of an optional answer: it says how to keep the proposal and how to give nothing. */
+    private static String optionalPromptOf(final String question, final Optional<String> proposed, final String keeps) {
+        String hint =
+                proposed.isPresent() ? " (Enter keeps " + keeps + ", " + NONE + " for none)" : " (Enter for none)";
+        return "? " + question + proposed.map(value -> " [" + value + "]").orElse("") + hint + ": ";
+    }
+
+    /** The answer, or null when there is none to read: a script does not answer, and the question takes its proposal. */
+    private String read(final String prompt) {
         this.writer.print(prompt);
         this.writer.flush();
         String answer;
         try {
             answer = this.reader.readInput(prompt);
         } catch (Exception e) {
-            throw new MissingAnswerException(question);
+            return null;
         }
-        if (answer == null) {
-            throw new MissingAnswerException(question);
-        }
-        return answer.trim();
+        return answer == null ? null : answer.trim();
     }
 
     private static Optional<Integer> numberOf(final String answer) {
