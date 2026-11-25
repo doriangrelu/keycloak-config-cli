@@ -29,7 +29,7 @@ public sealed interface SecretAnswer {
     /**
      * The secret is a variable, given at import.
      *
-     * @throws HardCodedSecretException when the value is not a single variable
+     * @throws HardCodedSecretException when the value is not a single variable, or when it has a default value
      */
     record Variable(TemplatedValue value) implements SecretAnswer {
 
@@ -38,6 +38,19 @@ public sealed interface SecretAnswer {
             if (!value.isFullyVariable()) {
                 throw new HardCodedSecretException();
             }
+            if (!isWithoutDefault(value)) {
+                throw HardCodedSecretException.withDefault();
+            }
+        }
+
+        /** Whether the value is a single variable with no default value: the only secret that can be written. */
+        static boolean isValid(final TemplatedValue value) {
+            return value.isFullyVariable() && isWithoutDefault(value);
+        }
+
+        private static boolean isWithoutDefault(final TemplatedValue value) {
+            return value.variables().stream()
+                    .allMatch(variable -> variable.defaultValue().isEmpty());
         }
     }
 

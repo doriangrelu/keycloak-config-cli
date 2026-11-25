@@ -107,8 +107,8 @@ class EditClientTest {
         assertThat(written(definitions)).isEqualTo(shop());
         assertThat(questions.asked())
                 .containsExactly(
-                        "Name (empty for none)",
-                        "Description (empty for none)",
+                        "Name",
+                        "Description",
                         "Application type",
                         "Redirect URIs",
                         "Web origins",
@@ -189,6 +189,40 @@ class EditClientTest {
     }
 
     @Test
+    void aCurrentSecretWithADefaultIsNotProposedAgain() {
+        ClientDefinition shop = shop();
+        ClientDefinition withDefault = new ClientDefinition(
+                shop.clientId(),
+                shop.name(),
+                shop.description(),
+                shop.applicationType(),
+                shop.redirectUris(),
+                shop.webOrigins(),
+                shop.attributes(),
+                Optional.of(value("{{shopSecret:s3cr3t}}")));
+        FakeRealmDefinitions definitions = realmWith(withDefault);
+        ScriptedQuestions questions = new ScriptedQuestions("", "", "", "", "", A_VARIABLE, "");
+
+        useCase(definitions).edit("demo", "shop", ClientAnswers.none(), questions);
+
+        assertThat(written(definitions).secret()).contains(value("{{shopSecret}}"));
+    }
+
+    @Test
+    void aSecretVariableWithADefaultIsAskedAgain() {
+        FakeRealmDefinitions definitions = realmWith(shop());
+        ScriptedQuestions questions =
+                new ScriptedQuestions("", "", "", "", "", A_VARIABLE, "{{shopSecret:abc}}", "{{shopSecret}}");
+
+        useCase(definitions).edit("demo", "shop", ClientAnswers.none(), questions);
+
+        assertThat(written(definitions).secret()).contains(value("{{shopSecret}}"));
+        assertThat(questions.told())
+                .containsExactly(
+                        "A secret variable has no default value: a default would be a secret written in the file");
+    }
+
+    @Test
     void aCustomClientIsAskedOnlyTheCommonFields() {
         ClientDefinition custom = new ClientDefinition(
                 value("legacy"),
@@ -204,9 +238,7 @@ class EditClientTest {
 
         useCase(definitions).edit("demo", "legacy", ClientAnswers.none(), questions);
 
-        assertThat(questions.asked())
-                .containsExactly(
-                        "Name (empty for none)", "Description (empty for none)", "Redirect URIs", "Web origins");
+        assertThat(questions.asked()).containsExactly("Name", "Description", "Redirect URIs", "Web origins");
         ClientDefinition client = written(definitions);
         assertThat(client.description()).contains(value("New"));
         assertThat(client.applicationType()).isEqualTo(ApplicationType.CUSTOM);

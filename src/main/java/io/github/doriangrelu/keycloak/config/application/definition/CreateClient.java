@@ -58,10 +58,9 @@ public final class CreateClient {
         RealmDefinition realm =
                 this.definitions.load(folder).orElseThrow(() -> new UnknownRealmFolderException(folder));
         TemplatedValue clientId = clientId(realm, given, questions);
-        Optional<TemplatedValue> name =
-                given.name().or(() -> questions.askOptionalValue("Name (empty for none)", Optional.empty()));
-        Optional<TemplatedValue> description = given.description()
-                .or(() -> questions.askOptionalValue("Description (empty for none)", Optional.empty()));
+        Optional<TemplatedValue> name = given.name().or(() -> questions.askOptionalValue("Name", Optional.empty()));
+        Optional<TemplatedValue> description =
+                given.description().or(() -> questions.askOptionalValue("Description", Optional.empty()));
         ApplicationType type = given.type()
                 .orElseGet(() -> questions.choose("Application type", ClientQuestions.TYPES, Optional.empty()));
         if (type == ApplicationType.SPA && given.secret().isPresent()) {
@@ -92,7 +91,7 @@ public final class CreateClient {
                 new ClientDefinition(clientId, name, description, type, redirectUris, webOrigins, Map.of(), secret);
         boolean declareType = given.declareType()
                 || realm.declares(client)
-                || questions.confirm(new FirstDeclarationException(client).getMessage(), false);
+                || questions.confirm(FirstDeclarationException.warning(client), false);
         return this.saveElement.save(folder, client, Optional.empty(), declareType);
     }
 

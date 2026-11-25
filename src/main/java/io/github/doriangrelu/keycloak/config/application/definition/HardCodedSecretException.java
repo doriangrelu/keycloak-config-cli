@@ -22,12 +22,24 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
 
-/** A client secret written as a value: it is always a variable, resolved at import. */
+/** A client secret written as a value, or with a default value: it is always a variable without default. */
 public final class HardCodedSecretException extends ApplicationException {
 
     static final String MESSAGE = "A client secret is a variable ({{name}}), never a value written in the file";
 
+    static final String DEFAULT_MESSAGE =
+            "A secret variable has no default value: a default would be a secret written in the file";
+
     public HardCodedSecretException() {
         super(MESSAGE);
+    }
+
+    private HardCodedSecretException(final String message) {
+        super(message);
+    }
+
+    /** The secret is a variable, but it carries a default value. */
+    static HardCodedSecretException withDefault() {
+        return new HardCodedSecretException(DEFAULT_MESSAGE);
     }
 }

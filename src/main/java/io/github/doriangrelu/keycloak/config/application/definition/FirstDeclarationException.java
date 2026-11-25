@@ -11,8 +11,13 @@ import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 public final class FirstDeclarationException extends ApplicationException {
 
     public FirstDeclarationException(final ElementDefinition element) {
-        super("At the next import, all the " + cleanedWith(element)
-                + " of Keycloak missing from the files will be deleted. Run a dry run first, then confirm.");
+        super(warning(element) + " In a script, add --declare-type.");
+    }
+
+    /** What the user is asked to confirm: the import will delete what the files do not declare. */
+    public static String warning(final ElementDefinition element) {
+        return "At the next import, all the " + cleanedWith(element)
+                + " of Keycloak missing from the files will be deleted. Run a dry run first, then confirm.";
     }
 
     /** What the import cleans with this element: its type, or the realm roles, or the roles of its client. */

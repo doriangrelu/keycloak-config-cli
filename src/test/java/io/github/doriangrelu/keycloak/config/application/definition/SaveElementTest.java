@@ -62,7 +62,7 @@ class SaveElementTest {
         assertThatThrownBy(() -> saveElement.save("demo", READER, Optional.empty(), false))
                 .isInstanceOf(FirstDeclarationException.class)
                 .hasMessage("At the next import, all the realm roles of Keycloak missing from the files will be"
-                        + " deleted. Run a dry run first, then confirm.");
+                        + " deleted. Run a dry run first, then confirm. In a script, add --declare-type.");
         assertThat(definitions.saved).isEmpty();
 
         assertThat(saveElement.save("demo", READER, Optional.empty(), true).file())

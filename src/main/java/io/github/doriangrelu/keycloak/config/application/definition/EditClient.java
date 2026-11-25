@@ -69,10 +69,9 @@ public final class EditClient {
         if (custom && given.secret().isPresent()) {
             throw SecretNotAllowedException.forCustomClient();
         }
-        Optional<TemplatedValue> name =
-                given.name().or(() -> questions.askOptionalValue("Name (empty for none)", current.name()));
-        Optional<TemplatedValue> description = given.description()
-                .or(() -> questions.askOptionalValue("Description (empty for none)", current.description()));
+        Optional<TemplatedValue> name = given.name().or(() -> questions.askOptionalValue("Name", current.name()));
+        Optional<TemplatedValue> description =
+                given.description().or(() -> questions.askOptionalValue("Description", current.description()));
         ApplicationType type = custom ? ApplicationType.CUSTOM : typeOf(current, given, questions);
         if (type == ApplicationType.SPA && given.secret().isPresent()) {
             throw SecretNotAllowedException.forSpa();

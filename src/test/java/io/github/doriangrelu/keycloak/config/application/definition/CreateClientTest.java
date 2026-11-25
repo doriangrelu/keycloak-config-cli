@@ -46,6 +46,8 @@ class CreateClientTest {
     private static final String API = "4";
     private static final String A_VARIABLE = "1";
     private static final String NO_SECRET = "2";
+    private static final String NO_DEFAULT_MESSAGE =
+            "A secret variable has no default value: a default would be a secret written in the file";
 
     private static TemplatedValue value(final String raw) {
         return TemplatedValue.of(raw);
@@ -100,8 +102,8 @@ class CreateClientTest {
         assertThat(questions.asked())
                 .containsExactly(
                         "Client id",
-                        "Name (empty for none)",
-                        "Description (empty for none)",
+                        "Name",
+                        "Description",
                         "Application type",
                         "Application URL",
                         "Redirect URIs",
@@ -159,12 +161,7 @@ class CreateClientTest {
 
         assertThat(written(definitions).applicationType()).isEqualTo(ApplicationType.API);
         assertThat(questions.asked())
-                .containsExactly(
-                        "Client id",
-                        "Name (empty for none)",
-                        "Description (empty for none)",
-                        "Application type",
-                        "Client secret");
+                .containsExactly("Client id", "Name", "Description", "Application type", "Client secret");
     }
 
     @Test
@@ -185,6 +182,28 @@ class CreateClientTest {
         assertThatThrownBy(() -> new SecretAnswer.Variable(value("s3cr3t")))
                 .isInstanceOf(HardCodedSecretException.class)
                 .hasMessage("A client secret is a variable ({{name}}), never a value written in the file");
+    }
+
+    @Test
+    void aSecretVariableWithADefaultIsAskedAgain() {
+        FakeRealmDefinitions definitions = realmWith("other");
+        ScriptedQuestions questions = new ScriptedQuestions(
+                "batch", "", "", SERVICE, A_VARIABLE, "{{batchSecret:s3cr3t}}", "{{batchSecret}}");
+
+        useCase(definitions).create("demo", ClientAnswers.none(), questions);
+
+        assertThat(written(definitions).secret()).contains(value("{{batchSecret}}"));
+        assertThat(questions.told()).containsExactly(NO_DEFAULT_MESSAGE);
+    }
+
+    @Test
+    void aGivenSecretVariableWithADefaultFails() {
+        assertThatThrownBy(() -> new SecretAnswer.Variable(value("{{batchSecret:s3cr3t}}")))
+                .isInstanceOf(HardCodedSecretException.class)
+                .hasMessage(NO_DEFAULT_MESSAGE);
+        assertThatThrownBy(() -> new SecretAnswer.Variable(value("{{a}}{{b}}")))
+                .isInstanceOf(HardCodedSecretException.class);
+        assertThat(new SecretAnswer.Variable(value("{{batchSecret}}")).value()).isEqualTo(value("{{batchSecret}}"));
     }
 
     @Test
@@ -263,8 +282,7 @@ class CreateClientTest {
         assertThatThrownBy(() -> useCase(definitions).create("demo", ClientAnswers.none(), questions))
                 .isInstanceOf(FirstDeclarationException.class);
         assertThat(definitions.saved).isEmpty();
-        assertThat(questions.asked())
-                .endsWith("Client secret", new FirstDeclarationException(existing("orders")).getMessage());
+        assertThat(questions.asked()).endsWith("Client secret", FirstDeclarationException.warning(existing("orders")));
     }
 
     @Test

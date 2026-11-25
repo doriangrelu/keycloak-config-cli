@@ -59,14 +59,15 @@ final class ClientQuestions {
         if (!questions.choose("Client secret", SECRETS, proposedChoice)) {
             return new SecretAnswer.None();
         }
-        Optional<TemplatedValue> proposed = current.filter(TemplatedValue::isFullyVariable)
+        Optional<TemplatedValue> proposed = current.filter(SecretAnswer.Variable::isValid)
                 .or(() -> Optional.of(SecretVariables.proposedFor(clientId)));
         while (true) {
             TemplatedValue answer = questions.askValue("Secret variable", proposed);
-            if (answer.isFullyVariable()) {
+            try {
                 return new SecretAnswer.Variable(answer);
+            } catch (HardCodedSecretException e) {
+                questions.tell(e.getMessage());
             }
-            questions.tell(HardCodedSecretException.MESSAGE);
         }
     }
 }
