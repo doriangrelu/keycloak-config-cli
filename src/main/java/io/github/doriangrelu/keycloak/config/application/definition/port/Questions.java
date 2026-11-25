@@ -47,6 +47,18 @@ public interface Questions {
      */
     TemplatedValue askValue(String question, Optional<TemplatedValue> proposed);
 
+    /**
+     * An optional value, written like {@link #askValue}. An empty answer takes {@code proposed}, which may be empty
+     * too; a single {@code -} gives no value.
+     */
+    Optional<TemplatedValue> askOptionalValue(String question, Optional<TemplatedValue> proposed);
+
+    /**
+     * Values separated by commas, each written like {@link #askValue}. An empty answer takes {@code proposed}; a
+     * single {@code -} gives no value. A list whose value is invalid is asked again.
+     */
+    List<TemplatedValue> askValues(String question, List<TemplatedValue> proposed);
+
     /** Yes or no; an empty answer takes {@code byDefault}. */
     boolean confirm(String question, boolean byDefault);
 }

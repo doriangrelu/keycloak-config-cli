@@ -136,4 +136,52 @@ class ConsoleQuestionsTest {
                 .isInstanceOf(MissingAnswerException.class)
                 .hasMessageContaining("Realm name");
     }
+
+    @Test
+    void anEmptyOptionalValueTakesTheProposedOne() {
+        assertThat(answering("").askOptionalValue("Root URL", Optional.of(TemplatedValue.of("{{appUrl}}"))))
+                .contains(TemplatedValue.of("{{appUrl}}"));
+    }
+
+    @Test
+    void aDashClearsAnOptionalValue() {
+        assertThat(answering("-").askOptionalValue("Root URL", Optional.of(TemplatedValue.of("{{appUrl}}"))))
+                .isEmpty();
+    }
+
+    @Test
+    void anOptionalValueWithoutProposalMayBeEmpty() {
+        assertThat(answering("").askOptionalValue("Root URL", Optional.empty())).isEmpty();
+        assertThat(this.output.toString()).doesNotContain("An answer is required");
+        assertThat(answering("https://a").askOptionalValue("Root URL", Optional.empty()))
+                .contains(TemplatedValue.of("https://a"));
+    }
+
+    @Test
+    void valuesAreSplitOnCommas() {
+        assertThat(answering("{{appUrl}}/* , https://a/*").askValues("Redirect URIs", List.of()))
+                .containsExactly(TemplatedValue.of("{{appUrl}}/*"), TemplatedValue.of("https://a/*"));
+        assertThat(answering("a,,b,").askValues("Redirect URIs", List.of()))
+                .containsExactly(TemplatedValue.of("a"), TemplatedValue.of("b"));
+    }
+
+    @Test
+    void anEmptyListAnswerTakesTheProposal() {
+        List<TemplatedValue> proposed = List.of(TemplatedValue.of("a"), TemplatedValue.of("b"));
+        assertThat(answering("").askValues("Redirect URIs", proposed)).isEqualTo(proposed);
+        assertThat(this.output.toString()).contains("? Redirect URIs [a, b]: ");
+    }
+
+    @Test
+    void aDashGivesNoValue() {
+        assertThat(answering("-").askValues("Redirect URIs", List.of(TemplatedValue.of("a"))))
+                .isEmpty();
+    }
+
+    @Test
+    void anInvalidValueInAListIsAskedAgain() {
+        assertThat(answering("a,{{env", "a,b").askValues("Redirect URIs", List.of()))
+                .containsExactly(TemplatedValue.of("a"), TemplatedValue.of("b"));
+        assertThat(this.output.toString()).contains("Invalid value '{{env'");
+    }
 }

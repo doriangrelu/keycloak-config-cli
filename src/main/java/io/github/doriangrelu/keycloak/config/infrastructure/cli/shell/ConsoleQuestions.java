@@ -26,11 +26,13 @@ import io.github.doriangrelu.keycloak.config.application.definition.port.Questio
 import io.github.doriangrelu.keycloak.config.domain.definition.InvalidTemplatedValueException;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.shell.core.InputReader;
 
 /**
@@ -42,6 +44,9 @@ public final class ConsoleQuestions implements Questions {
     private static final Set<String> YES = Set.of("y", "yes", "o", "oui");
     private static final Set<String> NO = Set.of("n", "no", "non");
 
+    /** The answer that gives no value to an optional question or to a list. */
+    private static final String NONE = "-";
+
     private final InputReader reader;
     private final PrintWriter writer;
 
@@ -52,8 +57,7 @@ public final class ConsoleQuestions implements Questions {
 
     @Override
     public String ask(final String question, final Optional<String> proposed) {
-        String prompt =
-                "? " + question + proposed.map(value -> " [" + value + "]").orElse("") + ": ";
+        String prompt = promptOf(question, proposed);
         while (true) {
             String answer = read(question, prompt);
             if (!answer.isEmpty()) {
@@ -72,6 +76,49 @@ public final class ConsoleQuestions implements Questions {
             String answer = ask(question, proposed.map(TemplatedValue::raw));
             try {
                 return TemplatedValue.of(answer);
+            } catch (InvalidTemplatedValueException e) {
+                this.writer.println("  " + e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public Optional<TemplatedValue> askOptionalValue(final String question, final Optional<TemplatedValue> proposed) {
+        String prompt = promptOf(question, proposed.map(TemplatedValue::raw));
+        while (true) {
+            String answer = read(question, prompt);
+            if (answer.isEmpty()) {
+                return proposed;
+            }
+            if (answer.equals(NONE)) {
+                return Optional.empty();
+            }
+            try {
+                return Optional.of(TemplatedValue.of(answer));
+            } catch (InvalidTemplatedValueException e) {
+                this.writer.println("  " + e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public List<TemplatedValue> askValues(final String question, final List<TemplatedValue> proposed) {
+        String shown = proposed.stream().map(TemplatedValue::raw).collect(Collectors.joining(", "));
+        String prompt = promptOf(question, proposed.isEmpty() ? Optional.empty() : Optional.of(shown));
+        while (true) {
+            String answer = read(question, prompt);
+            if (answer.isEmpty()) {
+                return proposed;
+            }
+            if (answer.equals(NONE)) {
+                return List.of();
+            }
+            try {
+                return Arrays.stream(answer.split(","))
+                        .map(String::strip)
+                        .filter(value -> !value.isEmpty())
+                        .map(TemplatedValue::of)
+                        .toList();
             } catch (InvalidTemplatedValueException e) {
                 this.writer.println("  " + e.getMessage());
             }
@@ -116,6 +163,10 @@ public final class ConsoleQuestions implements Questions {
             }
             this.writer.println("  Answer yes or no.");
         }
+    }
+
+    private static String promptOf(final String question, final Optional<String> proposed) {
+        return "? " + question + proposed.map(value -> " [" + value + "]").orElse("") + ": ";
     }
 
     private String read(final String question, final String prompt) {
