@@ -12,7 +12,7 @@
 | [EPIC-004](documentation/architecture/epics/EPIC-004-dry-run.md) | Dry-run et rapport des changements | Terminé |
 | [EPIC-005](documentation/architecture/epics/EPIC-005-normalisation.md) | Normalisation sur le nouveau socle | Terminé |
 | [EPIC-006](documentation/architecture/epics/EPIC-006-simplification.md) | Simplification : les fichiers comme seule vérité, Mustache seul moteur de template | Terminé |
-| [EPIC-007](documentation/architecture/epics/EPIC-007-shell-edition.md) | Shell interactif : édition guidée des définitions de realm (clients, rôles, groupes), hors ligne | En cours (US-007-01 à 07 terminées) |
+| [EPIC-007](documentation/architecture/epics/EPIC-007-shell-edition.md) | Shell interactif : édition guidée des définitions de realm (clients, rôles, groupes), hors ligne | En cours (US-007-01 à 08 terminées) |
 
 ## Après la refonte
 

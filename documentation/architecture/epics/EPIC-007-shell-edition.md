@@ -88,7 +88,7 @@ Décisions de conception (25/11/2026, validées avec l'utilisateur) :
 
 ### US-007-08 — Rôles
 
-**Statut :** À faire
+**Statut :** Terminé
 `role create` et `role edit` : rôle de realm ou rôle d'un client défini dans le dossier (choisi dans une liste), nom, description. `role list`.
 
 Décisions de conception (25/11/2026, validées avec l'utilisateur) :
@@ -192,4 +192,11 @@ Documentation utilisateur (en anglais) : lancement du shell, commandes, variable
 - Après l'écriture : fichier écrit, valeurs posées par les règles, avertissements, non-conformités restant à corriger, valeurs non vérifiables.
 - Mode script (décision de l'utilisateur) : une question sans réponse prend la valeur proposée, et n'échoue (code 2) que s'il n'y en a pas ; `realm create` sans `--realm` prend donc le nom du dossier. `none` ou `-` vident une liste ; le premier client d'un realm demande `--declare-type`. Les invites disent comment garder (Entrée) ou vider (`-`) une valeur. Le lanceur affiche le message de la première cause d'une erreur au lieu de `null`.
 - Exécutée par des sous-agents ; la revue finale a relevé trois points importants corrigés avant la fusion (secret en clair par la valeur par défaut d'une variable, mode script qui ne retenait aucune proposition, invites trompeuses). Points mineurs reportés : une URL avec `/` final ou un chemin donne `https://a//*` ou une origine avec un chemin, passage en SPA qui retire le secret sans le dire, question d'URL inutile quand `--redirect-uris` est donné, secret donné pour une SPA refusé après les premières questions, pas de retour de « une variable » vers « aucun » dans la question du secret, Ctrl-C en session qui prend les propositions, valeur par défaut d'une règle qui pourrait poser un secret en dur, quelques tests manquants (lignes d'avertissement affichées, retour d'erreur précis de `--declare-type`).
+
+### US-007-08
+
+- `role create`, `role edit <nom> [--client <id>]` et `role list` (`RoleCommands`), sur les cas d'usage `CreateRole` et `EditRole`, sur le modèle des clients : questions par le port `Questions`, écriture par `SaveElement` avec les règles, même affichage du résultat.
+- Le propriétaire d'un rôle est le realm (proposé) ou un client défini dans le dossier ; un client créé par Keycloak (`realm-management`…) n'est jamais proposé et `--client` le refuse (`BuiltInClientException`), même si un export le définit : déclarer ses rôles ferait supprimer à l'import ceux que Keycloak fournit.
+- `role edit` ne modifie que la description ; `--name` y est refusé (`RoleRenamedException`) avec l'explication du renommage par un nouveau rôle.
+- Exécutée par des sous-agents ; la revue finale a relevé deux points importants corrigés avant la fusion : le client créé par Keycloak accepté comme propriétaire, et des plans d'architecture qui nommaient une organisation (reformulés ; l'ancien texte reste dans l'historique). Points mineurs reportés : « (current) » affiché à côté du realm à la création, messages qui ne disent pas où le nom est pris, formulation de `UnknownRoleException`, impossible de vider une description en mode script (`--description -` écrit `-`), test du mode script sur un realm sans client, tests manquants pour `role edit --client` et un rôle inconnu, deux classes `UnknownClientException` de même nom simple.
 
