@@ -22,10 +22,21 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
+import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyPath;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.RealmContext;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.RuleElement;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.RuleEngine;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.Verdict;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /** Creates the folder of a new realm, with its realm file. */
@@ -34,9 +45,11 @@ public final class CreateRealm {
     private static final Pattern FOLDER = Pattern.compile("[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9_-])?");
 
     private final RealmDefinitions definitions;
+    private final RuleBook rules;
 
-    public CreateRealm(final RealmDefinitions definitions) {
+    public CreateRealm(final RealmDefinitions definitions, final RuleBook rules) {
         this.definitions = Objects.requireNonNull(definitions, "definitions");
+        this.rules = Objects.requireNonNull(rules, "rules");
     }
 
     /**
@@ -59,9 +72,25 @@ public final class CreateRealm {
      * @return the name of the realm file written, in the folder
      * @throws InvalidRealmFolderException when the folder is not a plain name
      * @throws RealmFolderExistsException when the folder exists already
+     * @throws RuleViolationException when the new realm fails a required rule: nothing is written
      */
     public String create(final String folder, final TemplatedValue realm, final DefinitionFormat format) {
         checkFolder(folder);
-        return this.definitions.createRealm(folder, realm, format, ElementKeys.empty());
+        RuleEngine engine = this.rules.engine();
+        ElementKeys base = new ElementKeys(Map.of(
+                KeyPath.parse("realm"), new KeyValue.Scalar(realm),
+                KeyPath.parse("enabled"), new KeyValue.Scalar(TemplatedValue.of("true"))));
+        ElementKeys added = engine.defaults(RuleElement.REALM, base);
+        RealmDefinition definition =
+                new RealmDefinition(folder, Optional.of(realm), List.of(), List.of(), List.of(), Set.of(), List.of());
+        Verdict verdict = engine.check(
+                RuleElement.REALM,
+                Optional.empty(),
+                base.with(added),
+                new RealmContext(definition, Optional.empty(), this.rules.builtIns()));
+        if (!verdict.allowsWriting()) {
+            throw new RuleViolationException(verdict.blocking());
+        }
+        return this.definitions.createRealm(folder, realm, format, added);
     }
 }

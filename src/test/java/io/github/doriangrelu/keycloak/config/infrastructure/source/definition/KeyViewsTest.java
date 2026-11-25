@@ -184,4 +184,16 @@ class KeyViewsTest {
         assertThat(keys.values().keySet().stream().map(KeyPath::toString))
                 .noneMatch(path -> path.startsWith("clients") || path.startsWith("roles") || path.startsWith("groups"));
     }
+
+    @Test
+    void theRolesAndGroupsOfASplitRealmAreKeyedByTheOriginsOfLoad() {
+        RealmDefinitionFiles split = new RealmDefinitionFiles(Path.of("src/test/resources/definition/realms"));
+        var realm = split.load("split").orElseThrow();
+        var views = split.elementKeys("split");
+
+        assertThat(realm.roles()).isNotEmpty();
+        assertThat(realm.groups()).isNotEmpty();
+        assertThat(realm.roles()).allSatisfy(defined -> assertThat(views).containsKey(defined.origin()));
+        assertThat(realm.groups()).allSatisfy(defined -> assertThat(views).containsKey(defined.origin()));
+    }
 }

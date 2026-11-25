@@ -75,8 +75,7 @@ public record DeclarativeRule(
 
     @Override
     public boolean appliesTo(final ElementKeys keys) {
-        if (this.applicationType.isPresent()
-                && !flowsOf(keys).map(ApplicationType::of).equals(this.applicationType)) {
+        if (this.applicationType.isPresent() && !applicationTypeOf(keys).equals(this.applicationType)) {
             return false;
         }
         return this.conditions.stream().allMatch(condition -> condition.evaluate(keys) == Outcome.PASSED);
@@ -95,6 +94,11 @@ public record DeclarativeRule(
             }
         }
         return result;
+    }
+
+    /** The application type of a client view; empty when a flow key is missing, templated or not a boolean. */
+    public static Optional<ApplicationType> applicationTypeOf(final ElementKeys keys) {
+        return flowsOf(keys).map(ApplicationType::of);
     }
 
     /** The flows of a client view; empty when one is missing, templated or not a boolean. */

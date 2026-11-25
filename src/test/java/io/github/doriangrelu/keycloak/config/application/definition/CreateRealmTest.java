@@ -26,6 +26,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.Check;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.DeclarativeRule;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyPath;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.Operator;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.RuleElement;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.Severity;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,7 +47,7 @@ class CreateRealmTest {
     private static final TemplatedValue REALM = TemplatedValue.of("{{env}}-mon-realm");
 
     private final FakeRealmDefinitions definitions = new FakeRealmDefinitions(DEMO);
-    private final CreateRealm createRealm = new CreateRealm(this.definitions);
+    private final CreateRealm createRealm = new CreateRealm(this.definitions, Rules.none());
 
     @Test
     void aNewFolderIsCreatedThroughThePort() {
@@ -91,6 +98,37 @@ class CreateRealmTest {
     void checkFolderAcceptsAFreeFolderAndWritesNothing() {
         this.createRealm.checkFolder("mon-realm");
 
+        assertThat(this.definitions.created).isEmpty();
+    }
+
+    private static DeclarativeRule realmRule(final boolean withDefault) {
+        return new DeclarativeRule(
+                "realm.ssl",
+                RuleElement.REALM,
+                Optional.empty(),
+                List.of(),
+                withDefault ? Rules.keys("sslRequired", "external") : ElementKeys.empty(),
+                List.of(new Check(KeyPath.parse("sslRequired"), Operator.EQUALS, List.of("external"))),
+                Severity.REQUIRED,
+                "SSL is required.");
+    }
+
+    @Test
+    void realmDefaultsAreWritten() {
+        CreateRealm withRules = new CreateRealm(this.definitions, Rules.of(realmRule(true)));
+
+        withRules.create("mon-realm", REALM, DefinitionFormat.YAML);
+
+        assertThat(this.definitions.createdKeys).containsExactly(Rules.keys("sslRequired", "external"));
+    }
+
+    @Test
+    void aRequiredFailureOfTheNewRealmRefusesBeforeAnyWrite() {
+        CreateRealm withRules = new CreateRealm(this.definitions, Rules.of(realmRule(false)));
+
+        assertThatThrownBy(() -> withRules.create("mon-realm", REALM, DefinitionFormat.YAML))
+                .isInstanceOf(RuleViolationException.class)
+                .hasMessageContaining("- realm.ssl: SSL is required.");
         assertThat(this.definitions.created).isEmpty();
     }
 }
