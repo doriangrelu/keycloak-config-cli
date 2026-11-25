@@ -69,6 +69,17 @@ final class RealmRulesFixtures {
                 new Origin("groups.yaml", line));
     }
 
+    static RealmDefinition namedRealm(final String name) {
+        return new RealmDefinition(
+                "realm",
+                Optional.of(TemplatedValue.of(name)),
+                List.of(),
+                List.of(),
+                List.of(),
+                Set.of(ElementType.CLIENT, ElementType.ROLE, ElementType.GROUP),
+                List.of());
+    }
+
     static RealmDefinition realm(
             final List<Defined<ClientDefinition>> clients,
             final List<Defined<RoleDefinition>> roles,

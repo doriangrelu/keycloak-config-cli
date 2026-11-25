@@ -96,6 +96,15 @@ class DefinedRolesRuleTest {
     }
 
     @Test
+    void default_role_of_the_realm_is_built_in() {
+        var context = new RealmContext(RealmRulesFixtures.namedRealm("Demo"), Optional.empty(), BUILT_INS);
+        assertThat(this.rule.check(keys("realmRoles", listed("default-roles-demo")), context))
+                .isEqualTo(Outcome.PASSED);
+        assertThat(this.rule.check(keys("realmRoles", listed("default-roles-other")), context))
+                .isEqualTo(Outcome.FAILED);
+    }
+
+    @Test
     void group_without_roles_passes() {
         assertThat(check(ElementKeys.empty())).isEqualTo(Outcome.PASSED);
     }

@@ -108,9 +108,16 @@ public final class DefinedRolesRule implements Rule {
 
     private static boolean realmRoleKnown(final String name, final RealmContext context) {
         return context.builtIns().realmRoles().contains(name)
+                || isDefaultRoleOfRealm(name, context)
                 || roles(context)
                         .anyMatch(role ->
                                 role.clientId().isEmpty() && role.name().raw().equals(name));
+    }
+
+    /** Keycloak creates {@code default-roles-<realm>} (lowercased) in every realm; the reference realm only has a placeholder. */
+    private static boolean isDefaultRoleOfRealm(final String name, final RealmContext context) {
+        return context.realm().realm().filter(realm -> !realm.isTemplated()).stream()
+                .anyMatch(realm -> name.equals("default-roles-" + realm.raw().toLowerCase(java.util.Locale.ROOT)));
     }
 
     private static boolean clientRoleKnown(final String clientId, final String name, final RealmContext context) {
