@@ -21,9 +21,11 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
 import io.github.doriangrelu.keycloak.config.application.definition.CreateClient;
+import io.github.doriangrelu.keycloak.config.application.definition.CreateGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRole;
 import io.github.doriangrelu.keycloak.config.application.definition.EditClient;
+import io.github.doriangrelu.keycloak.config.application.definition.EditGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.EditRole;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
@@ -105,6 +107,18 @@ public class ShellAdaptersConfiguration {
     @Bean
     public EditRole editRole(final RealmDefinitions realmDefinitions, final SaveElement saveElement) {
         return new EditRole(realmDefinitions, saveElement);
+    }
+
+    @Bean
+    public CreateGroup createGroup(
+            final RealmDefinitions realmDefinitions, final SaveElement saveElement, final RuleBook ruleBook) {
+        return new CreateGroup(realmDefinitions, saveElement, ruleBook);
+    }
+
+    @Bean
+    public EditGroup editGroup(
+            final RealmDefinitions realmDefinitions, final SaveElement saveElement, final RuleBook ruleBook) {
+        return new EditGroup(realmDefinitions, saveElement, ruleBook);
     }
 
     @Bean
