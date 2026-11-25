@@ -71,6 +71,21 @@ Formalisme et moteur décidés par l'[ADR-009](../ADR-009-regles-de-configuratio
 **Statut :** À faire
 `client create` et `client edit <id>` guidés : identifiant, nom, description, type d'application (choix commentés), URL de l'application, URIs de redirection et origines web proposées à partir de l'URL. Les options Keycloak découlent du type et des règles (client public ou confidentiel, flows, compte de service, PKCE) ; le secret d'un client confidentiel est une variable, jamais une valeur en dur proposée par le shell. En modification, les valeurs actuelles sont proposées par défaut, et un client « personnalisé » n'est modifiable que dans ses champs communs. `client list`.
 
+Décisions de conception (25/11/2026, validées avec l'utilisateur) :
+
+- **Questions de `client create`**, dans l'ordre : identifiant, nom (vide pour aucun), description (vide pour aucune), type d'application (quatre choix commentés), puis selon le type :
+  - SPA : URL de l'application, URIs de redirection proposées `<url>/*`, origines web proposées `<url>` ;
+  - application web avec serveur : URL, URIs de redirection proposées `<url>/*`, pas d'origine web proposée ;
+  - service, API : ni URL ni URIs.
+  L'URL ne sert qu'à proposer les URIs : elle n'est pas écrite.
+- **Secret** (application web, service, API) : le shell demande « une variable (recommandé) » ou « aucun, Keycloak le génère ». La variable proposée est `{{<identifiant en camelCase>Secret}}` (`my-api` → `{{myApiSecret}}`) ; un secret écrit en dur est refusé. Sans secret écrit, l'import garde celui que Keycloak a généré.
+- **Après l'écriture**, le shell affiche le fichier écrit, les valeurs posées par les règles, les avertissements (`advice`), les non-conformités déjà présentes qui restent à corriger, et une ligne pour les valeurs non vérifiables. Une règle qui refuse la modification : messages affichés, rien n'est écrit, la commande s'arrête (code 2 en mode script) ; la question n'est pas reposée.
+- **Première déclaration des clients** dans un realm : avertissement et confirmation en session ; en mode script, refus sauf `--declare-type`.
+- **`client edit <id>`** : les valeurs actuelles sont proposées ; l'URL n'est pas redemandée (les URIs le sont directement). Changer le type réécrit les flows et applique les valeurs par défaut des règles du nouveau type. Un client « personnalisé » ne se voit proposer que le nom, la description, les URIs et les origines web ; `--type` y est refusé.
+- **Mode script** : `--id`, `--name`, `--description`, `--type` (`spa`, `web-application`, `service`, `api`), `--url`, `--redirect-uris` et `--web-origins` (séparées par des virgules), `--secret` (une variable ou `none`), `--declare-type`.
+- **`client list`** : une ligne par client, `clientId`, type, `fichier:ligne`.
+- Les questions sont posées par les cas d'usage `CreateClient` et `EditClient` à travers le port `Questions` (ADR-008) ; les commandes du shell restent minces.
+
 ### US-007-08 — Rôles
 
 **Statut :** À faire
