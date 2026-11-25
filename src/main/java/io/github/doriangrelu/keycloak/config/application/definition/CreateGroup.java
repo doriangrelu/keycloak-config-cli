@@ -52,7 +52,7 @@ public final class CreateGroup {
 
     /**
      * @param given the answers already given, which are not asked
-     * @return the file written, with what the rules say about the group
+     * @return the path the group was written under, with the file written and what the rules say about it
      * @throws UnknownRealmFolderException when the folder is not a realm of the shell
      * @throws UnknownGroupException when the given parent is not a group of the folder
      * @throws InvalidGroupNameException when the given name is empty or contains a slash
@@ -63,7 +63,7 @@ public final class CreateGroup {
      * @throws RuleViolationException when the group fails a required rule: nothing is written
      * @throws MissingAnswerException when an answer is missing and cannot be asked
      */
-    public SaveResult create(final String folder, final GroupAnswers given, final Questions questions) {
+    public CreatedGroup create(final String folder, final GroupAnswers given, final Questions questions) {
         RealmDefinition realm =
                 this.definitions.load(folder).orElseThrow(() -> new UnknownRealmFolderException(folder));
         Optional<String> parent = parent(realm, given, questions);
@@ -74,7 +74,7 @@ public final class CreateGroup {
         boolean declareType = given.declareType()
                 || realm.declares(group)
                 || questions.confirm(FirstDeclarationException.warning(group), false);
-        return this.saveElement.save(folder, group, Optional.empty(), declareType);
+        return new CreatedGroup(group.path(), this.saveElement.save(folder, group, Optional.empty(), declareType));
     }
 
     private static Optional<String> parent(

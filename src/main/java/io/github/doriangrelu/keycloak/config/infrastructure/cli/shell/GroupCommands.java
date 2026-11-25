@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
 import io.github.doriangrelu.keycloak.config.application.definition.CreateGroup;
+import io.github.doriangrelu.keycloak.config.application.definition.CreatedGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.EditGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.GroupAnswers;
 import io.github.doriangrelu.keycloak.config.application.definition.GroupMovedException;
@@ -36,11 +37,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import org.springframework.shell.core.command.CommandContext;
 import org.springframework.shell.core.command.annotation.Argument;
 import org.springframework.shell.core.command.annotation.Command;
@@ -100,12 +99,9 @@ public class GroupCommands {
         Questions questions = new ConsoleQuestions(context.inputReader(), context.outputWriter());
         GroupAnswers answers =
                 new GroupAnswers(value(name), given(parent), list(realmRoles), list(clientRoles), declareType);
-        Set<String> before = paths(folder);
-        SaveResult result = this.createGroup.create(folder, answers, questions);
-        String created = value(name)
-                .map(given -> given(parent).orElse("") + "/" + given.raw())
-                .orElseGet(() -> newGroup(folder, before));
-        return String.join(System.lineSeparator(), SaveResultLines.of(folder, "Group '" + created + "'", result));
+        CreatedGroup created = this.createGroup.create(folder, answers, questions);
+        return String.join(
+                System.lineSeparator(), SaveResultLines.of(folder, "Group '" + created.path() + "'", created.result()));
     }
 
     @Command(
@@ -196,21 +192,6 @@ public class GroupCommands {
             }
         });
         return parts.isEmpty() ? "" : " [" + String.join("; ", parts) + "]";
-    }
-
-    private Set<String> paths(final String folder) {
-        return this.readRealms.open(folder).groups().stream()
-                .map(group -> group.definition().path())
-                .collect(Collectors.toSet());
-    }
-
-    /** The path of the group asked during the creation: the one that was not in the realm before. */
-    private String newGroup(final String folder, final Set<String> before) {
-        return this.readRealms.open(folder).groups().stream()
-                .map(group -> group.definition().path())
-                .filter(path -> !before.contains(path))
-                .findFirst()
-                .orElse("?");
     }
 
     private static Optional<String> given(final String option) {

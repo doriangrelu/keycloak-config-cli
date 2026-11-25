@@ -141,8 +141,9 @@ class CreateGroupTest {
                 declared(List.of(), group("/team", "40-groups.yaml"), group("/ops", "40-groups.yaml"));
         ScriptedQuestions questions = new ScriptedQuestions("3", "devs", TOP_LEVEL);
 
-        useCase(definitions).create("demo", GroupAnswers.none(), questions);
+        CreatedGroup created = useCase(definitions).create("demo", GroupAnswers.none(), questions);
 
+        assertThat(created.path()).isEqualTo("/team/devs");
         GroupDefinition group = written(definitions);
         assertThat(group.path()).isEqualTo("/team/devs");
         assertThat(group.name()).isEqualTo(TemplatedValue.of("devs"));
