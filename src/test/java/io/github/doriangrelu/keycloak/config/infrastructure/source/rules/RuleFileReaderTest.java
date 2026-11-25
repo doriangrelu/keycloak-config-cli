@@ -430,6 +430,31 @@ class RuleFileReaderTest {
     }
 
     @Test
+    void anEmptyForListInADisablementIsRefused() {
+        assertThatThrownBy(() -> RuleFileReader.organisation(FILE, """
+                        disable:
+                          - id: client.spa.pkce
+                            for: []
+                            reason: Because.
+                        """))
+                .isInstanceOf(InvalidRulesException.class)
+                .hasMessageStartingWith(FILE + ": ")
+                .hasMessageContaining("client.spa.pkce")
+                .hasMessageContaining("'for' must list at least one element");
+    }
+
+    @Test
+    void aDisablementWithoutForListCoversAllElements() {
+        OrganisationRules rules = RuleFileReader.organisation(FILE, """
+                disable:
+                  - id: client.spa.pkce
+                    reason: Because.
+                """);
+
+        assertThat(rules.disablements()).containsExactly(new Disablement("client.spa.pkce", Set.of(), "Because."));
+    }
+
+    @Test
     void aMissingOrganisationFileIsRefused() {
         RuleFilesOnDisk files = new RuleFilesOnDisk(Optional.of(Path.of("src/test/resources/rules/missing.yaml")));
 

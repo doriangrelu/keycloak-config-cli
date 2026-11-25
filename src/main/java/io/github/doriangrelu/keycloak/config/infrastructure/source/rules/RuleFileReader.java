@@ -321,6 +321,10 @@ public final class RuleFileReader {
                 for (Object element : list(fields.get("for"), "for")) {
                     forElements.add(scalar(element, "'for'"));
                 }
+                if (fields.containsKey("for") && forElements.isEmpty()) {
+                    throw new InvalidRulesException(
+                            "'for' must list at least one element; remove it to disable the rule for all elements");
+                }
                 disablements.add(new Disablement(
                         id, forElements, text(fields.get("reason"), "reason").orElse(null)));
             } catch (DomainException e) {
