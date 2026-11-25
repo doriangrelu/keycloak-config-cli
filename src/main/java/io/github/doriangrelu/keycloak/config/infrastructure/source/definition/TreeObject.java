@@ -56,6 +56,26 @@ public interface TreeObject {
 
     boolean has(String key);
 
+    /** The keys of this object, in order. */
+    List<String> keys();
+
+    /** The kind of value under a key; a null value is {@link Shape#NONE}. */
+    Shape shape(String key);
+
+    /** The kind of value of a key. */
+    enum Shape {
+        /** Absent or null. */
+        NONE,
+        /** A text, number or boolean. */
+        SCALAR,
+        /** A list of scalars, possibly empty. */
+        SCALARS,
+        /** An object. */
+        OBJECT,
+        /** A list holding at least one object or list. */
+        OBJECTS
+    }
+
     /** The first line of this object, from 1. */
     int line();
 
@@ -69,6 +89,12 @@ public interface TreeObject {
 
     /** Writes a scalar; a value holding a placeholder is written between double quotes. Unchanged when equal. */
     void setText(String key, TemplatedValue value);
+
+    /**
+     * Writes a scalar given as text: {@code true} and {@code false} as a boolean, an integer as a number, anything else
+     * as text. Placeholders are quoted.
+     */
+    void setScalar(String key, String text);
 
     /** Writes a boolean. Unchanged when equal. */
     void setBool(String key, boolean value);

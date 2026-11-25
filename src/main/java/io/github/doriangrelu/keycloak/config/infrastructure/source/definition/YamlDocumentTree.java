@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -115,6 +116,7 @@ final class YamlDocumentTree implements DocumentTree {
     static final class YamlObject implements TreeObject {
 
         private static final Resolver RESOLVER = new Resolver();
+        private static final Pattern INTEGER = Pattern.compile("-?[0-9]{1,18}");
 
         private final MappingNode node;
 
@@ -204,6 +206,32 @@ final class YamlDocumentTree implements DocumentTree {
         }
 
         @Override
+        public List<String> keys() {
+            return this.node.getValue().stream()
+                    .map(NodeTuple::getKeyNode)
+                    .filter(ScalarNode.class::isInstance)
+                    .map(key -> ((ScalarNode) key).getValue())
+                    .toList();
+        }
+
+        @Override
+        public Shape shape(final String key) {
+            return value(key).map(YamlObject::shapeOf).orElse(Shape.NONE);
+        }
+
+        private static Shape shapeOf(final Node node) {
+            return switch (node) {
+                case ScalarNode scalar -> scalar.getTag() == Tag.NULL ? Shape.NONE : Shape.SCALAR;
+                case MappingNode ignored -> Shape.OBJECT;
+                case SequenceNode sequence ->
+                    sequence.getValue().stream().anyMatch(item -> !(item instanceof ScalarNode))
+                            ? Shape.OBJECTS
+                            : Shape.SCALARS;
+                default -> Shape.NONE;
+            };
+        }
+
+        @Override
         public int line() {
             return this.node.getStartMark() == null
                     ? 1
@@ -225,6 +253,17 @@ final class YamlDocumentTree implements DocumentTree {
                 return;
             }
             put(key, textNode(value, current), current);
+        }
+
+        @Override
+        public void setScalar(final String key, final String text) {
+            if (text.equals("true") || text.equals("false")) {
+                setBool(key, text.equals("true"));
+            } else if (INTEGER.matcher(text).matches()) {
+                put(key, new ScalarNode(Tag.INT, text, null, null, DumperOptions.ScalarStyle.PLAIN), value(key));
+            } else {
+                setText(key, TemplatedValue.of(text));
+            }
         }
 
         @Override

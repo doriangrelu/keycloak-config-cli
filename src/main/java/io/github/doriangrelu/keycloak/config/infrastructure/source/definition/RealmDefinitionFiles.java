@@ -34,6 +34,9 @@ import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyPath;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -191,7 +194,70 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
     }
 
     @Override
-    public String save(final String folder, final ElementDefinition definition, final Optional<Origin> existing) {
+    public String save(
+            final String folder,
+            final ElementDefinition definition,
+            final Optional<Origin> existing,
+            final ElementKeys added) {
+        Edit edit = edit(folder, definition, existing, added, true);
+        writeFile(this.root.resolve(folder).resolve(edit.name()), edit.tree().render());
+        return edit.name();
+    }
+
+    @Override
+    public ElementKeys preview(
+            final String folder,
+            final ElementDefinition definition,
+            final Optional<Origin> existing,
+            final ElementKeys added) {
+        Edit edit = edit(folder, definition, existing, added, false);
+        return switch (definition) {
+            case ClientDefinition ignored -> KeyViews.client(edit.element());
+            case RoleDefinition role ->
+                KeyViews.role(edit.element(), role.clientId().map(TemplatedValue::raw));
+            case GroupDefinition group -> KeyViews.group(edit.element(), group.path());
+        };
+    }
+
+    @Override
+    public Map<Origin, ElementKeys> elementKeys(final String folder) {
+        Map<Origin, ElementKeys> keys = new LinkedHashMap<>();
+        for (Path file : definitionFiles(this.root.resolve(folder))) {
+            String name = file.getFileName().toString();
+            try {
+                keys.putAll(KeyViews.elements(
+                        name, DocumentTrees.parse(name, readFile(file)).root()));
+            } catch (UnreadableDocumentException e) {
+                // A file that cannot be read has no element to show
+            }
+        }
+        return keys;
+    }
+
+    @Override
+    public ElementKeys realmKeys(final String folder) {
+        Map<KeyPath, KeyValue> keys = new LinkedHashMap<>();
+        for (Path file : definitionFiles(this.root.resolve(folder))) {
+            String name = file.getFileName().toString();
+            try {
+                KeyViews.realm(DocumentTrees.parse(name, readFile(file)).root()).forEach(keys::putIfAbsent);
+            } catch (UnreadableDocumentException e) {
+                // A file that cannot be read has no key to show
+            }
+        }
+        return new ElementKeys(keys);
+    }
+
+    /**
+     * An element written in the tree of its file, in memory: what {@link #save} writes and {@link #preview} shows. A
+     * new element in a folder without a file for its type is written in a new document.
+     */
+    private Edit edit(
+            final String folder,
+            final ElementDefinition definition,
+            final Optional<Origin> existing,
+            final ElementKeys added,
+            final boolean requireRealm) {
         Path directory = this.root.resolve(folder);
         String name = existing.map(Origin::file)
                 .or(() -> fileOf(folder, definition.type()))
@@ -203,28 +269,36 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
             tree = DocumentTrees.parse(name, readFile(file));
         } else {
             tree = DocumentTrees.parse(name, "");
-            TemplatedValue realm = load(folder)
-                    .flatMap(RealmDefinition::realm)
-                    .orElseThrow(() -> new IllegalStateException("No file of realm '" + folder + "' gives its name"));
-            tree.root().setText("realm", realm);
+            Optional<TemplatedValue> realm = load(folder).flatMap(RealmDefinition::realm);
+            if (requireRealm && realm.isEmpty()) {
+                throw new IllegalStateException("No file of realm '" + folder + "' gives its name");
+            }
+            realm.ifPresent(value -> tree.root().setText("realm", value));
         }
         TreeObject root = tree.root();
-        switch (definition) {
-            case ClientDefinition client ->
-                ClientKeys.write(client, existingOrNew(root, ElementType.CLIENT.key(), existing));
+        TreeObject element = switch (definition) {
+            case ClientDefinition client -> {
+                TreeObject object = existingOrNew(root, ElementType.CLIENT.key(), existing);
+                ClientKeys.write(client, object);
+                yield object;
+            }
             case RoleDefinition role -> RoleKeys.write(role, root.objectOrCreate(ElementType.ROLE.key()), existing);
             case GroupDefinition group -> GroupKeys.write(group, root, existing);
-        }
-        writeFile(file, tree.render());
-        return name;
+        };
+        KeyViews.write(element, added);
+        return new Edit(name, tree, element);
     }
 
+    private record Edit(String name, DocumentTree tree, TreeObject element) {}
+
     @Override
-    public String createRealm(final String folder, final TemplatedValue realm, final DefinitionFormat format) {
+    public String createRealm(
+            final String folder, final TemplatedValue realm, final DefinitionFormat format, final ElementKeys added) {
         String name = "00-realm" + format.extension();
         DocumentTree tree = DocumentTrees.parse(name, "");
         tree.root().setText("realm", realm);
         tree.root().setBool("enabled", true);
+        KeyViews.write(tree.root(), added);
         try {
             Files.createDirectories(this.root);
             Files.createDirectory(this.root.resolve(folder));

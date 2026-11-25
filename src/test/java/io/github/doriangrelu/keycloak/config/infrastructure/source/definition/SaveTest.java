@@ -9,6 +9,9 @@ import io.github.doriangrelu.keycloak.config.domain.definition.GroupDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyPath;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyValue;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -95,7 +98,7 @@ class SaveTest {
                 frontend.definition().webOrigins(),
                 frontend.definition().attributes());
 
-        assertThat(this.files.save("demo", changed, Optional.of(frontend.origin())))
+        assertThat(this.files.save("demo", changed, Optional.of(frontend.origin()), ElementKeys.empty()))
                 .isEqualTo("20-clients.yaml");
 
         String after = read("20-clients.yaml");
@@ -115,7 +118,8 @@ class SaveTest {
         write("00-realm.yaml", REALM + "enabled: true\n");
         write("20-clients.yaml", REALM + "clients:\n  - clientId: frontend\n");
 
-        String file = this.files.save("demo", client("batch", ApplicationType.SERVICE), Optional.empty());
+        String file = this.files.save(
+                "demo", client("batch", ApplicationType.SERVICE), Optional.empty(), ElementKeys.empty());
 
         assertThat(file).isEqualTo("20-clients.yaml");
         assertThat(realm().clients())
@@ -134,7 +138,8 @@ class SaveTest {
         String file = this.files.save(
                 "demo",
                 new RoleDefinition(TemplatedValue.of("reader"), Optional.empty(), Optional.empty()),
-                Optional.empty());
+                Optional.empty(),
+                ElementKeys.empty());
 
         assertThat(file).isEqualTo("30-roles." + extension);
         assertThat(read(file)).contains("{{env}}-mon-realm");
@@ -152,7 +157,8 @@ class SaveTest {
                 "demo",
                 new RoleDefinition(
                         TemplatedValue.of("viewer"), Optional.of(TemplatedValue.of("frontend")), Optional.empty()),
-                Optional.empty());
+                Optional.empty(),
+                ElementKeys.empty());
 
         assertThat(realm().roles())
                 .extracting(
@@ -168,8 +174,8 @@ class SaveTest {
     void placeholdersAreWrittenQuoted(final String extension) throws IOException {
         write("00-realm." + extension, extension.equals("yaml") ? REALM : "{\"realm\": \"{{env}}-mon-realm\"}");
 
-        String file =
-                this.files.save("demo", client("frontend", ApplicationType.SPA, "{{appUrl}}/*"), Optional.empty());
+        String file = this.files.save(
+                "demo", client("frontend", ApplicationType.SPA, "{{appUrl}}/*"), Optional.empty(), ElementKeys.empty());
 
         assertThat(read(file)).contains("\"{{appUrl}}/*\"");
         assertThat(realm().client("frontend").orElseThrow().definition().redirectUris())
@@ -185,7 +191,8 @@ class SaveTest {
         Defined<ClientDefinition> app = realm().client("app").orElseThrow();
         assertThat(app.definition().applicationType()).isEqualTo(ApplicationType.SPA);
 
-        this.files.save("demo", client("app", ApplicationType.WEB_APPLICATION), Optional.of(app.origin()));
+        this.files.save(
+                "demo", client("app", ApplicationType.WEB_APPLICATION), Optional.of(app.origin()), ElementKeys.empty());
 
         assertThat(realm().client("app").orElseThrow().definition().applicationType())
                 .isEqualTo(ApplicationType.WEB_APPLICATION);
@@ -200,7 +207,8 @@ class SaveTest {
                 "demo",
                 new GroupDefinition(
                         "/team/devs", TemplatedValue.of("devs"), Set.of(), Map.of("frontend", Set.of("viewer"))),
-                Optional.empty());
+                Optional.empty(),
+                ElementKeys.empty());
 
         assertThat(realm().groups())
                 .extracting(group -> group.definition().path())
@@ -217,7 +225,8 @@ class SaveTest {
         this.files.save(
                 "demo",
                 new RoleDefinition(TemplatedValue.of("b"), Optional.empty(), Optional.of(TemplatedValue.of("Second"))),
-                Optional.of(b.origin()));
+                Optional.of(b.origin()),
+                ElementKeys.empty());
 
         assertThat(realm().roles())
                 .extracting(
@@ -254,7 +263,8 @@ class SaveTest {
                         List.of(),
                         List.of(),
                         Map.of()),
-                Optional.of(app.origin()));
+                Optional.of(app.origin()),
+                ElementKeys.empty());
 
         assertThat(read(name)).contains("{{public}}").contains("Described");
     }
@@ -286,7 +296,8 @@ class SaveTest {
                         app.definition().redirectUris(),
                         app.definition().webOrigins(),
                         app.definition().attributes()),
-                Optional.of(app.origin()));
+                Optional.of(app.origin()),
+                ElementKeys.empty());
 
         List<String> removed = new ArrayList<>(before);
         removed.removeAll(read(name).lines().toList());
@@ -303,5 +314,111 @@ class SaveTest {
                 .contains("20-clients.yaml");
         assertThat(this.files.fileOf("demo", io.github.doriangrelu.keycloak.config.domain.definition.ElementType.GROUP))
                 .isEmpty();
+    }
+
+    private static ElementKeys added(final String path, final KeyValue value) {
+        return new ElementKeys(Map.of(KeyPath.parse(path), value));
+    }
+
+    private static KeyValue scalar(final String text) {
+        return new KeyValue.Scalar(TemplatedValue.of(text));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"yaml", "json"})
+    void aBooleanDefaultIsWrittenAsABoolean(final String extension) throws IOException {
+        String name = "20-clients." + extension;
+        write(name, extension.equals("yaml") ? REALM + "clients: []\n" : "{\"realm\": \"x\", \"clients\": []}");
+
+        this.files.save(
+                "demo",
+                client("app", ApplicationType.SERVICE),
+                Optional.empty(),
+                added("frontchannelLogout", scalar("true")));
+
+        assertThat(read(name))
+                .containsPattern("frontchannelLogout\"?: true")
+                .doesNotContain("\"true\"")
+                .doesNotContain("'true'");
+    }
+
+    @Test
+    void anAddedKeyNeverOverwritesAWrittenOne() throws IOException {
+        write("20-clients.yaml", REALM + "clients:\n  - clientId: app\n    frontchannelLogout: false\n");
+        Defined<ClientDefinition> app = realm().client("app").orElseThrow();
+
+        this.files.save(
+                "demo",
+                app.definition(),
+                Optional.of(app.origin()),
+                new ElementKeys(Map.of(
+                        KeyPath.parse("frontchannelLogout"), scalar("true"),
+                        KeyPath.parse("consentRequired"), scalar("false"))));
+
+        assertThat(read("20-clients.yaml"))
+                .contains("frontchannelLogout: false")
+                .doesNotContain("frontchannelLogout: true")
+                .contains("consentRequired: false");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"yaml", "json"})
+    void aNestedAddedKeyCreatesItsParents(final String extension) throws IOException {
+        String name = "20-clients." + extension;
+        write(name, extension.equals("yaml") ? REALM + "clients: []\n" : "{\"realm\": \"x\", \"clients\": []}");
+
+        this.files.save(
+                "demo",
+                client("app", ApplicationType.SERVICE),
+                Optional.empty(),
+                added("attributes.\"pkce.code.challenge.method\"", scalar("S256")));
+
+        assertThat(realm().client("app").orElseThrow().definition().attributes())
+                .containsEntry("pkce.code.challenge.method", TemplatedValue.of("S256"));
+    }
+
+    @Test
+    void anAddedListIsWrittenAsAList() throws IOException {
+        write("20-clients.yaml", REALM + "clients: []\n");
+
+        this.files.save(
+                "demo",
+                client("app", ApplicationType.SERVICE),
+                Optional.empty(),
+                added("webOrigins", new KeyValue.Listed(List.of(TemplatedValue.of("+")))));
+
+        assertThat(realm().client("app").orElseThrow().definition().webOrigins())
+                .containsExactly(TemplatedValue.of("+"));
+    }
+
+    @Test
+    void previewWritesNothing() throws IOException {
+        write("20-clients.yaml", REALM + "clients:\n  - clientId: app\n");
+        String before = read("20-clients.yaml");
+
+        ElementKeys view = this.files.preview(
+                "demo",
+                client("batch", ApplicationType.SERVICE),
+                Optional.empty(),
+                added("attributes.\"pkce.code.challenge.method\"", scalar("S256")));
+
+        assertThat(read("20-clients.yaml")).isEqualTo(before);
+        assertThat(view.get(KeyPath.parse("attributes.\"pkce.code.challenge.method\"")))
+                .contains(scalar("S256"));
+        assertThat(view.get(KeyPath.parse("clientId"))).contains(scalar("batch"));
+    }
+
+    @Test
+    void previewOfAFirstElementWorksOnANewDocument() throws IOException {
+        write("00-realm.yaml", REALM);
+
+        ElementKeys view = this.files.preview(
+                "demo",
+                new RoleDefinition(TemplatedValue.of("reader"), Optional.empty(), Optional.empty()),
+                Optional.empty(),
+                ElementKeys.empty());
+
+        assertThat(view.get(KeyPath.parse("name"))).contains(scalar("reader"));
+        assertThat(this.folder.resolve("30-roles.yaml")).doesNotExist();
     }
 }

@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 
 /** A JSON definition file, as a Jackson tree that remembers the line of each object. */
@@ -148,6 +149,8 @@ final class JsonDocumentTree implements DocumentTree {
     /** An object of a JSON file. */
     static final class JsonObject implements TreeObject {
 
+        private static final Pattern INTEGER = Pattern.compile("-?[0-9]{1,18}");
+
         private final ObjectNode node;
         private final Map<JsonNode, int[]> lines;
 
@@ -237,6 +240,28 @@ final class JsonDocumentTree implements DocumentTree {
         }
 
         @Override
+        public List<String> keys() {
+            return this.node.properties().stream().map(Map.Entry::getKey).toList();
+        }
+
+        @Override
+        public Shape shape(final String key) {
+            JsonNode value = this.node.get(key);
+            if (value == null || value.isNull()) {
+                return Shape.NONE;
+            }
+            if (value.isObject()) {
+                return Shape.OBJECT;
+            }
+            if (value.isArray()) {
+                return StreamSupport.stream(value.spliterator(), false).anyMatch(JsonNode::isContainerNode)
+                        ? Shape.OBJECTS
+                        : Shape.SCALARS;
+            }
+            return Shape.SCALAR;
+        }
+
+        @Override
         public int line() {
             int[] position = this.lines.get(this.node);
             return position == null ? 1 : position[0];
@@ -255,6 +280,17 @@ final class JsonDocumentTree implements DocumentTree {
                 return;
             }
             this.node.put(key, value.raw());
+        }
+
+        @Override
+        public void setScalar(final String key, final String text) {
+            if (text.equals("true") || text.equals("false")) {
+                setBool(key, text.equals("true"));
+            } else if (INTEGER.matcher(text).matches()) {
+                this.node.put(key, Long.parseLong(text));
+            } else {
+                setText(key, TemplatedValue.of(text));
+            }
         }
 
         @Override

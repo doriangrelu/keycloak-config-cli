@@ -4,6 +4,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDe
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -45,6 +46,6 @@ public final class SaveElement {
         if (!realm.declares(definition) && !declareType) {
             throw new FirstDeclarationException(definition);
         }
-        return this.definitions.save(folder, definition, existing);
+        return this.definitions.save(folder, definition, existing, ElementKeys.empty());
     }
 }

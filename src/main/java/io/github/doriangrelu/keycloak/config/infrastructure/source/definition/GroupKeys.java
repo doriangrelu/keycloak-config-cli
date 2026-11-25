@@ -47,7 +47,7 @@ final class GroupKeys {
      * Writes a group at its path: under {@code groups}, or in the {@code subGroups} of its parent, which must be
      * written already. Roles keep their order when the set of roles does not change.
      */
-    static void write(final GroupDefinition group, final TreeObject root, final Optional<Origin> existing) {
+    static TreeObject write(final GroupDefinition group, final TreeObject root, final Optional<Origin> existing) {
         String[] names = group.path().substring(1).split("/");
         TreeObject holder = root;
         String listKey = "groups";
@@ -70,7 +70,7 @@ final class GroupKeys {
         writeRoles(object, "realmRoles", group.realmRoles(), object.texts("realmRoles"));
         if (group.clientRoles().isEmpty()) {
             object.remove("clientRoles");
-            return;
+            return object;
         }
         Map<String, List<String>> current = object.textLists("clientRoles");
         TreeObject clientRoles = object.objectOrCreate("clientRoles");
@@ -80,6 +80,7 @@ final class GroupKeys {
         group.clientRoles()
                 .forEach((client, roles) ->
                         writeRoles(clientRoles, client, roles, current.getOrDefault(client, List.of())));
+        return object;
     }
 
     private static void writeRoles(

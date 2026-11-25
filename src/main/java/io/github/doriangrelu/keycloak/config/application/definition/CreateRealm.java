@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -61,6 +62,6 @@ public final class CreateRealm {
      */
     public String create(final String folder, final TemplatedValue realm, final DefinitionFormat format) {
         checkFolder(folder);
-        return this.definitions.createRealm(folder, realm, format);
+        return this.definitions.createRealm(folder, realm, format, ElementKeys.empty());
     }
 }

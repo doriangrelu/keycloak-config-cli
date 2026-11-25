@@ -26,6 +26,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,19 +57,39 @@ public interface RealmDefinitions {
     /**
      * Writes an element: in its file when it exists, else in the file that holds its type, else in the standard
      * numbered file of its type, created with the {@code realm} key of the realm. Only the keys the editing model
-     * manages are written: the other keys of the element stay as they are.
+     * manages are written, then the keys {@code added} that are not written yet: the other keys of the element stay as
+     * they are.
      *
      * @param existing where the element is written, when it exists
+     * @param added the keys the rules add, written after the keys of the model
      * @return the file written
      */
-    String save(String folder, ElementDefinition definition, Optional<Origin> existing);
+    String save(String folder, ElementDefinition definition, Optional<Origin> existing, ElementKeys added);
 
     /**
-     * Creates the folder of a new realm and its {@code 00-realm} file, with the {@code realm} key and {@code enabled}.
+     * The keys of an element as {@link #save} would write them, without writing anything.
+     *
+     * @param existing where the element is written, when it exists
+     * @param added the keys the rules add
+     */
+    ElementKeys preview(String folder, ElementDefinition definition, Optional<Origin> existing, ElementKeys added);
+
+    /** The keys of each element read, by origin: the same origins as {@link #load}. */
+    Map<Origin, ElementKeys> elementKeys(String folder);
+
+    /**
+     * The top-level keys of all the files of a realm, without the elements ({@code clients}, {@code roles},
+     * {@code groups}) and the other lists of objects.
+     */
+    ElementKeys realmKeys(String folder);
+
+    /**
+     * Creates the folder of a new realm and its {@code 00-realm} file, with the {@code realm} key and {@code enabled},
+     * then the keys {@code added}.
      *
      * @return the name of the file written
      */
-    String createRealm(String folder, TemplatedValue realm, DefinitionFormat format);
+    String createRealm(String folder, TemplatedValue realm, DefinitionFormat format, ElementKeys added);
 
     /** The text of each definition file of a realm, as written (comments included), by file name. */
     Map<String, String> sources(String folder);

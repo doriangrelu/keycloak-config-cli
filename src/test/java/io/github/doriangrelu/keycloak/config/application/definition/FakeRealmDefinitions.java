@@ -7,8 +7,10 @@ import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +24,11 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     final List<String> formatted = new ArrayList<>();
     final List<ElementDefinition> saved = new ArrayList<>();
     final List<String> created = new ArrayList<>();
+    final List<ElementKeys> savedKeys = new ArrayList<>();
+    final List<ElementKeys> createdKeys = new ArrayList<>();
+    final Map<Origin, ElementKeys> elementKeys = new LinkedHashMap<>();
+    ElementKeys realmKeys = ElementKeys.empty();
+    ElementKeys previewed = ElementKeys.empty();
 
     FakeRealmDefinitions(final RealmDefinition realm) {
         this.realm = realm;
@@ -59,14 +66,40 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     }
 
     @Override
-    public String save(final String folder, final ElementDefinition definition, final Optional<Origin> existing) {
+    public String save(
+            final String folder,
+            final ElementDefinition definition,
+            final Optional<Origin> existing,
+            final ElementKeys added) {
         this.saved.add(definition);
+        this.savedKeys.add(added);
         return existing.map(Origin::file).orElse(definition.type().fileName() + ".yaml");
     }
 
     @Override
-    public String createRealm(final String folder, final TemplatedValue realm, final DefinitionFormat format) {
+    public String createRealm(
+            final String folder, final TemplatedValue realm, final DefinitionFormat format, final ElementKeys added) {
         this.created.add(folder);
+        this.createdKeys.add(added);
         return "00-realm" + format.extension();
+    }
+
+    @Override
+    public ElementKeys preview(
+            final String folder,
+            final ElementDefinition definition,
+            final Optional<Origin> existing,
+            final ElementKeys added) {
+        return this.previewed.with(added);
+    }
+
+    @Override
+    public Map<Origin, ElementKeys> elementKeys(final String folder) {
+        return Map.copyOf(this.elementKeys);
+    }
+
+    @Override
+    public ElementKeys realmKeys(final String folder) {
+        return this.realmKeys;
     }
 }

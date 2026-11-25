@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -45,7 +46,7 @@ class CreateRealmFilesTest {
     void aYamlRealmFileHoldsTheRealmAndItsEnabledFlag() throws IOException {
         RealmDefinitionFiles files = new RealmDefinitionFiles(this.root);
 
-        String name = files.createRealm("mon-realm", REALM, DefinitionFormat.YAML);
+        String name = files.createRealm("mon-realm", REALM, DefinitionFormat.YAML, ElementKeys.empty());
 
         assertThat(name).isEqualTo("00-realm.yaml");
         String content = Files.readString(this.root.resolve("mon-realm/00-realm.yaml"), StandardCharsets.UTF_8);
@@ -58,7 +59,7 @@ class CreateRealmFilesTest {
     void aJsonRealmFileHoldsTheSameContent() throws IOException {
         RealmDefinitionFiles files = new RealmDefinitionFiles(this.root);
 
-        String name = files.createRealm("mon-realm", REALM, DefinitionFormat.JSON);
+        String name = files.createRealm("mon-realm", REALM, DefinitionFormat.JSON, ElementKeys.empty());
 
         assertThat(name).isEqualTo("00-realm.json");
         String content = Files.readString(this.root.resolve("mon-realm/00-realm.json"), StandardCharsets.UTF_8);
@@ -74,7 +75,7 @@ class CreateRealmFilesTest {
         Files.writeString(existing, "realm: kept\n", StandardCharsets.UTF_8);
         RealmDefinitionFiles files = new RealmDefinitionFiles(this.root);
 
-        assertThatThrownBy(() -> files.createRealm("demo", REALM, DefinitionFormat.YAML))
+        assertThatThrownBy(() -> files.createRealm("demo", REALM, DefinitionFormat.YAML, ElementKeys.empty()))
                 .isInstanceOf(RealmFolderExistsException.class);
         assertThat(Files.readString(existing, StandardCharsets.UTF_8)).isEqualTo("realm: kept\n");
     }
@@ -84,7 +85,7 @@ class CreateRealmFilesTest {
         Files.writeString(this.root.resolve("plain"), "x", StandardCharsets.UTF_8);
         RealmDefinitionFiles files = new RealmDefinitionFiles(this.root);
 
-        assertThatThrownBy(() -> files.createRealm("plain", REALM, DefinitionFormat.YAML))
+        assertThatThrownBy(() -> files.createRealm("plain", REALM, DefinitionFormat.YAML, ElementKeys.empty()))
                 .isInstanceOf(RealmFolderExistsException.class);
     }
 
@@ -96,7 +97,7 @@ class CreateRealmFilesTest {
         Assumptions.assumeTrue(Files.exists(this.root.resolve("Demo")), "a case-sensitive file system");
         RealmDefinitionFiles files = new RealmDefinitionFiles(this.root);
 
-        assertThatThrownBy(() -> files.createRealm("Demo", REALM, DefinitionFormat.YAML))
+        assertThatThrownBy(() -> files.createRealm("Demo", REALM, DefinitionFormat.YAML, ElementKeys.empty()))
                 .isInstanceOf(RealmFolderExistsException.class);
 
         assertThat(Files.readString(existing, StandardCharsets.UTF_8)).isEqualTo("realm: kept\n");
