@@ -22,6 +22,7 @@ Quick links:
 # Table of Contents
 
 - [Quick start](#quick-start)
+- [Interactive shell](#interactive-shell)
 - [Help and community](#help-and-community)
 - [Config Files](#config-files)
 - [Templating with Mustache](#templating-with-mustache)
@@ -43,6 +44,10 @@ It is a Keycloak utility to ensure the desired configuration state for a realm b
 
 Like `kubectl apply`, every run compares the files with Keycloak: for each resource type the files of a realm declare, what they declare is created or updated, and what no file declares is deleted (users, resources Keycloak creates itself and [protected resources](./documentation/advanced/protected-resources.md) are never deleted). Types the files do not declare are not touched. Check the changes first with a [dry run](./documentation/advanced/dry-run.md), and see [Managed Resources](./documentation/concepts/managed-resources.md).
 
+
+## Interactive shell
+
+The shell (`--run.operation=SHELL`) is a guided editor for the realm definition files: it asks questions, explains the choices, and writes clients, roles and groups in files you import as they are, with rules that keep the result safe. It works offline, interactively or in a script. See the [shell documentation](./documentation/shell/README.md).
 
 ## Help and community
 

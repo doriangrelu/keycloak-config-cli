@@ -1,0 +1,92 @@
+rules:
+  # A default value and a check on the same key, for one application type.
+  - id: client.spa.pkce
+    element: client
+    when:
+      application-type: spa
+    defaults:
+      attributes."pkce.code.challenge.method": S256
+    checks:
+      - key: attributes."pkce.code.challenge.method"
+        equals: S256
+    message: "A front-end application must use PKCE with S256: the browser cannot keep a secret."
+
+  # A check on a list: no element of the list may match.
+  - id: client.redirect-uris.no-wildcard
+    element: client
+    checks:
+      - key: redirectUris
+        none-matches: '^\*$'
+    message: "A redirect URI '*' lets any site receive the tokens. List the application's URIs."
+
+  # A rule that only advises: the client is written anyway.
+  - id: client.web.short-tokens
+    element: client
+    when:
+      application-type: web-application
+    defaults:
+      attributes."access.token.lifespan": "300"
+    checks:
+      - key: attributes."access.token.lifespan"
+        matches: '[0-9]{1,3}'
+    severity: advice
+    message: "Keep the access tokens of a web application below 1000 seconds."
+
+  # present and absent take no value.
+  - id: client.has-name
+    element: client
+    checks:
+      - key: name
+        present: true
+    severity: advice
+    message: "Give the client a name: the administrators read it in the console."
+
+  # A rule on a list of values: every redirect URI must be in the set.
+  - id: client.redirect-uris.https-only
+    element: client
+    when:
+      application-type: spa
+    checks:
+      - key: redirectUris
+        matches: '^https://.*'
+    message: "A front-end application must be served over HTTPS."
+
+  # A condition on a key of the element: only the roles of a client.
+  - id: role.client-role.naming
+    element: role
+    when:
+      checks:
+        - key: client
+          present: true
+    checks:
+      - key: name
+        matches: '[a-z][a-z0-9-]*'
+    message: "A client role is named in lower case, with dashes."
+
+  # A condition with absent: only the roles of the realm.
+  - id: role.realm-role.not-admin
+    element: role
+    when:
+      checks:
+        - key: client
+          absent: true
+    checks:
+      - key: name
+        not-one-of: [admin, root]
+    message: "A realm role named admin or root is too easy to confuse with the administration of Keycloak."
+
+  # A check on a group: its path and the roles it gives.
+  - id: group.top-level.naming
+    element: group
+    checks:
+      - key: name
+        none-matches: '.*\s.*'
+    message: "A group name has no space."
+
+  # A rule on the realm itself.
+  - id: realm.ssl-required
+    element: realm
+    checks:
+      - key: sslRequired
+        one-of: [external, all]
+    message: "The realm must require HTTPS for every address that is not local."

@@ -37,6 +37,12 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 - [Protected Resources](advanced/protected-resources.md)
 - [Templating with Mustache](advanced/templating.md)
 
+### Interactive Shell
+- [Overview and Launch](shell/README.md)
+- [Commands](shell/commands.md)
+- [Realm Files](shell/files.md)
+- [Rules](shell/rules.md)
+
 ### Technical Reference
 - [Supported Features](reference/features.md)
 - [Import File Patterns](reference/import-patterns.md)
