@@ -61,4 +61,7 @@ public interface Questions {
 
     /** Yes or no; an empty answer takes {@code byDefault}. */
     boolean confirm(String question, boolean byDefault);
+
+    /** A message to the user, such as why the last answer is asked again; it expects no answer. */
+    void tell(String message);
 }

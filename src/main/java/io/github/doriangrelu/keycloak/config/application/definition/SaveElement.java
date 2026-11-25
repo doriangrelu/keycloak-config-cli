@@ -68,7 +68,7 @@ public final class SaveElement {
         if (!verdict.allowsWriting()) {
             throw new RuleViolationException(verdict.blocking());
         }
-        return new SaveResult(this.definitions.save(folder, definition, existing, added), verdict);
+        return new SaveResult(this.definitions.save(folder, definition, existing, added), verdict, added);
     }
 
     /** The defaults come with the creation of an element, and when a client changes its application type. */

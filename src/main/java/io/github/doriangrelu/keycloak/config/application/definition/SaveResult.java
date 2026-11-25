@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.application.definition;
 
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.Verdict;
 
 /**
@@ -27,5 +28,6 @@ import io.github.doriangrelu.keycloak.config.domain.definition.rules.Verdict;
  *
  * @param file the file written
  * @param verdict what the rules say about the change: reminders, advice and what could not be checked
+ * @param defaults the keys the rules set on the element, such as PKCE for a SPA
  */
-public record SaveResult(String file, Verdict verdict) {}
+public record SaveResult(String file, Verdict verdict, ElementKeys defaults) {}

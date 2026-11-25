@@ -184,4 +184,11 @@ class ConsoleQuestionsTest {
                 .containsExactly(TemplatedValue.of("a"), TemplatedValue.of("b"));
         assertThat(this.output.toString()).contains("Invalid value '{{env'");
     }
+
+    @Test
+    void aMessageIsPrintedIndented() {
+        answering().tell("Client 'x' already exists");
+
+        assertThat(this.output.toString()).contains("  Client 'x' already exists");
+    }
 }

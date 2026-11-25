@@ -73,4 +73,14 @@ class ScriptedQuestionsTest {
                 .isInstanceOf(MissingAnswerException.class)
                 .hasMessageContaining("Go?");
     }
+
+    @Test
+    void messagesAreRecordedWithoutConsumingAnAnswer() {
+        ScriptedQuestions questions = new ScriptedQuestions("a");
+
+        questions.tell("Careful");
+
+        assertThat(questions.told()).containsExactly("Careful");
+        assertThat(questions.ask("Q", Optional.empty())).isEqualTo("a");
+    }
 }

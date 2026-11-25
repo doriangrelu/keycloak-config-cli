@@ -43,6 +43,7 @@ public final class ScriptedQuestions implements Questions {
 
     private final Deque<String> answers;
     private final List<String> asked = new ArrayList<>();
+    private final List<String> told = new ArrayList<>();
 
     public ScriptedQuestions(final String... answers) {
         this(Arrays.asList(answers));
@@ -55,6 +56,16 @@ public final class ScriptedQuestions implements Questions {
     /** The questions asked so far, in order. */
     public List<String> asked() {
         return List.copyOf(this.asked);
+    }
+
+    /** The messages told so far, in order. */
+    public List<String> told() {
+        return List.copyOf(this.told);
+    }
+
+    @Override
+    public void tell(final String message) {
+        this.told.add(message);
     }
 
     @Override

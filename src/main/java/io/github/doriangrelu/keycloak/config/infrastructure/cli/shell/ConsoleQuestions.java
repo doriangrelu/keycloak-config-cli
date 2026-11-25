@@ -165,6 +165,12 @@ public final class ConsoleQuestions implements Questions {
         }
     }
 
+    @Override
+    public void tell(final String message) {
+        this.writer.println("  " + message);
+        this.writer.flush();
+    }
+
     private static String promptOf(final String question, final Optional<String> proposed) {
         return "? " + question + proposed.map(value -> " [" + value + "]").orElse("") + ": ";
     }

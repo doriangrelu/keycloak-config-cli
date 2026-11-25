@@ -215,4 +215,15 @@ class SaveElementTest {
         assertThat(result.verdict().advice()).hasSize(1);
         assertThat(definitions.saved).hasSize(1);
     }
+
+    @Test
+    void theDefaultsSetByTheRulesAreReturned() {
+        FakeRealmDefinitions definitions = clientRealm();
+        definitions.previewed = Rules.client(ApplicationType.SPA);
+
+        SaveResult result = new SaveElement(definitions, Rules.of(Rules.SPA_PKCE))
+                .save("demo", client(ApplicationType.SPA), Optional.empty(), false);
+
+        assertThat(result.defaults()).isEqualTo(Rules.keys("pkce", "S256"));
+    }
 }
