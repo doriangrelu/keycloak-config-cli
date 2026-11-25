@@ -35,6 +35,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.rules.Organisatio
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.Rule;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.RuleElement;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.Severity;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -46,8 +47,13 @@ import java.util.Optional;
 import java.util.Set;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
+import org.yaml.snakeyaml.nodes.MappingNode;
+import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.NodeTuple;
+import org.yaml.snakeyaml.nodes.ScalarNode;
+import org.yaml.snakeyaml.nodes.SequenceNode;
+import org.yaml.snakeyaml.nodes.Tag;
 
 /**
  * Reads a rules file (ADR-009). Every problem is an {@link InvalidRulesException} whose message starts with the name of
@@ -87,16 +93,41 @@ public final class RuleFileReader {
     }
 
     private static Map<String, Object> parse(final String yaml) {
-        Object loaded;
+        Node root;
         try {
-            loaded = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
+            LoaderOptions options = new LoaderOptions();
+            options.setAllowDuplicateKeys(false);
+            root = new Yaml(options).compose(new StringReader(yaml));
         } catch (YAMLException e) {
             throw new InvalidRulesException("the file is not valid YAML: " + e.getMessage());
         }
-        if (loaded == null) {
+        if (root == null) {
             return Map.of();
         }
-        return map(loaded, "the file");
+        return map(plain(root), "the file");
+    }
+
+    /** The node as maps, lists and texts: a scalar keeps the text it is written with, an empty one is null. */
+    private static Object plain(final Node node) {
+        if (node instanceof ScalarNode scalar) {
+            return Tag.NULL.equals(scalar.getTag()) ? null : scalar.getValue();
+        }
+        if (node instanceof SequenceNode sequence) {
+            List<Object> items = new ArrayList<>();
+            sequence.getValue().forEach(item -> items.add(plain(item)));
+            return items;
+        }
+        Map<Object, Object> map = new LinkedHashMap<>();
+        for (NodeTuple tuple : ((MappingNode) node).getValue()) {
+            if (!(tuple.getKeyNode() instanceof ScalarNode key)) {
+                throw new InvalidRulesException("a key must be a text");
+            }
+            if (map.containsKey(key.getValue())) {
+                throw new InvalidRulesException("duplicate key '" + key.getValue() + "'");
+            }
+            map.put(key.getValue(), plain(tuple.getValueNode()));
+        }
+        return map;
     }
 
     private static List<Rule> rules(final List<Object> entries) {
@@ -230,7 +261,7 @@ public final class RuleFileReader {
         String what = "'" + name + "' on '" + key + "'";
         return switch (operator) {
             case PRESENT, ABSENT -> {
-                if (operand != null && !Boolean.TRUE.equals(operand)) {
+                if (operand != null && !"true".equals(operand)) {
                     throw new InvalidRulesException(what + " takes no operand (or true)");
                 }
                 yield List.of();

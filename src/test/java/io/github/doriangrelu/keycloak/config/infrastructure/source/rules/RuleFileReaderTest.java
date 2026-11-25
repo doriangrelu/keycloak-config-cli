@@ -23,11 +23,15 @@ package io.github.doriangrelu.keycloak.config.infrastructure.source.rules;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.doriangrelu.keycloak.config.domain.definition.ApplicationType;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.Check;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.DeclarativeRule;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.Disablement;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.InvalidRulesException;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyPath;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyValue;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.Operator;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.OrganisationRules;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.Rule;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.RuleElement;
@@ -127,8 +131,9 @@ class RuleFileReaderTest {
 
         Rule rule = only(RuleFileReader.rules(FILE, yaml));
 
-        assertThat(rule.id()).isEqualTo("client.example");
         assertThat(rule.severity()).isEqualTo(Severity.REQUIRED);
+        assertThat(((DeclarativeRule) rule).checks())
+                .containsExactly(new Check(KeyPath.parse("publicClient"), Operator.EQUALS, List.of("true")));
     }
 
     @Test
@@ -148,7 +153,52 @@ class RuleFileReaderTest {
                     message: "Example."
                 """;
 
-        assertThat(only(RuleFileReader.rules(FILE, yaml)).id()).isEqualTo("client.spa.example");
+        DeclarativeRule rule = (DeclarativeRule) only(RuleFileReader.rules(FILE, yaml));
+
+        assertThat(rule.applicationType()).contains(ApplicationType.SPA);
+        assertThat(rule.conditions()).containsExactly(new Check(KeyPath.parse("client"), Operator.ABSENT, List.of()));
+        assertThat(rule.checks())
+                .containsExactly(new Check(KeyPath.parse("webOrigins"), Operator.NOT_ONE_OF, List.of("*")));
+    }
+
+    @Test
+    void aDuplicatedKeyIsRefused() {
+        refused("""
+                rules:
+                  - id: client.x
+                    element: client
+                    checks:
+                      - key: publicClient
+                        equals: true
+                    checks:
+                      - key: webOrigins
+                        present: true
+                    message: "x"
+                """, "duplicate", "checks");
+    }
+
+    @Test
+    void scalarsAreKeptAsWritten() {
+        String yaml = """
+                rules:
+                  - id: client.versions
+                    element: client
+                    defaults:
+                      version: 1.10
+                      mode: yes
+                      since: 2027-01-01
+                      flag: true
+                    message: "x"
+                """;
+
+        Rule rule = only(RuleFileReader.rules(FILE, yaml));
+
+        assertThat(rule.defaults().get(KeyPath.parse("version")))
+                .contains(new KeyValue.Scalar(TemplatedValue.of("1.10")));
+        assertThat(rule.defaults().get(KeyPath.parse("mode"))).contains(new KeyValue.Scalar(TemplatedValue.of("yes")));
+        assertThat(rule.defaults().get(KeyPath.parse("since")))
+                .contains(new KeyValue.Scalar(TemplatedValue.of("2027-01-01")));
+        assertThat(rule.defaults().get(KeyPath.parse("flag"))).contains(new KeyValue.Scalar(TemplatedValue.of("true")));
     }
 
     @Test
@@ -161,7 +211,7 @@ class RuleFileReaderTest {
                       - key: publicClient
                         equals: true
                     message: "x"
-                """, "rule 'client.x'", "chekcs");
+                """, "rule 'client.x'", "unknown field 'chekcs'");
     }
 
     @Test
@@ -174,7 +224,7 @@ class RuleFileReaderTest {
                       - key: publicClient
                         is: true
                     message: "x"
-                """, "rule 'client.x'", "is");
+                """, "rule 'client.x'", "unknown field or operator 'is'");
     }
 
     @Test
@@ -201,7 +251,7 @@ class RuleFileReaderTest {
                       - key: enabled
                         equals: true
                     message: "x"
-                """, "rule 'user.x'", "user");
+                """, "rule 'user.x'", "not 'user'");
     }
 
     @Test
@@ -216,7 +266,7 @@ class RuleFileReaderTest {
                       - key: publicClient
                         equals: true
                     message: "x"
-                """, "rule 'client.x'", "frontend");
+                """, "rule 'client.x'", "not 'frontend'");
     }
 
     @Test
@@ -364,7 +414,7 @@ class RuleFileReaderTest {
 
     @Test
     void anUnknownTopLevelFieldIsRefused() {
-        refused("rule: []\n", "rule");
+        refused("rule: []\n", "unknown field 'rule' in the file");
     }
 
     @Test
