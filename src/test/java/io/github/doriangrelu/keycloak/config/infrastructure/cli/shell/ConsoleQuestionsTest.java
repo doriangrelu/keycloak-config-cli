@@ -94,6 +94,54 @@ class ConsoleQuestionsTest {
     }
 
     @Test
+    void severalNumbersChooseSeveralValues() {
+        assertThat(answering("3, 1").chooseMany("Types", TYPES, List.of())).containsExactly("spa", "service");
+        assertThat(this.output.toString())
+                .contains("  2. Web application with a server — the secret stays on the server")
+                .contains("Numbers (Enter for none): ");
+    }
+
+    @Test
+    void enterKeepsTheProposedValues() {
+        assertThat(answering("").chooseMany("Types", TYPES, List.of("web", "service")))
+                .containsExactly("web", "service");
+        assertThat(this.output.toString())
+                .contains("  2. Web application with a server — the secret stays on the server (current)")
+                .contains("Numbers [2, 3] (Enter keeps them, - for none): ");
+    }
+
+    @Test
+    void aDashChoosesNone() {
+        assertThat(answering("-").chooseMany("Types", TYPES, List.of("web"))).isEmpty();
+    }
+
+    @Test
+    void aNumberOutOfTheListIsAskedAgain() {
+        assertThat(answering("1,9", "x", "2").chooseMany("Types", TYPES, List.of()))
+                .containsExactly("web");
+        assertThat(this.output.toString().lines().filter(line -> line.contains("Answer with numbers")))
+                .hasSize(2);
+    }
+
+    @Test
+    void withoutAnswerTheProposalIsTaken() {
+        assertThat(answering().chooseMany("Types", TYPES, List.of("web"))).containsExactly("web");
+        assertThat(answering().chooseMany("Types", TYPES, List.of())).isEmpty();
+    }
+
+    @Test
+    void duplicatesAreIgnored() {
+        assertThat(answering("2,2,1,2").chooseMany("Types", TYPES, List.of())).containsExactly("spa", "web");
+    }
+
+    @Test
+    void withoutChoicesNothingIsAsked() {
+        assertThat(answering().chooseMany("Types", List.<Choice<String>>of(), List.of()))
+                .isEmpty();
+        assertThat(this.output.toString()).isEmpty();
+    }
+
+    @Test
     void confirmUnderstandsEnglishAndFrench() {
         assertThat(answering("oui").confirm("Continue?", false)).isTrue();
         assertThat(answering("n").confirm("Continue?", true)).isFalse();

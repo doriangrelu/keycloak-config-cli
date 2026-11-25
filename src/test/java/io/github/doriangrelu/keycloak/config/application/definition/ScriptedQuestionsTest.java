@@ -49,6 +49,21 @@ class ScriptedQuestionsTest {
     }
 
     @Test
+    void severalNumbersChooseSeveralValuesInTheOrderOfTheList() {
+        ScriptedQuestions questions = new ScriptedQuestions("2,1,2", "", "-");
+
+        assertThat(questions.chooseMany("Types", TYPES, List.of())).containsExactly("spa", "web");
+        assertThat(questions.chooseMany("Types", TYPES, List.of("web"))).containsExactly("web");
+        assertThat(questions.chooseMany("Types", TYPES, List.of("web"))).isEmpty();
+    }
+
+    @Test
+    void aNumberOutOfTheListThrows() {
+        assertThatThrownBy(() -> new ScriptedQuestions("1,5").chooseMany("Types", TYPES, List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void anEmptyAnswerTakesTheProposal() {
         ScriptedQuestions questions = new ScriptedQuestions("", "");
 

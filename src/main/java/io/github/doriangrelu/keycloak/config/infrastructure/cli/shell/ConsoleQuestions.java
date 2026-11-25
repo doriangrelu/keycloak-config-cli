@@ -26,7 +26,9 @@ import io.github.doriangrelu.keycloak.config.application.definition.port.Questio
 import io.github.doriangrelu.keycloak.config.domain.definition.InvalidTemplatedValueException;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -155,6 +157,51 @@ public final class ConsoleQuestions implements Questions {
     }
 
     @Override
+    public <T> List<T> chooseMany(final String question, final List<Choice<T>> choices, final List<T> proposed) {
+        if (choices.isEmpty()) {
+            return List.of();
+        }
+        this.writer.println("? " + question);
+        List<Integer> proposedNumbers = new ArrayList<>();
+        for (int i = 0; i < choices.size(); i++) {
+            Choice<T> choice = choices.get(i);
+            boolean current = proposed.contains(choice.value());
+            if (current) {
+                proposedNumbers.add(i + 1);
+            }
+            this.writer.println("  " + (i + 1) + ". " + choice.label() + " — " + choice.explanation()
+                    + (current ? " (current)" : ""));
+        }
+        this.writer.flush();
+        String shown = proposedNumbers.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        String prompt = "  Numbers"
+                + (proposedNumbers.isEmpty()
+                        ? " (Enter for none)"
+                        : " [" + shown + "] (Enter keeps them, " + NONE + " for none)")
+                + ": ";
+        while (true) {
+            String answer = read(prompt);
+            if (answer == null || answer.isEmpty()) {
+                return proposed;
+            }
+            if (answer.equals(NONE)) {
+                return List.of();
+            }
+            Optional<Set<Integer>> numbers = numbersOf(answer, choices.size());
+            if (numbers.isPresent()) {
+                List<T> chosen = new ArrayList<>();
+                for (int i = 1; i <= choices.size(); i++) {
+                    if (numbers.get().contains(i)) {
+                        chosen.add(choices.get(i - 1).value());
+                    }
+                }
+                return chosen;
+            }
+            this.writer.println("  Answer with numbers from 1 to " + choices.size() + ", separated by commas.");
+        }
+    }
+
+    @Override
     public boolean confirm(final String question, final boolean byDefault) {
         String prompt = "? " + question + (byDefault ? " [Y/n]" : " [y/N]") + ": ";
         while (true) {
@@ -204,6 +251,23 @@ public final class ConsoleQuestions implements Questions {
             return null;
         }
         return answer == null ? null : answer.trim();
+    }
+
+    /** The numbers of a comma separated answer, none outside 1 to {@code max}; empty when the answer is invalid. */
+    private static Optional<Set<Integer>> numbersOf(final String answer, final int max) {
+        Set<Integer> numbers = new HashSet<>();
+        for (String part : answer.split(",")) {
+            String text = part.strip();
+            if (text.isEmpty()) {
+                continue;
+            }
+            Optional<Integer> number = numberOf(text).filter(n -> n >= 1 && n <= max);
+            if (number.isEmpty()) {
+                return Optional.empty();
+            }
+            numbers.add(number.get());
+        }
+        return numbers.isEmpty() ? Optional.empty() : Optional.of(numbers);
     }
 
     private static Optional<Integer> numberOf(final String answer) {

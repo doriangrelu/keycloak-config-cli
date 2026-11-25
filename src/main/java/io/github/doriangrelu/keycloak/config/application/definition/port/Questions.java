@@ -41,6 +41,13 @@ public interface Questions {
     <T> T choose(String question, List<Choice<T>> choices, Optional<T> proposed);
 
     /**
+     * Several of the choices, answered by their numbers separated by commas; the values come back in the order of the
+     * list, whatever the order of the answer. An empty answer takes {@code proposed}; a single {@code -} gives no
+     * value. A number outside the list is asked again. Without choices, nothing is asked and nothing is chosen.
+     */
+    <T> List<T> chooseMany(String question, List<Choice<T>> choices, List<T> proposed);
+
+    /**
      * A value written in a definition file: plain, a variable ({@code {{appUrl}}}, {@code {{appUrl:default}}}) or a
      * value composed with variables ({@code {{env}}-my-realm}). A value whose placeholder is invalid is asked again;
      * an empty answer takes {@code proposed}.

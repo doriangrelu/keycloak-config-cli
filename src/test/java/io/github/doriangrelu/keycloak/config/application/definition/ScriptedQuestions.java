@@ -26,6 +26,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -92,6 +93,41 @@ public final class ScriptedQuestions implements Questions {
             // reported below
         }
         throw new IllegalArgumentException("Answer with a number from 1 to " + choices.size() + ": " + question);
+    }
+
+    @Override
+    public <T> List<T> chooseMany(final String question, final List<Choice<T>> choices, final List<T> proposed) {
+        if (choices.isEmpty()) {
+            return List.of();
+        }
+        String answer = next(question);
+        if (answer.isEmpty()) {
+            return proposed;
+        }
+        if (answer.equals("-")) {
+            return List.of();
+        }
+        Set<Integer> numbers = new HashSet<>();
+        try {
+            for (String part : answer.split(",")) {
+                if (!part.isBlank()) {
+                    numbers.add(Integer.parseInt(part.strip()));
+                }
+            }
+        } catch (NumberFormatException e) {
+            numbers.clear();
+        }
+        if (numbers.isEmpty() || numbers.stream().anyMatch(n -> n < 1 || n > choices.size())) {
+            throw new IllegalArgumentException(
+                    "Answer with numbers from 1 to " + choices.size() + ", separated by commas: " + question);
+        }
+        List<T> chosen = new ArrayList<>();
+        for (int i = 1; i <= choices.size(); i++) {
+            if (numbers.contains(i)) {
+                chosen.add(choices.get(i - 1).value());
+            }
+        }
+        return chosen;
     }
 
     @Override
