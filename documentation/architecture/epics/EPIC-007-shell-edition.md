@@ -120,6 +120,14 @@ Décisions de conception (25/11/2026, validées avec l'utilisateur) :
 **Statut :** À faire
 Documentation utilisateur (en anglais) : lancement du shell, commandes, variables, `realm format`, règles. Scénarios du sample (`sample/`) : créer un realm et ses éléments avec le shell en mode non interactif, puis importer le résultat dans Keycloak et vérifier.
 
+Décisions de conception (25/11/2026, validées avec l'utilisateur) :
+
+- Le mode script n'exécutait qu'une commande, dans une session vide : un script ne pouvait créer que le realm. Deux ajouts :
+  - **`shell.realm`** ouvre un realm avant la commande (`--shell.realm=mon-realm --shell.command="client create …"`) ;
+  - **`shell.script`** exécute un fichier de commandes dans une même session : une commande par ligne, lignes vides et commentaires `#` ignorés, chaque commande affichée avant son résultat, arrêt à la première commande qui échoue avec son code de sortie. `shell.command` et `shell.script` ensemble : code 2.
+- Documentation dans `documentation/shell/`, une page par sujet, reliée depuis la table des matières et le README.
+- Sample : un dossier `sample/shell/` en écriture (le dossier `realms/` reste en lecture seule), un fichier de commandes qui crée un realm, ses clients, rôles et groupes, puis l'import du résultat et sa vérification dans Keycloak ; un scénario où une règle refuse la commande (code 2, rien d'écrit).
+
 ### US-007-11 — Réorganisation d'un realm
 
 **Statut :** À faire (optionnelle, peut passer dans une EPIC suivante)
