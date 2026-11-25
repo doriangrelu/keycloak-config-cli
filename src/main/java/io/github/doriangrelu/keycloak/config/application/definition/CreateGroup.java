@@ -38,6 +38,8 @@ import java.util.Set;
 /** Creates a group, at the top or under another, by guided questions: its roles are chosen in a list (ADR-008). */
 public final class CreateGroup {
 
+    private static final String EMPTY = "it cannot be empty";
+
     private final RealmDefinitions definitions;
     private final SaveElement saveElement;
     private final RuleBook rules;
@@ -53,6 +55,7 @@ public final class CreateGroup {
      * @return the file written, with what the rules say about the group
      * @throws UnknownRealmFolderException when the folder is not a realm of the shell
      * @throws UnknownGroupException when the given parent is not a group of the folder
+     * @throws InvalidGroupNameException when the given name is empty or contains a slash
      * @throws GroupExistsException when the given name is taken under the parent
      * @throws UnknownAssignableRoleException when a given role is not in the catalogue
      * @throws ParentGroupElsewhereException when the parent is written in another file than the groups are
@@ -64,10 +67,10 @@ public final class CreateGroup {
         RealmDefinition realm =
                 this.definitions.load(folder).orElseThrow(() -> new UnknownRealmFolderException(folder));
         Optional<String> parent = parent(realm, given, questions);
+        parent.ifPresent(path -> checkSameFile(folder, realm, path));
         TemplatedValue name = name(realm, parent, given, questions);
         List<AssignableRole> roles = roles(RoleCatalog.of(realm, this.rules.builtIns()), given, questions);
         GroupDefinition group = new GroupDefinition(path(parent, name), name, realmRoles(roles), clientRoles(roles));
-        parent.ifPresent(path -> checkSameFile(folder, realm, path));
         boolean declareType = given.declareType()
                 || realm.declares(group)
                 || questions.confirm(FirstDeclarationException.warning(group), false);
@@ -103,6 +106,9 @@ public final class CreateGroup {
             final Questions questions) {
         if (given.name().isPresent()) {
             TemplatedValue name = given.name().get();
+            invalid(name).ifPresent(reason -> {
+                throw new InvalidGroupNameException(name.raw(), reason);
+            });
             if (taken(realm, path(parent, name))) {
                 throw new GroupExistsException(path(parent, name));
             }
@@ -110,12 +116,27 @@ public final class CreateGroup {
         }
         while (true) {
             TemplatedValue name = questions.askValue("Name", Optional.empty());
+            Optional<String> invalid = invalid(name);
+            if (invalid.isPresent()) {
+                questions.tell(
+                        invalid.get().equals(EMPTY)
+                                ? "A group name cannot be empty"
+                                : "A group name cannot contain '/': choose the parent with the parent question");
+                continue;
+            }
             String path = path(parent, name);
             if (!taken(realm, path)) {
                 return name;
             }
             questions.tell("Group '" + path + "' already exists");
         }
+    }
+
+    private static Optional<String> invalid(final TemplatedValue name) {
+        if (name.raw().isBlank()) {
+            return Optional.of(EMPTY);
+        }
+        return name.raw().contains("/") ? Optional.of("it cannot contain '/'") : Optional.empty();
     }
 
     private static String path(final Optional<String> parent, final TemplatedValue name) {

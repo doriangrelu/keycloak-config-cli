@@ -278,4 +278,41 @@ class CreateGroupTest {
                 .hasMessageContaining("41-more-groups.yaml");
         assertThat(definitions.saved).isEmpty();
     }
+
+    @Test
+    void aNameWithASlashIsAskedAgain() {
+        FakeRealmDefinitions definitions = declared(List.of(), group("/team", "40-groups.yaml"));
+        ScriptedQuestions questions = new ScriptedQuestions(TOP_LEVEL, "a/b", "ops", TOP_LEVEL);
+
+        useCase(definitions).create("demo", GroupAnswers.none(), questions);
+
+        assertThat(written(definitions).path()).isEqualTo("/ops");
+        assertThat(questions.told())
+                .containsExactly("A group name cannot contain '/': choose the parent with the parent question");
+    }
+
+    @Test
+    void aGivenNameWithASlashOrEmptyFails() {
+        FakeRealmDefinitions definitions = declared(List.of(), group("/team", "40-groups.yaml"));
+        ScriptedQuestions questions = new ScriptedQuestions(TOP_LEVEL, TOP_LEVEL);
+
+        assertThatThrownBy(() -> useCase(definitions).create("demo", given("a/b", null), questions))
+                .isInstanceOf(InvalidGroupNameException.class)
+                .hasMessageContaining("a/b");
+        assertThatThrownBy(() -> useCase(definitions).create("demo", given(" ", null), questions))
+                .isInstanceOf(InvalidGroupNameException.class);
+        assertThat(definitions.saved).isEmpty();
+    }
+
+    @Test
+    void theParentFileIsCheckedBeforeTheOtherQuestions() {
+        FakeRealmDefinitions definitions =
+                declared(List.of(), group("/team", "40-groups.yaml"), group("/ops", "41-more-groups.yaml"));
+        definitions.files.put(ElementType.GROUP, "40-groups.yaml");
+        ScriptedQuestions questions = new ScriptedQuestions("2");
+
+        assertThatThrownBy(() -> useCase(definitions).create("demo", GroupAnswers.none(), questions))
+                .isInstanceOf(ParentGroupElsewhereException.class);
+        assertThat(questions.asked()).containsExactly("Parent group");
+    }
 }
