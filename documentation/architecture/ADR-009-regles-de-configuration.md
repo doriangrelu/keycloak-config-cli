@@ -64,7 +64,7 @@ Une règle :
 |-------|------|
 | `id` | Identifiant unique, stable : il sert à désactiver la règle. Les règles de base sont préfixées par le type d'élément (`client.`, `role.`, `group.`, `realm.`). |
 | `element` | `realm`, `client`, `role` ou `group`. |
-| `when` | Facultatif. Conditions d'application : `application-type` (pour un client) et des conditions sur des clés, avec les opérateurs ci-dessous. Toutes doivent être vraies. |
+| `when` | Facultatif. Conditions d'application : `application-type` (pour un client) et `checks`, une liste de conditions sur des clés écrites comme les vérifications, avec les opérateurs ci-dessous. Toutes doivent être vraies. |
 | `defaults` | Facultatif. Clés et valeurs posées à la **création** d'un élément, seulement si la clé est absente. Une question du shell sur la même clé propose cette valeur par défaut. |
 | `checks` | Facultatif. Vérifications faites **avant chaque écriture** et à **l'ouverture du realm**. Toutes doivent être vraies. |
 | `severity` | `required` (par défaut) : une vérification fausse empêche l'écriture. `advice` : le shell avertit, puis écrit. |
@@ -147,7 +147,7 @@ Approches écartées :
 
 Décidés avec l'utilisateur : valeurs par défaut sur toute clé, blocage des seules non-conformités introduites, deux règles de base actives (ci-dessus). *Choix de conception*, faits à la rédaction :
 
-- **Vue d'un rôle :** les clés d'export du rôle (`name`, `description`, `composite`…) et une clé synthétique `client`, l'identifiant du client propriétaire, absente pour un rôle du realm. Une règle distingue ainsi les rôles du realm (`when: { client: absent }`) des rôles de client.
+- **Vue d'un rôle :** les clés d'export du rôle (`name`, `description`, `composite`…) et une clé synthétique `client`, l'identifiant du client propriétaire, absente pour un rôle du realm. Une règle distingue ainsi les rôles du realm (`when: { checks: [ { key: client, absent: true } ] }`) des rôles de client.
 - **Vue d'un groupe :** `path`, `name`, `realmRoles` (liste) et `clientRoles."<client>"` (une liste par client).
 - **Vue du realm :** les clés de premier niveau de tous les fichiers du dossier, hors listes d'éléments (`clients`, `roles`, `groups`…). Elle est vérifiée à l'ouverture et à `realm create` ; les commandes qui modifiaient le realm la vérifieraient avant d'écrire.
 - **`when` :** les conditions sur une clé suivent les mêmes règles que les vérifications, clé absente comprise. `application-type` ne correspond jamais à un client personnalisé (`CUSTOM`), sauf `application-type: custom`.
