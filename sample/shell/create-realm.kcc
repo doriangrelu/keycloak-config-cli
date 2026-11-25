@@ -1,0 +1,8 @@
+# Creates the realm 'shelled' with the shell in script mode: one command per line
+realm create --folder=shelled --realm=shelled --format=yaml
+client create --id=frontend --type=spa --url={{appUrl}} --declare-type
+client create --id=shop --type=web-application --url={{appUrl}} --secret={{shopSecret}}
+role create --name=reader --declare-type
+role create --client=shop --name=buyer --declare-type
+group create --name=team --realm-roles=reader --declare-type
+group create --name=devs --parent=/team --client-roles=shop/buyer

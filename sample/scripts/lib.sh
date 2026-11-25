@@ -20,6 +20,13 @@ cli() {
     CLI_EXIT=$?
 }
 
+# Runs the shell of keycloak-config-cli in script mode; the shell root is sample/shell/work, mounted in /shell/work.
+# The script files are in /shell. Same $CLI_OUTPUT and $CLI_EXIT as cli.
+shell_cli() {
+    CLI_OUTPUT="$(compose run --rm -T cli --run.operation=SHELL --shell.root=/shell/work "$@" 2>&1)"
+    CLI_EXIT=$?
+}
+
 # kcadm.sh of the Keycloak container, logged in as the admin of the sample
 kcadm() {
     compose exec -T keycloak /opt/keycloak/bin/kcadm.sh "$@"
@@ -41,6 +48,10 @@ client_ids() {
 
 realm_role_names() {
     kcadm get roles -r "$REALM" --fields name | tr -d '\r' | grep -o '"name" : "[^"]*"' | sed 's/.*: "\(.*\)"/\1/'
+}
+
+client_role_names() {
+    kcadm get "clients/$(client_id_of "$1")/roles" -r "$REALM" --fields name | tr -d '\r' | grep -o '"name" : "[^"]*"' | sed 's/.*: "\(.*\)"/\1/'
 }
 
 usernames() {

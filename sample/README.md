@@ -37,7 +37,7 @@ Start Keycloak once, then run the scenarios in order: each one starts from the s
 
 | Script | What it checks |
 |--------|----------------|
-| `00-up.sh` | Starts Keycloak, builds the CLI image, deletes the `sample` realm of a previous run |
+| `00-up.sh` | Starts Keycloak, builds the CLI image, deletes the `sample` and `shelled` realms of a previous run, empties `shell/work` |
 | `01-dry-run-new-realm.sh` | A dry run on a missing realm plans everything as creations, exits with `10` and writes nothing |
 | `02-import.sh` | The first import creates clients, roles, a group and a user; template variables are rendered, default values included |
 | `03-idempotent.sh` | Importing the same files again: the dry run reports no change (`0`) |
@@ -47,6 +47,8 @@ Start Keycloak once, then run the scenarios in order: each one starts from the s
 | `07-invalid-protection.sh` | An invalid regular expression in `protectedResources` fails with `2` and changes nothing |
 | `08-removed-option.sh` | Options removed in 7.0.0 (`import.parallel`, `import.managed.*`) are refused at startup with `2` |
 | `09-keycloak-unreachable.sh` | An unreachable Keycloak gives `3` |
+| `10-shell-create-and-import.sh` | The shell creates a realm in script mode (`shell.script`): two clients, a realm role, a client role, a group and a subgroup; the written files are then imported, and Keycloak holds what the shell described, PKCE included |
+| `11-shell-rule-refusal.sh` | The shell refuses a client with a `*` redirect URI: exit code `2`, the rule `client.redirect-uris.no-wildcard` is named, no clients file is written |
 | `99-down.sh` | Stops Keycloak and removes its data |
 
 ## Run the CLI by Hand
@@ -74,3 +76,14 @@ On Git Bash, set `MSYS_NO_PATHCONV=1` first, or `/config/...` is turned into a W
 | `realms/invalid-protection` | A protection rule with an invalid regular expression |
 
 Mustache renders the whole file, comments included: a placeholder written in a YAML comment must be defined too.
+
+## The Shell Scenarios
+
+`shell/` is mounted in `/shell` in the CLI container. `shell/create-realm.kcc` and `shell/refused.kcc` are [shell scripts](../documentation/shell/README.md#script-mode); the shell writes the realms it creates in `shell/work` (the shell root, ignored by git, emptied by `00-up.sh`). Run the shell by hand with the same options:
+
+```bash
+cd sample
+docker compose run --rm cli --run.operation=SHELL --shell.root=/shell/work --shell.script=/shell/create-realm.kcc
+```
+
+The files written in `shell/work/shelled` contain template variables (`appUrl`, `shopSecret`) that the import of `10-shell-create-and-import.sh` gives.

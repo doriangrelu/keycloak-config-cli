@@ -4,7 +4,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-for script in "$SCRIPTS"/0*.sh; do
+for script in "$SCRIPTS"/0*.sh "$SCRIPTS"/1*.sh; do
     # shellcheck disable=SC1090
     source "$script"
     # Nothing can run without Keycloak

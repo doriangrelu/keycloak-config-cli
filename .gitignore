@@ -25,3 +25,6 @@ src/main/resources/jdd
 /*.json
 /test*
 /exports
+
+# Realms created by the shell in the sample
+/sample/shell/work/

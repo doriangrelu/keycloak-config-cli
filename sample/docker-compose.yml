@@ -39,6 +39,8 @@ services:
       KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 60s
     volumes:
       - ./realms:/config:ro
+      # Scripts of the shell, and its root (work/), where it writes the realms it creates
+      - ./shell:/shell
     depends_on:
       keycloak:
         condition: service_healthy

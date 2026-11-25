@@ -20,5 +20,10 @@ if kcadm_login; then pass "kcadm logged in"; else fail "kcadm could not log in";
 if realm_exists; then
     kcadm delete "realms/$REALM" && pass "realm '$REALM' of a previous run deleted"
 fi
+if kcadm get realms/shelled --fields realm >/dev/null 2>&1; then
+    kcadm delete realms/shelled && pass "realm 'shelled' of a previous run deleted"
+fi
+# The root of the shell: the realms it created in a previous run
+rm -rf "$SAMPLE_DIR/shell/work" && mkdir -p "$SAMPLE_DIR/shell/work" && pass "shell/work emptied"
 
 [ "${BASH_SOURCE[0]}" = "$0" ] && summary
