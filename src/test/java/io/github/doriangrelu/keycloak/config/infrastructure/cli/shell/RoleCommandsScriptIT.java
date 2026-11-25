@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.CommandLineConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
@@ -68,8 +69,10 @@ class RoleCommandsScriptIT {
     private static Outcome script(final AssertableApplicationContext context, final String command) {
         StringWriter output = new StringWriter();
         ShellLauncher launcher = new ShellLauncher(
-                new ShellProperties(null, null, command),
+                new ShellProperties(null, null, command, null, null),
                 context.getBean(RuleBook.class),
+                context.getBean(ReadRealms.class),
+                context.getBean(ShellSession.class),
                 context.getBean(CommandParser.class),
                 context.getBean(CommandRegistry.class),
                 context.getBeanProvider(ShellRunner.class),

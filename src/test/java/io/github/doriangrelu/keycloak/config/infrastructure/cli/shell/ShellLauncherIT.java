@@ -22,12 +22,17 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.CommandLineConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -39,6 +44,9 @@ import org.springframework.shell.core.command.CommandRegistry;
 
 /** The SHELL operation (ADR-008): a session or one command, and never a shell for the other operations. */
 class ShellLauncherIT {
+
+    @TempDir
+    Path root;
 
     private final ApplicationContextRunner contexts = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(SpringShellAutoConfiguration.class))
@@ -120,12 +128,146 @@ class ShellLauncherIT {
                 });
     }
 
+    /** What a launch gave: the exit code and what it printed. */
+    private record Outcome(int exitCode, String output) {}
+
+    private Outcome launch(
+            final ApplicationContext context, final String command, final String realm, final Path script) {
+        StringWriter output = new StringWriter();
+        ShellLauncher launcher = new ShellLauncher(
+                new ShellProperties(this.root, null, command, realm, script),
+                context.getBean(RuleBook.class),
+                context.getBean(ReadRealms.class),
+                context.getBean(ShellSession.class),
+                context.getBean(CommandParser.class),
+                context.getBean(CommandRegistry.class),
+                context.getBeanProvider(org.springframework.shell.core.ShellRunner.class),
+                new PrintWriter(output, true));
+        launcher.run(new DefaultApplicationArguments());
+        return new Outcome(launcher.getExitCode(), output.toString());
+    }
+
+    private Path script(final String... lines) throws Exception {
+        Path file = this.root.resolve("session.kcc");
+        Files.write(file, String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
+        return file;
+    }
+
+    private ApplicationContextRunner shellContexts() {
+        return this.contexts.withPropertyValues(
+                "run.operation=SHELL", "shell.root=" + this.root.toString().replace('\\', '/'));
+    }
+
+    @Test
+    void aScriptRunsItsCommandsInOneSession() {
+        shellContexts().run(context -> {
+            Path file = script(
+                    "realm create --folder demo --realm demo --format yaml",
+                    "client create --id svc --name S --description d --type service --secret none --declare-type",
+                    "role create --name admin --declare-type");
+
+            Outcome outcome = launch(context, null, null, file);
+
+            assertThat(outcome.exitCode()).isZero();
+            assertThat(outcome.output()).contains("> realm create --folder demo --realm demo --format yaml");
+            assertThat(this.root.resolve("demo/20-clients.yaml")).exists();
+            assertThat(this.root.resolve("demo/30-roles.yaml")).exists();
+        });
+    }
+
+    @Test
+    void aFailingCommandStopsTheScript() {
+        shellContexts().run(context -> {
+            Path file = script(
+                    "realm create --folder demo --realm demo --format yaml",
+                    "client create --id front --name F --description d --type spa --url https://a"
+                            + " --redirect-uris * --web-origins \"-\" --declare-type",
+                    "role create --name admin --declare-type");
+
+            Outcome outcome = launch(context, null, null, file);
+
+            assertThat(outcome.exitCode()).isEqualTo(2);
+            assertThat(outcome.output()).contains("Stopped at line 2: client create");
+            assertThat(this.root.resolve("demo/30-roles.yaml")).doesNotExist();
+        });
+    }
+
+    @Test
+    void commentsAndBlankLinesAreSkipped() {
+        shellContexts().run(context -> {
+            Path file = script("# a comment", "", "   ", "  help  ");
+
+            Outcome outcome = launch(context, null, null, file);
+
+            assertThat(outcome.exitCode()).isZero();
+            assertThat(outcome.output()).contains("> help").doesNotContain("> #");
+        });
+    }
+
+    @Test
+    void aScriptWithoutCommandSaysSo() {
+        shellContexts().run(context -> {
+            Path file = script("# nothing", "");
+
+            Outcome outcome = launch(context, null, null, file);
+
+            assertThat(outcome.exitCode()).isZero();
+            assertThat(outcome.output()).contains("No command in " + file);
+        });
+    }
+
+    @Test
+    void aMissingScriptFails() {
+        shellContexts().run(context -> {
+            Outcome outcome = launch(context, null, null, this.root.resolve("absent.kcc"));
+
+            assertThat(outcome.exitCode()).isEqualTo(2);
+            assertThat(outcome.output()).contains("absent.kcc");
+        });
+    }
+
+    @Test
+    void commandAndScriptTogetherFail() {
+        shellContexts().run(context -> {
+            Outcome outcome = launch(context, "help", null, script("help"));
+
+            assertThat(outcome.exitCode()).isEqualTo(2);
+            assertThat(outcome.output()).contains("shell.command and shell.script cannot be used together");
+        });
+    }
+
+    @Test
+    void theRealmPropertyOpensTheRealm() {
+        shellContexts().run(context -> {
+            assertThat(launch(context, "realm create --folder demo --realm demo --format yaml", null, null)
+                            .exitCode())
+                    .isZero();
+
+            Outcome outcome = launch(context, "client list", "demo", null);
+
+            assertThat(outcome.exitCode()).isZero();
+            assertThat(context.getBean(ShellSession.class).openedRealm()).contains("demo");
+        });
+    }
+
+    @Test
+    void anUnknownRealmPropertyFails() {
+        shellContexts().run(context -> {
+            Outcome outcome = launch(context, "help", "nope", null);
+
+            assertThat(outcome.exitCode()).isEqualTo(2);
+            assertThat(outcome.output()).contains("nope");
+        });
+    }
+
     private static ShellLauncher launcher(
             final ApplicationContext context, final String command, final StringWriter output) {
-        ShellProperties properties = new ShellProperties(null, null, command);
+        ShellProperties properties = new ShellProperties(null, null, command, null, null);
         return new ShellLauncher(
                 properties,
                 context.getBean(RuleBook.class),
+                context.getBean(ReadRealms.class),
+                context.getBean(ShellSession.class),
                 context.getBean(CommandParser.class),
                 context.getBean(CommandRegistry.class),
                 context.getBeanProvider(org.springframework.shell.core.ShellRunner.class),

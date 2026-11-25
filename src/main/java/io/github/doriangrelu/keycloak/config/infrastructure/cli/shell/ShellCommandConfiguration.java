@@ -103,12 +103,16 @@ public class ShellCommandConfiguration {
     public ShellLauncher springShellApplicationRunner(
             final ShellProperties properties,
             final RuleBook ruleBook,
+            final ReadRealms readRealms,
+            final ShellSession shellSession,
             final CommandParser commandParser,
             final CommandRegistry commandRegistry,
             final ObjectProvider<ShellRunner> interactiveShell) {
         return new ShellLauncher(
                 properties,
                 ruleBook,
+                readRealms,
+                shellSession,
                 commandParser,
                 commandRegistry,
                 interactiveShell,

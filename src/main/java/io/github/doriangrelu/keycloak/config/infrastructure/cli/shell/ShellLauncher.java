@@ -20,12 +20,20 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
+import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.InvalidRulesException;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -68,6 +76,8 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
 
     private final ShellProperties properties;
     private final RuleBook ruleBook;
+    private final ReadRealms readRealms;
+    private final ShellSession session;
     private final CommandParser parser;
     private final CommandRegistry registry;
     private final ObjectProvider<ShellRunner> interactiveShell;
@@ -77,12 +87,16 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
     public ShellLauncher(
             final ShellProperties properties,
             final RuleBook ruleBook,
+            final ReadRealms readRealms,
+            final ShellSession session,
             final CommandParser parser,
             final CommandRegistry registry,
             final ObjectProvider<ShellRunner> interactiveShell,
             final PrintWriter output) {
         this.properties = Objects.requireNonNull(properties, "properties");
         this.ruleBook = Objects.requireNonNull(ruleBook, "ruleBook");
+        this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
+        this.session = Objects.requireNonNull(session, "session");
         this.parser = Objects.requireNonNull(parser, "parser");
         this.registry = Objects.requireNonNull(registry, "registry");
         this.interactiveShell = Objects.requireNonNull(interactiveShell, "interactiveShell");
@@ -94,8 +108,16 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
         try {
             loadRules();
             Optional<String> command = this.properties.getCommand();
+            Optional<Path> script = this.properties.getScript();
+            if (command.isPresent() && script.isPresent()) {
+                this.exitCode = fail("shell.command and shell.script cannot be used together");
+                return;
+            }
+            openRealm();
             if (command.isPresent()) {
                 this.exitCode = runOnce(command.get());
+            } else if (script.isPresent()) {
+                this.exitCode = runScript(script.get());
             } else {
                 this.interactiveShell.getObject().run(new String[0]);
             }
@@ -112,6 +134,72 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             this.output.println(e.getMessage());
             this.output.flush();
             throw e;
+        }
+    }
+
+    /** The realm of {@code shell.realm} is opened before the first command; an unknown one stops the launch. */
+    private void openRealm() {
+        Optional<String> realm = this.properties.getRealm();
+        if (realm.isPresent()) {
+            try {
+                this.readRealms.open(realm.get());
+            } catch (ApplicationException e) {
+                this.output.println(e.getMessage());
+                this.output.flush();
+                throw e;
+            }
+            this.session.open(realm.get());
+        }
+    }
+
+    /**
+     * Runs the commands of the file in order, in one session: the first one that fails stops the script with its exit
+     * code.
+     */
+    private int runScript(final Path file) {
+        List<String> lines;
+        try {
+            lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+        } catch (NoSuchFileException e) {
+            return fail("Script not found: " + file);
+        } catch (IOException e) {
+            return fail("Cannot read " + file + ": " + messageOf(e));
+        }
+        boolean any = false;
+        for (int index = 0; index < lines.size(); index++) {
+            String command = lines.get(index).strip();
+            if (command.isEmpty() || command.startsWith("#")) {
+                continue;
+            }
+            any = true;
+            this.output.println("> " + command);
+            int code = runSafely(command);
+            if (code != ExitCode.SUCCESS.code()) {
+                this.output.println("Stopped at line " + (index + 1) + ": " + command);
+                this.output.flush();
+                return code;
+            }
+        }
+        if (!any) {
+            this.output.println("No command in " + file);
+            this.output.flush();
+        }
+        return ExitCode.SUCCESS.code();
+    }
+
+    private int fail(final String message) {
+        this.output.println(message);
+        this.output.flush();
+        return ExitCode.INVALID_CONFIGURATION.code();
+    }
+
+    /** A command that cannot even be parsed fails like any other, so that the script reports where it stopped. */
+    private int runSafely(final String line) {
+        try {
+            return runOnce(line);
+        } catch (Exception e) {
+            this.output.println(messageOf(e));
+            return ExitCodeResolver.resolve(e).code();
         }
     }
 
