@@ -272,6 +272,53 @@ class SaveTest {
         assertThat(read(name)).contains("{{public}}").contains("Described");
     }
 
+    @Test
+    void editingTheDescriptionOfACustomClientKeepsItsFlows() throws IOException {
+        // Public, with the direct access grants and the implicit flow: no application type has these flows
+        write("20-clients.yaml", REALM + """
+                clients:
+                  - clientId: legacy
+                    description: Before
+                    publicClient: true
+                    standardFlowEnabled: true
+                    implicitFlowEnabled: true
+                    directAccessGrantsEnabled: true
+                    serviceAccountsEnabled: false
+                    redirectUris:
+                      - "{{appUrl}}/*"
+                    attributes:
+                      custom.key: kept
+                """);
+        this.files.format("demo");
+        List<String> before = read("20-clients.yaml").lines().toList();
+        Defined<ClientDefinition> legacy = realm().client("legacy").orElseThrow();
+        assertThat(legacy.definition().applicationType()).isEqualTo(ApplicationType.CUSTOM);
+        ClientDefinition definition = legacy.definition();
+
+        this.files.save(
+                "demo",
+                new ClientDefinition(
+                        definition.clientId(),
+                        definition.name(),
+                        Optional.of(TemplatedValue.of("After")),
+                        definition.applicationType(),
+                        definition.redirectUris(),
+                        definition.webOrigins(),
+                        definition.attributes(),
+                        definition.secret()),
+                Optional.of(legacy.origin()),
+                ElementKeys.empty());
+
+        List<String> after = read("20-clients.yaml").lines().toList();
+        List<String> removed = new ArrayList<>(before);
+        removed.removeAll(after);
+        List<String> added = new ArrayList<>(after);
+        added.removeAll(before);
+        assertThat(removed).singleElement().asString().contains("Before");
+        assertThat(added).singleElement().asString().contains("After");
+        assertThat(after).hasSameSizeAs(before);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"yaml", "json"})
     void unchangedNumbersAndBooleansAreNotRewritten(final String extension) throws IOException {

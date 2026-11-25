@@ -37,20 +37,6 @@ import java.util.Optional;
  */
 public final class CreateClient {
 
-    private static final List<Choice<ApplicationType>> TYPES = List.of(
-            new Choice<>(
-                    ApplicationType.SPA, "Front-end application (SPA)", "runs in the browser, cannot keep a secret"),
-            new Choice<>(
-                    ApplicationType.WEB_APPLICATION, "Web application with a server", "the secret stays on the server"),
-            new Choice<>(
-                    ApplicationType.SERVICE, "Service to service", "calls other services with its own rights, no user"),
-            new Choice<>(ApplicationType.API, "API", "receives tokens, logs nobody in"));
-
-    private static final List<Choice<Boolean>> SECRETS = List.of(
-            new Choice<>(
-                    true, "A variable (recommended)", "the secret is given at import, the same everywhere you give it"),
-            new Choice<>(false, "None, Keycloak generates it", "read it in the Keycloak console; the import keeps it"));
-
     private final RealmDefinitions definitions;
     private final SaveElement saveElement;
 
@@ -76,8 +62,8 @@ public final class CreateClient {
                 given.name().or(() -> questions.askOptionalValue("Name (empty for none)", Optional.empty()));
         Optional<TemplatedValue> description = given.description()
                 .or(() -> questions.askOptionalValue("Description (empty for none)", Optional.empty()));
-        ApplicationType type =
-                given.type().orElseGet(() -> questions.choose("Application type", TYPES, Optional.empty()));
+        ApplicationType type = given.type()
+                .orElseGet(() -> questions.choose("Application type", ClientQuestions.TYPES, Optional.empty()));
         boolean hasUrl = type == ApplicationType.SPA || type == ApplicationType.WEB_APPLICATION;
         Optional<TemplatedValue> url = hasUrl
                         && (given.redirectUris().isEmpty() || given.webOrigins().isEmpty())
@@ -93,7 +79,9 @@ public final class CreateClient {
                         .orElse(List.of()));
         Optional<TemplatedValue> secret = Optional.empty();
         if (type != ApplicationType.SPA) {
-            SecretAnswer answer = given.secret().orElseGet(() -> askSecret(clientId, questions));
+            SecretAnswer answer = given.secret()
+                    .orElseGet(
+                            () -> ClientQuestions.askSecret(clientId, Optional.empty(), Optional.empty(), questions));
             secret =
                     answer instanceof SecretAnswer.Variable variable ? Optional.of(variable.value()) : Optional.empty();
         }
@@ -120,20 +108,6 @@ public final class CreateClient {
                 return clientId;
             }
             questions.tell("Client '" + clientId.raw() + "' already exists");
-        }
-    }
-
-    private static SecretAnswer askSecret(final TemplatedValue clientId, final Questions questions) {
-        if (!questions.choose("Client secret", SECRETS, Optional.empty())) {
-            return new SecretAnswer.None();
-        }
-        Optional<TemplatedValue> proposed = Optional.of(SecretVariables.proposedFor(clientId));
-        while (true) {
-            TemplatedValue answer = questions.askValue("Secret variable", proposed);
-            if (answer.isFullyVariable()) {
-                return new SecretAnswer.Variable(answer);
-            }
-            questions.tell(HardCodedSecretException.MESSAGE);
         }
     }
 }
