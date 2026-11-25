@@ -68,6 +68,6 @@ public class ShellProperties {
     }
 
     public Optional<Path> getScript() {
-        return Optional.ofNullable(this.script);
+        return Optional.ofNullable(this.script).filter(path -> !path.toString().isBlank());
     }
 }

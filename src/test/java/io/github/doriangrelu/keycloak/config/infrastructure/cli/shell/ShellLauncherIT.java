@@ -187,7 +187,9 @@ class ShellLauncherIT {
             Outcome outcome = launch(context, null, null, file);
 
             assertThat(outcome.exitCode()).isEqualTo(2);
-            assertThat(outcome.output()).contains("Stopped at line 2: client create");
+            assertThat(outcome.output())
+                    .contains("client.redirect-uris.no-wildcard")
+                    .contains("Stopped at line 2: client create");
             assertThat(this.root.resolve("demo/30-roles.yaml")).doesNotExist();
         });
     }
@@ -238,16 +240,29 @@ class ShellLauncherIT {
 
     @Test
     void theRealmPropertyOpensTheRealm() {
-        shellContexts().run(context -> {
-            assertThat(launch(context, "realm create --folder demo --realm demo --format yaml", null, null)
-                            .exitCode())
-                    .isZero();
+        shellContexts()
+                .run(context -> assertThat(
+                                launch(context, "realm create --folder demo --realm demo --format yaml", null, null)
+                                        .exitCode())
+                        .isZero());
 
+        // a fresh context: its session has no opened realm, only shell.realm can give one
+        shellContexts().run(context -> {
+            Outcome without = launch(context, "client list", null, null);
+            assertThat(without.exitCode()).isEqualTo(2);
+        });
+        shellContexts().run(context -> {
             Outcome outcome = launch(context, "client list", "demo", null);
 
             assertThat(outcome.exitCode()).isZero();
             assertThat(context.getBean(ShellSession.class).openedRealm()).contains("demo");
         });
+    }
+
+    @Test
+    void aBlankScriptIsNoScript() {
+        assertThat(new ShellProperties(null, null, null, null, Path.of("")).getScript())
+                .isEmpty();
     }
 
     @Test
