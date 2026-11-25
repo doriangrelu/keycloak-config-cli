@@ -22,6 +22,7 @@ infrastructure  ──▶  application  ──▶  domain
 | [ADR-006](documentation/architecture/ADR-006-conversions-mapstruct.md) | Conversions avec MapStruct | Accepté |
 | [ADR-007](documentation/architecture/ADR-007-fichiers-seule-verite.md) | Les fichiers d'import comme seule vérité : nettoyage unique, Mustache seul moteur de template, options retirées | Accepté |
 | [ADR-008](documentation/architecture/ADR-008-shell-edition-des-definitions.md) | Shell interactif (Spring Shell) et édition guidée des définitions de realm, hors ligne, avec règles de configuration | Accepté |
+| [ADR-009](documentation/architecture/ADR-009-regles-de-configuration.md) | Règles de configuration : formalisme déclaratif sur les clés d'export, désactivation explicite, moteur du domaine | Accepté |
 
 ## Décisions du 17/11/2026
 
