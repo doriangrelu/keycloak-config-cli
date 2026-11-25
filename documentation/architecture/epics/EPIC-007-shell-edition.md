@@ -105,6 +105,16 @@ Décisions de conception (25/11/2026, validées avec l'utilisateur) :
 **Statut :** À faire
 `group create` et `group edit` : nom, groupe parent (choisi parmi les groupes du dossier), rôles de realm et de clients affectés, choisis parmi ceux définis dans le dossier. `group list` (arborescence).
 
+Décisions de conception (25/11/2026, validées avec l'utilisateur) :
+
+- **Choix des rôles dans une liste numérotée** (port `Questions.chooseMany`) : réponse par numéros séparés par des virgules, Entrée garde la proposition, `-` aucun rôle. La liste montre d'abord les rôles du dossier (realm, puis par client), puis ceux que Keycloak crée, marqués `(Keycloak)` ; `default-roles-<realm>` n'y figure que si le nom du realm est littéral.
+- **`group create`** : nom (redemandé si le chemin existe déjà), parent (`None — a top-level group` proposé, puis chaque groupe du dossier par son chemin), rôles. Le premier groupe du realm demande confirmation (`--declare-type` en mode script).
+- **`group edit <chemin>`** ne modifie que les **rôles** (actuels proposés) : renommer ou déplacer un groupe le supprimerait à l'import, et ses membres le perdraient. `--name` et `--parent` y sont refusés avec l'explication. Un groupe inconnu : code 2.
+- **`group list`** : l'arborescence par indentation, avec les rôles de chaque groupe et `fichier:ligne`.
+- **Mode script** : `--name`, `--parent <chemin>`, `--realm-roles a,b`, `--client-roles client/role,…`, `--declare-type` ; en modification, `--realm-roles` et `--client-roles` remplacent la liste correspondante.
+- Après l'écriture, le même affichage que pour les clients ; un rôle inconnu est refusé par la règle `group.defined-roles`.
+- Hors périmètre : renommage, déplacement, suppression.
+
 ### US-007-10 — Documentation et sample
 
 **Statut :** À faire
