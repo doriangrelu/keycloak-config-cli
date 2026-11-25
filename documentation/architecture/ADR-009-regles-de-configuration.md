@@ -29,7 +29,7 @@ Une règle désigne les valeurs par les **clés du format d'export de Keycloak**
 - Les mêmes règles pourront vérifier les fichiers d'un import (ADR-008, « Placées dans le domaine… »).
 - Seul l'auteur des règles voit ces clés ; le développeur guidé ne lit que les messages.
 
-Une **exception** : le **type d'application** d'un client (`application-type`), notion du shell déduite des cinq clés de flows (ADR-008). L'écrire en clés serait pénible et source d'erreurs.
+Une **exception** : le **type d'application** d'un client (`application-type`), notion du shell déduite des cinq clés de flows (ADR-008). L'écrire en clés serait pénible et source d'erreurs. Ses valeurs sont celles de `ApplicationType`, en minuscules avec des tirets : `spa`, `web-application`, `service`, `api`, `custom`.
 
 Écriture d'une clé : un chemin pointé ; un segment qui contient un point est entre guillemets (`attributes."pkce.code.challenge.method"`). Les objets imbriqués sont aplatis ; une liste de valeurs simples (`redirectUris`) reste une liste. *Choix de conception :* les listes d'objets (`protocolMappers`, `composites`…) ne sont pas adressables dans cette première version ; une règle qui en a besoin est écrite en Java.
 
@@ -39,10 +39,10 @@ Un fichier YAML. Exemple, les deux règles d'exemple de l'US-007-06 :
 
 ```yaml
 rules:
-  - id: client.frontend.pkce
+  - id: client.spa.pkce
     element: client
     when:
-      application-type: frontend
+      application-type: spa
     defaults:
       attributes."pkce.code.challenge.method": S256
     checks:
@@ -102,7 +102,7 @@ Volontairement peu nombreux :
 
 ```yaml
 disable:
-  - id: client.frontend.pkce
+  - id: client.spa.pkce
     for: [legacy-portal]
     reason: "Legacy portal without PKCE support, replacement planned in 2027."
 rules:
