@@ -20,7 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
+import io.github.doriangrelu.keycloak.config.application.definition.CreateClient;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
+import io.github.doriangrelu.keycloak.config.application.definition.EditClient;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
@@ -80,6 +82,16 @@ public class ShellAdaptersConfiguration {
     @Bean
     public SaveElement saveElement(final RealmDefinitions realmDefinitions, final RuleBook ruleBook) {
         return new SaveElement(realmDefinitions, ruleBook);
+    }
+
+    @Bean
+    public CreateClient createClient(final RealmDefinitions realmDefinitions, final SaveElement saveElement) {
+        return new CreateClient(realmDefinitions, saveElement);
+    }
+
+    @Bean
+    public EditClient editClient(final RealmDefinitions realmDefinitions, final SaveElement saveElement) {
+        return new EditClient(realmDefinitions, saveElement);
     }
 
     @Bean

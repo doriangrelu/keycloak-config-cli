@@ -20,7 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.CreateClient;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
+import io.github.doriangrelu.keycloak.config.application.definition.EditClient;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
@@ -63,6 +65,15 @@ public class ShellCommandConfiguration {
     @Bean
     public RuleCommands ruleCommands(final RuleBook ruleBook) {
         return new RuleCommands(ruleBook);
+    }
+
+    @Bean
+    public ClientCommands clientCommands(
+            final CreateClient createClient,
+            final EditClient editClient,
+            final ReadRealms readRealms,
+            final ShellSession shellSession) {
+        return new ClientCommands(createClient, editClient, readRealms, shellSession);
     }
 
     /** Named as the runner of Spring Shell, which is then not registered. */

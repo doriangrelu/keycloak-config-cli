@@ -64,6 +64,9 @@ public final class CreateClient {
                 .or(() -> questions.askOptionalValue("Description (empty for none)", Optional.empty()));
         ApplicationType type = given.type()
                 .orElseGet(() -> questions.choose("Application type", ClientQuestions.TYPES, Optional.empty()));
+        if (type == ApplicationType.SPA && given.secret().isPresent()) {
+            throw SecretNotAllowedException.forSpa();
+        }
         boolean hasUrl = type == ApplicationType.SPA || type == ApplicationType.WEB_APPLICATION;
         Optional<TemplatedValue> url = hasUrl
                         && (given.redirectUris().isEmpty() || given.webOrigins().isEmpty())

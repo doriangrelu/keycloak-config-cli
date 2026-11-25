@@ -66,11 +66,17 @@ public final class EditClient {
         if (custom && given.type().isPresent()) {
             throw new CustomClientTypeException(clientId);
         }
+        if (custom && given.secret().isPresent()) {
+            throw SecretNotAllowedException.forCustomClient();
+        }
         Optional<TemplatedValue> name =
                 given.name().or(() -> questions.askOptionalValue("Name (empty for none)", current.name()));
         Optional<TemplatedValue> description = given.description()
                 .or(() -> questions.askOptionalValue("Description (empty for none)", current.description()));
         ApplicationType type = custom ? ApplicationType.CUSTOM : typeOf(current, given, questions);
+        if (type == ApplicationType.SPA && given.secret().isPresent()) {
+            throw SecretNotAllowedException.forSpa();
+        }
         // The URIs make sense for a browser-facing type; another type is only asked them when it has some to change
         boolean asksUris = custom
                 || type == ApplicationType.SPA

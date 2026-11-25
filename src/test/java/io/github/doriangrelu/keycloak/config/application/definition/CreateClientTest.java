@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
 import io.github.doriangrelu.keycloak.config.domain.definition.ApplicationType;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Defined;
@@ -213,8 +214,8 @@ class CreateClientTest {
         FakeRealmDefinitions definitions = realmWith("frontend");
         ClientAnswers given = new ClientAnswers(
                 Optional.of(value("frontend")),
-                Optional.empty(),
-                Optional.empty(),
+                Optional.of(value("Front")),
+                Optional.of(value("The front")),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -299,5 +300,25 @@ class CreateClientTest {
     void anUnknownRealmFails() {
         assertThatThrownBy(() -> useCase(realmWith()).create("nope", ClientAnswers.none(), new ScriptedQuestions()))
                 .isInstanceOf(UnknownRealmFolderException.class);
+    }
+
+    @Test
+    void aSecretGivenForASpaIsRefused() {
+        FakeRealmDefinitions definitions = realmWith("other");
+        ClientAnswers answers = new ClientAnswers(
+                Optional.of(value("frontend")),
+                Optional.of(value("Front")),
+                Optional.of(value("The front")),
+                Optional.of(ApplicationType.SPA),
+                Optional.of(value("https://a")),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.of(new SecretAnswer.Variable(value("{{frontSecret}}"))),
+                true);
+
+        assertThatThrownBy(() -> useCase(definitions).create("demo", answers, new ScriptedQuestions()))
+                .isInstanceOf(ApplicationException.class)
+                .hasMessage("A front-end application cannot keep a secret");
+        assertThat(definitions.saved).isEmpty();
     }
 }

@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
 import io.github.doriangrelu.keycloak.config.domain.definition.ApplicationType;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Defined;
@@ -267,5 +268,40 @@ class EditClientTest {
         assertThat(client.secret()).isEmpty();
         assertThat(client.attributes()).containsEntry("custom.key", value("kept"));
         assertThat(questions.asked()).isEmpty();
+    }
+
+    private static ClientAnswers givenSecret(final Optional<ApplicationType> type) {
+        return new ClientAnswers(
+                Optional.empty(),
+                Optional.of(value("N")),
+                Optional.of(value("D")),
+                type,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.of(new SecretAnswer.Variable(value("{{aSecret}}"))),
+                false);
+    }
+
+    @Test
+    void aSecretGivenForASpaIsRefused() {
+        FakeRealmDefinitions definitions = realmWith(shop());
+
+        assertThatThrownBy(() -> useCase(definitions)
+                        .edit("demo", "shop", givenSecret(Optional.of(ApplicationType.SPA)), new ScriptedQuestions()))
+                .isInstanceOf(ApplicationException.class)
+                .hasMessage("A front-end application cannot keep a secret");
+        assertThat(definitions.saved).isEmpty();
+    }
+
+    @Test
+    void aSecretGivenForACustomClientIsRefused() {
+        FakeRealmDefinitions definitions = realmWith(bare("legacy", ApplicationType.CUSTOM));
+
+        assertThatThrownBy(() -> useCase(definitions)
+                        .edit("demo", "legacy", givenSecret(Optional.empty()), new ScriptedQuestions()))
+                .isInstanceOf(ApplicationException.class)
+                .hasMessage("The secret of a custom client is not edited by the shell");
+        assertThat(definitions.saved).isEmpty();
     }
 }
