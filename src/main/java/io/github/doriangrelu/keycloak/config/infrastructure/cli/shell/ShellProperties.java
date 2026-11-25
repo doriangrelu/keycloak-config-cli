@@ -28,6 +28,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Options of the shell (ADR-008).
  *
  * <p>{@code shell.root} is the folder holding one folder per realm, the working directory by default.
+ * {@code shell.rules}, when given, is the file of the organisation rules, relative to the working directory.
  * {@code shell.command}, when given, runs that one command and exits, for a script; without it, an interactive session
  * starts.
  */
@@ -35,15 +36,21 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ShellProperties {
 
     private final Path root;
+    private final Path rules;
     private final String command;
 
-    public ShellProperties(final Path root, final String command) {
+    public ShellProperties(final Path root, final Path rules, final String command) {
         this.root = root == null ? Path.of(".") : root;
+        this.rules = rules;
         this.command = command;
     }
 
     public Path getRoot() {
         return this.root;
+    }
+
+    public Optional<Path> getRules() {
+        return Optional.ofNullable(this.rules);
     }
 
     public Optional<String> getCommand() {

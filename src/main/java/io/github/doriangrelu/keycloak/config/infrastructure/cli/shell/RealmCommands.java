@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.InvalidRealmFolderException;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
+import io.github.doriangrelu.keycloak.config.application.definition.RealmCheck;
 import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
 import io.github.doriangrelu.keycloak.config.application.definition.UnknownFormatException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
@@ -37,9 +38,13 @@ import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.Finding;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -167,7 +172,42 @@ public class RealmCommands {
             lines.add("%s:%d cannot be read before rendering: %s. The realm is read-only."
                     .formatted(file.file(), file.line(), file.reason()));
         }
+        RealmCheck check = this.readRealms.check(folder);
+        DisabledRules.lines(check.disabled()).forEach(lines::add);
+        findings(realm, check).forEach(lines::add);
         return lines.toString();
+    }
+
+    /** The non-conformities of the elements, in the order of the files, then the ones of the realm. */
+    private static List<String> findings(final RealmDefinition realm, final RealmCheck check) {
+        Map<Origin, String> identifiers = new LinkedHashMap<>();
+        realm.clients()
+                .forEach(client -> identifiers.put(
+                        client.origin(), client.definition().clientId().raw()));
+        realm.roles()
+                .forEach(role ->
+                        identifiers.put(role.origin(), role.definition().name().raw()));
+        realm.groups()
+                .forEach(group ->
+                        identifiers.put(group.origin(), group.definition().path()));
+        List<String> lines = new ArrayList<>();
+        for (Map.Entry<Origin, List<Finding>> entry : check.findings().entrySet()) {
+            lines.add("  %s %s".formatted(where(entry.getKey()), identifiers.getOrDefault(entry.getKey(), "")));
+            entry.getValue().forEach(finding -> lines.add(line(finding)));
+        }
+        if (!check.realmFindings().isEmpty()) {
+            lines.add("  realm");
+            check.realmFindings().forEach(finding -> lines.add(line(finding)));
+        }
+        if (!lines.isEmpty()) {
+            lines.addFirst("Rule findings:");
+        }
+        return lines;
+    }
+
+    private static String line(final Finding finding) {
+        return "    [%s] %s: %s"
+                .formatted(finding.severity().name().toLowerCase(Locale.ROOT), finding.ruleId(), finding.message());
     }
 
     @Command(

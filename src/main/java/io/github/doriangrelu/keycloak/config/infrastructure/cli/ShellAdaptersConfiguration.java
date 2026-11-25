@@ -25,13 +25,18 @@ import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
+import io.github.doriangrelu.keycloak.config.application.definition.SaveElement;
+import io.github.doriangrelu.keycloak.config.application.definition.port.KeycloakBuiltIns;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
+import io.github.doriangrelu.keycloak.config.application.definition.port.RuleFiles;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.DefinedRolesRule;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.RuleElement;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.UniqueIdentifierRule;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.shell.ShellProperties;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.definition.RealmDefinitionFiles;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.rules.BaselineBuiltIns;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.rules.RuleFilesOnDisk;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -51,8 +56,30 @@ public class ShellAdaptersConfiguration {
     }
 
     @Bean
-    public RuleBook ruleBook(@Value("${keycloak.version}") final String keycloakVersion) {
-        return new RuleBook(new RuleFilesOnDisk(Optional.empty()), List.of(), new BaselineBuiltIns(keycloakVersion));
+    public RuleFiles ruleFiles(final ShellProperties properties) {
+        return new RuleFilesOnDisk(properties.getRules());
+    }
+
+    @Bean
+    public KeycloakBuiltIns keycloakBuiltIns(@Value("${keycloak.version}") final String keycloakVersion) {
+        return new BaselineBuiltIns(keycloakVersion);
+    }
+
+    @Bean
+    public RuleBook ruleBook(final RuleFiles ruleFiles, final KeycloakBuiltIns keycloakBuiltIns) {
+        return new RuleBook(
+                ruleFiles,
+                List.of(
+                        new UniqueIdentifierRule(RuleElement.CLIENT),
+                        new UniqueIdentifierRule(RuleElement.ROLE),
+                        new UniqueIdentifierRule(RuleElement.GROUP),
+                        new DefinedRolesRule()),
+                keycloakBuiltIns);
+    }
+
+    @Bean
+    public SaveElement saveElement(final RealmDefinitions realmDefinitions, final RuleBook ruleBook) {
+        return new SaveElement(realmDefinitions, ruleBook);
     }
 
     @Bean

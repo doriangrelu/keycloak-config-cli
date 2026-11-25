@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
+import io.github.doriangrelu.keycloak.config.domain.definition.rules.InvalidRulesException;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCode;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.FailureReporter;
@@ -65,6 +67,7 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
     };
 
     private final ShellProperties properties;
+    private final RuleBook ruleBook;
     private final CommandParser parser;
     private final CommandRegistry registry;
     private final ObjectProvider<ShellRunner> interactiveShell;
@@ -73,11 +76,13 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
 
     public ShellLauncher(
             final ShellProperties properties,
+            final RuleBook ruleBook,
             final CommandParser parser,
             final CommandRegistry registry,
             final ObjectProvider<ShellRunner> interactiveShell,
             final PrintWriter output) {
         this.properties = Objects.requireNonNull(properties, "properties");
+        this.ruleBook = Objects.requireNonNull(ruleBook, "ruleBook");
         this.parser = Objects.requireNonNull(parser, "parser");
         this.registry = Objects.requireNonNull(registry, "registry");
         this.interactiveShell = Objects.requireNonNull(interactiveShell, "interactiveShell");
@@ -87,6 +92,7 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
     @Override
     public void run(final ApplicationArguments arguments) {
         try {
+            loadRules();
             Optional<String> command = this.properties.getCommand();
             if (command.isPresent()) {
                 this.exitCode = runOnce(command.get());
@@ -95,6 +101,17 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             }
         } catch (Exception e) {
             this.exitCode = FailureReporter.report(logger, "shell", e).code();
+        }
+    }
+
+    /** An invalid rules file stops the shell before the first command, with the reason. */
+    private void loadRules() {
+        try {
+            this.ruleBook.rules();
+        } catch (InvalidRulesException e) {
+            this.output.println(e.getMessage());
+            this.output.flush();
+            throw e;
         }
     }
 

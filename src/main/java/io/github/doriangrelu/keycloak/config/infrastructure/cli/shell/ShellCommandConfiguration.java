@@ -24,6 +24,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
+import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import java.io.PrintWriter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -59,14 +60,25 @@ public class ShellCommandConfiguration {
         return new VariableCommands(listVariables, shellSession);
     }
 
+    @Bean
+    public RuleCommands ruleCommands(final RuleBook ruleBook) {
+        return new RuleCommands(ruleBook);
+    }
+
     /** Named as the runner of Spring Shell, which is then not registered. */
     @Bean
     public ShellLauncher springShellApplicationRunner(
             final ShellProperties properties,
+            final RuleBook ruleBook,
             final CommandParser commandParser,
             final CommandRegistry commandRegistry,
             final ObjectProvider<ShellRunner> interactiveShell) {
         return new ShellLauncher(
-                properties, commandParser, commandRegistry, interactiveShell, new PrintWriter(System.out, true));
+                properties,
+                ruleBook,
+                commandParser,
+                commandRegistry,
+                interactiveShell,
+                new PrintWriter(System.out, true));
     }
 }

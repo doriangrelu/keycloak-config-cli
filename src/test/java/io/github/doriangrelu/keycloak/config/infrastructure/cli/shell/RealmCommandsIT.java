@@ -89,4 +89,63 @@ class RealmCommandsIT {
                     .hasRootCauseMessage("No realm opened: use 'realm open <folder>'");
         });
     }
+
+    @Test
+    void openingARealmShowsItsFindings() {
+        this.contexts
+                .withPropertyValues("shell.root=src/test/resources/definition/findings")
+                .run(context -> {
+                    ShellTestClient shell = new ShellTestClient(
+                            context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+
+                    assertThat(String.join(
+                                    "\n",
+                                    shell.sendCommand("realm open wildcard").lines()))
+                            .contains("Rule findings:")
+                            .contains("  20-clients.yaml:2 open-door")
+                            .contains("    [required] client.redirect-uris.no-wildcard: ");
+                });
+    }
+
+    @Test
+    void openingARealmWithoutFindingsShowsNone() {
+        this.contexts
+                .withPropertyValues("shell.root=src/test/resources/definition/findings")
+                .run(context -> {
+                    ShellTestClient shell = new ShellTestClient(
+                            context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+
+                    assertThat(String.join(
+                                    "\n", shell.sendCommand("realm open clean").lines()))
+                            .doesNotContain("Rule findings:")
+                            .doesNotContain("Disabled rules:");
+                });
+    }
+
+    @Test
+    void openingARealmShowsTheDisabledRules() {
+        this.contexts
+                .withPropertyValues("shell.rules=src/test/resources/rules/disable-pkce.yaml")
+                .run(context -> {
+                    ShellTestClient shell = new ShellTestClient(
+                            context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+
+                    assertThat(String.join(
+                                    "\n", shell.sendCommand("realm open split").lines()))
+                            .contains("Disabled rules:")
+                            .contains("  client.spa.pkce (legacy-portal): Legacy portal without PKCE support.");
+                });
+    }
+
+    @Test
+    void aReadOnlyRealmStillOpensAndShowsWhatCanBeChecked() {
+        this.contexts.run(context -> {
+            ShellTestClient shell =
+                    new ShellTestClient(context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+
+            assertThat(String.join("\n", shell.sendCommand("realm open broken").lines()))
+                    .contains("Realm 'broken' opened")
+                    .contains("read-only");
+        });
+    }
 }

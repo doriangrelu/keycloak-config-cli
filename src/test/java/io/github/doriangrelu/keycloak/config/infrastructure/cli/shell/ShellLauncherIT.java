@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.CommandLineConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
 import java.io.PrintWriter;
@@ -104,11 +105,27 @@ class ShellLauncherIT {
         });
     }
 
+    @Test
+    void anUnknownDisabledRuleStopsTheShell() {
+        this.contexts
+                .withPropertyValues("run.operation=SHELL", "shell.rules=src/test/resources/rules/unknown-disabled.yaml")
+                .run(context -> {
+                    StringWriter output = new StringWriter();
+                    ShellLauncher launcher = launcher(context, "help", output);
+
+                    launcher.run(new DefaultApplicationArguments());
+
+                    assertThat(launcher.getExitCode()).isEqualTo(2);
+                    assertThat(output.toString()).contains("Unknown rule");
+                });
+    }
+
     private static ShellLauncher launcher(
             final ApplicationContext context, final String command, final StringWriter output) {
-        ShellProperties properties = new ShellProperties(null, command);
+        ShellProperties properties = new ShellProperties(null, null, command);
         return new ShellLauncher(
                 properties,
+                context.getBean(RuleBook.class),
                 context.getBean(CommandParser.class),
                 context.getBean(CommandRegistry.class),
                 context.getBeanProvider(org.springframework.shell.core.ShellRunner.class),

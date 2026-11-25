@@ -1,0 +1,6 @@
+disable:
+  - id: client.spa.pkce
+    for: [legacy-portal]
+    reason: Legacy portal without PKCE support.
+  - id: group.defined-roles
+    reason: Roles are managed elsewhere.

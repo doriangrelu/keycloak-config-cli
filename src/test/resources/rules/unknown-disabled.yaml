@@ -1,0 +1,3 @@
+disable:
+  - id: client.does-not-exist
+    reason: A typo.

@@ -1,0 +1,3 @@
+clients:
+  - clientId: batch
+    serviceAccountsEnabled: true

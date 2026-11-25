@@ -1,0 +1,4 @@
+clients:
+  - clientId: open-door
+    redirectUris:
+      - "*"
