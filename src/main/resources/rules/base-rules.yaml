@@ -1,0 +1,19 @@
+# The rules built into the tool (ADR-009). They apply to every user of the shell.
+rules:
+  - id: client.spa.pkce
+    element: client
+    when:
+      application-type: spa
+    defaults:
+      attributes."pkce.code.challenge.method": S256
+    checks:
+      - key: attributes."pkce.code.challenge.method"
+        equals: S256
+    message: "A front-end application must use PKCE with S256: the browser cannot keep a secret."
+
+  - id: client.redirect-uris.no-wildcard
+    element: client
+    checks:
+      - key: redirectUris
+        none-matches: '^\*$'
+    message: "A redirect URI '*' lets any site receive the tokens. List the application's URIs."

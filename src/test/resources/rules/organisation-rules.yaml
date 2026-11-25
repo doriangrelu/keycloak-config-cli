@@ -1,0 +1,16 @@
+disable:
+  - id: client.spa.pkce
+    for: [legacy-portal]
+    reason: "Legacy portal without PKCE support, replacement planned in 2027."
+rules:
+  - id: org.client.logout
+    element: client
+    when:
+      application-type: web-application
+    defaults:
+      frontchannelLogout: true
+    checks:
+      - key: frontchannelLogout
+        equals: "true"
+    severity: advice
+    message: "A web application should log its users out through the front channel."
