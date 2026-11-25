@@ -102,7 +102,7 @@ Décisions de conception (25/11/2026, validées avec l'utilisateur) :
 
 ### US-007-09 — Groupes
 
-**Statut :** À faire
+**Statut :** Terminé
 `group create` et `group edit` : nom, groupe parent (choisi parmi les groupes du dossier), rôles de realm et de clients affectés, choisis parmi ceux définis dans le dossier. `group list` (arborescence).
 
 Décisions de conception (25/11/2026, validées avec l'utilisateur) :
@@ -209,4 +209,12 @@ Documentation utilisateur (en anglais) : lancement du shell, commandes, variable
 - Le propriétaire d'un rôle est le realm (proposé) ou un client défini dans le dossier ; un client créé par Keycloak (`realm-management`…) n'est jamais proposé et `--client` le refuse (`BuiltInClientException`), même si un export le définit : déclarer ses rôles ferait supprimer à l'import ceux que Keycloak fournit.
 - `role edit` ne modifie que la description ; `--name` y est refusé (`RoleRenamedException`) avec l'explication du renommage par un nouveau rôle.
 - Exécutée par des sous-agents ; la revue finale a relevé deux points importants corrigés avant la fusion : le client créé par Keycloak accepté comme propriétaire, et des plans d'architecture qui nommaient une organisation (reformulés ; l'ancien texte reste dans l'historique). Points mineurs reportés : « (current) » affiché à côté du realm à la création, messages qui ne disent pas où le nom est pris, formulation de `UnknownRoleException`, impossible de vider une description en mode script (`--description -` écrit `-`), test du mode script sur un realm sans client, tests manquants pour `role edit --client` et un rôle inconnu, deux classes `UnknownClientException` de même nom simple.
+
+### US-007-09
+
+- `group create`, `group edit <chemin>` et `group list` (`GroupCommands`), sur les cas d'usage `CreateGroup` et `EditGroup`, avec le même affichage du résultat que les clients et les rôles.
+- Les rôles se choisissent dans une liste numérotée (`Questions.chooseMany`) construite par `RoleCatalog` : rôles du dossier, puis rôles créés par Keycloak marqués `(Keycloak)` ; un rôle actuel introuvable reste proposé, marqué `(not found)`.
+- Un nom de groupe vide ou contenant `/` est refusé ; un sous-groupe dont le parent est écrit dans un autre fichier que celui des groupes est refusé avant toute question suivante (`ParentGroupElsewhereException`), plutôt que d'écrire dans le fichier du parent.
+- `group edit` ne modifie que les rôles ; `--name` et `--parent` y sont refusés.
+- Exécutée par des sous-agents ; deux points importants corrigés avant la fusion : un nom avec `/` qui faussait le chemin, et le chemin affiché après une création dont le parent était choisi en session. Points mineurs reportés : `--parent` sans valeur `none` (l'absence vaut « aucun »), chemin sans `/` initial non corrigé, un rôle variable d'un groupe affiché `(not found)`, `EditGroup` qui réutilise des méthodes de `CreateGroup`, quelques tests manquants (scénario interactif complet au niveau de la commande, rôle intégré de Keycloak donné par option).
 
