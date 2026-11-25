@@ -141,7 +141,7 @@ public final class CreateGroup {
         return questions.chooseMany("Roles", choices, List.of());
     }
 
-    private static AssignableRole find(final List<AssignableRole> catalogue, final String given, final boolean client) {
+    static AssignableRole find(final List<AssignableRole> catalogue, final String given, final boolean client) {
         return catalogue.stream()
                 .filter(role ->
                         role.client().isPresent() == client && role.label().equals(given))
@@ -149,13 +149,13 @@ public final class CreateGroup {
                 .orElseThrow(() -> new UnknownAssignableRoleException(given));
     }
 
-    private static Set<String> realmRoles(final List<AssignableRole> roles) {
+    static Set<String> realmRoles(final List<AssignableRole> roles) {
         Set<String> names = new LinkedHashSet<>();
         roles.stream().filter(role -> role.client().isEmpty()).forEach(role -> names.add(role.name()));
         return names;
     }
 
-    private static Map<String, Set<String>> clientRoles(final List<AssignableRole> roles) {
+    static Map<String, Set<String>> clientRoles(final List<AssignableRole> roles) {
         Map<String, Set<String>> byClient = new LinkedHashMap<>();
         roles.stream()
                 .filter(role -> role.client().isPresent())
