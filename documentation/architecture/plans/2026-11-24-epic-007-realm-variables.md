@@ -12,7 +12,7 @@
 
 ## Contraintes globales
 
-- Celles du plan du socle : en-tête de licence, `spotless:apply`, couches et règles ArchUnit, placeholders conservés et écrits entre guillemets doubles, numérotation `00-realm`, code et doc utilisateur en anglais, architecture en français, une branche par story, commits au nom de `Dorian GRELU <doriangrelu839@gmail.com>`, fin de story : `./mvnw -B verify` vert (hors les 20 erreurs MockServer connues sous Windows), fusion, push `origin` et `adsn`, section « Réalisé ».
+- Celles du plan du socle : en-tête de licence, `spotless:apply`, couches et règles ArchUnit, placeholders conservés et écrits entre guillemets doubles, numérotation `00-realm`, code et doc utilisateur en anglais, architecture en français, une branche par story, commits au nom de `Dorian GRELU <doriangrelu839@gmail.com>`, fin de story : `./mvnw -B verify` vert (hors les 20 erreurs MockServer connues sous Windows), fusion, push sur les remotes du projet, section « Réalisé ».
 - Une commande sans réponse possible en mode script échoue par `MissingAnswerException` (code `2`) ; toute réponse peut être donnée d'avance par une option de la commande.
 - Les règles de configuration (US-007-06) ne sont pas encore là : `realm create` écrit `realm` et `enabled: true` seulement ; les valeurs par défaut des règles du realm s'y ajouteront en US-007-06.
 
@@ -80,7 +80,7 @@ Branche : `feature/US-007-05-variables`.
 
 ### Fin de US-007-05
 
-- [ ] `./mvnw -B verify` vert ; « Réalisé » de US-007-05 dans l'EPIC-007 ; `TASKS.md` ; fusion, push `origin` et `adsn`.
+- [ ] `./mvnw -B verify` vert ; « Réalisé » de US-007-05 dans l'EPIC-007 ; `TASKS.md` ; fusion, push sur les remotes du projet.
 
 ---
 
@@ -114,5 +114,5 @@ Branche : `feature/US-007-04-realm-create`.
 
 ### Fin de US-007-04
 
-- [ ] `./mvnw -B verify` vert ; « Réalisé » de US-007-04 dans l'EPIC-007 ; `TASKS.md` : EPIC-007 « En cours (US-007-01 à 05 terminées) » ; fusion, push `origin` et `adsn`.
+- [ ] `./mvnw -B verify` vert ; « Réalisé » de US-007-04 dans l'EPIC-007 ; `TASKS.md` : EPIC-007 « En cours (US-007-01 à 05 terminées) » ; fusion, push sur les remotes du projet.
 - [ ] Revue finale de la branche par un relecteur indépendant (comme pour le socle), puis cadrage avec l'utilisateur du formalisme des règles (US-007-06).
