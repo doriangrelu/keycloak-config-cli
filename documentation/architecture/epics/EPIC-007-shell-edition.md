@@ -91,6 +91,15 @@ Décisions de conception (25/11/2026, validées avec l'utilisateur) :
 **Statut :** À faire
 `role create` et `role edit` : rôle de realm ou rôle d'un client défini dans le dossier (choisi dans une liste), nom, description. `role list`.
 
+Décisions de conception (25/11/2026, validées avec l'utilisateur) :
+
+- **`role create`** : « Role of » propose le realm par défaut (`The realm` — `a role every client can give`), puis chaque client défini dans le dossier (`Client '<id>'`), jamais un client créé par Keycloak ; sans client, la question n'est pas posée. Puis le nom (redemandé s'il existe déjà au même endroit : realm, ou même client) et la description facultative. Le premier rôle du realm, ou d'un client, demande confirmation (`--declare-type` en mode script).
+- **`role edit <nom> [--client <id>]`** ne modifie que la **description** (valeur actuelle proposée) : un renommage supprimerait le rôle à l'import et ferait perdre ses affectations. Pour renommer, on crée un nouveau rôle et on adapte les groupes. Un rôle inconnu : code 2.
+- **`role list`** : `<nom>  realm` ou `<nom>  client <id>`, puis `fichier:ligne` ; les rôles du realm d'abord, puis par client, triés par nom.
+- **Mode script** : `--client`, `--name`, `--description`, `--declare-type` ; sans `--client`, un rôle du realm (la valeur proposée).
+- Après l'écriture, le même affichage que pour les clients (fichier, valeurs posées par les règles, avertissements, non-conformités).
+- Hors périmètre : rôles composites, renommage.
+
 ### US-007-09 — Groupes
 
 **Statut :** À faire
