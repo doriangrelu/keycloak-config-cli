@@ -112,7 +112,14 @@ class SaveElementTest {
 
     private static ClientDefinition client(final ApplicationType type) {
         return new ClientDefinition(
-                TemplatedValue.of("app"), Optional.empty(), Optional.empty(), type, List.of(), List.of(), Map.of());
+                TemplatedValue.of("app"),
+                Optional.empty(),
+                Optional.empty(),
+                type,
+                List.of(),
+                List.of(),
+                Map.of(),
+                Optional.empty());
     }
 
     private static FakeRealmDefinitions clientRealm() {

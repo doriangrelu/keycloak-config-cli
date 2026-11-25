@@ -39,7 +39,8 @@ class RealmDefinitionTest {
                         ApplicationType.SPA,
                         List.of(),
                         List.of(),
-                        Map.of()),
+                        Map.of(),
+                        Optional.empty()),
                 new Origin("20-clients.yaml", 3));
     }
 

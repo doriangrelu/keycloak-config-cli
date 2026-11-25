@@ -46,7 +46,8 @@ final class ClientKeys {
                 type,
                 client.texts("redirectUris").stream().map(TemplatedValue::of).toList(),
                 client.texts("webOrigins").stream().map(TemplatedValue::of).toList(),
-                attributes);
+                attributes,
+                optional(client, "secret"));
     }
 
     /**
@@ -57,6 +58,7 @@ final class ClientKeys {
         object.setText("clientId", client.clientId());
         setOrRemove(object, "name", client.name());
         setOrRemove(object, "description", client.description());
+        setOrRemove(object, "secret", client.secret());
         if (client.applicationType() != ApplicationType.CUSTOM) {
             ClientFlows flows = ClientFlows.of(client.applicationType());
             ClientFlows defaults = ClientFlows.KEYCLOAK_DEFAULTS;

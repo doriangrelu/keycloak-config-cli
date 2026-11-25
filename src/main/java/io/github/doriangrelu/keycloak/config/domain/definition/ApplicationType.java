@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.domain.definition;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -49,6 +50,18 @@ public enum ApplicationType {
      */
     public static ApplicationType deduce(final Function<String, Optional<String>> flowText) {
         return ClientFlows.read(flowText).map(ApplicationType::of).orElse(CUSTOM);
+    }
+
+    /** The name of the type as an option or a key, such as {@code web-application}. */
+    public String optionName() {
+        return name().toLowerCase(Locale.ROOT).replace('_', '-');
+    }
+
+    /** The type with this option name, whatever the case, empty when there is none. */
+    public static Optional<ApplicationType> ofOptionName(final String name) {
+        return Arrays.stream(values())
+                .filter(type -> type.optionName().equalsIgnoreCase(name))
+                .findFirst();
     }
 
     /** The type whose flows are exactly these, {@link #CUSTOM} otherwise. */

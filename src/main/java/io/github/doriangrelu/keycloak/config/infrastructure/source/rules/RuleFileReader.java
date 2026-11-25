@@ -182,12 +182,9 @@ public final class RuleFileReader {
     }
 
     private static ApplicationType applicationType(final String name) {
-        try {
-            return ApplicationType.valueOf(name.toUpperCase(Locale.ROOT).replace('-', '_'));
-        } catch (IllegalArgumentException e) {
-            throw new InvalidRulesException(
-                    "'application-type' must be spa, web-application, service, api or custom, not '" + name + "'");
-        }
+        return ApplicationType.ofOptionName(name)
+                .orElseThrow(() -> new InvalidRulesException(
+                        "'application-type' must be spa, web-application, service, api or custom, not '" + name + "'"));
     }
 
     private static Severity severity(final Object value) {

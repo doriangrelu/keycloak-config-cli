@@ -63,7 +63,8 @@ class SaveTest {
                 type,
                 List.of(redirectUris).stream().map(TemplatedValue::of).toList(),
                 List.of(),
-                Map.of());
+                Map.of(),
+                Optional.empty());
     }
 
     @Test
@@ -96,7 +97,8 @@ class SaveTest {
                 frontend.definition().applicationType(),
                 frontend.definition().redirectUris(),
                 frontend.definition().webOrigins(),
-                frontend.definition().attributes());
+                frontend.definition().attributes(),
+                frontend.definition().secret());
 
         assertThat(this.files.save("demo", changed, Optional.of(frontend.origin()), ElementKeys.empty()))
                 .isEqualTo("20-clients.yaml");
@@ -262,7 +264,8 @@ class SaveTest {
                         ApplicationType.CUSTOM,
                         List.of(),
                         List.of(),
-                        Map.of()),
+                        Map.of(),
+                        Optional.empty()),
                 Optional.of(app.origin()),
                 ElementKeys.empty());
 
@@ -295,7 +298,8 @@ class SaveTest {
                         app.definition().applicationType(),
                         app.definition().redirectUris(),
                         app.definition().webOrigins(),
-                        app.definition().attributes()),
+                        app.definition().attributes(),
+                        app.definition().secret()),
                 Optional.of(app.origin()),
                 ElementKeys.empty());
 
@@ -420,5 +424,52 @@ class SaveTest {
 
         assertThat(view.get(KeyPath.parse("name"))).contains(scalar("reader"));
         assertThat(this.folder.resolve("30-roles.yaml")).doesNotExist();
+    }
+
+    @Test
+    void aSecretVariableIsReadAndWrittenQuoted() throws IOException {
+        write("20-clients.yaml", REALM + "clients:\n  - clientId: app\n    secret: \"{{apiSecret}}\"\n");
+        this.files.format("demo");
+        Defined<ClientDefinition> app = realm().client("app").orElseThrow();
+        assertThat(app.definition().secret()).contains(TemplatedValue.of("{{apiSecret}}"));
+
+        this.files.save(
+                "demo",
+                new ClientDefinition(
+                        app.definition().clientId(),
+                        app.definition().name(),
+                        Optional.of(TemplatedValue.of("Described")),
+                        app.definition().applicationType(),
+                        app.definition().redirectUris(),
+                        app.definition().webOrigins(),
+                        app.definition().attributes(),
+                        app.definition().secret()),
+                Optional.of(app.origin()),
+                ElementKeys.empty());
+
+        assertThat(read("20-clients.yaml")).contains("secret: \"{{apiSecret}}\"");
+    }
+
+    @Test
+    void noSecretRemovesTheKey() throws IOException {
+        write("20-clients.yaml", REALM + "clients:\n  - clientId: app\n    secret: \"{{apiSecret}}\"\n");
+        this.files.format("demo");
+        Defined<ClientDefinition> app = realm().client("app").orElseThrow();
+
+        this.files.save(
+                "demo",
+                new ClientDefinition(
+                        app.definition().clientId(),
+                        app.definition().name(),
+                        app.definition().description(),
+                        app.definition().applicationType(),
+                        app.definition().redirectUris(),
+                        app.definition().webOrigins(),
+                        app.definition().attributes(),
+                        Optional.empty()),
+                Optional.of(app.origin()),
+                ElementKeys.empty());
+
+        assertThat(read("20-clients.yaml")).doesNotContain("secret");
     }
 }

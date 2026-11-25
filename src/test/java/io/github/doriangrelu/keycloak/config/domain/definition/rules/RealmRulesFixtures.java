@@ -49,7 +49,8 @@ final class RealmRulesFixtures {
                         ApplicationType.SPA,
                         List.of(),
                         List.of(),
-                        Map.of()),
+                        Map.of(),
+                        Optional.empty()),
                 new Origin("clients.yaml", line));
     }
 

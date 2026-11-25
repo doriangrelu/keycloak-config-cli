@@ -74,7 +74,8 @@ class ReadRealmsTest {
                 ApplicationType.API,
                 List.of(),
                 List.of(),
-                Map.of());
+                Map.of(),
+                Optional.empty());
         RoleDefinition role = new RoleDefinition(TemplatedValue.of("reader"), Optional.empty(), Optional.empty());
         RealmDefinition realm = new RealmDefinition(
                 "demo",

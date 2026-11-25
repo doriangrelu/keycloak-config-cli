@@ -30,6 +30,7 @@ import java.util.Optional;
  * written from {@link ClientFlows#of(ApplicationType)}.
  *
  * @param attributes the attributes the shell manages, such as {@code pkce.code.challenge.method}
+ * @param secret the secret of the client as written, which the model does not validate
  */
 public record ClientDefinition(
         TemplatedValue clientId,
@@ -38,7 +39,8 @@ public record ClientDefinition(
         ApplicationType applicationType,
         List<TemplatedValue> redirectUris,
         List<TemplatedValue> webOrigins,
-        Map<String, TemplatedValue> attributes)
+        Map<String, TemplatedValue> attributes,
+        Optional<TemplatedValue> secret)
         implements ElementDefinition {
 
     public ClientDefinition {
@@ -46,6 +48,7 @@ public record ClientDefinition(
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(description, "description");
         Objects.requireNonNull(applicationType, "applicationType");
+        Objects.requireNonNull(secret, "secret");
         redirectUris = List.copyOf(redirectUris);
         webOrigins = List.copyOf(webOrigins);
         attributes = Map.copyOf(attributes);

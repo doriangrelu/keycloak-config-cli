@@ -59,4 +59,15 @@ class ApplicationTypeTest {
     void aCustomClientHasNoFlowsOfItsOwn() {
         assertThatThrownBy(() -> ClientFlows.of(ApplicationType.CUSTOM)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void optionNamesRoundTrip() {
+        for (ApplicationType type : ApplicationType.values()) {
+            assertThat(ApplicationType.ofOptionName(type.optionName())).contains(type);
+        }
+        assertThat(ApplicationType.SPA.optionName()).isEqualTo("spa");
+        assertThat(ApplicationType.WEB_APPLICATION.optionName()).isEqualTo("web-application");
+        assertThat(ApplicationType.ofOptionName("WEB-APPLICATION")).contains(ApplicationType.WEB_APPLICATION);
+        assertThat(ApplicationType.ofOptionName("frontend")).isEmpty();
+    }
 }
