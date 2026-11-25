@@ -97,8 +97,9 @@ public class ShellAdaptersConfiguration {
     }
 
     @Bean
-    public CreateRole createRole(final RealmDefinitions realmDefinitions, final SaveElement saveElement) {
-        return new CreateRole(realmDefinitions, saveElement);
+    public CreateRole createRole(
+            final RealmDefinitions realmDefinitions, final SaveElement saveElement, final RuleBook ruleBook) {
+        return new CreateRole(realmDefinitions, saveElement, ruleBook);
     }
 
     @Bean

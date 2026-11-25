@@ -91,7 +91,12 @@ class CreateRoleTest {
     }
 
     private static CreateRole useCase(final FakeRealmDefinitions definitions) {
-        return new CreateRole(definitions, new SaveElement(definitions, Rules.none()));
+        return new CreateRole(definitions, new SaveElement(definitions, Rules.none()), Rules.none());
+    }
+
+    private static CreateRole useCaseWithBuiltIns(final FakeRealmDefinitions definitions) {
+        RuleBook rules = Rules.withBuiltInClients("realm-management");
+        return new CreateRole(definitions, new SaveElement(definitions, rules), rules);
     }
 
     private static RoleDefinition written(final FakeRealmDefinitions definitions) {
@@ -181,9 +186,34 @@ class CreateRoleTest {
     void anUnknownGivenClientFails() {
         FakeRealmDefinitions definitions = declared(List.of("shop"), role("admin", null));
 
-        assertThatThrownBy(() -> useCase(definitions)
-                        .create("demo", given("realm-management", "admin"), new ScriptedQuestions()))
+        assertThatThrownBy(() -> useCase(definitions).create("demo", given("ghost", "admin"), new ScriptedQuestions()))
                 .isInstanceOf(UnknownClientException.class);
+        assertThat(definitions.saved).isEmpty();
+    }
+
+    @Test
+    void aClientCreatedByKeycloakIsNotOffered() {
+        FakeRealmDefinitions definitions = declared(List.of("realm-management", "shop"), role("admin", null));
+
+        useCaseWithBuiltIns(definitions)
+                .create("demo", RoleAnswers.none(), new ScriptedQuestions("2", "editor", "", "y"));
+
+        assertThat(written(definitions).clientId()).contains(value("shop"));
+        FakeRealmDefinitions other = declared(List.of("realm-management", "shop"), role("admin", null));
+        assertThatThrownBy(() -> useCaseWithBuiltIns(other)
+                        .create("demo", RoleAnswers.none(), new ScriptedQuestions("3", "editor", "")))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(other.saved).isEmpty();
+    }
+
+    @Test
+    void aGivenClientCreatedByKeycloakFails() {
+        FakeRealmDefinitions definitions = declared(List.of("realm-management", "shop"), role("admin", null));
+
+        assertThatThrownBy(() -> useCaseWithBuiltIns(definitions)
+                        .create("demo", given("realm-management", "x"), new ScriptedQuestions()))
+                .isInstanceOf(BuiltInClientException.class)
+                .hasMessage("Client 'realm-management' is created by Keycloak: its roles are not edited by the shell");
         assertThat(definitions.saved).isEmpty();
     }
 

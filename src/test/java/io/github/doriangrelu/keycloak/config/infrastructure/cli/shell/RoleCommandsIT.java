@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
+import io.github.doriangrelu.keycloak.config.application.definition.BuiltInClientException;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.CommandLineConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
 import java.nio.charset.StandardCharsets;
@@ -137,7 +138,7 @@ class RoleCommandsIT {
             ShellTestClient shell = shellOf(context);
 
             assertThatThrownBy(() -> run(shell, "role create --client realm-management --name x --declare-type"))
-                    .hasRootCauseInstanceOf(ApplicationException.class);
+                    .hasRootCauseInstanceOf(BuiltInClientException.class);
             assertThat(this.root.resolve("demo/30-roles.yaml")).doesNotExist();
         });
     }

@@ -80,6 +80,23 @@ final class Rules {
         return book(OrganisationRules.none());
     }
 
+    /** Rules without any rule, for a Keycloak that creates these clients. */
+    static RuleBook withBuiltInClients(final String... clientIds) {
+        RuleFiles files = new RuleFiles() {
+            @Override
+            public List<Rule> base() {
+                return List.of();
+            }
+
+            @Override
+            public OrganisationRules organisation() {
+                return OrganisationRules.none();
+            }
+        };
+        KeycloakBuiltIns builtIns = () -> new BuiltIns(java.util.Set.of(clientIds), java.util.Set.of(), Map.of());
+        return new RuleBook(files, List.of(), builtIns);
+    }
+
     static RuleBook of(final Rule... rules) {
         return book(OrganisationRules.none(), rules);
     }

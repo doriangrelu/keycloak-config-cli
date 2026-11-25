@@ -22,6 +22,8 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
+import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.Defined;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
@@ -32,16 +34,18 @@ import java.util.Optional;
 
 /**
  * Creates a realm role or a client role by guided questions (ADR-008). Only the clients defined in the folder are
- * offered: the clients Keycloak creates itself are not.
+ * offered: the clients Keycloak creates itself are not, even when the files define them.
  */
 public final class CreateRole {
 
     private final RealmDefinitions definitions;
     private final SaveElement saveElement;
+    private final RuleBook rules;
 
-    public CreateRole(final RealmDefinitions definitions, final SaveElement saveElement) {
+    public CreateRole(final RealmDefinitions definitions, final SaveElement saveElement, final RuleBook rules) {
         this.definitions = Objects.requireNonNull(definitions, "definitions");
         this.saveElement = Objects.requireNonNull(saveElement, "saveElement");
+        this.rules = Objects.requireNonNull(rules, "rules");
     }
 
     /**
@@ -49,6 +53,7 @@ public final class CreateRole {
      * @return the file written, with what the rules say about the role
      * @throws UnknownRealmFolderException when the folder is not a realm of the shell
      * @throws UnknownClientException when the given client is not defined in the folder
+     * @throws BuiltInClientException when the given client is created by Keycloak
      * @throws RoleExistsException when the given name is taken at the same place
      * @throws FirstDeclarationException when the role is the first of its place and this is not confirmed
      * @throws RuleViolationException when the role fails a required rule: nothing is written
@@ -68,26 +73,35 @@ public final class CreateRole {
         return this.saveElement.save(folder, role, Optional.empty(), declareType);
     }
 
-    private static Optional<TemplatedValue> owner(
+    private Optional<TemplatedValue> owner(
             final RealmDefinition realm, final RoleAnswers given, final Questions questions) {
         if (given.client().isPresent()) {
             String clientId = given.client().get().raw();
+            if (builtIn(clientId)) {
+                throw new BuiltInClientException(clientId);
+            }
             return Optional.of(realm.client(clientId)
                     .orElseThrow(() -> new UnknownClientException(clientId))
                     .definition()
                     .clientId());
         }
-        if (realm.clients().isEmpty()) {
+        List<Defined<ClientDefinition>> offered = realm.clients().stream()
+                .filter(defined -> !builtIn(defined.definition().clientId().raw()))
+                .toList();
+        if (offered.isEmpty()) {
             return Optional.empty();
         }
         List<Choice<Optional<TemplatedValue>>> choices = new ArrayList<>();
         choices.add(new Choice<>(Optional.empty(), "The realm", "a role every client can give"));
-        realm.clients()
-                .forEach(defined -> choices.add(new Choice<>(
-                        Optional.of(defined.definition().clientId()),
-                        "Client '" + defined.definition().clientId().raw() + "'",
-                        "a role of this client")));
+        offered.forEach(defined -> choices.add(new Choice<>(
+                Optional.of(defined.definition().clientId()),
+                "Client '" + defined.definition().clientId().raw() + "'",
+                "a role of this client")));
         return questions.choose("Role of", choices, Optional.of(Optional.empty()));
+    }
+
+    private boolean builtIn(final String clientId) {
+        return this.rules.builtIns().clientIds().contains(clientId);
     }
 
     private static TemplatedValue name(
