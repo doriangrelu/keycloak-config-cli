@@ -25,14 +25,16 @@ The shell ships built-in rules, active for everybody. An organisation adds its o
 
 The first two are written in the file `rules/base-rules.yaml` of the tool, in the format below. The others are written in Java. `rules list` shows them all.
 
+`group.defined-roles` checks the groups written by hand in the files, when a realm is opened. The commands `group create` and `group edit` go further: they only accept a role defined in the realm files or created by Keycloak, and refuse any other with `Role 'x' is neither defined in the realm files nor created by Keycloak`, whether the rule is disabled or not. Disabling the rule only silences its findings on the groups already in the files.
+
 ## The format of a rules file
 
-A rules file is YAML. This file shows every field and every operator; the sections below explain them.
+A rules file is YAML. This file shows every field and every operator; the sections below explain them. It uses identifiers of its own, because an identifier of a built-in rule cannot be defined again: copied as it is into `shell.rules`, it is accepted.
 
 ```yaml
 rules:
   # A default value and a check on the same key, for one application type.
-  - id: client.spa.pkce
+  - id: client.spa.pkce-s256
     element: client
     when:
       application-type: spa
@@ -44,7 +46,7 @@ rules:
     message: "A front-end application must use PKCE with S256: the browser cannot keep a secret."
 
   # A check on a list: no element of the list may match.
-  - id: client.redirect-uris.no-wildcard
+  - id: client.redirect-uris.no-star
     element: client
     checks:
       - key: redirectUris
@@ -73,7 +75,7 @@ rules:
     severity: advice
     message: "Give the client a name: the administrators read it in the console."
 
-  # A rule on a list of values: every redirect URI must be in the set.
+  # A rule on a list of values: every redirect URI must match the pattern.
   - id: client.redirect-uris.https-only
     element: client
     when:
@@ -107,7 +109,7 @@ rules:
         not-one-of: [admin, root]
     message: "A realm role named admin or root is too easy to confuse with the administration of Keycloak."
 
-  # A check on a group: its path and the roles it gives.
+  # A check on a group: its name.
   - id: group.top-level.naming
     element: group
     checks:
@@ -205,8 +207,8 @@ disable:
     for: [legacy-portal]
     reason: "Legacy portal without PKCE support, replacement planned in 2027."
   # Without for, the rule is off for every element.
-  - id: group.defined-roles
-    reason: "The roles of the groups are created by a directory the files do not know."
+  - id: client.redirect-uris.no-wildcard
+    reason: "The redirect URIs are checked by the gateway of the organisation."
 
 rules:
   - id: org.client.description
@@ -229,7 +231,7 @@ A rule is switched off visibly: `realm open` and `rules list` show the disabled 
 ```text
 Disabled rules:
   client.spa.pkce (legacy-portal): Legacy portal without PKCE support, replacement planned in 2027.
-  group.defined-roles (all): The roles of the groups are created by a directory the files do not know.
+  client.redirect-uris.no-wildcard (all): The redirect URIs are checked by the gateway of the organisation.
 ```
 
 The built-in rules are not replaced: they are switched off explicitly, with a reason, or they stay.
@@ -242,7 +244,7 @@ The rules are loaded and checked when the shell starts. An invalid file stops th
 shell-rules.yaml: rule 'client.has-name': 'severity' must be required or advice, not 'warn'
 ```
 
-These are refused: an unknown field, operator or `element`; an invalid regular expression; `application-type` on anything but a client; `equals` on a list key; a rule without `defaults` or `checks`, or without `message`; an identifier already used; a disablement without `reason` or of an unknown rule; and conflicting defaults.
+These are refused: an unknown field, operator or `element`; an invalid regular expression; `application-type` on anything but a client; `equals` on a list key; a rule without `defaults` or `checks`, or without `message`; an identifier already used; a disablement without `reason`, with an empty `for` (`for: []`) or of an unknown rule; and conflicting defaults.
 
 ## Listing the rules
 

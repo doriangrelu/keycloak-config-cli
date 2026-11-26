@@ -38,7 +38,7 @@ Creates the folder of a realm with its `00-realm` file, and opens it.
 
 | Option | Description |
 |--------|-------------|
-| `--folder` | The folder of the realm: letters, digits, `.`, `_` or `-`, starting with a letter or a digit. It must not exist yet |
+| `--folder` | The folder of the realm: letters, digits, `.`, `_` or `-`, starting with a letter or a digit and not ending with `.`. It must not exist yet |
 | `--realm` | The name of the realm, placeholders allowed. Proposed: the folder name |
 | `--format` | `yaml` or `json` |
 
@@ -120,7 +120,7 @@ Client 'shop-web' written to shop/20-clients.yaml
   set by the rules: attributes."pkce.code.challenge.method" = S256
 ```
 
-A front-end application has no secret. For the other types the secret is asked: a variable (recommended, the value is given at import) or none, in which case Keycloak generates it. A secret is always a variable without a default value: a value written in the file is refused. In a script, a client that is not a `spa` needs `--secret`.
+A front-end application has no secret: `--secret` with a `spa` is refused (`A front-end application cannot keep a secret`). For the other types the secret is asked: a variable (recommended, the value is given at import) or none, in which case Keycloak generates it. A secret is always a variable without a default value: a value written in the file is refused. In a script, a client that is not a `spa` needs `--secret`.
 
 The first client of a realm asks for a confirmation (`--declare-type` in a script): see [Files](files.md#the-first-declaration-of-a-type).
 
@@ -178,7 +178,7 @@ Lists the realm roles first, then the roles of each client: `customer  realm  30
 | `--client-roles` | The client roles to give as `client/role`, separated by commas; `none` for no role |
 | `--declare-type` | Confirm writing the first group of the realm |
 
-When groups exist, the question `Parent group` offers `None` (a top-level group) or each group by its path. Roles are chosen in a numbered list, with the numbers separated by commas. The list shows the roles defined in the realm files first, then the ones Keycloak creates, marked `(Keycloak)`. A role that exists nowhere is refused by the rule `group.defined-roles`.
+When groups exist, the question `Parent group` offers `None` (a top-level group) or each group by its path. Roles are chosen in a numbered list, with the numbers separated by commas. The list shows the roles defined in the realm files first, then the ones Keycloak creates, marked `(Keycloak)`. The shell only gives a role it knows: a role that exists nowhere (neither in the files nor in Keycloak) is refused with `Role 'x' is neither defined in the realm files nor created by Keycloak`, before any rule runs. The rule `group.defined-roles` checks the groups written by hand, when the realm is opened; disabling it does not allow `group create` to give an unknown role.
 
 ```text
 > group create

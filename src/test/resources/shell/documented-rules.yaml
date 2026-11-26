@@ -1,6 +1,6 @@
 rules:
   # A default value and a check on the same key, for one application type.
-  - id: client.spa.pkce
+  - id: client.spa.pkce-s256
     element: client
     when:
       application-type: spa
@@ -12,7 +12,7 @@ rules:
     message: "A front-end application must use PKCE with S256: the browser cannot keep a secret."
 
   # A check on a list: no element of the list may match.
-  - id: client.redirect-uris.no-wildcard
+  - id: client.redirect-uris.no-star
     element: client
     checks:
       - key: redirectUris
@@ -41,7 +41,7 @@ rules:
     severity: advice
     message: "Give the client a name: the administrators read it in the console."
 
-  # A rule on a list of values: every redirect URI must be in the set.
+  # A rule on a list of values: every redirect URI must match the pattern.
   - id: client.redirect-uris.https-only
     element: client
     when:
@@ -75,7 +75,7 @@ rules:
         not-one-of: [admin, root]
     message: "A realm role named admin or root is too easy to confuse with the administration of Keycloak."
 
-  # A check on a group: its path and the roles it gives.
+  # A check on a group: its name.
   - id: group.top-level.naming
     element: group
     checks:

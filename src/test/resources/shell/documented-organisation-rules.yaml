@@ -4,8 +4,8 @@ disable:
     for: [legacy-portal]
     reason: "Legacy portal without PKCE support, replacement planned in 2027."
   # Without for, the rule is off for every element.
-  - id: group.defined-roles
-    reason: "The roles of the groups are created by a directory the files do not know."
+  - id: client.redirect-uris.no-wildcard
+    reason: "The redirect URIs are checked by the gateway of the organisation."
 
 rules:
   - id: org.client.description

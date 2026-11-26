@@ -75,7 +75,7 @@ The former per-type properties under `import` (`managed.group`, `managed.client`
 
 | Property | Environment Variable | Default | Description |
 |----------|---------------------|---------|-------------|
-| `run.operation` | `RUN_OPERATION` | `IMPORT` | Operation mode: `IMPORT` or `NORMALIZE` |
+| `run.operation` | `RUN_OPERATION` | `IMPORT` | Operation mode: `IMPORT`, `NORMALIZE` or `SHELL` (the offline [shell](../shell/README.md)) |
 
 ### Example
 

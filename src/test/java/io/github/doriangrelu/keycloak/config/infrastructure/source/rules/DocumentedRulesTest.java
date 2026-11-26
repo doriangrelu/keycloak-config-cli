@@ -46,7 +46,7 @@ class DocumentedRulesTest {
     void theDocumentedRulesAreRead() throws IOException {
         List<Rule> rules = RuleFileReader.rules(RULES.toString(), read(RULES));
 
-        assertThat(rules).extracting(Rule::id).contains("client.spa.pkce", "role.realm-role.not-admin");
+        assertThat(rules).extracting(Rule::id).contains("client.spa.pkce-s256", "role.realm-role.not-admin");
         assertThat(rules).hasSize(9);
     }
 

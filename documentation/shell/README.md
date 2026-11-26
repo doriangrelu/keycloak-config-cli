@@ -54,7 +54,7 @@ Every text answer accepts a value, a Mustache placeholder (`{{appUrl}}`) or a mi
 
 ## Script mode
 
-For a script or a CI pipeline the shell runs without a session and never waits for an answer. Give the answers as options of the command: a question that is not answered takes its proposal, and fails with exit code `2` when it has none.
+For a script or a CI pipeline the shell never waits for an answer. Give the answers as options of the command: a question that is not answered takes its proposal, and fails with exit code `2` when it has none.
 
 Open a realm and run one command:
 
@@ -71,6 +71,8 @@ java -jar keycloak-config-cli.jar --run.operation=SHELL --shell.root=./realms \
   --shell.script=create-shop.kcc
 ```
 
+The path of `shell.script` is relative to the working directory, not to `shell.root`.
+
 ```text
 # create-shop.kcc
 realm create --folder=shop --realm=shop --format=yaml
@@ -79,7 +81,7 @@ client create --id=shop-web --type=spa --url=https://shop.example.com --declare-
 group create --name=customers --realm-roles=customer --declare-type
 ```
 
-Empty lines and lines starting with `#` are ignored. Each command is printed after `> ` before its result. The first command that fails stops the script with its exit code and the line, for example `Stopped at line 3: client create ...`. The commands run in one session, so `realm create` opens the realm for the next ones, and `shell.realm` can open an existing one first.
+Empty lines and lines starting with `#` are ignored. Each command is printed after `> ` before its result. The first command that fails stops the script with its exit code and the line, for example `Stopped at line 3: client create ...`. The commands run in one session, so `realm create` opens the realm for the next ones, and `shell.realm` can open an existing one first. A line that has run stays written when a later line fails: nothing is rolled back.
 
 `shell.command` and `shell.script` cannot be used together. A `shell.script` file that does not exist fails with exit code `2` before any command runs; a file with no command prints `No command in <file>` and succeeds.
 
