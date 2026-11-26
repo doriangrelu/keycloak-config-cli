@@ -258,10 +258,146 @@ class ReorganizeFilesTest {
     void aFailingWriteDeletesNothing() throws IOException {
         copy("monolithic-yaml");
         ReorganizationPlan plan = this.files.planReorganization("demo");
-        Files.createDirectory(folder().resolve("40-groups.yaml"));
+        Files.createDirectories(folder().resolve("40-groups.yaml/keep"));
 
         assertThatThrownBy(() -> this.files.reorganize("demo", plan)).isInstanceOf(UncheckedIOException.class);
         assertThat(folder().resolve("demo.yaml")).exists();
+    }
+
+    @Test
+    void aFailureWhilePreparingTheFilesLeavesTheFolderAsItWas() throws IOException {
+        copy("monolithic-yaml");
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        String before = read("demo.yaml");
+        Files.createDirectories(folder().resolve(".40-groups.yaml.tmp/keep"));
+
+        assertThatThrownBy(() -> this.files.reorganize("demo", plan)).isInstanceOf(UncheckedIOException.class);
+        assertThat(read("demo.yaml")).isEqualTo(before);
+        assertThat(this.files.planReorganization("demo")).isEqualTo(plan);
+        assertThat(names()).doesNotContain("00-realm.yaml", "20-clients.yaml");
+    }
+
+    @Test
+    void aStandardFileHoldingRealmKeysKeepsItsElements() throws IOException {
+        copy("already-standard");
+        Files.delete(folder().resolve("00-realm.yaml"));
+        Files.writeString(folder().resolve("20-clients.yaml"), """
+                realm: "{{env}}-demo"
+                displayName: Demo realm
+                clients:
+                  - clientId: frontend
+                """);
+        Map<String, Object> before = contentOf(folder());
+
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        this.files.reorganize("demo", plan);
+
+        assertThat(plan.renames()).isEmpty();
+        assertThat(plan.moves())
+                .noneMatch(move -> move.from().equals(move.to()))
+                .contains(new Move("displayName", OptionalInt.empty(), "20-clients.yaml", "00-realm.yaml"));
+        assertThat(keysOf("20-clients.yaml")).containsExactly("realm", "clients");
+        assertThat(keysOf("00-realm.yaml")).containsExactly("realm", "displayName");
+        assertThat(contentOf(folder())).isEqualTo(before);
+    }
+
+    @Test
+    void rolesInTwoFilesAreMerged() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("my-roles.yaml"), """
+                realm: "{{env}}-demo"
+                roles:
+                  realm:
+                    - name: viewer
+                  client:
+                    backend:
+                      - name: writer
+                    frontend:
+                      - name: user
+                """);
+        Files.writeString(folder().resolve("30-roles.yaml"), """
+                realm: "{{env}}-demo"
+                roles:
+                  realm:
+                    - name: admin
+                  client:
+                    backend:
+                      - name: reader
+                """);
+
+        apply();
+
+        TreeObject roles = DocumentTrees.parse("30-roles.yaml", read("30-roles.yaml"))
+                .root()
+                .object("roles")
+                .orElseThrow();
+        assertThat(roles.objects("realm").stream().map(role -> role.text("name").orElseThrow()))
+                .containsExactly("admin", "viewer");
+        Map<String, List<TreeObject>> clients =
+                roles.object("client").orElseThrow().objectLists();
+        assertThat(clients.get("backend").stream().map(role -> role.text("name").orElseThrow()))
+                .containsExactly("reader", "writer");
+        assertThat(clients.get("frontend")).hasSize(1);
+        assertThat(names()).doesNotContain("my-roles.yaml");
+    }
+
+    @Test
+    void listsAreConcatenatedInTheOrderOfTheFileNames() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("10-extra.yaml"), """
+                realm: "{{env}}-demo"
+                clients:
+                  - clientId: first
+                """);
+
+        apply();
+
+        assertThat(DocumentTrees.parse("20-clients.yaml", read("20-clients.yaml")).root().objects("clients").stream()
+                        .map(client -> client.text("clientId").orElseThrow()))
+                .containsExactly("first", "frontend");
+    }
+
+    @Test
+    void aFileHoldingOnlyTheRealmIsRemoved() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("empty.yaml"), "realm: \"{{env}}-demo\"\n");
+
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        this.files.reorganize("demo", plan);
+
+        assertThat(plan.removals()).containsExactly("empty.yaml");
+        assertThat(names()).doesNotContain("empty.yaml");
+    }
+
+    @Test
+    void theOnlyFileOfARealmIsNeverRemoved() throws IOException {
+        Files.createDirectories(folder());
+        Files.writeString(folder().resolve("demo.yaml"), "realm: \"{{env}}-demo\"\n");
+        this.files = new RealmDefinitionFiles(this.root);
+
+        assertThat(this.files.planReorganization("demo").removals()).isEmpty();
+    }
+
+    @Test
+    void anIntegerReadFromJsonStaysAnIntegerInYaml() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("extra.json"), """
+                {
+                  "realm": "{{env}}-demo",
+                  "users": [
+                    {
+                      "username": "carol",
+                      "attributes": 12345678901234567890
+                    }
+                  ]
+                }
+                """);
+
+        apply();
+
+        assertThat(read("50-links.yaml"))
+                .contains("attributes: 12345678901234567890")
+                .doesNotContain("E");
     }
 
     @Test

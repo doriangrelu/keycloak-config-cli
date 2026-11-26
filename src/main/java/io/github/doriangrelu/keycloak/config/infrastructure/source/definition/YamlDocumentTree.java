@@ -24,6 +24,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -426,6 +427,7 @@ final class YamlDocumentTree implements DocumentTree {
                 case Boolean flag -> plainNode(Tag.BOOL, flag);
                 case Integer number -> plainNode(Tag.INT, number);
                 case Long number -> plainNode(Tag.INT, number);
+                case BigInteger number -> plainNode(Tag.INT, number);
                 case Number number -> plainNode(Tag.FLOAT, number);
                 case Map<?, ?> map -> {
                     List<NodeTuple> tuples = new ArrayList<>();

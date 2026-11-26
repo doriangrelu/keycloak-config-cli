@@ -29,26 +29,37 @@ import io.github.doriangrelu.keycloak.config.domain.definition.StandardLayout;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 /**
  * The reorganization of the files of a realm folder into the standard layout (ADR-008): the plan is computed from the
- * files only, and applying it recomputes the plan to refuse one that no longer matches the folder. Everything is
- * written in memory first, then to the files, and only then the files made useless are deleted.
+ * files only, and applying it recomputes the plan to refuse one that no longer matches the folder.
+ *
+ * <p>Every new content is rendered in memory, then written to a temporary file of the folder, then moved into place,
+ * and only then the files made useless are deleted. A failure while preparing leaves the folder untouched. The window
+ * that remains is the moves into place: a failure there leaves some files already replaced, which Git restores.
+ *
+ * <p>A key written in several files for the same destination is merged: lists are concatenated in the order of the
+ * file names, objects are merged entry by entry (as {@code roles}); a value that differs on both sides is refused. A
+ * merged key is rebuilt from its content, so its comments are not kept.
  */
 final class Reorganization {
 
     private static final String REALM_KEY = "realm";
     private static final String REALM_STEM = StandardLayout.fileStemOf(REALM_KEY);
+    private static final String TEMPORARY_SUFFIX = ".tmp";
 
     private final Path directory;
     /** The files, by name, in the order of their names. */
@@ -57,6 +68,12 @@ final class Reorganization {
     private final List<Move> moves = new ArrayList<>();
     private final List<Rename> renames = new ArrayList<>();
     private final List<String> removals = new ArrayList<>();
+    /** The files that hold a key once reorganized, by destination file and key, in the order of the file names. */
+    private final Map<Slot, List<String>> occupants = new LinkedHashMap<>();
+
+    private record Slot(String destination, String key) {}
+
+    private record PlainEntry(Object plain) implements TreeObject.Entry {}
 
     Reorganization(final Path directory) {
         this.directory = directory;
@@ -82,6 +99,12 @@ final class Reorganization {
             throw new ReorganizationRefusedException(
                     "The reorganization plan is out of date: the files of the realm changed since it was made");
         }
+        Map<Slot, Object> merged = new HashMap<>();
+        this.occupants.forEach((slot, names) -> {
+            if (names.size() > 1) {
+                merged.put(slot, mergedContent(slot, names));
+            }
+        });
         Map<String, String> renamed = new HashMap<>();
         this.renames.forEach(rename -> renamed.put(rename.to(), rename.from()));
         Map<String, DocumentTree> created = new LinkedHashMap<>();
@@ -89,34 +112,59 @@ final class Reorganization {
         for (Move move : this.moves) {
             DocumentTree source = this.trees.get(move.from());
             DocumentTree target = target(move, source, renamed, created);
-            TreeObject.Entry entry = source.root().entry(move.key()).orElseThrow();
-            if (source.root().listSize(move.key()).isPresent()
-                    && target.root().listSize(move.key()).isPresent()) {
-                target.root().concat(move.key(), entry);
-            } else {
-                target.root().put(move.key(), entry);
-            }
-            source.root().remove(move.key());
+            Object content = merged.get(new Slot(move.to(), move.key()));
+            target.root()
+                    .put(
+                            move.key(),
+                            content == null ? source.root().entry(move.key()).orElseThrow() : new PlainEntry(content));
             touched.add(source);
             touched.add(target);
         }
+        this.moves.forEach(move -> this.trees.get(move.from()).root().remove(move.key()));
         Map<String, String> contents = new LinkedHashMap<>();
         this.trees.forEach((name, tree) -> {
             Optional<Rename> rename = this.renames.stream()
                     .filter(candidate -> candidate.from().equals(name))
                     .findFirst();
-            if (touched.contains(tree) || rename.isPresent()) {
-                if (!this.removals.contains(name)) {
-                    contents.put(rename.map(Rename::to).orElse(name), tree.render());
-                }
+            if ((touched.contains(tree) || rename.isPresent()) && !this.removals.contains(name)) {
+                contents.put(rename.map(Rename::to).orElse(name), tree.render());
             }
         });
         created.forEach((name, tree) -> contents.put(name, tree.render()));
-        contents.forEach((name, content) -> RealmDefinitionFiles.writeFile(this.directory.resolve(name), content));
+        putInPlace(contents);
         List<String> obsolete = new ArrayList<>(this.removals);
         this.renames.forEach(rename -> obsolete.add(rename.from()));
         obsolete.forEach(name -> delete(this.directory.resolve(name)));
         return List.copyOf(contents.keySet());
+    }
+
+    /** Writes every content to a temporary file, then moves each into place; nothing is replaced before all exist. */
+    private void putInPlace(final Map<String, String> contents) {
+        Map<Path, Path> temporaries = new LinkedHashMap<>();
+        try {
+            for (Map.Entry<String, String> entry : contents.entrySet()) {
+                Path temporary = this.directory.resolve("." + entry.getKey() + TEMPORARY_SUFFIX);
+                temporaries.put(temporary, this.directory.resolve(entry.getKey()));
+                RealmDefinitionFiles.writeFile(temporary, entry.getValue());
+            }
+            for (Map.Entry<Path, Path> entry : temporaries.entrySet()) {
+                move(entry.getKey(), entry.getValue());
+            }
+        } finally {
+            temporaries.keySet().forEach(Reorganization::delete);
+        }
+    }
+
+    private static void move(final Path from, final Path to) {
+        try {
+            try {
+                Files.move(from, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(from, to, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private DocumentTree target(
@@ -160,7 +208,8 @@ final class Reorganization {
                 existing.putIfAbsent(stemOf(name), name);
             }
         });
-        String candidate = existing.containsKey(REALM_STEM) ? null : firstFileWithRealmKeys();
+        // Only a file with a name of its own is renamed to the realm file: a standard file keeps its name and its keys
+        String candidate = existing.containsKey(REALM_STEM) ? null : firstOtherFileWithRealmKeys();
         Map<String, String> destinations = new HashMap<>(existing);
         if (candidate != null) {
             String renamed = REALM_STEM + this.trees.get(candidate).format().extension();
@@ -168,8 +217,8 @@ final class Reorganization {
             destinations.put(REALM_STEM, renamed);
         }
         String created = newFileFormat().extension();
-        Map<String, List<String>> occupants = new LinkedHashMap<>();
         Map<String, Set<String>> movedOut = new HashMap<>();
+        Set<String> receiving = new LinkedHashSet<>();
         this.trees.forEach((name, tree) -> {
             String home = name.equals(candidate) ? REALM_STEM : stemOf(name);
             for (String key : tree.root().keys()) {
@@ -178,42 +227,77 @@ final class Reorganization {
                 }
                 String stem = StandardLayout.fileStemOf(key);
                 String destination = stem.equals(home) ? name : destinations.computeIfAbsent(stem, s -> s + created);
-                if (!stem.equals(home)) {
+                if (!destination.equals(name)) {
                     this.moves.add(new Move(key, tree.root().listSize(key), name, destination));
                     movedOut.computeIfAbsent(name, n -> new LinkedHashSet<>()).add(key);
+                    receiving.add(destination);
                 }
-                occupants
-                        .computeIfAbsent(destination + "\0" + key, k -> new ArrayList<>())
+                this.occupants
+                        .computeIfAbsent(new Slot(destination, key), k -> new ArrayList<>())
                         .add(name);
             }
         });
-        requireMergeable(occupants);
-        movedOut.forEach((name, keys) -> {
-            boolean emptied = this.trees.get(name).root().keys().stream()
-                    .filter(key -> !key.equals(REALM_KEY))
-                    .allMatch(keys::contains);
-            if (emptied && !name.equals(candidate) && !stemOf(name).equals(REALM_STEM)) {
-                this.removals.add(name);
+        this.occupants.forEach((slot, names) -> {
+            if (names.size() > 1) {
+                mergedContent(slot, names);
             }
         });
+        List<String> emptied = new ArrayList<>();
+        this.trees.forEach((name, tree) -> {
+            Set<String> out = movedOut.getOrDefault(name, Set.of());
+            boolean onlyRealm = tree.root().keys().stream()
+                    .filter(key -> !key.equals(REALM_KEY))
+                    .allMatch(out::contains);
+            if (onlyRealm && !name.equals(candidate) && !stemOf(name).equals(REALM_STEM) && !receiving.contains(name)) {
+                emptied.add(name);
+            }
+        });
+        // The realm name lives in the files: the last file of a realm is kept
+        if (!emptied.isEmpty()
+                && emptied.size() == this.trees.size()
+                && this.moves.isEmpty()
+                && this.renames.isEmpty()) {
+            emptied.removeFirst();
+        }
+        this.removals.addAll(emptied);
     }
 
-    /** A key written twice in the same file once reorganized must be a list: the items are put one after the other. */
-    private void requireMergeable(final Map<String, List<String>> occupants) {
-        occupants.forEach((destinationAndKey, names) -> {
-            if (names.size() < 2) {
-                return;
+    /** The content of a key written in several files for the same destination, the files in the order of their names. */
+    private Object mergedContent(final Slot slot, final List<String> names) {
+        Object merged = null;
+        boolean first = true;
+        for (String name : names) {
+            Object content =
+                    this.trees.get(name).root().entry(slot.key()).orElseThrow().plain();
+            if (first) {
+                merged = content;
+                first = false;
+            } else {
+                merged = merge(merged, content, slot.key(), slot, names);
             }
-            String key = destinationAndKey.substring(destinationAndKey.indexOf('\0') + 1);
-            String destination = destinationAndKey.substring(0, destinationAndKey.indexOf('\0'));
-            boolean allLists = names.stream()
-                    .allMatch(name -> this.trees.get(name).root().listSize(key).isPresent());
-            if (!allLists) {
-                throw new ReorganizationRefusedException(
-                        "The key '" + key + "' is written in " + String.join(", ", names)
-                                + " and cannot be merged into " + destination + ": keep it in one file");
-            }
-        });
+        }
+        return merged;
+    }
+
+    private static Object merge(
+            final Object left, final Object right, final String path, final Slot slot, final List<String> names) {
+        if (left instanceof List<?> first && right instanceof List<?> second) {
+            List<Object> all = new ArrayList<>(first);
+            all.addAll(second);
+            return all;
+        }
+        if (left instanceof Map<?, ?> first && right instanceof Map<?, ?> second) {
+            Map<Object, Object> all = new LinkedHashMap<>(first);
+            second.forEach(
+                    (name, value) -> all.merge(name, value, (a, b) -> merge(a, b, path + "." + name, slot, names)));
+            return all;
+        }
+        if (Objects.equals(left, right)) {
+            return left;
+        }
+        throw new ReorganizationRefusedException("The key '" + path + "' is written with different values in "
+                + String.join(", ", names) + " and cannot be merged into " + slot.destination()
+                + ": keep it in one file");
     }
 
     /** The format of the new files: the one of the file with the most keys of the realm file, else of the first file. */
@@ -230,8 +314,9 @@ final class Reorganization {
         return best == null ? DefinitionFormat.YAML : best;
     }
 
-    private String firstFileWithRealmKeys() {
+    private String firstOtherFileWithRealmKeys() {
         return this.trees.entrySet().stream()
+                .filter(entry -> !StandardLayout.stems().contains(stemOf(entry.getKey())))
                 .filter(entry -> !realmKeys(entry.getValue()).isEmpty())
                 .map(Map.Entry::getKey)
                 .findFirst()
