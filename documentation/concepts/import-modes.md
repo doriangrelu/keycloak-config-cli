@@ -1,6 +1,6 @@
-# Import Modes
+# Operations and Import Process
 
-Keycloak Config CLI supports different import modes and strategies to handle various use cases.
+keycloak-config-cli has three operations, chosen with `run.operation`. An import has no mode or strategy to choose: every run follows the same process.
 
 ## Operation Modes
 
@@ -24,6 +24,14 @@ java -jar keycloak-config-cli.jar \
   --normalization.files.input-locations=/exports/*.json \
   --normalization.files.output-directory=/output/ \
   --normalization.output-format=YAML
+```
+
+### SHELL Mode
+
+Starts the guided, offline editor of realm files (see [Interactive Shell](../shell/README.md)):
+
+```bash
+java -jar keycloak-config-cli.jar --run.operation=SHELL --shell.root=./realms
 ```
 
 ## How an Import Works
@@ -75,6 +83,8 @@ Use patterns to select files:
 --import.files.locations=/config/**/*.yaml  # Recursive
 ```
 
+All the forms (URLs, excludes, hidden files) are in [Import File Patterns](../reference/import-patterns.md).
+
 ## File Formats
 
 ### YAML (Recommended)
@@ -105,49 +115,7 @@ groups:
 
 ## Templating
 
-Enable Mustache templating to make values depend on the environment:
-
-```yaml
-import:
-  mustache:
-    enabled: true
-```
-
-Usage in configuration:
-
-```yaml
-realm: "{{realmName}}"
-clients:
-  - clientId: "{{clientId}}"
-    secret: "{{clientSecret}}"
-    redirectUris:
-      - "{{appUrl}}/*"
-```
-
-### Default Values
-
-Provide fallback values:
-
-```yaml
-realm: "{{realmName:default-realm}}"
-clients:
-  - clientId: "{{clientId:my-app}}"
-```
-
-A variable without a value and without a default fails the import.
-
-### Passing Variables
-
-```bash
-java -jar keycloak-config-cli.jar \
-  --import.mustache.variables.realmName=production \
-  --import.mustache.variables.clientId=prod-app \
-  --import.mustache.variables.clientSecret='${CLIENT_SECRET}' \
-  --import.mustache.variables.appUrl=https://app.example.com \
-  ...
-```
-
-See [Templating with Mustache](../advanced/templating.md).
+Values that differ between environments are [Mustache variables](../advanced/templating.md): `{{name}}` or `{{name:default}}` in the files, `--import.mustache.enabled=true` and `--import.mustache.variables.<name>=...` on the command line.
 
 ## Multi-Realm Import
 

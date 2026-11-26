@@ -29,3 +29,6 @@ src/main/resources/jdd
 
 # Realms created by the shell in the sample
 /sample/shell/work/
+
+# Personal instructions for Claude Code
+CLAUDE.local.md

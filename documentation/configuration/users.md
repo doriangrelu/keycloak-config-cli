@@ -2,6 +2,8 @@
 
 Users represent individuals who can authenticate with Keycloak. Keycloak Config CLI supports user creation and management.
 
+> The `{{...}}` placeholders in the examples are [Mustache variables](../advanced/templating.md): run the import with `--import.mustache.enabled=true` and give each value with `--import.mustache.variables.<name>=...`, so that no password is written in the files.
+
 ## Basic User Definition
 
 ```yaml
@@ -22,7 +24,7 @@ users:
     email: john.doe@example.com
     credentials:
       - type: password
-        value: "${INITIAL_PASSWORD}"
+        value: "{{initialPassword}}"
         temporary: true  # Force password change on first login
 ```
 
@@ -136,7 +138,7 @@ users:
     # Authentication
     credentials:
       - type: password
-        value: "${JOHN_INITIAL_PASSWORD}"
+        value: "{{johnInitialPassword}}"
         temporary: true
 
     # Attributes
@@ -227,7 +229,7 @@ users:
       - /administrators
     credentials:
       - type: password
-        value: "${ADMIN_PASSWORD}"
+        value: "{{adminPassword}}"
         temporary: false
 
   # Regular users
@@ -243,7 +245,7 @@ users:
       - /engineering
     credentials:
       - type: password
-        value: "${DEFAULT_PASSWORD}"
+        value: "{{defaultPassword}}"
         temporary: true
 
   - username: bob
@@ -258,7 +260,7 @@ users:
       - /sales
     credentials:
       - type: password
-        value: "${DEFAULT_PASSWORD}"
+        value: "{{defaultPassword}}"
         temporary: true
 
   # Disabled user
@@ -279,7 +281,7 @@ Users are never deleted: a user missing from the import files stays in Keycloak,
 # Good: Use variables
 credentials:
   - type: password
-    value: "${USER_PASSWORD}"
+    value: "{{userPassword}}"
 
 # Bad: Hardcoded password
 credentials:
@@ -292,7 +294,7 @@ credentials:
 ```yaml
 credentials:
   - type: password
-    value: "${INITIAL_PASSWORD}"
+    value: "{{initialPassword}}"
     temporary: true  # Force change on first login
 ```
 

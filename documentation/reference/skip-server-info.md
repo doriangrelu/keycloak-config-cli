@@ -25,7 +25,7 @@ java -jar keycloak-config-cli.jar \
 When `keycloak.skip-server-info` is enabled:
 
 1. **Version Fetching Skipped**: No call to `/admin/serverinfo`
-2. **Version Fallback**: Defaults to `unknown` unless `--keycloak.version` is provided
+2. **Version Fallback**: Defaults to the Keycloak version keycloak-config-cli was built against, unless `--keycloak.version` is provided
 3. **Alternative Health Check**: Uses authentication against login realm instead
 4. **Compatibility Checks**: Some version-specific checks may be skipped
 

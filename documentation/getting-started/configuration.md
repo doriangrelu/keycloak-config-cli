@@ -20,6 +20,7 @@ This document describes all available configuration properties for Keycloak Conf
 | `keycloak.availability-check.enabled` | `KEYCLOAK_AVAILABILITYCHECK_ENABLED` | `false` | Wait until Keycloak is available before importing |
 | `keycloak.availability-check.timeout` | `KEYCLOAK_AVAILABILITYCHECK_TIMEOUT` | `120s` | How long to wait for Keycloak |
 | `keycloak.availability-check.retry-delay` | `KEYCLOAK_AVAILABILITYCHECK_RETRYDELAY` | `2s` | Delay between two availability checks |
+| `keycloak.version` | `KEYCLOAK_VERSION` | version keycloak-config-cli was built against | Keycloak version assumed when `keycloak.skip-server-info=true` |
 | `keycloak.skip-server-info` | `KEYCLOAK_SKIPSERVERINFO` | `false` | Do not fetch the server info, see [Skip Server Info](../reference/skip-server-info.md) |
 
 ### Example
@@ -77,6 +78,8 @@ The former per-type properties under `import` (`managed.group`, `managed.client`
 |----------|---------------------|---------|-------------|
 | `run.operation` | `RUN_OPERATION` | `IMPORT` | Operation mode: `IMPORT`, `NORMALIZE` or `SHELL` (the offline [shell](../shell/README.md)) |
 
+The `shell.*` properties (`shell.root`, `shell.realm`, `shell.command`, `shell.script`, `shell.rules`) are described in [Interactive Shell](../shell/README.md).
+
 ### Example
 
 ```yaml
@@ -114,80 +117,46 @@ normalization:
 
 ## Logging Properties
 
-Standard Spring Boot logging configuration:
+Standard Spring Boot logging configuration, with log groups for the parts of keycloak-config-cli:
+
+| Property | Environment Variable | Default | Description |
+|----------|---------------------|---------|-------------|
+| `logging.level.root` | `LOGGING_LEVEL_ROOT` | `info` | Root log level |
+| `logging.level.keycloak-config-cli` | `LOGGING_LEVEL_KEYCLOAKCONFIGCLI` | value of `logging.level.root` | Log level of the import and of the command line |
+| `logging.level.http` | `LOGGING_LEVEL_HTTP` | value of `logging.level.root` | Log level of the HTTP requests between keycloak-config-cli and Keycloak |
+| `logging.level.realm-config` | `LOGGING_LEVEL_REALMCONFIG` | value of `logging.level.root` | At `trace`, the realm configuration is logged, **sensitive values included** |
 
 ```yaml
 logging:
   level:
     root: INFO
-    io.github.doriangrelu.keycloak.config: DEBUG
+    keycloak-config-cli: DEBUG
 ```
+
+Logs are written as JSON with the `json-log` profile: `SPRING_PROFILES_ACTIVE=json-log`.
+
+## Spring Boot Properties
+
+| Property | Environment Variable | Description |
+|----------|---------------------|-------------|
+| `spring.profiles.active` | `SPRING_PROFILES_ACTIVE` | Comma-separated Spring profiles, for example `json-log` |
+| `spring.config.location` | `SPRING_CONFIG_LOCATION` | Configuration file(s) to read the properties from |
+| `spring.config.import` | `SPRING_CONFIG_IMPORT` | Additional configuration, for example secrets read from files (below) |
+
+Environment variable names follow Spring Boot [relaxed binding](https://docs.spring.io/spring-boot/reference/features/external-config.html#features.external-config.typesafe-configuration-properties.relaxed-binding.environment-variables): upper case, dots replaced by underscores, hyphens removed (`keycloak.ssl-verify` → `KEYCLOAK_SSLVERIFY`).
+
+### Secrets Read from Files
+
+With `SPRING_CONFIG_IMPORT=configtree:/run/secrets/`, each file of the folder sets the property of the same name: the file `/run/secrets/keycloak.password` sets `keycloak.password`. This matches Docker and Kubernetes secrets mounted as files. See [configuration trees](https://docs.spring.io/spring-boot/reference/features/external-config.html#features.external-config.files.configtree) in the Spring Boot documentation.
 
 ## Mustache Templating
 
-Mustache templating allows you to use `{{variable}}` placeholders in your import files, resolved at import time from the variables given to keycloak-config-cli. It is the only template engine: the former `$(...)` variable substitution (`import.var-substitution.*`) has been removed, and a configuration that still sets it fails at startup.
-
 | Property | Environment Variable | Default | Description |
 |----------|---------------------|---------|-------------|
-| `import.mustache.enabled` | `IMPORT_MUSTACHE_ENABLED` | `false` | Enable Mustache template processing |
-| `import.mustache.variables.*` | `IMPORT_MUSTACHE_VARIABLES_*` | - | Key-value pairs used as template context |
+| `import.mustache.enabled` | `IMPORT_MUSTACHE_ENABLED` | `false` | Render the import files as Mustache templates |
+| `import.mustache.variables.*` | `IMPORT_MUSTACHE_VARIABLES_*` | - | Variables of the templates: `--import.mustache.variables.host=sso.example.com` sets `{{host}}` |
 
-### Example
-
-Pass variables via CLI arguments:
-
-```bash
-java -jar keycloak-config-cli.jar \
-  --import.mustache.enabled=true \
-  --import.mustache.variables.realmName=my-realm \
-  --import.mustache.variables.clientId=my-app \
-  --import.mustache.variables.clientSecret='${CLIENT_SECRET}' \
-  --import.files.locations=/config/realm.yaml
-```
-
-Or via environment variables (the name is bound lower-cased, so prefer single-word names):
-
-```bash
-export IMPORT_MUSTACHE_ENABLED=true
-export IMPORT_MUSTACHE_VARIABLES_HOST=sso.example.com
-```
-
-Or in `application.yaml`:
-
-```yaml
-import:
-  mustache:
-    enabled: true
-    variables:
-      realmName: my-realm
-      clientId: my-app
-      clientSecret: ${CLIENT_SECRET}
-```
-
-Then use the variables in your import files:
-
-```yaml
-realm: "{{realmName}}"
-clients:
-  - clientId: "{{clientId}}"
-    secret: "{{clientSecret}}"
-    rootUrl: "https://{{host}}"
-```
-
-### Default Values
-
-Use `{{key:default_value}}` to give a default value, used when the variable is not defined:
-
-```yaml
-realm: "{{realmName:my-default-realm}}"
-clients:
-  - clientId: "{{clientId:default-client}}"
-    protocol: "{{protocol:openid-connect}}"
-```
-
-A variable that is neither defined nor given a default **fails the import** with exit code `2` (invalid configuration); the error names the variable, the file and the line.
-
-Values are escaped as the content of a double-quoted string, so keep placeholders inside double quotes. See [Templating with Mustache](../advanced/templating.md) for escaping, numbers and booleans, unescaped values (`{{{name}}}`) and the migration from `$(...)`.
+`{{name}}` is replaced by the value and `{{name:default}}` falls back to a default. A variable that is neither defined nor given a default fails the import with exit code `2`. Mustache is the only template engine: the former `$(...)` substitution (`import.var-substitution.*`) has been removed. See [Templating with Mustache](../advanced/templating.md) for escaping, numbers and booleans, environment variables and the migration from `$(...)`.
 
 ## Command Line Examples
 

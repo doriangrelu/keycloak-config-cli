@@ -221,7 +221,7 @@ clients:
     adminUrl: "https://app.example.com/admin"
 
     # Security
-    secret: "${MY_APP_CLIENT_SECRET}"
+    secret: "{{myAppClientSecret}}"
 
     # Token settings
     attributes:
@@ -271,7 +271,7 @@ clients:
     publicClient: false
     serviceAccountsEnabled: true
     standardFlowEnabled: false
-    secret: "${BATCH_PROCESSOR_SECRET}"
+    secret: "{{batchProcessorSecret}}"
 
     # Service account roles
     # Assign via user configuration

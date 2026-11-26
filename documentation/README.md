@@ -13,7 +13,7 @@ Welcome to the **Keycloak Config CLI** documentation. This tool enables you to i
 ### Core Concepts
 - [Overview](concepts/overview.md)
 - [Managed Resources](concepts/managed-resources.md)
-- [Import Modes](concepts/import-modes.md)
+- [Operations and Import Process](concepts/import-modes.md)
 
 ### Configuration Reference
 - [Realms](configuration/realms.md)
@@ -109,3 +109,9 @@ java -jar keycloak-config-cli.jar \
 ## License
 
 This project is licensed under the Apache License 2.0.
+
+## Contributing
+
+- [CONTRIBUTING.md](../CONTRIBUTING.md): build, tests, conventions, pull requests.
+- [AGENTS.md](../AGENTS.md): repository map, architecture rules, development workflow; the entry point for AI coding agents.
+- [ARCHITECTURE.md](../ARCHITECTURE.md) and [`architecture/`](architecture/): architecture decisions, EPICs and implementation plans (in French).

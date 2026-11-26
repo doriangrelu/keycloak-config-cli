@@ -1,86 +1,33 @@
-## Security Whitepaper 
+# Security Policy
 
+## Supported Versions
 
+| Version | Supported |
+|---------|-----------|
+| 7.0.x   | ✅ Supported |
+| < 7.0   | ❌ Not supported |
 
-The **Keycloak Config cli** is a tool for automating and managing Keycloak configurations. This document outlines the security measures, best practices, and features incorporated in the tool to ensure robust security in its operation and integration.
+## Reporting a Vulnerability
 
----
+Do not open a public issue for a vulnerability. Report it privately through [GitHub Security Advisories](https://github.com/doriangrelu/keycloak-config-cli/security/advisories/new), with:
 
-### 1. Core Security Features
+- the affected version,
+- the steps to reproduce, with a minimal configuration (without real secrets),
+- the impact you observed or expect.
 
-### a. Configuration Management
-- **Environment Variables**: Supports secure handling of secrets via environment variables, minimizing the risk of hardcoded sensitive data.
-- **Config as Code**: Facilitates tracking configuration changes in version control systems, improving auditability and rollback capabilities.
+You will get an acknowledgment as soon as possible, then updates until the issue is fixed and disclosed.
 
-### b. Data Protection
-- **Minimized Data Fetching**: Fetches only the required configurations from Keycloak, reducing the risk of unintended data exposure.
-- **HTTPS Communication**: All communication with Keycloak APIs is secured using HTTPS.
+## Using keycloak-config-cli Securely
 
-### c. Logging
-- **Sensitive Data Sanitization**: Logging is designed to avoid exposure of sensitive data while providing actionable debugging insights.
-- **Adjustable Logging Levels**: Allows users to toggle between logging levels (e.g., DEBUG, INFO, WARN) for tailored verbosity.
+keycloak-config-cli holds administrator credentials of Keycloak and changes its configuration, deletions included. To reduce the risk:
 
+- **Least privilege.** Prefer the `client_credentials` grant with a dedicated client whose service account has only the admin roles the import needs, over the `admin` account.
+- **Secrets outside the files.** Keep passwords and client secrets out of the import files and out of Git: give them as [Mustache variables](documentation/advanced/templating.md), from environment variables or from files read with `SPRING_CONFIG_IMPORT=configtree:...` (see [Configuration](documentation/getting-started/configuration.md#secrets-read-from-files)).
+- **Encrypted connection.** Use an `https://` `keycloak.url` and keep `keycloak.ssl-verify=true` (the default). `keycloak.ssl-verify=false` is meant for local development only.
+- **Logs.** Secrets are not logged at the default levels. `logging.level.realm-config=trace` logs the realm configuration, sensitive values included: never enable it in a shared environment.
+- **Check before applying.** Run a [dry run](documentation/advanced/dry-run.md) to see the changes, deletions included, before an import; the report never shows field values. Protect what must never be deleted with [protected resources](documentation/advanced/protected-resources.md).
+- **Interactive shell.** The shell edits files offline; its connected mode is meant for local, development or test Keycloak instances, never production.
 
-### 2. Security Practices
+## Dependencies
 
-### a. Secrets Management
-- Integration with external secret management tools (e.g., AWS Secrets Manager, HashiCorp Vault) is recommended to securely manage credentials.
-
-### b. Least Privilege Principle
-- Configure the tool to operate with the minimum necessary permissions required for its tasks.
-
-### c. Dependency Management
-- Dependencies are regularly scanned for vulnerabilities using Dependabot, SonarCLoud for code Analysis, and Synk to ensure a secure software supply chain.
-
-
-### 3. Security Considerations
-
-### a. Safe Resource Handling
-- Ensures proper handling of HTTP connections to prevent potential resource leaks or session mismanagement.
-
-### b. Rate Limiting
-- Enforce API rate limits to prevent abuse or unintentional denial-of-service scenarios.
-
-### c. Versioning
-- Actively maintains and supports selected versions of the CLI with security updates.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | ✅ Supported       |
-| 5.0.x   | ✅ Not Supported   |
-| 4.0.x   | ✅ Supported       |
-| < 4.0   | ❌ Not Supported   |
-
-
-
-### 4. Development and Testing Practices
-
-### a. Secure Development Lifecycle (SDLC)
-- Security is integrated into every stage of development to ensure the CLI is built with security in mind.
-
-### b. Continuous Integration and Testing
-- CI/CD pipelines include security scans to detect vulnerabilities during development.
-
-### c. Vulnerability Management
-- Security issues are tracked and addressed promptly through the GitHub issue tracker.
-
-
-### 5. Reporting Vulnerabilities
-
-We encourage responsible disclosure of vulnerabilities to improve the security of the Keycloak Config CLI.
-
-### How to Report
-- create  detailed vulnerability reports as an issue
-- Include steps to reproduce, affected versions, and potential impact in your report.
-
-### Response Process
-- **Acknowledgment**: Within 48 hours of receipt.
-- **Updates**: Weekly progress updates.
-- **Resolution**: Collaborate with reporters to validate and resolve the vulnerability. 
-
-
-### Conclusion
-
-The **Keycloak Config CLI** adheres to strict security practices to ensure secure and reliable Keycloak configuration management. By leveraging its features and adhering to recommended best practices, users can mitigate risks associated with configuration and operational vulnerabilities.
-
-For more information, visit the [GitHub repository](https://github.com/doriangrelu/keycloak-config-cli).
+Dependencies are monitored with Dependabot, and pull requests go through the GitHub dependency review, which fails on new dependencies with known high-severity vulnerabilities.

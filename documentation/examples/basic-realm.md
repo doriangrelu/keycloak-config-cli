@@ -59,14 +59,14 @@ failureFactor: 5
 # EMAIL SETTINGS
 # ============================================
 smtpServer:
-  host: "${SMTP_HOST}"
-  port: "${SMTP_PORT:587}"
+  host: "{{smtpHost}}"
+  port: "{{smtpPort:587}}"
   from: "no-reply@mycompany.com"
   fromDisplayName: "My Company"
   starttls: "true"
   auth: "true"
-  user: "${SMTP_USER}"
-  password: "${SMTP_PASSWORD}"
+  user: "{{smtpUser}}"
+  password: "{{smtpPassword}}"
 
 # ============================================
 # ROLES
@@ -164,7 +164,7 @@ users:
       - /administrators
     credentials:
       - type: password
-        value: "${ADMIN_INITIAL_PASSWORD}"
+        value: "{{adminInitialPassword}}"
         temporary: true
 ```
 
@@ -186,8 +186,15 @@ java -jar keycloak-config-cli.jar \
   --keycloak.url=https://keycloak.mycompany.com \
   --keycloak.user=admin \
   --keycloak.password=${KEYCLOAK_ADMIN_PASSWORD} \
+  --import.mustache.enabled=true \
+  --import.mustache.variables.smtpHost="$SMTP_HOST" \
+  --import.mustache.variables.smtpUser="$SMTP_USER" \
+  --import.mustache.variables.smtpPassword="$SMTP_PASSWORD" \
+  --import.mustache.variables.adminInitialPassword="$ADMIN_INITIAL_PASSWORD" \
   --import.files.locations=realm.yaml
 ```
+
+The `{{...}}` placeholders of the file are [Mustache variables](../advanced/templating.md); `{{smtpPort:587}}` falls back to `587` when `smtpPort` is not given.
 
 ### 3. Verify
 

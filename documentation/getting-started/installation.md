@@ -12,11 +12,7 @@ This guide covers the different ways to install and run Keycloak Config CLI.
 
 ### 1. Download JAR (Recommended)
 
-Download the JAR of a release from the [releases page](https://github.com/doriangrelu/keycloak-config-cli/releases), then run it:
-
-```bash
-java -jar keycloak-config-cli.jar --help
-```
+Download the JAR of a release from the [releases page](https://github.com/doriangrelu/keycloak-config-cli/releases), and run it with `java -jar keycloak-config-cli.jar`, as shown in the [Quick Start Guide](quick-start.md).
 
 ### 2. Docker
 
@@ -43,31 +39,25 @@ cd keycloak-config-cli
 # Build without tests (faster)
 ./mvnw clean package -DskipTests
 
-# The JAR will be in target/
-java -jar target/keycloak-config-cli.jar --help
+# The JAR is target/keycloak-config-cli.jar
 ```
 
-### 4. Maven Dependency
-
-If you want to integrate keycloak-config-cli into your own application:
-
-```xml
-<dependency>
-    <groupId>io.github.doriangrelu.keycloak</groupId>
-    <artifactId>keycloak-config-cli</artifactId>
-    <version>7.0.0</version>
-</dependency>
-```
+keycloak-config-cli is an executable Spring Boot application, not a library: it is not published as a Maven dependency.
 
 ## Verifying Installation
 
-Test your installation by running:
+There is no `--help` option. Check the installation and the connection to Keycloak with a dry run, which changes nothing:
 
 ```bash
-java -jar keycloak-config-cli.jar --help
+java -jar keycloak-config-cli.jar \
+  --keycloak.url=http://localhost:8080 \
+  --keycloak.user=admin \
+  --keycloak.password=admin \
+  --import.files.locations=realm.yaml \
+  --import.dry-run=true
 ```
 
-You should see the available command-line options and their descriptions.
+Exit code `0` or `10` means the files were read and compared with Keycloak; see [Exit Codes](../reference/exit-codes.md) for the others.
 
 ## Next Steps
 

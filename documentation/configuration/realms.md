@@ -2,6 +2,8 @@
 
 Realms are the top-level container in Keycloak. Each realm manages its own set of users, credentials, roles, and groups.
 
+> The `{{...}}` placeholders in the examples are [Mustache variables](../advanced/templating.md): run the import with `--import.mustache.enabled=true` and give each value with `--import.mustache.variables.<name>=...`, so that no secret is written in the files.
+
 ## Basic Realm Definition
 
 ```yaml
@@ -116,8 +118,8 @@ smtpServer:
   replyTo: "no-reply@example.com"
   starttls: "true"
   auth: "true"
-  user: "${SMTP_USER}"
-  password: "${SMTP_PASSWORD}"
+  user: "{{smtpUser}}"
+  password: "{{smtpPassword}}"
 ```
 
 ## Internationalization
@@ -221,14 +223,14 @@ failureFactor: 5
 
 # SMTP
 smtpServer:
-  host: "${SMTP_HOST}"
-  port: "${SMTP_PORT}"
+  host: "{{smtpHost}}"
+  port: "{{smtpPort}}"
   from: "no-reply@example.com"
   fromDisplayName: "My Application"
   starttls: "true"
   auth: "true"
-  user: "${SMTP_USER}"
-  password: "${SMTP_PASSWORD}"
+  user: "{{smtpUser}}"
+  password: "{{smtpPassword}}"
 
 # Internationalization
 internationalizationEnabled: true
@@ -314,11 +316,11 @@ Never commit secrets:
 ```yaml
 # Good: Use variables
 smtpServer:
-  password: "${SMTP_PASSWORD}"
+  password: "{{smtpPassword}}"
 
 clients:
   - clientId: my-app
-    secret: "${CLIENT_SECRET}"
+    secret: "{{clientSecret}}"
 ```
 
 ### 4. Document Your Configuration

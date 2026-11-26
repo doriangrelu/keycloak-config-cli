@@ -1,6 +1,8 @@
 # Architecture
 
 > Index des décisions d'architecture de keycloak-config-cli. Le détail de chaque choix est dans [`documentation/architecture/`](documentation/architecture/). L'avancement de la refonte est suivi dans [`TASKS.md`](TASKS.md).
+>
+> Le plan du dépôt, les règles de couches vérifiées par ArchUnit et la méthode de développement (skills SuperPowers : cadrage en ADR et EPIC, plan d'implémentation dans [`documentation/architecture/plans/`](documentation/architecture/plans/), TDD, revue, vérification) sont décrits dans [`AGENTS.md`](AGENTS.md).
 
 ## Refonte 7.0.0 en bref
 

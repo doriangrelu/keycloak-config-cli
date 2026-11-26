@@ -1,108 +1,79 @@
 # Contributing
 
-Thank you for your interest in improving keycloak-config-cli! This project is community‑driven and we welcome issues, pull requests, and feedback.
+Thank you for your interest in improving keycloak-config-cli! Issues, pull requests and feedback are welcome.
 
-Please also review our [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Policy](SECURITY.md).
+Please also read the [Code of Conduct](CODE_OF_CONDUCT.md) and the [Security Policy](SECURITY.md). The architecture rules, the repository map and the development workflow are in [AGENTS.md](AGENTS.md): read it before a non-trivial change, whether you write the code yourself or with an AI coding agent.
 
 ## Before you start
 
-- For small fixes and documentation improvements, feel free to open a pull request directly.
-- For larger changes, new features, or behavior changes, please open an issue first to discuss your proposal: https://github.com/doriangrelu/keycloak-config-cli/issues
-  - This helps validate the approach, avoid duplicate work, and get early feedback.
-
-## Finding something to work on
-
-- Browse open issues and look for labels like `help wanted` or `good first issue`.
-- If you’re not sure where to start, open an issue to introduce yourself and what you’re interested in.
-
-## Questions and help
-
-Join #keycloak-config-cli on Slack for design discussions and questions. Create an account at https://slack.cncf.io/. Direct link to the #keycloak-config-cli channel: https://cloud-native.slack.com/archives/C09SPL5G3MY
+- Small fixes and documentation improvements: open a pull request directly.
+- New features, behaviour changes or larger refactorings: open an [issue](https://github.com/doriangrelu/keycloak-config-cli/issues) first to agree on the approach. Changes of behaviour are framed in an architecture decision record (ADR) in [`documentation/architecture/`](documentation/architecture/), indexed in [ARCHITECTURE.md](ARCHITECTURE.md).
+- Look for issues labelled `help wanted` or `good first issue` if you are looking for something to work on.
 
 ## Development setup
 
-- Java Development Kit (JDK) — see versions supported by the project in the CI and `pom.xml`.
-- Docker (for integration tests via Testcontainers).
-- Maven Wrapper is included; you can use `./mvnw` without installing Maven locally.
-
-See the following README sections:
-- [Build this Project](README.md#build-this-project)
-- [Run integration tests against real keycloak](README.md#run-integration-tests-against-real-keycloak)
-- [Run this Project](README.md#run-this-project)
+- JDK 25 (the CI uses Temurin 25).
+- Docker, for the integration tests (Testcontainers starts Keycloak) and the [sample](sample/README.md).
+- The Maven wrapper is included: use `./mvnw` (or `mvnw.cmd` on Windows) without installing Maven. Set `JAVA_HOME` to the JDK 25.
 
 ## Building and testing
 
-Run full verification (includes unit and integration tests):
-
 ```bash
-./mvnw verify
+./mvnw -B spotless:apply              # format the code (Palantir Java Format)
+./mvnw -B clean package -DskipTests   # build target/keycloak-config-cli.jar
+./mvnw -B test -Dtest='SomeTest'      # run some unit tests
+./mvnw -B verify                      # format check, unit tests (*Test) and integration tests (*IT)
 ```
 
-Notes:
-- Integration tests use Testcontainers and require a working Docker environment.
-- If your Docker environment has issues with internal DNS, see the hint in the README (e.g., `JUNIT_LDAP_HOST`).
+- Integration tests need a working Docker environment. With a Docker Desktop replacement where `host.docker.internal` cannot be resolved, set the LDAP host used by the tests: `./mvnw verify -DJUNIT_LDAP_HOST=<host or IP>`.
+- Test another Keycloak version with `-Dkeycloak.version=<version>`.
+- `./sample/scripts/run-all.sh` runs end-to-end scenarios against a throwaway Keycloak (Bash and Docker Compose, JAR built first).
 
 ## Style and quality
 
-- Keep changes focused and minimal. Avoid unrelated refactors in the same PR.
-- Follow the existing code style. The repository provides `checkstyle.xml` and license headers.
-- Ensure files include the correct license header. You can use:
+- Keep changes focused. Avoid unrelated refactorings in the same pull request.
+- The build fails on unformatted code: run `./mvnw spotless:apply` before committing.
+- The layers (`domain`, `application`, `infrastructure`) are checked by `ArchitectureTest`; see [AGENTS.md](AGENTS.md#architecture-rules).
+- Every new Java file starts with the license header: copy it from a neighbouring file.
+- Write tests first. Unit tests are named `*Test`, integration tests against Keycloak `*IT`.
+- Never log or print a password, client secret or token.
 
-```bash
-./mvnw license:update-file-header
-```
+## Commit messages
 
-- Prefer small, readable methods and adequate test coverage.
-
-## Commit messages and issue linking
-
-Write clear commit messages:
+Use the conventional style of the history, in English:
 
 ```
-A brief descriptive summary
+feat(shell): connect to a named target
 
-Optional body describing implementation details or rationale
+Optional body explaining why and how.
 
 Closes #1234
 ```
 
-- Use "Closes #<issue>" (preferred), so GitHub auto‑links and closes the issue.
-- Keep one logical change per commit when possible; we prefer a tidy history. Squash during merge is fine.
-
-For more about linking PRs to issues, see GitHub docs: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue
+Types in use: `feat`, `fix`, `docs`, `test`, `chore`, `refactor`. Keep one logical change per commit, and use `Closes #<issue>` to link the issue.
 
 ## Documentation
 
-- Update docs when behavior, flags, environment variables, or user‑visible output changes.
-- Common places to update:
-  - [README.md](README.md) (quick start, usage, configuration tables, examples)
-  - [DOCUMENTATION.md](DOCUMENTATION.md) and `docs/` (feature details and guides)
-  - [CHANGELOG.md](CHANGELOG.md) (brief entry for user‑visible changes)
+Update the documentation with the change: the [table in AGENTS.md](AGENTS.md#documentation-to-keep-in-sync) lists which page goes with which kind of change. User-visible changes get an entry in the `Unreleased` section of the [CHANGELOG](CHANGELOG.md). User documentation is written in English; architecture documents (`ARCHITECTURE.md`, `TASKS.md`, `documentation/architecture/`) are written in French.
 
 ## Pull request checklist
 
-Before you open or mark your PR ready for review, please ensure:
+- The pull request references an issue, or explains the problem it solves.
+- The scope is limited to one change.
+- `./mvnw verify` passes locally.
+- Tests were added or updated.
+- The documentation and the CHANGELOG were updated where needed.
+- The branch is rebased on `main`.
 
-- You opened or referenced a corresponding issue with a clear description
-- The PR scope is limited to a single change/feature/fix
-- Code builds locally: `./mvnw verify`
-- Tests were added/updated where appropriate (unit and/or integration)
-- Documentation was updated (README/docs/CHANGELOG as needed)
-- No unrelated files or formatting changes included
-- Branch is rebased on `main` (use `git rebase`, not `git pull`)
+## Releasing
 
-## Submitting your PR
+Releases are built with the [Maven release plugin](https://maven.apache.org/maven-release/maven-release-plugin/) and signed with GPG: configure your signing key in Git (`git config --global user.signingkey <key id>`) and add it to your GitHub account, then:
 
-1. Fork the repository and create your branch from `main`.
-2. Commit your changes using the guidelines above.
-3. Rebase your branch on `main` and ensure a clean build: `./mvnw verify`.
-4. Open a pull request and fill in the description, including links to the issue(s).
-5. Be responsive to review comments. We may close inactive PRs after a period of no response (you can always reopen or submit a new PR later).
+```bash
+./mvnw -Dresume=false release:prepare release:clean
+git push --follow-tags
+```
 
-## Security and responsible disclosure
+## Security
 
-If you find a security vulnerability, please do not open a public issue. Follow our [Security Policy](SECURITY.md) to report it responsibly.
-
----
-
-We appreciate your contributions — thank you for helping make keycloak-config-cli better!
+Do not open a public issue for a vulnerability: follow the [Security Policy](SECURITY.md).

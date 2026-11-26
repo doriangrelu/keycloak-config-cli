@@ -2,66 +2,81 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/doriangrelu/keycloak-config-cli?logo=github&sort=semver)](https://github.com/doriangrelu/keycloak-config-cli/releases/latest)
 [![GitHub license](https://img.shields.io/github/license/doriangrelu/keycloak-config-cli)](https://github.com/doriangrelu/keycloak-config-cli/blob/main/LICENSE.txt)
 
----
-
-## Documentation
-
-**Full documentation is available in the [`documentation/`](./documentation/README.md) folder.**
-
-Quick links:
-- [Installation Guide](./documentation/getting-started/installation.md)
-- [Quick Start](./documentation/getting-started/quick-start.md)
-- [Configuration Reference](./documentation/getting-started/configuration.md)
-- [Groups Configuration](./documentation/configuration/groups.md)
-- [Examples](./documentation/examples/basic-realm.md)
-
-**Migrating from 6.x?** Version 7.0.0 removes several options and changes how deletions work: read the [migration guide](./documentation/getting-started/migration-7.md) before upgrading.
-
----
-
-# Table of Contents
-
-- [Quick start](#quick-start)
-- [Interactive shell](#interactive-shell)
-- [Help and community](#help-and-community)
-- [Config Files](#config-files)
-- [Templating with Mustache](#templating-with-mustache)
-- [Logging](#logging)
-- [Supported Features](#supported-features)
-- [Compatibility with Keycloak](#compatibility-with-keycloak)
-- [Build this Project](#build-this-project)
-- [Run Integration Tests](#run-integration-tests)
-- [Run this Project](#run-this-project)
-- [Docker](#docker)
-- [Configuration](#configuration)
-- [Perform Release](#perform-release)
-
 # keycloak-config-cli
 
-keycloak-config-cli provides declarative, idempotent configuration for Keycloak via the Admin API—version-controlled and CI/CD-ready—covering realms, clients, roles, flows, identity providers, and more.
+keycloak-config-cli applies Keycloak configuration as code: realm files in JSON or YAML, in the Keycloak export format, kept in Git and applied through the admin API, without restarting Keycloak. It covers realms, clients, client scopes, roles, groups, users, authentication flows, identity providers and more.
 
-It is a Keycloak utility to ensure the desired configuration state for a realm based on a JSON/YAML file. The format of the JSON/YAML file is based on the Keycloak realm export format. Store and manage configuration files in Git just like normal code. A Keycloak restart isn't required to apply the configuration.
+Like `kubectl apply`, every run compares the files with Keycloak. For each resource type the files of a realm declare, what they declare is created or updated, and what no file declares is deleted. Users, resources Keycloak creates itself and [protected resources](documentation/advanced/protected-resources.md) are never deleted, and types the files do not declare are not touched.
 
-Like `kubectl apply`, every run compares the files with Keycloak: for each resource type the files of a realm declare, what they declare is created or updated, and what no file declares is deleted (users, resources Keycloak creates itself and [protected resources](./documentation/advanced/protected-resources.md) are never deleted). Types the files do not declare are not touched. Check the changes first with a [dry run](./documentation/advanced/dry-run.md), and see [Managed Resources](./documentation/concepts/managed-resources.md).
+> **Upgrading from 6.x?** Version 7.0.0 removes several options and changes how deletions work. Read the [migration guide](documentation/getting-started/migration-7.md) and run a [dry run](documentation/advanced/dry-run.md) first.
 
+## Contents
 
-## Interactive shell
+- [Features](#features)
+- [Quick start](#quick-start)
+- [Interactive shell](#interactive-shell)
+- [Documentation](#documentation)
+- [Configuration](#configuration)
+- [Compatibility with Keycloak](#compatibility-with-keycloak)
+- [Docker](#docker)
+- [Contributing](#contributing)
+- [License](#license)
 
-The shell (`--run.operation=SHELL`) is a guided editor for the realm definition files: it asks questions, explains the choices, and writes clients, roles and groups in files you import as they are, with rules that keep the result safe. It works offline, interactively or in a script. See the [shell documentation](./documentation/shell/README.md).
+## Features
 
-## Help and community
-
-- Documentation: see [`documentation/`](./documentation/README.md) folder
-- Report an issue: https://github.com/doriangrelu/keycloak-config-cli/issues
-- Security vulnerability? Please follow `SECURITY.md`
-- Code of Conduct: `CODE_OF_CONDUCT.md`
+- **Declarative and idempotent**: the files are the only source of truth; running the same import twice changes nothing the second time.
+- **Incremental**: only the differences with Keycloak are applied, in the order of their dependencies.
+- **Safe cleanup**: users, technical resources of Keycloak and protected resources are never deleted.
+- **Dry run**: the changes, deletions included, are reported before anything is applied, as text or JSON.
+- **CI/CD friendly**: distinct [exit codes](documentation/reference/exit-codes.md) for an invalid configuration, an unavailable Keycloak, a refused request, or pending changes.
+- **Templating**: [Mustache](documentation/advanced/templating.md) variables for the values that differ between environments.
+- **Normalization**: turns a raw realm export into a minimal file, without the defaults and generated identifiers ([Normalization](documentation/advanced/normalization.md)).
+- **Interactive shell**: a guided, offline editor of realm files, with configuration rules ([Shell](documentation/shell/README.md)).
 
 ## Quick start
 
-Build the JAR (or download one from the [releases](https://github.com/doriangrelu/keycloak-config-cli/releases)), then point it to Keycloak and to your import files:
+Build the JAR (or download one from the [releases](https://github.com/doriangrelu/keycloak-config-cli/releases)):
 
 ```bash
 ./mvnw clean package -DskipTests
+```
+
+Start a local Keycloak:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin123 \
+  quay.io/keycloak/keycloak:26.5.3 start-dev
+```
+
+Write a realm file, `config/my-realm.yaml`:
+
+```yaml
+realm: my-realm
+enabled: true
+roles:
+  realm:
+    - name: admin
+clients:
+  - clientId: my-application
+    redirectUris:
+      - "https://my-app.example.com/*"
+groups:
+  - name: administrators
+    realmRoles:
+      - admin
+```
+
+Preview the changes, then apply them:
+
+```bash
+java -jar ./target/keycloak-config-cli.jar \
+  --keycloak.url=http://localhost:8080 \
+  --keycloak.user=admin \
+  --keycloak.password=admin123 \
+  --import.files.locations='./config/*' \
+  --import.dry-run=true
 
 java -jar ./target/keycloak-config-cli.jar \
   --keycloak.url=http://localhost:8080 \
@@ -70,140 +85,59 @@ java -jar ./target/keycloak-config-cli.jar \
   --import.files.locations='./config/*'
 ```
 
-See the [Quick Start](./documentation/getting-started/quick-start.md) for a first realm file, and [Docker](#docker) to run it in a container.
+Keep the files small: start from the [examples](documentation/examples/basic-realm.md), or [normalize](documentation/advanced/normalization.md) an export to remove identifiers and default values. More examples are in the [test resources](src/test/resources/import-files).
 
-To try the CLI end to end, the [sample](./sample/README.md) starts a throwaway Keycloak with Docker Compose and runs scripted scenarios against it: dry run, import, clean phase, protected resources and exit codes.
+To try the tool end to end, the [sample](sample/README.md) starts a throwaway Keycloak with Docker Compose and runs scripted scenarios: dry run, import, cleanup, protected resources, exit codes and the shell.
 
-# Config files
+## Interactive shell
 
-The config files are based on the keycloak export files. You can use them to re-import your settings. But keep your files as small as possible. Remove all UUIDs and all stuff which is default set by keycloak.
+The shell (`--run.operation=SHELL`) is a guided editor for realm files: it asks questions, explains the choices, and writes clients, roles and groups in files you import as they are, with rules that keep the result safe. It works offline, interactively or in a script. See the [shell documentation](documentation/shell/README.md).
 
-The [examples](./documentation/examples/basic-realm.md) of the documentation, up to a [full realm](./documentation/examples/full-realm-example.md), are working files you can start from. Other examples are located in the [test resources](./src/test/resources/import-files).
+## Documentation
 
-## Templating with Mustache
+The full documentation is in [`documentation/`](documentation/README.md).
 
-Import files can be rendered as [Mustache](https://mustache.github.io/) templates before they are parsed. This is enabled by `import.mustache.enabled=true` (**disabled by default**, because existing files may contain `{{`, for example in message bundles or themes).
+| Topic | Pages |
+|---|---|
+| Getting started | [Installation](documentation/getting-started/installation.md), [Quick start](documentation/getting-started/quick-start.md), [Configuration properties](documentation/getting-started/configuration.md), [Migrating to 7.0.0](documentation/getting-started/migration-7.md) |
+| Concepts | [Overview](documentation/concepts/overview.md), [Managed resources](documentation/concepts/managed-resources.md), [Operations and import process](documentation/concepts/import-modes.md) |
+| Resource types | [Realms](documentation/configuration/realms.md), [Clients](documentation/configuration/clients.md), [Client scopes](documentation/configuration/client-scopes.md), [Roles](documentation/configuration/roles.md), [Groups](documentation/configuration/groups.md), [Users](documentation/configuration/users.md), [Authentication flows](documentation/configuration/authentication-flows.md), [Identity providers](documentation/configuration/identity-providers.md) |
+| Advanced | [Dry run](documentation/advanced/dry-run.md), [Normalization](documentation/advanced/normalization.md), [Protected resources](documentation/advanced/protected-resources.md), [Templating with Mustache](documentation/advanced/templating.md) |
+| Reference | [Supported features](documentation/reference/features.md), [Import file patterns](documentation/reference/import-patterns.md), [Exit codes](documentation/reference/exit-codes.md) |
+| Architecture (French) | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
-Variables are set with `import.mustache.variables.<name>`, as a command line argument, an environment variable or in a Spring configuration file:
+## Configuration
 
-```shell
-java -jar keycloak-config-cli.jar \
-  --import.mustache.enabled=true \
-  --import.mustache.variables.host=sso.example.com \
-  --import.mustache.variables.secret=${CLIENT_SECRET} \
-  --import.files.locations=realm.json
-```
+Every option is a Spring Boot property: a command line argument (`--keycloak.url=...`), an environment variable (`KEYCLOAK_URL`: upper case, dots replaced by underscores, hyphens removed) or a configuration file (`--spring.config.location=application.yaml`). The main ones:
 
-```json
-{
-  "realm": "my-realm",
-  "attributes": { "frontendUrl": "https://{{host}}" },
-  "clients": [{ "clientId": "my-app", "secret": "{{secret}}" }],
-  "notBefore": {{notBefore:0}}
-}
-```
+| Property | Default | Description |
+|---|---|---|
+| `keycloak.url` | - | Keycloak URL, including the web context |
+| `keycloak.user` / `keycloak.password` | `admin` / - | Account used with the `password` grant |
+| `keycloak.grant-type` | `password` | `password` or `client_credentials` (with `keycloak.client-id` and `keycloak.client-secret`) |
+| `import.files.locations` | - | Files, Ant-style patterns or URLs to import |
+| `import.dry-run` | `false` | Report the changes without applying them (exit code `10` when changes are pending) |
+| `import.mustache.enabled` | `false` | Render the files as Mustache templates, with `import.mustache.variables.*` |
+| `run.operation` | `IMPORT` | `IMPORT`, `NORMALIZE` or `SHELL` |
 
-- `{{name}}` is replaced by the value; `{{name:default}}` uses `default` when the variable is not defined.
-- A variable that is neither defined nor given a default fails the import (exit code `2`, invalid configuration); the message names the variable, the file and the line.
-- Values are escaped as the content of a double-quoted string (the same in JSON and YAML), so put placeholders inside double quotes. `{{{name}}}` inserts the value as is.
-- Keycloak placeholders such as `${role_uma_authorization}` are left untouched.
+All the properties, with their environment variables and defaults, logging and secrets read from files, are in [Configuration properties](documentation/getting-started/configuration.md). Unknown `keycloak.*` and `import.*` properties are rejected at startup, so an option removed in 7.0.0 fails with exit code `2` instead of being silently ignored.
 
-The former `$(...)` variable substitution (`import.var-substitution.*`) has been removed. See [Templating with Mustache](./documentation/advanced/templating.md) for the full reference and the migration guide.
-
-# Logging
-
-## JSON logging support
-
-keycloak-config-cli supports logging in JSON format. To enable, set `SPRING_PROFILES_ACTIVE=json-log`.
-
-## Log level
-
-| CLI Option                          | ENV Variable                    | Description                                                                          | Default                       |
-|-------------------------------------|---------------------------------|--------------------------------------------------------------------------------------|-------------------------------|
-| --logging.level.root                | LOGGING_LEVEL_ROOT              | define the root log level                                                            | `info`                        |
-| --logging.level.keycloak-config-cli | LOGGING_LEVEL_KEYCLOAKCONFIGCLI | log level of keycloak-config-cli components                                          | value of `logging.level.root` |
-| --logging.level.http                | LOGGING_LEVEL_HTTP              | log level http requests between keycloak-config-cli and Keycloak                     | value of `logging.level.root` |
-| --logging.level.realm-config        | LOGGING_LEVEL_REALMCONFIG       | if set to trace, the realm config including **sensitive information** will be logged | value of `logging.level.root` |
-
-# Supported features
-
-See: [documentation/reference/features.md](./documentation/reference/features.md)
-
-# Compatibility with keycloak
+## Compatibility with Keycloak
 
 | Component | Version |
 |-----------|---------|
 | Keycloak server | 26.x: every change is built and tested against Keycloak 26.5.3 |
 | Keycloak admin client | 26.0.13 |
 | Java | 25 or higher |
-| Normalization | Exports of Keycloak 19 to 26: reference realms of 19.0.3, 20.0.3, 25.0.5, 26.0.5 and 26.5.3, the closest one being used for other versions (see [Normalization](./documentation/advanced/normalization.md)) |
+| Normalization | Exports of Keycloak 19 to 26: reference realms of 19.0.3, 20.0.3, 25.0.5, 26.0.5 and 26.5.3, the closest one being used for other versions |
 
-At startup, keycloak-config-cli reads the version of the server and logs a warning when its major version differs from the one it was built for; it does not refuse to run. Other versions of Keycloak are not tested. To check one, run the integration tests against it:
+At startup, keycloak-config-cli reads the version of the server and logs a warning when its major version differs from the one it was built for; it does not refuse to run. To check another version, run the integration tests against it:
 
-```shell
+```bash
 ./mvnw verify -Dkeycloak.version=<version>
 ```
 
-Red Hat SSO 7.x, based on Keycloak 18 and older, is not supported. See [Red Hat SSO Compatibility](./documentation/reference/rhsso-compatibility.md).
-
-# Build this project
-
-keycloak-config-cli using [maven](https://maven.apache.org/index.html) to build and test keycloak-config-cli.
-In case maven is not installed on your system, the [`mvnw`](https://github.com/takari/maven-wrapper) command will download maven for you.
-
-Further development requirements
-- Java Development Kit (JDK)
-- Docker Desktop or an alternative replacement (e.g Rancher Desktop)
-
-Before running `mvn verify`, you have to set the JAVA_HOME environment variable to prevent some test failures.
-
-```shell
-./mvnw verify
-
-# Windows only
-mvnw.cmd verify
-```
-
-If your are working with a Docker Desktop replacement, some of the Integrationtests can fail due to internal DNS Lookups (host.docker.internal is not reachable).
-In this case the host can be replaced by a property.
-
-```shell script
-mvn verify -DJUNIT_LDAP_HOST=an.alternate.host.or.ip
-```
-
-# Run integration tests against real keycloak
-
-We are using [TestContainers](https://www.testcontainers.org/) in our integration tests. To run the integration tests a configured docker environment
-is required.
-
-```shell script
-./mvnw verify
-
-# Windows only
-mvnw.cmd verify
-```
-
-# Run this project
-
-Start a local keycloak on port 8080:
-
-```shell script
-docker run --rm -p 8080:8080 \
-    -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
-    -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin123 \
-    quay.io/keycloak/keycloak:26.5.3 start-dev
-```
-
-before performing following command:
-
-```shell script
-java -jar ./target/keycloak-config-cli.jar \
-    --keycloak.url=http://localhost:8080 \
-    --keycloak.ssl-verify=true \
-    --keycloak.user=admin \
-    --keycloak.password=admin123 \
-    --import.files.locations='./config/*'
-```
+Red Hat SSO 7.x, based on Keycloak 18 and older, is not supported. See [Red Hat SSO compatibility](documentation/reference/rhsso-compatibility.md).
 
 ## Docker
 
@@ -215,121 +149,24 @@ COPY target/keycloak-config-cli.jar /app/keycloak-config-cli.jar
 ENTRYPOINT ["java", "-jar", "/app/keycloak-config-cli.jar"]
 ```
 
-```shell
+```bash
 ./mvnw clean package -DskipTests
 docker build -t keycloak-config-cli .
+
+docker run --rm \
+  -e KEYCLOAK_URL="http://<keycloak host>:8080/" \
+  -e KEYCLOAK_USER="<admin user>" \
+  -e KEYCLOAK_PASSWORD="<admin password>" \
+  -e KEYCLOAK_AVAILABILITYCHECK_ENABLED=true \
+  -e IMPORT_FILES_LOCATIONS='/config/*' \
+  -v <your config path>:/config \
+  keycloak-config-cli
 ```
 
-### Docker run
+## Contributing
 
-For docker `-e` you have to replace dots with underscores.
+Issues and pull requests are welcome: read [CONTRIBUTING.md](CONTRIBUTING.md) for the build, the tests and the conventions, and [AGENTS.md](AGENTS.md) for the architecture rules and the development workflow (also the entry point for AI coding agents). Report vulnerabilities privately, as explained in [SECURITY.md](SECURITY.md). Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-```shell script
-docker run \
-    -e KEYCLOAK_URL="http://<your keycloak host>:8080/" \
-    -e KEYCLOAK_USER="<keycloak admin username>" \
-    -e KEYCLOAK_PASSWORD="<keycloak admin password>" \
-    -e KEYCLOAK_AVAILABILITYCHECK_ENABLED=true \
-    -e KEYCLOAK_AVAILABILITYCHECK_TIMEOUT=120s \
-    -e IMPORT_FILES_LOCATIONS='/config/*' \
-    -v <your config path>:/config \
-    keycloak-config-cli
-```
+## License
 
-# Configuration
-
-## CLI option / Environment Variables
-
-### Keycloak options
-
-| CLI Option                            | ENV Variable                         | Description                                                                       | Default     | Docs                                                                                             |
-|---------------------------------------|--------------------------------------|-----------------------------------------------------------------------------------|-------------|--------------------------------------------------------------------------------------------------|
-| --keycloak.url                        | `KEYCLOAK_URL`                       | Keycloak URL including web context. Format: `scheme://hostname:port/web-context`. | -           |                                                                                                  |
-| --keycloak.user                       | `KEYCLOAK_USER`                      | login user name                                                                   | `admin`     |                                                                                                  |
-| --keycloak.password                   | `KEYCLOAK_PASSWORD`                  | login user password                                                               | -           |                                                                                                  |
-| --keycloak.client-id                  | `KEYCLOAK_CLIENTID`                  | login clientId                                                                    | `admin-cli` |                                                                                                  |
-| --keycloak.client-secret              | `KEYCLOAK_CLIENTSECRET`              | login client secret                                                               | -           |                                                                                                  |
-| --keycloak.grant-type                 | `KEYCLOAK_GRANTTYPE`                 | login grant_type                                                                  | `password`  |                                                                                                  |
-| --keycloak.login-realm                | `KEYCLOAK_LOGINREALM`                | login realm                                                                       | `master`    |                                                                                                  |
-| --keycloak.ssl-verify                 | `KEYCLOAK_SSLVERIFY`                 | Verify ssl connection to keycloak                                                 | `true`      |                                                                                                  |
-| --keycloak.http-proxy                 | `KEYCLOAK_HTTPPROXY`                 | Connect to Keycloak via HTTP Proxy. Format: `scheme://hostname:port`              | -           |                                                                                                  |
-| --keycloak.connect-timeout            | `KEYCLOAK_CONNECTTIMEOUT`            | Connection timeout                                                                | `10s`       |                                                                                                  |
-| --keycloak.read-timeout               | `KEYCLOAK_READTIMEOUT`               | Read timeout                                                                      | `10s`       | configured as [Java Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html) |
-| --keycloak.availability-check.enabled | `KEYCLOAK_AVAILABILITYCHECK_ENABLED` | Wait until Keycloak is available                                                  | `false`     |                                                                                                  |
-| --keycloak.availability-check.timeout | `KEYCLOAK_AVAILABILITYCHECK_TIMEOUT` | Wait timeout for keycloak availability check                                      | `120s`      | configured as [Java Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html) |
-| --keycloak.availability-check.retry-delay | `KEYCLOAK_AVAILABILITYCHECK_RETRYDELAY` | Delay between two availability checks                                    | `2s`        | configured as [Java Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html) |
-| --keycloak.skip-server-info          | `KEYCLOAK_SKIPSERVERINFO`            | Skip fetching Keycloak server info. Required for non-master realm authentication. | `false`     | [SKIP_SERVER_INFO.md](documentation/reference/skip-server-info.md)                                                  |
-
-### Import options
-
-| CLI Option                                            | ENV Variable                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                        | Default    | Docs                          |
-|-------------------------------------------------------|----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|-------------------------------|
-| --import.validate                                     | `IMPORT_VALIDATE`                                  | Validate configuration settings                                                                                                                                                                                                                                                                                                                                                                                                    | `true`     |                               |
-| --import.files.locations                              | `IMPORT_FILES_LOCATIONS`                           | Location of config files (URL, file path, or Ant-style pattern)                                                                                                                                                                                                                                                                                                                                                                    | -          | [IMPORT.md](documentation/reference/import-patterns.md)   |
-| --import.files.include-hidden-files                   | `IMPORT_FILES_INCLUDEHIDDENFILES`                  | Includes files that marked as hidden                                                                                                                                                                                                                                                                                                                                                                                               | `false`    |                               |
-| --import.files.excludes                               | `IMPORT_FILES_EXCLUDES`                            | Exclude files with Ant-style pattern                                                                                                                                                                                                                                                                                                                                                                                               | -          |                               |
-| --import.mustache.enabled                             | `IMPORT_MUSTACHE_ENABLED`                          | Render the import files as Mustache templates                                                                                                                                                                                                                                                                                                                                                                                      | `false`    | [templating.md](documentation/advanced/templating.md) |
-| --import.mustache.variables.*                         | `IMPORT_MUSTACHE_VARIABLES_*`                      | Variables of the Mustache templates: `--import.mustache.variables.host=...` sets `{{host}}`                                                                                                                                                                                                                                                                                                                                        | -          | [templating.md](documentation/advanced/templating.md) |
-| --import.dry-run                                      | `IMPORT_DRYRUN`                                    | Report the changes the import would make, deletions included, without applying them. Exit code `10` when changes are pending                                                                                                                                                                                                                                                                                                      | `false`    | [dry-run.md](documentation/advanced/dry-run.md) |
-| --import.dry-run-format                               | `IMPORT_DRYRUNFORMAT`                              | Format of the dry run report: `text` or `json`                                                                                                                                                                                                                                                                                                                                                                                    | `text`     | [dry-run.md](documentation/advanced/dry-run.md) |
-| --import.dry-run-report-file                          | `IMPORT_DRYRUNREPORTFILE`                          | File the dry run report is also written to                                                                                                                                                                                                                                                                                                                                                                                        | -          | [dry-run.md](documentation/advanced/dry-run.md) |
-| --import.behaviors.sync-user-federation               | `IMPORT_BEHAVIORS_SYNCUSERFEDERATION`              | Enable the synchronization of user federation.                                                                                                                                                                                                                                                                                                                                                                                     | `false`    |                               |
-| --import.behaviors.remove-default-role-from-user      | `IMPORT_BEHAVIORS_REMOVEDEFAULTROLEFROMUSER`       | The default setting of this flag prevents keycloak-config-cli from removing `default-roles-$REALM`, even if its not defined in the import json. To make keycloak-config-cli able to remove the `default-role-$REALM`, `import.behaviors.remove-default-role-from-user` must be set to true. In conclusion, you have to add the `default-role-$REALM` to the realm import on certain users, if you want not remove the `default-role-$REALM`. | `false`    |                               |
-| --import.behaviors.skip-attributes-for-federated-user | `IMPORT_BEHAVIORS_SKIPATTRIBUTESFORFEDERATEDUSER`  | Set attributes to null for federated users to avoid read only conflicts                                                                                                                                                                                                                                                                                                                                                            | `false`    |                               |
-
-## Spring boot options
-
-| CLI Option               | ENV Variable             | Description                             | Default | Docs                                                                                                                                                                      |
-|--------------------------|--------------------------|-----------------------------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| --spring.profiles.active | `SPRING_PROFILES_ACTIVE` | enable spring profiles. comma separated | `-`     | [Set the Active Spring Profiles](https://docs.spring.io/spring-boot/docs/current/reference/html/howto.html#howto.properties-and-configuration.set-active-spring-profiles) |
-| --spring.config.import   | `SPRING_CONFIG_IMPORT`   | See below                               | `-`     | [Configure properties values through files](#configure-properties-values-through-files)                                                                                   |
-| --logging.level.root     | `LOGGING_LEVEL_ROOT`     | define the root log level               | `info`  | [Logging](https://docs.spring.io/spring-boot/docs/current/reference/html/howto.html#howto.logging)                                                                        |
-| --debug                  | `DEBUG`                  | enables debug mode of spring boot       | `false` |                                                                                                                                                                           |
-
-See [application.properties](src/main/resources/application.properties) for all available settings.
-
-Unknown `keycloak.*` and `import.*` properties are rejected: a configuration that still sets an option removed in 7.0.0 (`import.managed.*`, `import.remote-state.*`, `import.cache.*`, `import.parallel`, `import.var-substitution.*`, `import.behaviors.checksum-*`) fails at startup with exit code `2`. See the [migration guide](./documentation/getting-started/migration-7.md).
-
-For docker `-e` you have to remove hyphens and replace dots with underscores.
-
-Take a look at [spring relax binding](https://github.com/spring-projects/spring-boot/wiki/Relaxed-Binding-2.0) or
-[binding from Environment Variables](https://docs.spring.io/spring-boot/docs/2.6.0/reference/htmlsingle/#features.external-config.typesafe-configuration-properties.relaxed-binding.environment-variables)
-if you need alternative spellings.
-
-## Configure properties values through files
-
-By define an environment variable `SPRING_CONFIG_IMPORT=configtree:/run/secrets/`, the values of properties can be provided via files instead of plain
-environment variable values.
-
-Example: To configure the property `keycloak.password` in this case, the file should be in `/run/secrets/keycloak.password`.
-
-The configuration and secret support in Docker Swarm is a perfect match for this use case.
-
-Checkout the [spring docs](https://docs.spring.io/spring-boot/docs/2.6.0/reference/htmlsingle/#features.external-config.files.configtree)
-to get more information about the configuration trees feature in spring boot.
-
-# Perform release
-
-Building releases requires gpg signing.
-
-Example to create and add a key to yout git config on MacOS
-
-```shell script
-brew install gnupg
-gpg --version
-gpg --full-generate-key
-# follow instructions
-gpg --list-keys
-gpg --list-secret-keys --keyid-format=short
-# check the 8 digit code eg "ssb   xxxxxxx/E51442F5 2022-01-01 [X]"
-git config --global user.signingkey E51442F5
-```
-
-Finally add the key to your Github account under Settings -> SSH and GPG keys -> New GPG key
-
-Create release via [maven release plugin](https://maven.apache.org/maven-release/maven-release-plugin/examples/prepare-release.html):
-
-```shell script
-./mvnw -Dresume=false release:prepare release:clean
-git push --follow-tags
-```
+Apache License 2.0, see [LICENSE.txt](LICENSE.txt) and [NOTICE.txt](NOTICE.txt).

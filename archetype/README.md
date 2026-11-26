@@ -34,9 +34,9 @@ realm-config/
     06-corporate-saml-idp.yaml          # SAML identity provider + mappers
 ```
 
-Files are imported in alphabetical order. Numeric prefixes (`00-` … `06-`) guarantee the correct sequence: realm before roles, roles before groups, scopes before clients.
+The files of a realm are merged before anything is applied, and the changes are applied in the order of their dependencies, so the order of the files does not matter. The numeric prefixes (`00-` … `06-`) only keep the folder readable.
 
-Each file is an independent `RealmImport` and must declare its own `realm:` key.
+Each file must declare its own `realm:` key; the files of the same realm are merged. A key defined in two files with different contents is an error.
 
 ## Mustache templating
 
@@ -67,7 +67,7 @@ Since every variable has a default, the configuration works **out-of-the-box** w
 1. Create `realm-config/clients/07-my-new-client.yaml`
 2. Declare `realm: "{{environment:dev}}-{{realm_name:my-realm}}"` at the top
 3. Define the `clients:` array with your client configuration
-4. The numeric prefix controls import order relative to other clients
+4. The numeric prefix only keeps the folder readable: the order of the files does not matter
 
 ### Adding a new Mustache variable
 
@@ -93,8 +93,8 @@ Any argument after `import` is forwarded to the JAR:
 # Target a different login realm
 ./kc-config.sh import --keycloak.login-realm=other-realm
 
-# Dry-run mode
-./kc-config.sh import --import.managed.group=NO_DELETE
+# Dry run: report the changes, deletions included, without applying them
+./kc-config.sh import --import.dry-run=true
 ```
 
-See the full [CLI reference](https://github.com/doriangrelu/keycloak-config-cli#cli-option--environment-variable) for all available options.
+Every run deletes, for each resource type the files declare, what they do not declare (users, technical resources of Keycloak and protected resources excepted): run a dry run first. See the [configuration reference](https://github.com/doriangrelu/keycloak-config-cli/blob/main/documentation/getting-started/configuration.md) for all available options.

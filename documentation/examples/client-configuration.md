@@ -131,7 +131,7 @@ clients:
 
     # Confidential client
     publicClient: false
-    secret: "${BACKEND_SERVICE_SECRET}"
+    secret: "{{backendServiceSecret}}"
 
     # Service account only
     serviceAccountsEnabled: true
@@ -155,7 +155,7 @@ clients:
 
     # Confidential client
     publicClient: false
-    secret: "${WEB_BACKEND_SECRET}"
+    secret: "{{webBackendSecret}}"
 
     # Standard OAuth flow
     standardFlowEnabled: true
@@ -205,7 +205,7 @@ clients:
     enabled: true
 
     publicClient: false
-    secret: "${AUTOMATION_CLI_SECRET}"
+    secret: "{{automationCliSecret}}"
 
     # Direct access for CLI
     directAccessGrantsEnabled: true
@@ -339,8 +339,14 @@ java -jar keycloak-config-cli.jar \
   --keycloak.url=https://keycloak.example.com \
   --keycloak.user=admin \
   --keycloak.password=${KEYCLOAK_PASSWORD} \
+  --import.mustache.enabled=true \
+  --import.mustache.variables.backendServiceSecret="$BACKEND_SERVICE_SECRET" \
+  --import.mustache.variables.webBackendSecret="$WEB_BACKEND_SECRET" \
+  --import.mustache.variables.automationCliSecret="$AUTOMATION_CLI_SECRET" \
   --import.files.locations=clients.yaml
 ```
+
+The `{{...}}` placeholders of the file are [Mustache variables](../advanced/templating.md).
 
 ## Best Practices
 

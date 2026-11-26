@@ -2,6 +2,8 @@
 
 Identity Providers (IdPs) allow users to authenticate using external systems like Google, GitHub, SAML providers, or LDAP.
 
+> The `{{...}}` placeholders in the examples are [Mustache variables](../advanced/templating.md): run the import with `--import.mustache.enabled=true` and give each value with `--import.mustache.variables.<name>=...`, so that no secret is written in the files.
+
 ## OpenID Connect Providers
 
 ### Google
@@ -15,8 +17,8 @@ identityProviders:
     trustEmail: true
     firstBrokerLoginFlowAlias: "first broker login"
     config:
-      clientId: "${GOOGLE_CLIENT_ID}"
-      clientSecret: "${GOOGLE_CLIENT_SECRET}"
+      clientId: "{{googleClientId}}"
+      clientSecret: "{{googleClientSecret}}"
       authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth"
       tokenUrl: "https://oauth2.googleapis.com/token"
       userInfoUrl: "https://openidconnect.googleapis.com/v1/userinfo"
@@ -34,8 +36,8 @@ identityProviders:
     enabled: true
     trustEmail: true
     config:
-      clientId: "${GITHUB_CLIENT_ID}"
-      clientSecret: "${GITHUB_CLIENT_SECRET}"
+      clientId: "{{githubClientId}}"
+      clientSecret: "{{githubClientSecret}}"
       defaultScope: "user:email"
 ```
 
@@ -49,10 +51,10 @@ identityProviders:
     enabled: true
     trustEmail: true
     config:
-      clientId: "${AZURE_CLIENT_ID}"
-      clientSecret: "${AZURE_CLIENT_SECRET}"
-      authorizationUrl: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize"
-      tokenUrl: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token"
+      clientId: "{{azureClientId}}"
+      clientSecret: "{{azureClientSecret}}"
+      authorizationUrl: "https://login.microsoftonline.com/{{azureTenantId}}/oauth2/v2.0/authorize"
+      tokenUrl: "https://login.microsoftonline.com/{{azureTenantId}}/oauth2/v2.0/token"
       userInfoUrl: "https://graph.microsoft.com/oidc/userinfo"
       defaultScope: "openid email profile"
 ```
@@ -67,8 +69,8 @@ identityProviders:
     enabled: true
     trustEmail: true
     config:
-      clientId: "${OIDC_CLIENT_ID}"
-      clientSecret: "${OIDC_CLIENT_SECRET}"
+      clientId: "{{oidcClientId}}"
+      clientSecret: "{{oidcClientSecret}}"
       authorizationUrl: "https://sso.example.com/authorize"
       tokenUrl: "https://sso.example.com/token"
       userInfoUrl: "https://sso.example.com/userinfo"
@@ -135,8 +137,8 @@ identityProviders:
     enabled: true
     trustEmail: false
     config:
-      clientId: "${FACEBOOK_APP_ID}"
-      clientSecret: "${FACEBOOK_APP_SECRET}"
+      clientId: "{{facebookAppId}}"
+      clientSecret: "{{facebookAppSecret}}"
       defaultScope: "email,public_profile"
 ```
 
@@ -149,8 +151,8 @@ identityProviders:
     providerId: twitter
     enabled: true
     config:
-      clientId: "${TWITTER_API_KEY}"
-      clientSecret: "${TWITTER_API_SECRET}"
+      clientId: "{{twitterApiKey}}"
+      clientSecret: "{{twitterApiSecret}}"
 ```
 
 ### LinkedIn
@@ -163,8 +165,8 @@ identityProviders:
     enabled: true
     trustEmail: true
     config:
-      clientId: "${LINKEDIN_CLIENT_ID}"
-      clientSecret: "${LINKEDIN_CLIENT_SECRET}"
+      clientId: "{{linkedinClientId}}"
+      clientSecret: "{{linkedinClientSecret}}"
 ```
 
 ## Identity Provider Mappers
@@ -262,8 +264,8 @@ identityProviders:
     linkOnly: false
     firstBrokerLoginFlowAlias: "first broker login"
     config:
-      clientId: "${GOOGLE_CLIENT_ID}"
-      clientSecret: "${GOOGLE_CLIENT_SECRET}"
+      clientId: "{{googleClientId}}"
+      clientSecret: "{{googleClientSecret}}"
       authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth"
       tokenUrl: "https://oauth2.googleapis.com/token"
       userInfoUrl: "https://openidconnect.googleapis.com/v1/userinfo"
@@ -280,7 +282,7 @@ identityProviders:
     storeToken: false
     firstBrokerLoginFlowAlias: "first broker login"
     config:
-      entityId: "${KEYCLOAK_URL}/realms/my-realm"
+      entityId: "{{keycloakUrl}}/realms/my-realm"
       singleSignOnServiceUrl: "https://sso.corp.example.com/saml/sso"
       singleLogoutServiceUrl: "https://sso.corp.example.com/saml/slo"
       nameIDPolicyFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
@@ -332,8 +334,8 @@ When at least one import file of the realm has an `identityProviders` (or `ident
 
 ```yaml
 config:
-  clientId: "${IDP_CLIENT_ID}"
-  clientSecret: "${IDP_CLIENT_SECRET}"
+  clientId: "{{idpClientId}}"
+  clientSecret: "{{idpClientSecret}}"
 ```
 
 ### 2. Set Trust Email Appropriately
