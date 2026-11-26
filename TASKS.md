@@ -13,6 +13,7 @@
 | [EPIC-005](documentation/architecture/epics/EPIC-005-normalisation.md) | Normalisation sur le nouveau socle | Terminé |
 | [EPIC-006](documentation/architecture/epics/EPIC-006-simplification.md) | Simplification : les fichiers comme seule vérité, Mustache seul moteur de template | Terminé |
 | [EPIC-007](documentation/architecture/epics/EPIC-007-shell-edition.md) | Shell interactif : édition guidée des définitions de realm (clients, rôles, groupes), hors ligne | Terminé |
+| [EPIC-008](documentation/architecture/epics/EPIC-008-shell-connecte.md) | Shell en mode connecté : connexion, dry-run et import, extraction d'un realm, comparaison, complétion depuis Keycloak | À faire |
 
 ## Après la refonte
 
@@ -21,7 +22,6 @@
 | Normalisation : ignorer d'autres valeurs par défaut que celles de la référence | `TODO` de l'ancien `RealmNormalizationService` (EPIC-005) |
 | Normalisation : ignorer des clients par expression régulière | `TODO` de l'ancien `RealmNormalizationService` (EPIC-005) |
 | Normalisation : profil utilisateur et utilisateurs | Limites de l'EPIC-005 |
-| Shell en mode connecté : import, dry-run, complétion depuis Keycloak, extraction d'un realm en fichiers découpés par type | Hors périmètre de l'EPIC-007 (ADR-008) |
 | Shell : autres types d'éléments (client scopes, policies, flows, fournisseurs d'identité, protocol mappers, attributs utilisateur, thèmes, brute force, options de connexion, required actions) | Hors périmètre de l'EPIC-007 (ADR-008) |
 
 ## Principe de migration

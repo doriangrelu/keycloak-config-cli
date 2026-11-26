@@ -23,6 +23,7 @@ infrastructure  ──▶  application  ──▶  domain
 | [ADR-007](documentation/architecture/ADR-007-fichiers-seule-verite.md) | Les fichiers d'import comme seule vérité : nettoyage unique, Mustache seul moteur de template, options retirées | Accepté |
 | [ADR-008](documentation/architecture/ADR-008-shell-edition-des-definitions.md) | Shell interactif (Spring Shell) et édition guidée des définitions de realm, hors ligne, avec règles de configuration | Accepté |
 | [ADR-009](documentation/architecture/ADR-009-regles-de-configuration.md) | Règles de configuration : formalisme déclaratif sur les clés d'export, désactivation explicite, moteur du domaine | Accepté |
+| [ADR-010](documentation/architecture/ADR-010-shell-mode-connecte.md) | Shell en mode connecté : cibles nommées, connexion par cible, import et dry-run, extraction normalisée, comparaison | Accepté |
 
 ## Décisions du 17/11/2026
 
