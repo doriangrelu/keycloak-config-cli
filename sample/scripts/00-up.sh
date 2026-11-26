@@ -24,6 +24,13 @@ if kcadm get realms/shelled --fields realm >/dev/null 2>&1; then
     kcadm delete realms/shelled && pass "realm 'shelled' of a previous run deleted"
 fi
 # The root of the shell: the realms it created in a previous run
-rm -rf "$SAMPLE_DIR/shell/work" && mkdir -p "$SAMPLE_DIR/shell/work" && pass "shell/work emptied"
+# The CLI container writes there as root: empty the folder from a container, the host user may not be allowed to
+mkdir -p "$SAMPLE_DIR/shell/work"
+if compose run --rm -T --no-deps --entrypoint sh cli -c 'rm -rf /shell/work/* /shell/work/.[!.]*' >/dev/null 2>&1 &&
+    [ -z "$(ls -A "$SAMPLE_DIR/shell/work")" ]; then
+    pass "shell/work emptied"
+else
+    fail "shell/work could not be emptied"
+fi
 
 [ "${BASH_SOURCE[0]}" = "$0" ] && summary
