@@ -117,7 +117,7 @@ Décisions de conception (25/11/2026, validées avec l'utilisateur) :
 
 ### US-007-10 — Documentation et sample
 
-**Statut :** À faire
+**Statut :** Terminé
 Documentation utilisateur (en anglais) : lancement du shell, commandes, variables, `realm format`, règles. Scénarios du sample (`sample/`) : créer un realm et ses éléments avec le shell en mode non interactif, puis importer le résultat dans Keycloak et vérifier.
 
 Décisions de conception (25/11/2026, validées avec l'utilisateur) :
@@ -225,4 +225,13 @@ Décisions de conception (25/11/2026, validées avec l'utilisateur) :
 - Un nom de groupe vide ou contenant `/` est refusé ; un sous-groupe dont le parent est écrit dans un autre fichier que celui des groupes est refusé avant toute question suivante (`ParentGroupElsewhereException`), plutôt que d'écrire dans le fichier du parent.
 - `group edit` ne modifie que les rôles ; `--name` et `--parent` y sont refusés.
 - Exécutée par des sous-agents ; deux points importants corrigés avant la fusion : un nom avec `/` qui faussait le chemin, et le chemin affiché après une création dont le parent était choisi en session. Points mineurs reportés : `--parent` sans valeur `none` (l'absence vaut « aucun »), chemin sans `/` initial non corrigé, un rôle variable d'un groupe affiché `(not found)`, `EditGroup` qui réutilise des méthodes de `CreateGroup`, quelques tests manquants (scénario interactif complet au niveau de la commande, rôle intégré de Keycloak donné par option).
+
+### US-007-10
+
+- Mode script : `shell.script` exécute un fichier de commandes dans une même session (lignes vides et `#` ignorés, chaque commande affichée, arrêt à la première qui échoue avec `Stopped at line <n>` et son code) ; `shell.realm` ouvre un realm au démarrage, en script comme en session ; `shell.command` et `shell.script` ensemble : code 2.
+- Documentation utilisateur en anglais dans `documentation/shell/` (vue d'ensemble et mode script, commandes, règles, fichiers et variables), reliée depuis la table des matières, le README, `configuration.md` et le CHANGELOG ; les exemples de règles sont relus par `DocumentedRulesTest`.
+- Sample : `sample/shell/create-realm.kcc` crée le realm `shelled` (SPA, application web avec secret variable, rôles, groupe et sous-groupe), le scénario 10 l'importe et vérifie dans Keycloak clients, PKCE, rôles, groupes et secret ; le scénario 11 montre un refus par une règle (code 2, rien d'écrit). Le dossier de travail est vidé depuis un conteneur, ce qui permet de relancer le sample sous Linux.
+- L'ADR-008 est aligné : la confirmation de première déclaration est aussi demandée dans un realm créé par le shell, qui ne peut pas savoir hors ligne que Keycloak n'a pas ce realm.
+- Le dépôt déclare le plugin Claude Code `superpowers` (`.claude/settings.json`).
+- Exécutée par des sous-agents ; la revue finale a relevé trois points importants corrigés avant la fusion : sample impossible à relancer sous Linux, deux scripts non exécutables, documentation qui laissait croire qu'un rôle inconnu pouvait être donné à un groupe. Points mineurs reportés : un BOM UTF-8 en tête d'un fichier `.kcc` n'est pas retiré, une commande qui échoue dans un script n'est pas journalisée, `shell.realm` ouvre le realm sans rien afficher en session, quelques tests manquants (commande inconnue dans un script, `shell.realm` avec `shell.script`, `shell.realm` en session) ; le sample n'a pas été rejoué sous Linux natif.
 
