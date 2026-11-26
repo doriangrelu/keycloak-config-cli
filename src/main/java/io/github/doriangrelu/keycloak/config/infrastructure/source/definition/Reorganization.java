@@ -226,8 +226,12 @@ final class Reorganization {
                     continue;
                 }
                 String stem = StandardLayout.fileStemOf(key);
-                String destination = stem.equals(home) ? name : destinations.computeIfAbsent(stem, s -> s + created);
-                if (!destination.equals(name)) {
+                boolean stays = stem.equals(home);
+                // The keys of the file renamed to the realm file meet the ones moved there, under its final name
+                String destination = !stays
+                        ? destinations.computeIfAbsent(stem, s -> s + created)
+                        : name.equals(candidate) ? destinations.get(REALM_STEM) : name;
+                if (!stays) {
                     this.moves.add(new Move(key, tree.root().listSize(key), name, destination));
                     movedOut.computeIfAbsent(name, n -> new LinkedHashSet<>()).add(key);
                     receiving.add(destination);
@@ -288,9 +292,15 @@ final class Reorganization {
         }
         if (left instanceof Map<?, ?> first && right instanceof Map<?, ?> second) {
             Map<Object, Object> all = new LinkedHashMap<>(first);
-            second.forEach(
-                    (name, value) -> all.merge(name, value, (a, b) -> merge(a, b, path + "." + name, slot, names)));
+            second.forEach((name, value) -> {
+                Object current = all.get(name);
+                // A null is an absent value
+                all.put(name, current == null ? value : merge(current, value, path + "." + name, slot, names));
+            });
             return all;
+        }
+        if (left == null || right == null) {
+            return left == null ? right : left;
         }
         if (Objects.equals(left, right)) {
             return left;

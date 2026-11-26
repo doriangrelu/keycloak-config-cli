@@ -401,6 +401,81 @@ class ReorganizeFilesTest {
     }
 
     @Test
+    void realmKeysOfEveryFileMeetInTheRealmFile() throws IOException {
+        Files.createDirectories(folder());
+        Files.writeString(folder().resolve("a.yaml"), """
+                realm: "{{env}}-demo"
+                displayName: Same
+                supportedLocales:
+                  - en
+                """);
+        Files.writeString(folder().resolve("b.yaml"), """
+                realm: "{{env}}-demo"
+                displayName: Same
+                supportedLocales:
+                  - fr
+                """);
+        this.files = new RealmDefinitionFiles(this.root);
+
+        apply();
+
+        TreeObject realm =
+                DocumentTrees.parse("00-realm.yaml", read("00-realm.yaml")).root();
+        assertThat(realm.keys()).containsExactly("realm", "displayName", "supportedLocales");
+        assertThat(realm.text("displayName")).contains("Same");
+        assertThat(realm.texts("supportedLocales")).containsExactly("en", "fr");
+        assertThat(names()).containsExactly("00-realm.yaml");
+    }
+
+    @Test
+    void differentRealmValuesInTwoFilesAreRefused() throws IOException {
+        Files.createDirectories(folder());
+        Files.writeString(folder().resolve("a.yaml"), """
+                realm: "{{env}}-demo"
+                displayName: One
+                """);
+        Files.writeString(folder().resolve("b.yaml"), """
+                realm: "{{env}}-demo"
+                displayName: Two
+                """);
+        this.files = new RealmDefinitionFiles(this.root);
+
+        assertThatThrownBy(() -> this.files.planReorganization("demo"))
+                .isInstanceOf(ReorganizationRefusedException.class)
+                .hasMessageContaining("displayName");
+    }
+
+    @Test
+    void aNullValueDoesNotBreakTheMerge() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("30-roles.yaml"), """
+                realm: "{{env}}-demo"
+                roles:
+                  client:
+                    backend:
+                      - name: reader
+                """);
+        Files.writeString(folder().resolve("my-roles.yaml"), """
+                realm: "{{env}}-demo"
+                roles:
+                  client:
+                    backend: ~
+                """);
+
+        apply();
+
+        assertThat(DocumentTrees.parse("30-roles.yaml", read("30-roles.yaml"))
+                        .root()
+                        .object("roles")
+                        .orElseThrow()
+                        .object("client")
+                        .orElseThrow()
+                        .objectLists()
+                        .get("backend"))
+                .hasSize(1);
+    }
+
+    @Test
     void aKeyThatCannotBeMergedIsRefused() throws IOException {
         copy("already-standard");
         Files.writeString(folder().resolve("extra.yaml"), """
