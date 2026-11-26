@@ -27,6 +27,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.InvalidRealm
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.RealmCheck;
 import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
+import io.github.doriangrelu.keycloak.config.application.definition.ReorganizeRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.UnknownFormatException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
@@ -35,6 +36,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.GroupDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
@@ -59,13 +61,16 @@ public class RealmCommands {
     private final ReadRealms readRealms;
     private final FormatRealm formatRealm;
     private final CreateRealm createRealm;
+    private final ReorganizeRealm reorganizeRealm;
     private final ShellSession session;
 
     public RealmCommands(
             final ReadRealms readRealms,
             final FormatRealm formatRealm,
             final CreateRealm createRealm,
+            final ReorganizeRealm reorganizeRealm,
             final ShellSession session) {
+        this.reorganizeRealm = Objects.requireNonNull(reorganizeRealm, "reorganizeRealm");
         this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
         this.formatRealm = Objects.requireNonNull(formatRealm, "formatRealm");
         this.createRealm = Objects.requireNonNull(createRealm, "createRealm");
@@ -143,6 +148,54 @@ public class RealmCommands {
         StringJoiner lines = new StringJoiner(System.lineSeparator());
         changed.forEach(file -> lines.add("Formatted: " + file));
         return lines.toString();
+    }
+
+    @Command(
+            name = {"realm", "reorganize"},
+            group = "Realms",
+            description = "Move the elements of the opened realm to the standard files (00-realm, 20-clients,"
+                    + " 30-roles, 40-groups, 50-links): the plan is shown, then asked unless --apply is given")
+    public String reorganize(
+            final CommandContext context,
+            @Option(
+                            longName = "apply",
+                            description = "write the moves without asking",
+                            required = false,
+                            defaultValue = "false")
+                    final boolean apply) {
+        String folder = this.session.requireOpenedRealm();
+        ReorganizationPlan plan = this.reorganizeRealm.plan(folder);
+        if (plan.isEmpty()) {
+            return "Nothing to move";
+        }
+        PrintWriter writer = context.outputWriter();
+        describe(plan).forEach(writer::println);
+        writer.flush();
+        boolean confirmed =
+                apply || new ConsoleQuestions(context.inputReader(), writer).confirm("Apply these moves?", false);
+        if (!confirmed) {
+            return "Nothing written: run again with --apply";
+        }
+        List<String> written = this.reorganizeRealm.apply(folder, plan);
+        return "Realm '%s' reorganized: %d files written, %d removed"
+                .formatted(folder, written.size(), plan.removals().size());
+    }
+
+    private static List<String> describe(final ReorganizationPlan plan) {
+        List<String> lines = new ArrayList<>();
+        lines.add("Moves planned:");
+        for (ReorganizationPlan.Move move : plan.moves()) {
+            String count = move.count().isPresent() ? " (" + move.count().getAsInt() + ")" : "";
+            lines.add("  %s%s  %s -> %s".formatted(move.key(), count, move.from(), move.to()));
+        }
+        for (ReorganizationPlan.Rename rename : plan.renames()) {
+            lines.add("  %s -> %s (what is left)".formatted(rename.from(), rename.to()));
+        }
+        for (String removal : plan.removals()) {
+            lines.add("  %s removed".formatted(removal));
+        }
+        lines.add("Comments around moved elements may be lost. Commit your files first, then run a dry run after.");
+        return lines;
     }
 
     @Command(

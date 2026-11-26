@@ -30,6 +30,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.EditRole;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
+import io.github.doriangrelu.keycloak.config.application.definition.ReorganizeRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import java.io.PrintWriter;
 import org.springframework.beans.factory.ObjectProvider;
@@ -57,8 +58,9 @@ public class ShellCommandConfiguration {
             final ReadRealms readRealms,
             final FormatRealm formatRealm,
             final CreateRealm createRealm,
+            final ReorganizeRealm reorganizeRealm,
             final ShellSession shellSession) {
-        return new RealmCommands(readRealms, formatRealm, createRealm, shellSession);
+        return new RealmCommands(readRealms, formatRealm, createRealm, reorganizeRealm, shellSession);
     }
 
     @Bean

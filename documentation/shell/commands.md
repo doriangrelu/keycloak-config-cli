@@ -77,6 +77,37 @@ Shows the clients (with their application type), the roles (realm or client) and
 
 Writes the files of the opened realm in the layout of the shell, without changing their content. See [Files](files.md#realm-format). It prints `Formatted: <file>` for each file it changed, or `Already formatted`.
 
+### `realm reorganize`
+
+Moves the elements of the opened realm to the standard files (see [Files](files.md#the-standard-layout)): a monolithic export or a realm split another way ends up in `00-realm`, `20-clients`, `30-roles`, `40-groups` and `50-links`. The realm must be formatted first (`realm format`), otherwise the command stops with `Run 'realm format' first: <file>`.
+
+| Option | Meaning |
+|--------|---------|
+| `--apply` | Write the moves without asking |
+
+The command shows the plan, then asks `Apply these moves?` (default: no). In a script, where nothing answers, the question takes its default: nothing is written and the command ends with `Nothing written: run again with --apply` and the exit code `0`.
+
+```text
+> realm reorganize
+Moves planned:
+  clients (2)  demo.yaml -> 20-clients.yaml
+  roles  demo.yaml -> 30-roles.yaml
+  groups (2)  demo.yaml -> 40-groups.yaml
+  users (2)  demo.yaml -> 50-links.yaml
+  demo.yaml -> 00-realm.yaml (what is left)
+Comments around moved elements may be lost. Commit your files first, then run a dry run after.
+? Apply these moves? [y/N]: y
+Realm 'demo' reorganized: 5 files written, 0 removed
+```
+
+A realm already in the standard layout prints `Nothing to move`.
+
+What the command never does:
+
+- It makes no backup: commit your files first, so that the change can be reviewed and undone.
+- It does not guarantee the comments: the comments around a moved element may be lost, which is why you run it without `--apply` first.
+- It does not merge what cannot be merged: when two files give a different value to the same key, or a file cannot be read, the command refuses and writes nothing.
+
 ## Clients
 
 ### `client create`

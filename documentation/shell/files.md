@@ -26,6 +26,20 @@ Every file of a realm has the same `realm` key (for example `realm: "{{env}}-sho
 
 The shell adapts to the organisation you already have. It reads every YAML and JSON file of the folder and remembers where each element comes from. An existing element is modified in its own file; a new element is added to the first file that already declares its type, or else to the standard file above, which the shell creates. The format of the files (YAML or JSON) is chosen by `realm create`; an existing file keeps its own.
 
+## The standard layout
+
+The shell puts new elements in the files below (it creates them when needed), and `realm reorganize` moves an existing realm to them.
+
+| File | Content |
+|------|---------|
+| `00-realm` | The `realm` key and everything that is not listed below (settings, client scopes, authentication flows, and so on) |
+| `20-clients` | `clients` |
+| `30-roles` | `roles` |
+| `40-groups` | `groups` |
+| `50-links` | `users`, `scopeMappings`, `clientScopeMappings` and `defaultGroups` |
+
+`50-links` comes last for a reason: the files are applied in the order of their name, and the elements it holds cite roles, groups and clients (a user with a role, a default group, a scope mapping on a client). A file that cites roles or groups must therefore come after the files that define them. Every file starts with the `realm` key.
+
 ## `realm format`
 
 The shell rewrites a file entirely when it changes an element. The first rewrite of a file written by hand can change its look (a comment above a list item moves into the item, a blank line disappears, a JSON list written on one line goes on several lines), and the look is then stable. `realm format` does that rewrite once, for every file of the opened realm, without changing the content, so that you can commit the change of look apart and get readable diffs afterwards.

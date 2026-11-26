@@ -30,6 +30,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.EditRole;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
+import io.github.doriangrelu.keycloak.config.application.definition.ReorganizeRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import io.github.doriangrelu.keycloak.config.application.definition.SaveElement;
 import io.github.doriangrelu.keycloak.config.application.definition.port.KeycloakBuiltIns;
@@ -129,6 +130,11 @@ public class ShellAdaptersConfiguration {
     @Bean
     public FormatRealm formatRealm(final RealmDefinitions realmDefinitions) {
         return new FormatRealm(realmDefinitions);
+    }
+
+    @Bean
+    public ReorganizeRealm reorganizeRealm(final RealmDefinitions realmDefinitions) {
+        return new ReorganizeRealm(realmDefinitions);
     }
 
     @Bean
