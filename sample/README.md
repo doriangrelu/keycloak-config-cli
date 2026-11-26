@@ -80,7 +80,7 @@ Mustache renders the whole file, comments included: a placeholder written in a Y
 
 ## The Shell Scenarios
 
-`shell/` is mounted in `/shell` in the CLI container. `shell/create-realm.kcc` and `shell/refused.kcc` are [shell scripts](../documentation/shell/README.md#script-mode); the shell writes the realms it creates in `shell/work` (the shell root, ignored by git, emptied by `00-up.sh`). Run the shell by hand with the same options:
+`shell/` is mounted in `/shell` in the CLI container. `shell/create-realm.kcc`, `shell/refused.kcc` and `shell/reorganize.kcc` are [shell scripts](../documentation/shell/README.md#script-mode); the shell writes the realms it creates in `shell/work` (the shell root, ignored by git, emptied by `00-up.sh`). Run the shell by hand with the same options:
 
 ```bash
 cd sample
