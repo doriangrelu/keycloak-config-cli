@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import java.util.List;
@@ -93,4 +94,14 @@ public interface RealmDefinitions {
 
     /** The text of each definition file of a realm, as written (comments included), by file name. */
     Map<String, String> sources(String folder);
+
+    /** What reorganizing the files of a realm into the standard layout would do, without writing anything. */
+    ReorganizationPlan planReorganization(String folder);
+
+    /**
+     * Writes the plan: the keys moved to their standard file, the files renamed, the empty files removed.
+     *
+     * @return the files written
+     */
+    List<String> reorganize(String folder, ReorganizationPlan plan);
 }

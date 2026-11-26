@@ -31,6 +31,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.GroupDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
@@ -391,5 +392,15 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public ReorganizationPlan planReorganization(final String folder) {
+        throw new UnsupportedOperationException("Task 2");
+    }
+
+    @Override
+    public List<String> reorganize(final String folder, final ReorganizationPlan plan) {
+        throw new UnsupportedOperationException("Task 2");
     }
 }

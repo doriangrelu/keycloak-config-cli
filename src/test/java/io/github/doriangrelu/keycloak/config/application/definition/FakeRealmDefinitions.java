@@ -6,6 +6,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import java.util.ArrayList;
@@ -29,6 +30,9 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     final Map<Origin, ElementKeys> elementKeys = new LinkedHashMap<>();
     ElementKeys realmKeys = ElementKeys.empty();
     ElementKeys previewed = ElementKeys.empty();
+    ReorganizationPlan plan = new ReorganizationPlan(List.of(), List.of(), List.of());
+    List<String> written = List.of();
+    final List<ReorganizationPlan> reorganized = new ArrayList<>();
 
     FakeRealmDefinitions(final RealmDefinition realm) {
         this.realm = realm;
@@ -101,5 +105,16 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     @Override
     public ElementKeys realmKeys(final String folder) {
         return this.realmKeys;
+    }
+
+    @Override
+    public ReorganizationPlan planReorganization(final String folder) {
+        return this.plan;
+    }
+
+    @Override
+    public List<String> reorganize(final String folder, final ReorganizationPlan plan) {
+        this.reorganized.add(plan);
+        return this.written;
     }
 }
