@@ -23,6 +23,9 @@ fi
 if kcadm get realms/shelled --fields realm >/dev/null 2>&1; then
     kcadm delete realms/shelled && pass "realm 'shelled' of a previous run deleted"
 fi
+if kcadm get realms/reorganized --fields realm >/dev/null 2>&1; then
+    kcadm delete realms/reorganized && pass "realm 'reorganized' of a previous run deleted"
+fi
 # The root of the shell: the realms it created in a previous run
 # The CLI container writes there as root: empty the folder from a container, the host user may not be allowed to
 mkdir -p "$SAMPLE_DIR/shell/work"

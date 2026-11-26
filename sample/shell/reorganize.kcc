@@ -1,0 +1,2 @@
+# Moves the elements of the opened realm to the standard files, without asking
+realm reorganize --apply

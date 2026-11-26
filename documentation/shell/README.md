@@ -31,7 +31,14 @@ Without `shell.command` and `shell.script`, an interactive session starts. Quest
 
 ## A session
 
-A session works on one realm at a time. `realm open <folder>` or `realm create` opens a realm; the other commands (`client`, `role`, `group`, `variables`, `realm show`, `realm format`) work on it. `realm list` and `rules list` need no open realm.
+A session works on one realm at a time. `realm open <folder>` or `realm create` opens a realm; the other commands (`client`, `role`, `group`, `variables`, `realm show`, `realm format`, `realm reorganize`) work on it. `realm list` and `rules list` need no open realm.
+
+| Command | Purpose |
+|---------|---------|
+| `realm format` | Rewrite the files in the layout of the shell, without changing their content |
+| `realm reorganize` | Move the elements of a realm to the standard files (`00-realm`, `20-clients`, `30-roles`, `40-groups`, `50-links`) |
+
+A raw export of Keycloak must go through `realm format` before `realm reorganize`. When several files give the same key (for example `clients`), `realm reorganize` merges them: the lists are concatenated in the order of the file names, and a merged key loses its comments. See [Commands](commands.md#realm-reorganize).
 
 ```text
 > realm list

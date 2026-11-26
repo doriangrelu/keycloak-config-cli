@@ -1,0 +1,37 @@
+# A realm kept in one file, as an export gives it.
+# `realm reorganize` splits it into 00-realm, 20-clients, 30-roles, 40-groups and 50-links.
+realm: reorganized
+enabled: true
+displayName: Reorganized realm
+
+clients:
+  - clientId: frontend
+    description: The web application
+    publicClient: true
+    redirectUris:
+      - "https://app.example.org/*"
+  - clientId: orphan-app
+    description: A second client
+    publicClient: true
+
+roles:
+  realm:
+    - name: reader
+    - name: writer
+
+groups:
+  - name: team
+    realmRoles:
+      - reader
+
+defaultGroups:
+  - /team
+
+users:
+  - username: alice
+    enabled: true
+    email: alice@example.org
+    firstName: Alice
+    lastName: Sample
+    groups:
+      - team

@@ -37,7 +37,7 @@ Start Keycloak once, then run the scenarios in order: each one starts from the s
 
 | Script | What it checks |
 |--------|----------------|
-| `00-up.sh` | Starts Keycloak, builds the CLI image, deletes the `sample` and `shelled` realms of a previous run, empties `shell/work` |
+| `00-up.sh` | Starts Keycloak, builds the CLI image, deletes the `sample`, `shelled` and `reorganized` realms of a previous run, empties `shell/work` |
 | `01-dry-run-new-realm.sh` | A dry run on a missing realm plans everything as creations, exits with `10` and writes nothing |
 | `02-import.sh` | The first import creates clients, roles, a group and a user; template variables are rendered, default values included |
 | `03-idempotent.sh` | Importing the same files again: the dry run reports no change (`0`) |
@@ -49,6 +49,7 @@ Start Keycloak once, then run the scenarios in order: each one starts from the s
 | `09-keycloak-unreachable.sh` | An unreachable Keycloak gives `3` |
 | `10-shell-create-and-import.sh` | The shell creates a realm in script mode (`shell.script`): two clients, a realm role, a client role, a group and a subgroup; the written files are then imported, and Keycloak holds what the shell described, PKCE included |
 | `11-shell-rule-refusal.sh` | The shell refuses a client with a `*` redirect URI: exit code `2`, the rule `client.redirect-uris.no-wildcard` is named, no clients file is written |
+| `12-shell-reorganize.sh` | The shell splits a monolithic realm export (`shell/monolithic/realm-export.yaml`, copied in `shell/work/reorganized`) with `realm reorganize --apply` into `00-realm`, `20-clients`, `30-roles`, `40-groups` and `50-links`; the files are imported, Keycloak holds the clients, roles, group, user and default group, and a dry run then reports no change |
 | `99-down.sh` | Stops Keycloak and removes its data |
 
 ## Run the CLI by Hand
@@ -87,3 +88,5 @@ docker compose run --rm cli --run.operation=SHELL --shell.root=/shell/work --she
 ```
 
 The files written in `shell/work/shelled` contain template variables (`appUrl`, `shopSecret`) that the import of `10-shell-create-and-import.sh` gives.
+
+The monolithic export of `12-shell-reorganize.sh` is already formatted, so `realm reorganize` accepts it as it is. A raw export of Keycloak must go through `realm format` first: run both commands in one script (`realm format`, then `realm reorganize --apply`).

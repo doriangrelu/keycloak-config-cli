@@ -81,6 +81,8 @@ Writes the files of the opened realm in the layout of the shell, without changin
 
 Moves the elements of the opened realm to the standard files (see [Files](files.md#the-standard-layout)): a monolithic export or a realm split another way ends up in `00-realm`, `20-clients`, `30-roles`, `40-groups` and `50-links`. The realm must be formatted first (`realm format`), otherwise the command stops with `Run 'realm format' first: <file>`.
 
+A raw Keycloak export therefore goes through `realm format` first, then `realm reorganize`. When a key is present in several files (for example `clients` in two files), the values are merged: lists are concatenated in the order of the file names, and a merged key loses its comments.
+
 | Option | Meaning |
 |--------|---------|
 | `--apply` | Write the moves without asking |
