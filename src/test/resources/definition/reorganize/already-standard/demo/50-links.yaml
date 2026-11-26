@@ -1,0 +1,5 @@
+realm: "{{env}}-demo"
+users:
+  - username: alice
+defaultGroups:
+  - /team

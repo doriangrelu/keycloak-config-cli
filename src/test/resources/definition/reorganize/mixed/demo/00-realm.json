@@ -1,0 +1,15 @@
+{
+  "realm": "{{env}}-demo",
+  "enabled": true,
+  "displayName": "Demo realm",
+  "smtpServer": {
+    "host": "smtp.example.org",
+    "port": 25
+  },
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true
+    }
+  ]
+}

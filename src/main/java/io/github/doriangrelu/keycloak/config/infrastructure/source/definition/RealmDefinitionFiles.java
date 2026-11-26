@@ -365,7 +365,7 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         }
     }
 
-    private static String readFile(final Path file) {
+    static String readFile(final Path file) {
         try {
             return Files.readString(file, StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -373,7 +373,7 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         }
     }
 
-    private static void writeFile(final Path file, final String content) {
+    static void writeFile(final Path file, final String content) {
         try {
             Files.writeString(file, content, StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -381,7 +381,7 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         }
     }
 
-    private static List<Path> definitionFiles(final Path directory) {
+    static List<Path> definitionFiles(final Path directory) {
         try (Stream<Path> files = Files.list(directory)) {
             return files.filter(Files::isRegularFile)
                     .filter(file -> DefinitionFormat.ofFileName(
@@ -396,11 +396,11 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
 
     @Override
     public ReorganizationPlan planReorganization(final String folder) {
-        throw new UnsupportedOperationException("Task 2");
+        return new Reorganization(this.root.resolve(folder)).plan();
     }
 
     @Override
     public List<String> reorganize(final String folder, final ReorganizationPlan plan) {
-        throw new UnsupportedOperationException("Task 2");
+        return new Reorganization(this.root.resolve(folder)).apply(plan);
     }
 }

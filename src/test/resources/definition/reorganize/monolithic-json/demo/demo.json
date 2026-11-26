@@ -1,0 +1,84 @@
+{
+  "realm": "{{env}}-demo",
+  "enabled": true,
+  "displayName": "Demo realm",
+  "smtpServer": {
+    "host": "smtp.example.org",
+    "port": 25,
+    "from": "no-reply@example.org"
+  },
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@example.org"
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "email": "bob@example.org"
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "profile-extra",
+      "protocol": "openid-connect"
+    }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "browser-custom",
+      "topLevel": true,
+      "builtIn": false
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "frontend",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "{{appUrl}}/*"
+      ]
+    },
+    {
+      "clientId": "backend",
+      "publicClient": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrator"
+      },
+      {
+        "name": "viewer"
+      }
+    ],
+    "client": {
+      "backend": [
+        {
+          "name": "reader"
+        }
+      ]
+    }
+  },
+  "groups": [
+    {
+      "name": "team",
+      "subGroups": [
+        {
+          "name": "leads"
+        }
+      ]
+    },
+    {
+      "name": "guests"
+    }
+  ],
+  "defaultGroups": [
+    "/guests"
+  ]
+}

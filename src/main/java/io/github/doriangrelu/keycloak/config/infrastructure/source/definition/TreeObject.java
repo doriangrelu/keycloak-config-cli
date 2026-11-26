@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * An object of a definition file, in YAML or JSON. A value of another kind than the one asked for is treated as absent.
@@ -109,4 +110,26 @@ public interface TreeObject {
 
     /** Adds an empty object at the end of a list, created when absent. */
     TreeObject append(String listKey);
+
+    /** The number of items of the list under a key; empty when the value is not a list. */
+    OptionalInt listSize(String key);
+
+    /**
+     * A top-level entry of an object: its key, its comments where the format keeps them, and its value. It is moved as
+     * a whole to an object of the same format, and rebuilt from its content in an object of the other format.
+     */
+    interface Entry {
+
+        /** The value of the entry as plain Java values: maps, lists, text, numbers, booleans and null. */
+        Object plain();
+    }
+
+    /** The entry of a key, without removing it. */
+    Optional<Entry> entry(String key);
+
+    /** Writes an entry under a key: replaces the current value, else adds it at the end. */
+    void put(String key, Entry entry);
+
+    /** Adds the items of a list entry at the end of the list under a key; writes the entry when the key is absent. */
+    void concat(String key, Entry list);
 }

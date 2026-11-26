@@ -1,0 +1,6 @@
+realm: "{{env}}-demo"
+enabled: true
+displayName: Demo realm
+clientScopes:
+  - name: profile-extra
+    protocol: openid-connect

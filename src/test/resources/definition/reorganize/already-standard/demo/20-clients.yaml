@@ -1,0 +1,6 @@
+realm: "{{env}}-demo"
+clients:
+  - clientId: frontend
+    publicClient: true
+    redirectUris:
+      - "{{appUrl}}/*"

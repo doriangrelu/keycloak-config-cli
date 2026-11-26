@@ -1,0 +1,3 @@
+realm: "{{env}}-demo"
+groups:
+  - name: team

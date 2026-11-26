@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 
@@ -143,6 +144,15 @@ final class JsonDocumentTree implements DocumentTree {
             return MAPPER.writer(printer).writeValueAsString(this.root) + this.lineSeparator;
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Cannot write a JSON tree", e);
+        }
+    }
+
+    /** The value of a key of a JSON object. */
+    record JsonEntry(JsonNode value) implements TreeObject.Entry {
+
+        @Override
+        public Object plain() {
+            return MAPPER.convertValue(this.value, Object.class);
         }
     }
 
@@ -325,6 +335,39 @@ final class JsonDocumentTree implements DocumentTree {
             JsonNode current = this.node.get(listKey);
             ArrayNode array = current instanceof ArrayNode existing ? existing : this.node.putArray(listKey);
             return new JsonObject(array.addObject(), this.lines);
+        }
+
+        @Override
+        public OptionalInt listSize(final String key) {
+            return value(key)
+                    .filter(JsonNode::isArray)
+                    .map(array -> OptionalInt.of(array.size()))
+                    .orElse(OptionalInt.empty());
+        }
+
+        @Override
+        public Optional<Entry> entry(final String key) {
+            return value(key).map(JsonEntry::new);
+        }
+
+        @Override
+        public void put(final String key, final Entry entry) {
+            this.node.set(key, nodeOf(entry));
+        }
+
+        @Override
+        public void concat(final String key, final Entry list) {
+            JsonNode current = this.node.get(key);
+            JsonNode added = nodeOf(list);
+            if (current instanceof ArrayNode array && added instanceof ArrayNode items) {
+                array.addAll(items);
+            } else {
+                this.node.set(key, added);
+            }
+        }
+
+        private static JsonNode nodeOf(final Entry entry) {
+            return entry instanceof JsonEntry json ? json.value() : MAPPER.valueToTree(entry.plain());
         }
 
         private static Optional<String> scalar(final JsonNode value) {

@@ -1,0 +1,279 @@
+/*-
+ * ---license-start
+ * keycloak-config-cli
+ * ---
+ * Copyright (C) 2017 - 2026 keycloak-config-cli contributors
+ * ---
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ---license-end
+ */
+
+package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.github.doriangrelu.keycloak.config.application.definition.ReorganizationRefusedException;
+import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan;
+import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan.Move;
+import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan.Rename;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class ReorganizeFilesTest {
+
+    private static final Path RESOURCES = Path.of("src/test/resources/definition/reorganize");
+
+    @TempDir
+    Path root;
+
+    private RealmDefinitionFiles files;
+
+    private void copy(final String fixture) throws IOException {
+        Path source = RESOURCES.resolve(fixture);
+        try (Stream<Path> paths = Files.walk(source)) {
+            for (Path path : paths.toList()) {
+                Path target = this.root.resolve(source.relativize(path).toString());
+                if (Files.isDirectory(path)) {
+                    Files.createDirectories(target);
+                } else {
+                    Files.copy(path, target);
+                }
+            }
+        }
+        this.files = new RealmDefinitionFiles(this.root);
+    }
+
+    private Path folder() {
+        return this.root.resolve("demo");
+    }
+
+    private String read(final String name) throws IOException {
+        return Files.readString(folder().resolve(name), StandardCharsets.UTF_8);
+    }
+
+    private List<String> names() throws IOException {
+        try (Stream<Path> children = Files.list(folder())) {
+            return children.map(path -> path.getFileName().toString()).sorted().toList();
+        }
+    }
+
+    /** The top-level content of the files of a folder but the realm name, by key, wherever it is written. */
+    private static Map<String, Object> contentOf(final Path folder) throws IOException {
+        Map<String, Object> content = new LinkedHashMap<>();
+        try (Stream<Path> paths = Files.list(folder)) {
+            for (Path path : paths.sorted().toList()) {
+                String name = path.getFileName().toString();
+                TreeObject root = DocumentTrees.parse(name, Files.readString(path, StandardCharsets.UTF_8))
+                        .root();
+                for (String key : root.keys()) {
+                    if (!key.equals("realm")) {
+                        content.merge(key, root.entry(key).orElseThrow().plain(), ReorganizeFilesTest::concatenated);
+                    }
+                }
+            }
+        }
+        return content;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object concatenated(final Object left, final Object right) {
+        if (left instanceof List<?> first && right instanceof List<?> second) {
+            List<Object> all = new ArrayList<>((List<Object>) first);
+            all.addAll(second);
+            return all;
+        }
+        throw new AssertionError("A key is written twice");
+    }
+
+    private List<String> keysOf(final String name) throws IOException {
+        return DocumentTrees.parse(name, read(name)).root().keys();
+    }
+
+    private void apply() {
+        this.files.reorganize("demo", this.files.planReorganization("demo"));
+    }
+
+    @Test
+    void aMonolithicYamlExportIsSplit() throws IOException {
+        copy("monolithic-yaml");
+
+        apply();
+
+        assertThat(names())
+                .containsExactly(
+                        "00-realm.yaml", "20-clients.yaml", "30-roles.yaml", "40-groups.yaml", "50-links.yaml");
+        assertThat(keysOf("00-realm.yaml"))
+                .containsExactly(
+                        "realm", "enabled", "displayName", "smtpServer", "clientScopes", "authenticationFlows");
+        assertThat(keysOf("20-clients.yaml")).containsExactly("realm", "clients");
+        assertThat(keysOf("30-roles.yaml")).containsExactly("realm", "roles");
+        assertThat(keysOf("40-groups.yaml")).containsExactly("realm", "groups");
+        assertThat(keysOf("50-links.yaml")).containsExactly("realm", "users", "defaultGroups");
+        assertThat(contentOf(folder())).isEqualTo(contentOf(RESOURCES.resolve("monolithic-yaml/demo")));
+        assertThat(read("20-clients.yaml")).contains("# The public single page application");
+    }
+
+    @Test
+    void aMonolithicJsonExportIsSplit() throws IOException {
+        copy("monolithic-json");
+
+        apply();
+
+        assertThat(names())
+                .containsExactly(
+                        "00-realm.json", "20-clients.json", "30-roles.json", "40-groups.json", "50-links.json");
+        assertThat(keysOf("00-realm.json"))
+                .containsExactly(
+                        "realm", "enabled", "displayName", "smtpServer", "clientScopes", "authenticationFlows");
+        assertThat(keysOf("20-clients.json")).containsExactly("realm", "clients");
+        assertThat(keysOf("50-links.json")).containsExactly("realm", "users", "defaultGroups");
+        assertThat(contentOf(folder())).isEqualTo(contentOf(RESOURCES.resolve("monolithic-json/demo")));
+    }
+
+    @Test
+    void aMixedFolderJoinsTheStandardFiles() throws IOException {
+        copy("mixed");
+
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        this.files.reorganize("demo", plan);
+
+        assertThat(plan.removals()).containsExactly("my-clients.yaml");
+        assertThat(names())
+                .containsExactly(
+                        "00-realm.json", "20-clients.json", "30-roles.yaml", "40-groups.json", "50-links.json");
+        assertThat(keysOf("20-clients.json")).containsExactly("realm", "clients");
+        assertThat(keysOf("40-groups.json")).containsExactly("realm", "groups");
+        assertThat(keysOf("00-realm.json")).containsExactly("realm", "enabled", "displayName", "smtpServer");
+        assertThat(contentOf(folder())).isEqualTo(contentOf(RESOURCES.resolve("mixed/demo")));
+    }
+
+    @Test
+    void placeholdersStayQuoted() throws IOException {
+        copy("monolithic-yaml");
+
+        apply();
+
+        for (String name : names()) {
+            assertThat(read(name)).contains("realm: \"{{env}}-demo\"");
+        }
+        assertThat(read("20-clients.yaml")).contains("- \"{{appUrl}}/*\"");
+    }
+
+    @Test
+    void placeholdersStayQuotedWhenTheFormatChanges() throws IOException {
+        copy("mixed");
+
+        apply();
+
+        assertThat(read("20-clients.json")).contains("\"{{appUrl}}/*\"").contains("\"realm\": \"{{env}}-demo\"");
+    }
+
+    @Test
+    void anAlreadyStandardFolderHasNothingToMove() throws IOException {
+        copy("already-standard");
+
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+
+        assertThat(plan.isEmpty()).isTrue();
+        String before = read("20-clients.yaml");
+        this.files.reorganize("demo", plan);
+        assertThat(read("20-clients.yaml")).isEqualTo(before);
+        assertThat(names()).hasSize(5);
+    }
+
+    @Test
+    void listsInTwoFilesAreConcatenated() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("extra.yaml"), """
+                realm: "{{env}}-demo"
+                clients:
+                  - clientId: backend
+                    publicClient: false
+                """);
+
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        this.files.reorganize("demo", plan);
+
+        assertThat(plan.moves())
+                .containsExactly(new Move("clients", OptionalInt.of(1), "extra.yaml", "20-clients.yaml"));
+        assertThat(plan.removals()).containsExactly("extra.yaml");
+        assertThat(names()).doesNotContain("extra.yaml");
+        assertThat(DocumentTrees.parse("20-clients.yaml", read("20-clients.yaml")).root().objects("clients").stream()
+                        .map(client -> client.text("clientId").orElseThrow()))
+                .containsExactly("frontend", "backend");
+    }
+
+    @Test
+    void thePlanListsCountsForLists() throws IOException {
+        copy("monolithic-yaml");
+
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+
+        assertThat(plan.renames()).containsExactly(new Rename("demo.yaml", "00-realm.yaml"));
+        assertThat(plan.removals()).isEmpty();
+        assertThat(plan.moves())
+                .containsExactly(
+                        new Move("users", OptionalInt.of(2), "demo.yaml", "50-links.yaml"),
+                        new Move("clients", OptionalInt.of(2), "demo.yaml", "20-clients.yaml"),
+                        new Move("roles", OptionalInt.empty(), "demo.yaml", "30-roles.yaml"),
+                        new Move("groups", OptionalInt.of(2), "demo.yaml", "40-groups.yaml"),
+                        new Move("defaultGroups", OptionalInt.of(1), "demo.yaml", "50-links.yaml"));
+    }
+
+    @Test
+    void aPlanThatNoLongerMatchesTheFolderIsRefused() throws IOException {
+        copy("monolithic-yaml");
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        Files.delete(folder().resolve("demo.yaml"));
+
+        assertThatThrownBy(() -> this.files.reorganize("demo", plan))
+                .isInstanceOf(ReorganizationRefusedException.class)
+                .hasMessageContaining("out of date");
+        assertThat(names()).isEmpty();
+    }
+
+    @Test
+    void aFailingWriteDeletesNothing() throws IOException {
+        copy("monolithic-yaml");
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        Files.createDirectory(folder().resolve("40-groups.yaml"));
+
+        assertThatThrownBy(() -> this.files.reorganize("demo", plan)).isInstanceOf(UncheckedIOException.class);
+        assertThat(folder().resolve("demo.yaml")).exists();
+    }
+
+    @Test
+    void aKeyThatCannotBeMergedIsRefused() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("extra.yaml"), """
+                realm: "{{env}}-demo"
+                displayName: Another name
+                """);
+
+        assertThatThrownBy(() -> this.files.planReorganization("demo"))
+                .isInstanceOf(ReorganizationRefusedException.class)
+                .hasMessageContaining("displayName");
+    }
+}

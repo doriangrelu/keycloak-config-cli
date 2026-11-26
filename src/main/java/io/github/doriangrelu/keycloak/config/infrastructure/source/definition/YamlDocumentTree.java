@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.regex.Pattern;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -110,6 +111,15 @@ final class YamlDocumentTree implements DocumentTree {
         StringWriter output = new StringWriter();
         new Yaml(loader, dumper).serialize(this.root, output);
         return output.toString();
+    }
+
+    /** The entry of a key of a YAML object: the key node, with its comments, and the value node. */
+    record YamlEntry(NodeTuple tuple) implements TreeObject.Entry {
+
+        @Override
+        public Object plain() {
+            return YamlObject.plainOf(this.tuple.getValueNode());
+        }
     }
 
     /** An object of a YAML file. */
@@ -349,6 +359,127 @@ final class YamlDocumentTree implements DocumentTree {
                 }
             }
             tuples.add(new NodeTuple(new ScalarNode(Tag.STR, key, null, null, DumperOptions.ScalarStyle.PLAIN), value));
+        }
+
+        @Override
+        public OptionalInt listSize(final String key) {
+            return value(key)
+                    .filter(SequenceNode.class::isInstance)
+                    .map(node -> OptionalInt.of(((SequenceNode) node).getValue().size()))
+                    .orElse(OptionalInt.empty());
+        }
+
+        @Override
+        public Optional<Entry> entry(final String key) {
+            for (NodeTuple tuple : this.node.getValue()) {
+                if (tuple.getKeyNode() instanceof ScalarNode scalar
+                        && scalar.getValue().equals(key)) {
+                    return Optional.of(new YamlEntry(tuple));
+                }
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public void put(final String key, final Entry entry) {
+            NodeTuple tuple =
+                    entry instanceof YamlEntry yaml ? yaml.tuple() : new NodeTuple(keyNode(key), nodeOf(entry.plain()));
+            List<NodeTuple> tuples = this.node.getValue();
+            for (int i = 0; i < tuples.size(); i++) {
+                if (tuples.get(i).getKeyNode() instanceof ScalarNode scalar
+                        && scalar.getValue().equals(key)) {
+                    tuples.set(i, tuple);
+                    return;
+                }
+            }
+            tuples.add(tuple);
+        }
+
+        @Override
+        public void concat(final String key, final Entry list) {
+            Optional<Node> current = value(key);
+            if (current.isEmpty() || !(current.get() instanceof SequenceNode sequence)) {
+                put(key, list);
+                return;
+            }
+            Node added = list instanceof YamlEntry yaml ? yaml.tuple().getValueNode() : nodeOf(list.plain());
+            if (added instanceof SequenceNode items) {
+                if (sequence.getFlowStyle() == DumperOptions.FlowStyle.FLOW
+                        && sequence.getValue().isEmpty()) {
+                    sequence.setFlowStyle(DumperOptions.FlowStyle.BLOCK);
+                }
+                sequence.getValue().addAll(items.getValue());
+            }
+        }
+
+        private static ScalarNode keyNode(final String key) {
+            return new ScalarNode(Tag.STR, key, null, null, DumperOptions.ScalarStyle.PLAIN);
+        }
+
+        private static ScalarNode plainNode(final Tag tag, final Object value) {
+            return new ScalarNode(tag, value.toString(), null, null, DumperOptions.ScalarStyle.PLAIN);
+        }
+
+        private static Node nodeOf(final Object plain) {
+            return switch (plain) {
+                case null -> plainNode(Tag.NULL, "null");
+                case Boolean flag -> plainNode(Tag.BOOL, flag);
+                case Integer number -> plainNode(Tag.INT, number);
+                case Long number -> plainNode(Tag.INT, number);
+                case Number number -> plainNode(Tag.FLOAT, number);
+                case Map<?, ?> map -> {
+                    List<NodeTuple> tuples = new ArrayList<>();
+                    map.forEach((name, item) -> tuples.add(new NodeTuple(keyNode(String.valueOf(name)), nodeOf(item))));
+                    yield new MappingNode(Tag.MAP, tuples, DumperOptions.FlowStyle.BLOCK);
+                }
+                case List<?> list -> {
+                    List<Node> items = new ArrayList<>();
+                    list.forEach(item -> items.add(nodeOf(item)));
+                    yield new SequenceNode(Tag.SEQ, items, DumperOptions.FlowStyle.BLOCK);
+                }
+                default -> textNode(TemplatedValue.of(plain.toString()), Optional.empty());
+            };
+        }
+
+        static Object plainOf(final Node node) {
+            return switch (node) {
+                case ScalarNode scalar -> plainScalar(scalar);
+                case MappingNode mapping -> {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    for (NodeTuple tuple : mapping.getValue()) {
+                        if (tuple.getKeyNode() instanceof ScalarNode key) {
+                            map.put(key.getValue(), plainOf(tuple.getValueNode()));
+                        }
+                    }
+                    yield map;
+                }
+                case SequenceNode sequence -> {
+                    List<Object> list = new ArrayList<>();
+                    sequence.getValue().forEach(item -> list.add(plainOf(item)));
+                    yield list;
+                }
+                default -> null;
+            };
+        }
+
+        private static Object plainScalar(final ScalarNode scalar) {
+            try {
+                if (scalar.getTag() == Tag.NULL) {
+                    return null;
+                }
+                if (scalar.getTag() == Tag.BOOL) {
+                    return Boolean.valueOf(scalar.getValue().toLowerCase(Locale.ROOT));
+                }
+                if (scalar.getTag() == Tag.INT) {
+                    return Long.valueOf(scalar.getValue());
+                }
+                if (scalar.getTag() == Tag.FLOAT) {
+                    return Double.valueOf(scalar.getValue());
+                }
+            } catch (NumberFormatException e) {
+                // Written in another notation than a decimal: kept as text
+            }
+            return scalar.getValue();
         }
 
         /**

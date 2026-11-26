@@ -1,0 +1,13 @@
+realm: "{{env}}-demo"
+clients:
+  - clientId: frontend
+    publicClient: true
+    redirectUris:
+      - "{{appUrl}}/*"
+  - clientId: backend
+    publicClient: false
+groups:
+  - name: team
+    subGroups:
+      - name: leads
+  - name: guests

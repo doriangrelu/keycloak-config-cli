@@ -1,0 +1,4 @@
+realm: "{{env}}-demo"
+roles:
+  realm:
+    - name: admin
