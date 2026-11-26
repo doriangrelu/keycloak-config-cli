@@ -24,8 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
+import io.github.doriangrelu.keycloak.config.application.definition.KeycloakAuthenticationException;
+import io.github.doriangrelu.keycloak.config.application.definition.KeycloakUnreachableException;
 import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
+import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
+import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.ImportProcessingException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.NormalizationException;
@@ -37,7 +41,9 @@ import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.net.ConnectException;
+import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -148,5 +154,29 @@ class ExitCodeResolverTest {
                 new RuntimeException(new KeycloakAccessException(KeycloakFailure.TIMEOUT, "t", invalid));
 
         assertThat(ExitCodeResolver.resolve(wrapper)).isEqualTo(ExitCode.KEYCLOAK_UNAVAILABLE);
+    }
+
+    @Test
+    void anUnreachableTargetIsUnavailable() {
+        assertThat(ExitCodeResolver.resolve(new KeycloakUnreachableException(aTarget(), "Connection refused", null)))
+                .isEqualTo(ExitCode.KEYCLOAK_UNAVAILABLE);
+    }
+
+    @Test
+    void aRefusedLoginToATargetIsRefused() {
+        assertThat(ExitCodeResolver.resolve(new KeycloakAuthenticationException(aTarget(), 401, null)))
+                .isEqualTo(ExitCode.KEYCLOAK_REFUSED);
+    }
+
+    private static Target aTarget() {
+        return new Target(
+                "dev",
+                "https://keycloak.dev",
+                "master",
+                "admin-cli",
+                GrantType.PASSWORD,
+                Optional.of("admin"),
+                true,
+                Duration.ofSeconds(10));
     }
 }

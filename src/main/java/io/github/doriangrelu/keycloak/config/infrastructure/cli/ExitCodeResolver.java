@@ -21,6 +21,8 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
+import io.github.doriangrelu.keycloak.config.application.definition.KeycloakAuthenticationException;
+import io.github.doriangrelu.keycloak.config.application.definition.KeycloakUnreachableException;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.NormalizationException;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakAccessException;
@@ -55,6 +57,8 @@ public final class ExitCodeResolver {
     private static Optional<ExitCode> exitCodeOf(final Throwable error) {
         return switch (error) {
             case DomainException _ -> Optional.of(ExitCode.INVALID_CONFIGURATION);
+            case KeycloakUnreachableException _ -> Optional.of(ExitCode.KEYCLOAK_UNAVAILABLE);
+            case KeycloakAuthenticationException _ -> Optional.of(ExitCode.KEYCLOAK_REFUSED);
             case ApplicationException _ -> Optional.of(ExitCode.INVALID_CONFIGURATION);
             case KeycloakAccessException keycloak -> exitCodeOf(keycloak);
             case WebApplicationException sdk -> exitCodeOf(KeycloakErrorTranslator.translate(sdk));

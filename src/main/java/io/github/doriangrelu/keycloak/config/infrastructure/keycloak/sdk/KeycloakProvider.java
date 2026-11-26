@@ -339,9 +339,19 @@ public class KeycloakProvider implements AutoCloseable {
 
     @Override
     public void close() {
-        if (!isClosed()) {
-            logout();
-            keycloak.close();
+        try {
+            if (!isClosed()) {
+                try {
+                    logout();
+                } finally {
+                    keycloak.close();
+                }
+            }
+        } finally {
+            // the HTTP client outlives a failed login, which leaves no Keycloak instance to close it
+            if (resteasyClient != null && !resteasyClient.isClosed()) {
+                resteasyClient.close();
+            }
         }
     }
 

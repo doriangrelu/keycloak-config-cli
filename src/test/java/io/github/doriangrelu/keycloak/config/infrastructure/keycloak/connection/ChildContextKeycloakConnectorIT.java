@@ -1,0 +1,329 @@
+/*-
+ * ---license-start
+ * keycloak-config-cli
+ * ---
+ * Copyright (C) 2017 - 2026 keycloak-config-cli contributors
+ * ---
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ---license-end
+ */
+
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.application.definition.Connection;
+import io.github.doriangrelu.keycloak.config.application.definition.KeycloakAuthenticationException;
+import io.github.doriangrelu.keycloak.config.application.definition.KeycloakUnreachableException;
+import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
+import io.github.doriangrelu.keycloak.config.domain.definition.Target;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.ServerSocket;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.testcontainers.containers.GenericContainer;
+
+/** A connection per target, in its own Spring context (ADR-010), against the Keycloak of the integration tests. */
+@Timeout(value = 60, unit = TimeUnit.SECONDS)
+class ChildContextKeycloakConnectorIT {
+
+    private static final GenericContainer<?> KEYCLOAK = AbstractImportIT.KEYCLOAK_CONTAINER;
+    private static final String URL = System.getProperty("keycloak.url");
+    private static final String ADMIN = KEYCLOAK.getEnvMap().get("KEYCLOAK_ADMIN");
+    private static final String ADMIN_PASSWORD = KEYCLOAK.getEnvMap().get("KEYCLOAK_ADMIN_PASSWORD");
+
+    private static final String SERVICE_REALM = "connector-it";
+    private static final String SERVICE_CLIENT = "kcc-shell";
+    private static final String SERVICE_SECRET = "kcc-shell-secret-0123";
+
+    private static ConfigurableEnvironment mainEnvironment;
+
+    @BeforeAll
+    static void startTheShellAndCreateTheServiceAccount() {
+        GenericApplicationContext main = new GenericApplicationContext();
+        TestPropertyValues.of("run.operation=SHELL").applyTo(main);
+        new ConfigDataApplicationContextInitializer().initialize(main);
+        mainEnvironment = main.getEnvironment();
+
+        createServiceAccountClient();
+    }
+
+    @Test
+    void connectsWithAPassword() {
+        Target target = passwordTarget(URL);
+
+        try (Connection connection = connector().connect(target, ADMIN_PASSWORD)) {
+            assertThat(connection.target()).isEqualTo(target);
+            assertThat(connection.keycloakVersion()).isEqualTo(System.getProperty("keycloak.version"));
+        }
+    }
+
+    @Test
+    void connectsWithClientCredentials() {
+        Target target = clientCredentialsTarget();
+
+        try (Connection connection = connector().connect(target, SERVICE_SECRET)) {
+            assertThat(connection.keycloakVersion()).isEqualTo(System.getProperty("keycloak.version"));
+            KeycloakProvider provider = providerOf(connection);
+            assertThat(provider.getInstance().realm(SERVICE_REALM).clients().findByClientId(SERVICE_CLIENT))
+                    .hasSize(1);
+        }
+    }
+
+    @Test
+    void aWrongPasswordIsRefused() {
+        String wrongPassword = "not-the-password-4242";
+
+        Throwable failure = catchThrowable(() -> connector().connect(passwordTarget(URL), wrongPassword));
+
+        assertThat(failure)
+                .isInstanceOf(KeycloakAuthenticationException.class)
+                .hasMessageContaining("'local'")
+                .hasMessageContaining(URL);
+        assertThat(ExitCodeResolver.resolve(failure).code()).isEqualTo(4);
+        assertThat(everythingPrintedBy(failure)).doesNotContain(wrongPassword);
+    }
+
+    @Test
+    void aWrongClientSecretIsRefused() {
+        String wrongSecret = "not-the-secret-4242";
+
+        Throwable failure = catchThrowable(() -> connector().connect(clientCredentialsTarget(), wrongSecret));
+
+        assertThat(failure).isInstanceOf(KeycloakAuthenticationException.class).hasMessageContaining("'service'");
+        assertThat(ExitCodeResolver.resolve(failure).code()).isEqualTo(4);
+        assertThat(everythingPrintedBy(failure)).doesNotContain(wrongSecret);
+    }
+
+    @Test
+    void anUnreachableUrlFailsFast() throws IOException {
+        String closedPortUrl = "http://localhost:" + aClosedPort();
+        Target target = passwordTarget(closedPortUrl);
+        long start = System.nanoTime();
+
+        Throwable failure = catchThrowable(() -> connector().connect(target, ADMIN_PASSWORD));
+
+        Duration elapsed = Duration.ofNanos(System.nanoTime() - start);
+        assertThat(failure)
+                .isInstanceOf(KeycloakUnreachableException.class)
+                .hasMessageContaining("'local'")
+                .hasMessageContaining(closedPortUrl);
+        assertThat(ExitCodeResolver.resolve(failure).code()).isEqualTo(3);
+        assertThat(everythingPrintedBy(failure)).doesNotContain(ADMIN_PASSWORD);
+        assertThat(elapsed).isLessThan(target.connectTimeout().plusSeconds(5));
+    }
+
+    @Test
+    void anUnknownHostIsUnreachable() {
+        Throwable failure = catchThrowable(
+                () -> connector().connect(passwordTarget("http://kcc-unknown-host.invalid:8080"), ADMIN_PASSWORD));
+
+        assertThat(failure).isInstanceOf(KeycloakUnreachableException.class);
+        assertThat(ExitCodeResolver.resolve(failure).code()).isEqualTo(3);
+    }
+
+    @Test
+    void closingReleasesTheContext() {
+        Connection connection = connector().connect(passwordTarget(URL), ADMIN_PASSWORD);
+        TargetConnection held = (TargetConnection) connection;
+        KeycloakProvider provider = providerOf(connection);
+
+        connection.close();
+        connection.close();
+
+        assertThat(held.context().isActive()).isFalse();
+        assertThat(provider.isClosed()).isTrue();
+        assertThat(resteasyClientOf(provider).isClosed()).isTrue();
+    }
+
+    @Test
+    void aFailedConnectionReleasesItsContextAndItsHttpClient() throws IOException {
+        List<RecordingContext> contexts = new ArrayList<>();
+        ChildContextKeycloakConnector connector = new ChildContextKeycloakConnector(mainEnvironment, () -> {
+            RecordingContext context = new RecordingContext();
+            contexts.add(context);
+            return context;
+        });
+        String closedPortUrl = "http://localhost:" + aClosedPort();
+
+        catchThrowable(() -> connector.connect(passwordTarget(URL), "not-the-password-4242"));
+        catchThrowable(() -> connector.connect(passwordTarget(closedPortUrl), ADMIN_PASSWORD));
+
+        assertThat(contexts).hasSize(2).allSatisfy(context -> {
+            assertThat(context.isActive()).isFalse();
+            assertThat(context.provider).isNotNull();
+            assertThat(resteasyClientOf(context.provider).isClosed()).isTrue();
+        });
+    }
+
+    @Test
+    void theMainEnvironmentIsLeftUntouched() {
+        String mainUrl = mainEnvironment.getProperty("keycloak.url");
+        int mainSources = mainEnvironment.getPropertySources().size();
+
+        try (Connection connection = connector().connect(passwordTarget(URL + "/"), ADMIN_PASSWORD)) {
+            assertThat(((TargetConnection) connection)
+                            .context()
+                            .getEnvironment()
+                            .getProperty("keycloak.url"))
+                    .isEqualTo(URL + "/");
+        }
+
+        assertThat(mainEnvironment.getProperty("keycloak.url")).isEqualTo(mainUrl);
+        assertThat(mainEnvironment.getPropertySources().size()).isEqualTo(mainSources);
+        assertThat(mainEnvironment.getProperty("run.operation")).isEqualTo("SHELL");
+    }
+
+    private static ChildContextKeycloakConnector connector() {
+        return new ChildContextKeycloakConnector(mainEnvironment);
+    }
+
+    private static Target passwordTarget(final String url) {
+        return new Target(
+                "local",
+                url,
+                "master",
+                "admin-cli",
+                GrantType.PASSWORD,
+                Optional.of(ADMIN),
+                true,
+                Duration.ofSeconds(5));
+    }
+
+    private static Target clientCredentialsTarget() {
+        return new Target(
+                "service",
+                URL,
+                SERVICE_REALM,
+                SERVICE_CLIENT,
+                GrantType.CLIENT_CREDENTIALS,
+                Optional.empty(),
+                true,
+                Duration.ofSeconds(5));
+    }
+
+    private static KeycloakProvider providerOf(final Connection connection) {
+        return ((TargetConnection) connection).context().getBean(KeycloakProvider.class);
+    }
+
+    private static ResteasyClient resteasyClientOf(final KeycloakProvider provider) {
+        return (ResteasyClient) ReflectionTestUtils.getField(provider, "resteasyClient");
+    }
+
+    private static int aClosedPort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
+    }
+
+    private static String everythingPrintedBy(final Throwable failure) {
+        StringWriter printed = new StringWriter();
+        failure.printStackTrace(new PrintWriter(printed));
+        return printed.toString();
+    }
+
+    /** A confidential client of a realm, with a service account that administers the realm. */
+    private static void createServiceAccountClient() {
+        try (Keycloak admin = KeycloakBuilder.builder()
+                .serverUrl(URL)
+                .realm("master")
+                .clientId("admin-cli")
+                .username(ADMIN)
+                .password(ADMIN_PASSWORD)
+                .build()) {
+            if (admin.realms().findAll().stream().anyMatch(realm -> SERVICE_REALM.equals(realm.getRealm()))) {
+                admin.realm(SERVICE_REALM).remove();
+            }
+            RealmRepresentation realm = new RealmRepresentation();
+            realm.setRealm(SERVICE_REALM);
+            realm.setEnabled(true);
+            admin.realms().create(realm);
+
+            RealmResource serviceRealm = admin.realm(SERVICE_REALM);
+            ClientRepresentation client = new ClientRepresentation();
+            client.setClientId(SERVICE_CLIENT);
+            client.setPublicClient(false);
+            client.setClientAuthenticatorType("client-secret");
+            client.setSecret(SERVICE_SECRET);
+            client.setServiceAccountsEnabled(true);
+            client.setStandardFlowEnabled(false);
+            serviceRealm.clients().create(client).close();
+
+            ClientResource created = serviceRealm
+                    .clients()
+                    .get(serviceRealm
+                            .clients()
+                            .findByClientId(SERVICE_CLIENT)
+                            .getFirst()
+                            .getId());
+            String realmManagement = serviceRealm
+                    .clients()
+                    .findByClientId("realm-management")
+                    .getFirst()
+                    .getId();
+            RoleRepresentation realmAdmin = serviceRealm
+                    .clients()
+                    .get(realmManagement)
+                    .roles()
+                    .get("realm-admin")
+                    .toRepresentation();
+            serviceRealm
+                    .users()
+                    .get(created.getServiceAccountUser().getId())
+                    .roles()
+                    .clientLevel(realmManagement)
+                    .add(List.of(realmAdmin));
+        }
+    }
+
+    /** Remembers the Keycloak provider of the context before its beans are destroyed. */
+    private static final class RecordingContext extends AnnotationConfigApplicationContext {
+        private KeycloakProvider provider;
+
+        @Override
+        protected void destroyBeans() {
+            for (String name : getBeanFactory().getBeanNamesForType(KeycloakProvider.class)) {
+                if (getBeanFactory().containsSingleton(name)) {
+                    this.provider = getBeanFactory().getBean(name, KeycloakProvider.class);
+                }
+            }
+            super.destroyBeans();
+        }
+    }
+}
