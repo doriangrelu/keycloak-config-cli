@@ -79,9 +79,9 @@ Writes the files of the opened realm in the layout of the shell, without changin
 
 ### `realm reorganize`
 
-Moves the elements of the opened realm to the standard files (see [Files](files.md#the-standard-layout)): a monolithic export or a realm split another way ends up in `00-realm`, `20-clients`, `30-roles`, `40-groups` and `50-links`. The realm must be formatted first (`realm format`), otherwise the command stops with `Run 'realm format' first: <file>`.
+Moves the elements of the opened realm to the standard files (see [Files](files.md#the-standard-layout)): a monolithic export or a realm split another way ends up in `00-realm`, `20-clients`, `30-roles`, `40-groups` and `50-links`. The realm must be formatted first, otherwise the command stops with `Run 'realm format' first: <file>`: a raw Keycloak export goes through `realm format`, then `realm reorganize`.
 
-A raw Keycloak export therefore goes through `realm format` first, then `realm reorganize`. When a key is present in several files (for example `clients` in two files), the values are merged: lists are concatenated in the order of the file names, and a merged key loses its comments.
+When a key is present in several files (for example `clients` in two files), the values are merged: lists are concatenated in the order of the file names, an item already present (the same client written in two files) is kept once, and a merged key loses its comments. A merged or moved value keeps the meaning the import gives it (`yes` stays true, `017` stays 15). The known limit of the layout (`authorizationSettings` that cite later elements) is described in [Files](files.md#the-standard-layout).
 
 | Option | Meaning |
 |--------|---------|
@@ -108,7 +108,9 @@ What the command never does:
 
 - It makes no backup: commit your files first, so that the change can be reviewed and undone.
 - It does not guarantee the comments: the comments around a moved element may be lost, which is why you run it without `--apply` first.
-- It does not merge what cannot be merged: when two files give a different value to the same key, or a file cannot be read, the command refuses and writes nothing.
+- It does not merge what cannot be merged: when two files give a different value to the same key, a file writes the same top-level key twice, or a file cannot be read, the command refuses and writes nothing.
+
+If writing a file fails (a file locked by an editor, for example), the command stops with the exit code `2` and names the files already written: restore the folder with Git (`git restore` and `git clean` on it) before running it again. A file just written is never removed.
 
 ## Clients
 

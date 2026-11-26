@@ -137,13 +137,15 @@ Décisions de conception (26/11/2026, validées avec l'utilisateur) :
 
 - À l'import, chaque fichier est appliqué en entier, dans l'ordre des noms : le découpage fixe donc l'ordre d'application. **Découpage étroit**, sûr pour cet ordre :
   - `20-clients` reçoit `clients` ; `30-roles` reçoit `roles` (realm et clients) ; `40-groups` reçoit `groups` ;
-  - `50-links` reçoit une liste fixe et documentée de clés qui citent des rôles ou des groupes : `users`, `scopeMappings`, `clientScopeMappings`, `defaultGroups` ;
+  - `50-links` reçoit une liste fixe et documentée de six clés qui citent des rôles ou des groupes : `users`, `scopeMappings`, `clientScopeMappings`, `defaultGroups`, `identityProviderMappers` (mappers qui donnent un rôle ou un groupe) et `defaultRole` (rôle composite par défaut) ;
   - `00-realm` rassemble tout le reste (réglages, flows, client scopes, fournisseurs d'identité, composants…), dont les autres fichiers dépendent.
   Les autres types prendront leur fichier quand le shell les gérera.
+  Limite connue : les `authorizationSettings` d'un client restent dans le client (`20-clients`), alors que leurs policies peuvent citer des rôles, des groupes ou des utilisateurs définis dans les fichiers suivants ; elles ne peuvent pas en être séparées. Un realm qui en utilise peut ne plus s'importer dans cet ordre : le dry-run lancé après la réorganisation le vérifie.
 - La commande montre le plan (clé, nombre d'éléments, fichier d'origine, fichier cible), avertit que les commentaires autour des éléments déplacés peuvent être perdus et conseille de commiter avant puis de lancer un dry-run, et demande confirmation (non par défaut) ; en mode script, `--apply`.
 - Les nouveaux fichiers prennent le format du fichier qui porte les réglages du realm ; un fichier standard existant reçoit les éléments à la suite des siens ; un fichier qui ne contient plus que la clé `realm` est supprimé ; le fichier d'origine qui garde le reste devient `00-realm`.
 - Refus : un fichier illisible ou non formaté (le message de `realm format`). Les placeholders sont conservés. Aucune sauvegarde n'est écrite dans le dossier (l'import la lirait) : l'historique Git en tient lieu.
 - Un dossier déjà rangé : `Nothing to move`.
+- Revue finale : les noms de fichiers sont comparés sans tenir compte de la casse (`20-Clients.yaml` est le fichier des clients et garde son nom ; un fichier écrit n'est jamais supprimé) ; une valeur fusionnée ou déplacée garde le sens que lui donne l'import (construite par SnakeYAML) ; une liste fusionnée n'ajoute pas un élément déjà présent, si bien qu'une relance après une écriture interrompue ne duplique rien ; une écriture qui échoue nomme les fichiers déjà remplacés et demande de les restaurer avec Git ; une clé écrite deux fois dans un fichier est refusée.
 
 ## Hors périmètre
 

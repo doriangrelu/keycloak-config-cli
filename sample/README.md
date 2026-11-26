@@ -89,4 +89,4 @@ docker compose run --rm cli --run.operation=SHELL --shell.root=/shell/work --she
 
 The files written in `shell/work/shelled` contain template variables (`appUrl`, `shopSecret`) that the import of `10-shell-create-and-import.sh` gives.
 
-The monolithic export of `12-shell-reorganize.sh` is already formatted, so `realm reorganize` accepts it as it is. A raw export of Keycloak must go through `realm format` first: run both commands in one script (`realm format`, then `realm reorganize --apply`).
+The monolithic export of `12-shell-reorganize.sh` is already formatted, so `realm reorganize` accepts it as it is. For a raw export of Keycloak, see [`realm reorganize`](../documentation/shell/commands.md#realm-reorganize).

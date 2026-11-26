@@ -36,9 +36,13 @@ The shell puts new elements in the files below (it creates them when needed), an
 | `20-clients` | `clients` |
 | `30-roles` | `roles` |
 | `40-groups` | `groups` |
-| `50-links` | `users`, `scopeMappings`, `clientScopeMappings` and `defaultGroups` |
+| `50-links` | `users`, `scopeMappings`, `clientScopeMappings`, `defaultGroups`, `identityProviderMappers` and `defaultRole` |
 
-`50-links` comes last for a reason: the files are applied in the order of their name, and the elements it holds cite roles, groups and clients (a user with a role, a default group, a scope mapping on a client). A file that cites roles or groups must therefore come after the files that define them. Every file starts with the `realm` key.
+`50-links` comes last for a reason: the files are applied in the order of their name, and the elements it holds cite roles, groups and clients (a user with a role, a default group, a scope mapping on a client, an identity provider mapper that gives a role or a group, the default role of the realm and its composites). A file that cites roles or groups must therefore come after the files that define them. Every file starts with the `realm` key.
+
+A known limit: the `authorizationSettings` of a client (its resources, scopes and policies) stay in the client, in `20-clients`, but their policies may cite roles, groups or users defined in the later files. A realm that uses them may not import in this order: run a dry run after `realm reorganize` to check.
+
+File names are compared without regard to case: `20-Clients.yaml` is the clients file and keeps its name.
 
 ## `realm format`
 
