@@ -355,17 +355,6 @@ final class JsonDocumentTree implements DocumentTree {
             this.node.set(key, nodeOf(entry));
         }
 
-        @Override
-        public void concat(final String key, final Entry list) {
-            JsonNode current = this.node.get(key);
-            JsonNode added = nodeOf(list);
-            if (current instanceof ArrayNode array && added instanceof ArrayNode items) {
-                array.addAll(items);
-            } else {
-                this.node.set(key, added);
-            }
-        }
-
         private static JsonNode nodeOf(final Entry entry) {
             return entry instanceof JsonEntry json ? json.value() : MAPPER.valueToTree(entry.plain());
         }

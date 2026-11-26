@@ -26,6 +26,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +37,7 @@ import java.util.regex.Pattern;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.MarkedYAMLException;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.MappingNode;
@@ -119,7 +121,29 @@ final class YamlDocumentTree implements DocumentTree {
 
         @Override
         public Object plain() {
-            return YamlObject.plainOf(this.tuple.getValueNode());
+            return YamlObject.plainOf(this.tuple.getValueNode(), new PlainConstructor());
+        }
+    }
+
+    /**
+     * Builds the value of a scalar the way the import reads it: the import loads the files with SnakeYAML, so
+     * {@code yes} is {@code true}, {@code 017} is 15 and {@code 0x1F} is 31.
+     */
+    private static final class PlainConstructor extends SafeConstructor {
+
+        PlainConstructor() {
+            super(new LoaderOptions());
+        }
+
+        Object scalar(final ScalarNode scalar) {
+            try {
+                Object value = constructObject(scalar);
+                // A date is kept as written: the definition files hold no dates, only texts that look like one
+                return value instanceof Date ? scalar.getValue() : value;
+            } catch (YAMLException e) {
+                // A tag of its own: kept as written
+                return scalar.getValue();
+            }
         }
     }
 
@@ -396,29 +420,24 @@ final class YamlDocumentTree implements DocumentTree {
             tuples.add(tuple);
         }
 
-        @Override
-        public void concat(final String key, final Entry list) {
-            Optional<Node> current = value(key);
-            if (current.isEmpty() || !(current.get() instanceof SequenceNode sequence)) {
-                put(key, list);
-                return;
-            }
-            Node added = list instanceof YamlEntry yaml ? yaml.tuple().getValueNode() : nodeOf(list.plain());
-            if (added instanceof SequenceNode items) {
-                if (sequence.getFlowStyle() == DumperOptions.FlowStyle.FLOW
-                        && sequence.getValue().isEmpty()) {
-                    sequence.setFlowStyle(DumperOptions.FlowStyle.BLOCK);
-                }
-                sequence.getValue().addAll(items.getValue());
-            }
-        }
-
         private static ScalarNode keyNode(final String key) {
             return new ScalarNode(Tag.STR, key, null, null, DumperOptions.ScalarStyle.PLAIN);
         }
 
         private static ScalarNode plainNode(final Tag tag, final Object value) {
             return new ScalarNode(tag, value.toString(), null, null, DumperOptions.ScalarStyle.PLAIN);
+        }
+
+        /** A decimal as YAML writes it: infinities and not-a-number in their YAML notation. */
+        private static ScalarNode decimalNode(final Number number) {
+            double value = number.doubleValue();
+            if (Double.isNaN(value)) {
+                return plainNode(Tag.FLOAT, ".nan");
+            }
+            if (Double.isInfinite(value)) {
+                return plainNode(Tag.FLOAT, value > 0 ? ".inf" : "-.inf");
+            }
+            return plainNode(Tag.FLOAT, number);
         }
 
         private static Node nodeOf(final Object plain) {
@@ -428,6 +447,8 @@ final class YamlDocumentTree implements DocumentTree {
                 case Integer number -> plainNode(Tag.INT, number);
                 case Long number -> plainNode(Tag.INT, number);
                 case BigInteger number -> plainNode(Tag.INT, number);
+                case Double number -> decimalNode(number);
+                case Float number -> decimalNode(number);
                 case Number number -> plainNode(Tag.FLOAT, number);
                 case Map<?, ?> map -> {
                     List<NodeTuple> tuples = new ArrayList<>();
@@ -439,49 +460,30 @@ final class YamlDocumentTree implements DocumentTree {
                     list.forEach(item -> items.add(nodeOf(item)));
                     yield new SequenceNode(Tag.SEQ, items, DumperOptions.FlowStyle.BLOCK);
                 }
-                default -> textNode(TemplatedValue.of(plain.toString()), Optional.empty());
+                // Moved as it is: a value is checked when it is edited, not when it changes file
+                default -> textNode(new TemplatedValue(plain.toString()), Optional.empty());
             };
         }
 
-        static Object plainOf(final Node node) {
+        static Object plainOf(final Node node, final PlainConstructor constructor) {
             return switch (node) {
-                case ScalarNode scalar -> plainScalar(scalar);
+                case ScalarNode scalar -> constructor.scalar(scalar);
                 case MappingNode mapping -> {
                     Map<String, Object> map = new LinkedHashMap<>();
                     for (NodeTuple tuple : mapping.getValue()) {
                         if (tuple.getKeyNode() instanceof ScalarNode key) {
-                            map.put(key.getValue(), plainOf(tuple.getValueNode()));
+                            map.put(key.getValue(), plainOf(tuple.getValueNode(), constructor));
                         }
                     }
                     yield map;
                 }
                 case SequenceNode sequence -> {
                     List<Object> list = new ArrayList<>();
-                    sequence.getValue().forEach(item -> list.add(plainOf(item)));
+                    sequence.getValue().forEach(item -> list.add(plainOf(item, constructor)));
                     yield list;
                 }
                 default -> null;
             };
-        }
-
-        private static Object plainScalar(final ScalarNode scalar) {
-            try {
-                if (scalar.getTag() == Tag.NULL) {
-                    return null;
-                }
-                if (scalar.getTag() == Tag.BOOL) {
-                    return Boolean.valueOf(scalar.getValue().toLowerCase(Locale.ROOT));
-                }
-                if (scalar.getTag() == Tag.INT) {
-                    return Long.valueOf(scalar.getValue());
-                }
-                if (scalar.getTag() == Tag.FLOAT) {
-                    return Double.valueOf(scalar.getValue());
-                }
-            } catch (NumberFormatException e) {
-                // Written in another notation than a decimal: kept as text
-            }
-            return scalar.getValue();
         }
 
         /**

@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
+import io.github.doriangrelu.keycloak.config.application.definition.ReorganizationInterruptedException;
 import io.github.doriangrelu.keycloak.config.application.definition.ReorganizationRefusedException;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan;
@@ -35,9 +36,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,11 +52,16 @@ import java.util.Set;
  *
  * <p>Every new content is rendered in memory, then written to a temporary file of the folder, then moved into place,
  * and only then the files made useless are deleted. A failure while preparing leaves the folder untouched. The window
- * that remains is the moves into place: a failure there leaves some files already replaced, which Git restores.
+ * that remains is the moves into place: a failure there leaves some files already replaced, which the error names and
+ * Git restores. A file just written is never deleted, even when an obsolete name designates it.
+ *
+ * <p>File names are compared without regard to case, as Windows and macOS do: {@code 20-Clients.yaml} is the clients
+ * file and keeps its name.
  *
  * <p>A key written in several files for the same destination is merged: lists are concatenated in the order of the
- * file names, objects are merged entry by entry (as {@code roles}); a value that differs on both sides is refused. A
- * merged key is rebuilt from its content, so its comments are not kept.
+ * file names, without the items already present (a rerun after an interrupted reorganization adds nothing), objects
+ * are merged entry by entry (as {@code roles}); a value that differs on both sides is refused. A merged key is rebuilt
+ * from its content, so its comments are not kept.
  */
 final class Reorganization {
 
@@ -79,9 +87,22 @@ final class Reorganization {
         this.directory = directory;
         for (Path file : RealmDefinitionFiles.definitionFiles(directory)) {
             String name = file.getFileName().toString();
-            this.trees.put(name, DocumentTrees.parse(name, RealmDefinitionFiles.readFile(file)));
+            DocumentTree tree = DocumentTrees.parse(name, RealmDefinitionFiles.readFile(file));
+            refuseDuplicateKeys(name, tree);
+            this.trees.put(name, tree);
         }
         compute();
+    }
+
+    /** A key written twice in a file: the import keeps the last one, a merge could keep either. */
+    private static void refuseDuplicateKeys(final String name, final DocumentTree tree) {
+        Set<String> seen = new HashSet<>();
+        for (String key : tree.root().keys()) {
+            if (!seen.add(key)) {
+                throw new ReorganizationRefusedException(
+                        "The key '" + key + "' is written twice in " + name + ": keep one before reorganizing");
+            }
+        }
     }
 
     ReorganizationPlan plan() {
@@ -132,15 +153,48 @@ final class Reorganization {
         });
         created.forEach((name, tree) -> contents.put(name, tree.render()));
         putInPlace(contents);
+        List<Path> written =
+                contents.keySet().stream().map(this.directory::resolve).toList();
+        for (String name : obsoleteNames()) {
+            Path file = this.directory.resolve(name);
+            if (!isOneOf(file, written)) {
+                delete(file);
+            }
+        }
+        return List.copyOf(contents.keySet());
+    }
+
+    private List<String> obsoleteNames() {
         List<String> obsolete = new ArrayList<>(this.removals);
         this.renames.forEach(rename -> obsolete.add(rename.from()));
-        obsolete.forEach(name -> delete(this.directory.resolve(name)));
-        return List.copyOf(contents.keySet());
+        return obsolete;
+    }
+
+    /** Whether a file is one of the files written: the same name in another case, or the same file on the disk. */
+    static boolean isOneOf(final Path file, final List<Path> written) {
+        for (Path other : written) {
+            if (Objects.equals(file.getParent(), other.getParent())
+                    && file.getFileName()
+                            .toString()
+                            .equalsIgnoreCase(other.getFileName().toString())) {
+                return true;
+            }
+            try {
+                if (Files.exists(file) && Files.exists(other) && Files.isSameFile(file, other)) {
+                    return true;
+                }
+            } catch (IOException e) {
+                // In doubt, the file is kept
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Writes every content to a temporary file, then moves each into place; nothing is replaced before all exist. */
     private void putInPlace(final Map<String, String> contents) {
         Map<Path, Path> temporaries = new LinkedHashMap<>();
+        List<String> replaced = new ArrayList<>();
         try {
             for (Map.Entry<String, String> entry : contents.entrySet()) {
                 Path temporary = this.directory.resolve("." + entry.getKey() + TEMPORARY_SUFFIX);
@@ -148,10 +202,43 @@ final class Reorganization {
                 RealmDefinitionFiles.writeFile(temporary, entry.getValue());
             }
             for (Map.Entry<Path, Path> entry : temporaries.entrySet()) {
-                move(entry.getKey(), entry.getValue());
+                try {
+                    move(entry.getKey(), entry.getValue());
+                } catch (UncheckedIOException e) {
+                    throw interrupted(replaced, entry.getValue(), e);
+                }
+                replaced.add(entry.getValue().getFileName().toString());
             }
-        } finally {
-            temporaries.keySet().forEach(Reorganization::delete);
+        } catch (RuntimeException e) {
+            deleteQuietly(temporaries.keySet(), e);
+            throw e;
+        }
+        deleteQuietly(temporaries.keySet(), null);
+    }
+
+    private static ReorganizationInterruptedException interrupted(
+            final List<String> replaced, final Path failed, final UncheckedIOException cause) {
+        String done = replaced.isEmpty()
+                ? "No file was replaced yet."
+                : "Files already written: " + String.join(", ", replaced)
+                        + ". Restore the folder with Git (git restore and git clean on it) before running it again.";
+        return new ReorganizationInterruptedException(
+                "The reorganization stopped while writing " + failed.getFileName() + " ("
+                        + cause.getCause().getMessage() + "). " + done,
+                cause);
+    }
+
+    /** Deletes the temporary files; a failure is added to the one being reported, else reported itself. */
+    private static void deleteQuietly(final Iterable<Path> files, final RuntimeException reported) {
+        for (Path file : files) {
+            try {
+                delete(file);
+            } catch (UncheckedIOException e) {
+                if (reported == null) {
+                    throw e;
+                }
+                reported.addSuppressed(e);
+            }
         }
     }
 
@@ -208,6 +295,7 @@ final class Reorganization {
                 existing.putIfAbsent(stemOf(name), name);
             }
         });
+        String realmFile = existing.get(REALM_STEM);
         // Only a file with a name of its own is renamed to the realm file: a standard file keeps its name and its keys
         String candidate = existing.containsKey(REALM_STEM) ? null : firstOtherFileWithRealmKeys();
         Map<String, String> destinations = new HashMap<>(existing);
@@ -216,7 +304,8 @@ final class Reorganization {
             this.renames.add(new Rename(candidate, renamed));
             destinations.put(REALM_STEM, renamed);
         }
-        String created = newFileFormat().extension();
+        String created =
+                (realmFile == null ? newFileFormat() : this.trees.get(realmFile).format()).extension();
         Map<String, Set<String>> movedOut = new HashMap<>();
         Set<String> receiving = new LinkedHashSet<>();
         this.trees.forEach((name, tree) -> {
@@ -264,6 +353,20 @@ final class Reorganization {
             emptied.removeFirst();
         }
         this.removals.addAll(emptied);
+        refuseDeletingAWrittenFile();
+    }
+
+    /** A safety net: a file deleted must never be one written, whatever the case of the names. */
+    private void refuseDeletingAWrittenFile() {
+        Set<String> written = new HashSet<>();
+        this.moves.forEach(move -> written.add(move.to().toLowerCase(Locale.ROOT)));
+        this.renames.forEach(rename -> written.add(rename.to().toLowerCase(Locale.ROOT)));
+        for (String name : obsoleteNames()) {
+            if (written.contains(name.toLowerCase(Locale.ROOT))) {
+                throw new ReorganizationRefusedException(
+                        "The file " + name + " would be both written and removed: rename it and run again");
+            }
+        }
     }
 
     /** The content of a key written in several files for the same destination, the files in the order of their names. */
@@ -287,7 +390,8 @@ final class Reorganization {
             final Object left, final Object right, final String path, final Slot slot, final List<String> names) {
         if (left instanceof List<?> first && right instanceof List<?> second) {
             List<Object> all = new ArrayList<>(first);
-            all.addAll(second);
+            // An item already written is not added twice: the same client in two files is one client
+            second.stream().filter(item -> !first.contains(item)).forEach(all::add);
             return all;
         }
         if (left instanceof Map<?, ?> first && right instanceof Map<?, ?> second) {
@@ -310,7 +414,10 @@ final class Reorganization {
                 + ": keep it in one file");
     }
 
-    /** The format of the new files: the one of the file with the most keys of the realm file, else of the first file. */
+    /**
+     * The format of the new files when there is no realm file yet: the one of the file with the most keys of the realm
+     * file, else of the first file.
+     */
     private DefinitionFormat newFileFormat() {
         DefinitionFormat best = null;
         long most = -1;
@@ -340,7 +447,8 @@ final class Reorganization {
                 .toList();
     }
 
+    /** The name without its extension, in lower case: {@code 20-Clients.yaml} is the clients file. */
     private static String stemOf(final String name) {
-        return name.substring(0, name.lastIndexOf('.'));
+        return name.substring(0, name.lastIndexOf('.')).toLowerCase(Locale.ROOT);
     }
 }

@@ -23,13 +23,16 @@ package io.github.doriangrelu.keycloak.config.domain.definition;
 import java.util.List;
 import java.util.Set;
 
-/** The standard layout of the folder of a realm: the numbered file that holds each top-level key (ADR-008). */
+/**
+ * The standard layout of the folder of a realm: the numbered file that holds each top-level key (ADR-008). The keys
+ * that cite roles, groups or clients go to {@code 50-links}, applied after the files that define them.
+ */
 public final class StandardLayout {
 
     private static final String REALM = "00-realm";
     private static final String LINKS = "50-links";
-    private static final Set<String> LINK_KEYS =
-            Set.of("users", "scopeMappings", "clientScopeMappings", "defaultGroups");
+    private static final Set<String> LINK_KEYS = Set.of(
+            "users", "scopeMappings", "clientScopeMappings", "defaultGroups", "identityProviderMappers", "defaultRole");
 
     private StandardLayout() {}
 

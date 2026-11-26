@@ -129,7 +129,4 @@ public interface TreeObject {
 
     /** Writes an entry under a key: replaces the current value, else adds it at the end. */
     void put(String key, Entry entry);
-
-    /** Adds the items of a list entry at the end of the list under a key; writes the entry when the key is absent. */
-    void concat(String key, Entry list);
 }

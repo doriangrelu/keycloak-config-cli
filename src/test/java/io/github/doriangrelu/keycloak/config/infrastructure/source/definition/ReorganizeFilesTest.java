@@ -23,12 +23,15 @@ package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.doriangrelu.keycloak.config.application.definition.ReorganizationInterruptedException;
 import io.github.doriangrelu.keycloak.config.application.definition.ReorganizationRefusedException;
 import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan;
 import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan.Move;
 import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan.Rename;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +43,7 @@ import java.util.OptionalInt;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.yaml.snakeyaml.Yaml;
 
 class ReorganizeFilesTest {
 
@@ -260,8 +264,229 @@ class ReorganizeFilesTest {
         ReorganizationPlan plan = this.files.planReorganization("demo");
         Files.createDirectories(folder().resolve("40-groups.yaml/keep"));
 
-        assertThatThrownBy(() -> this.files.reorganize("demo", plan)).isInstanceOf(UncheckedIOException.class);
+        assertThatThrownBy(() -> this.files.reorganize("demo", plan))
+                .isInstanceOf(ReorganizationInterruptedException.class);
         assertThat(folder().resolve("demo.yaml")).exists();
+    }
+
+    @Test
+    void aFailureWhilePuttingTheFilesInPlaceNamesTheReplacedFiles() throws IOException {
+        copy("monolithic-yaml");
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        Files.createDirectories(folder().resolve("40-groups.yaml/keep"));
+
+        assertThatThrownBy(() -> this.files.reorganize("demo", plan))
+                .isInstanceOf(ReorganizationInterruptedException.class)
+                .hasMessageContaining("00-realm.yaml, 50-links.yaml, 20-clients.yaml, 30-roles.yaml")
+                .hasMessageContaining("restore")
+                .hasMessageContaining("Git");
+    }
+
+    @Test
+    void aRerunAfterAPartialFailureDuplicatesNothing() throws IOException {
+        copy("monolithic-yaml");
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        Path blocking = folder().resolve("40-groups.yaml");
+        Files.createDirectories(blocking.resolve("keep"));
+        assertThatThrownBy(() -> this.files.reorganize("demo", plan))
+                .isInstanceOf(ReorganizationInterruptedException.class);
+        Files.delete(blocking.resolve("keep"));
+        Files.delete(blocking);
+
+        apply();
+
+        assertThat(names())
+                .containsExactly(
+                        "00-realm.yaml", "20-clients.yaml", "30-roles.yaml", "40-groups.yaml", "50-links.yaml");
+        assertThat(contentOf(folder())).isEqualTo(contentOf(RESOURCES.resolve("monolithic-yaml/demo")));
+    }
+
+    @Test
+    void theSameElementInTwoFilesIsWrittenOnce() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("extra.json"), """
+                {
+                  "realm": "{{env}}-demo",
+                  "clients": [
+                    {
+                      "clientId": "frontend",
+                      "publicClient": true,
+                      "redirectUris": ["{{appUrl}}/*"]
+                    },
+                    {
+                      "clientId": "backend",
+                      "nodeReRegistrationTimeout": -1
+                    }
+                  ],
+                  "users": [
+                    {
+                      "username": "alice",
+                      "notBefore": 7
+                    }
+                  ]
+                }
+                """);
+        Files.writeString(folder().resolve("50-links.yaml"), """
+                realm: "{{env}}-demo"
+                users:
+                  - username: alice
+                    notBefore: 7
+                  - username: bob
+                    notBefore: 5
+                defaultGroups:
+                  - /team
+                """);
+        Files.writeString(folder().resolve("my-links.yaml"), """
+                realm: "{{env}}-demo"
+                users:
+                  - username: bob
+                    notBefore: 5
+                """);
+
+        apply();
+
+        assertThat(DocumentTrees.parse("20-clients.yaml", read("20-clients.yaml")).root().objects("clients").stream()
+                        .map(client -> client.text("clientId").orElseThrow()))
+                .containsExactly("frontend", "backend");
+        assertThat(DocumentTrees.parse("50-links.yaml", read("50-links.yaml")).root().objects("users").stream()
+                        .map(user -> user.text("username").orElseThrow()))
+                .containsExactly("alice", "bob");
+    }
+
+    @Test
+    void aStandardFileNameWrittenWithAnotherCaseIsTheStandardFile() throws IOException {
+        Files.createDirectories(folder());
+        Files.writeString(folder().resolve("00-Realm.yaml"), """
+                realm: "{{env}}-demo"
+                displayName: Demo realm
+                clients:
+                  - clientId: backend
+                """);
+        Files.writeString(folder().resolve("20-Clients.yaml"), """
+                realm: "{{env}}-demo"
+                clients:
+                  - clientId: frontend
+                """);
+        this.files = new RealmDefinitionFiles(this.root);
+        Map<String, Object> before = contentOf(folder());
+
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+        this.files.reorganize("demo", plan);
+
+        assertThat(plan.renames()).isEmpty();
+        assertThat(plan.removals()).isEmpty();
+        assertThat(plan.moves())
+                .containsExactly(new Move("clients", OptionalInt.of(1), "00-Realm.yaml", "20-Clients.yaml"));
+        assertThat(names()).containsExactly("00-Realm.yaml", "20-Clients.yaml");
+        assertThat(contentOf(folder())).isEqualTo(before);
+    }
+
+    @Test
+    void aFileWrittenIsNeverDeletedWhateverTheCaseOfItsName() throws IOException {
+        Files.createDirectories(folder());
+        Path written = Files.writeString(folder().resolve("20-clients.yaml"), "realm: demo\n");
+
+        assertThat(Reorganization.isOneOf(folder().resolve("20-Clients.yaml"), List.of(written)))
+                .isTrue();
+        assertThat(Reorganization.isOneOf(folder().resolve("20-clients.yaml"), List.of(written)))
+                .isTrue();
+        assertThat(Reorganization.isOneOf(folder().resolve("30-roles.yaml"), List.of(written)))
+                .isFalse();
+    }
+
+    private static final String YAML_VALUES = """
+            realm: "{{env}}-demo"
+            clients:
+              - clientId: backend
+                publicClient: yes
+                standardFlowEnabled: on
+                bearerOnly: off
+                consentRequired: No
+                octal: 017
+                hex: 0x1F
+                grouped: 1_000
+                huge: 123456789012345678901234567890
+                ratio: 1.5
+                braces: "{{{raw}}}"
+            """;
+
+    @SuppressWarnings("unchecked")
+    private static Object importedClient(final Object content, final String clientId) {
+        return ((List<Map<String, Object>>) ((Map<String, Object>) content).get("clients"))
+                .stream()
+                        .filter(client -> clientId.equals(client.get("clientId")))
+                        .findFirst()
+                        .orElseThrow();
+    }
+
+    @Test
+    void aMergedYamlValueMeansWhatTheImportReads() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("extra.yaml"), YAML_VALUES);
+        Object expected = importedClient(new Yaml().load(YAML_VALUES), "backend");
+
+        apply();
+
+        Object written = importedClient(new Yaml().load(read("20-clients.yaml")), "backend");
+        assertThat(written).isEqualTo(expected);
+    }
+
+    @Test
+    void aYamlValueMovedToJsonMeansWhatTheImportReads() throws IOException {
+        Files.createDirectories(folder());
+        Files.writeString(folder().resolve("00-realm.json"), """
+                {
+                  "realm": "{{env}}-demo",
+                  "enabled": true
+                }
+                """);
+        Files.writeString(folder().resolve("my-clients.yaml"), YAML_VALUES);
+        this.files = new RealmDefinitionFiles(this.root);
+        Object expected = importedClient(new Yaml().load(YAML_VALUES), "backend");
+
+        apply();
+
+        ObjectMapper mapper = new ObjectMapper();
+        Object written = importedClient(mapper.readValue(read("20-clients.json"), Object.class), "backend");
+        assertThat(mapper.writeValueAsString(written)).isEqualTo(mapper.writeValueAsString(expected));
+        assertThat(((Map<?, ?>) written).get("publicClient")).isEqualTo(true);
+        assertThat(((Map<?, ?>) written).get("huge")).isEqualTo(new BigInteger("123456789012345678901234567890"));
+    }
+
+    @Test
+    void aTopLevelKeyWrittenTwiceInAFileIsRefused() throws IOException {
+        copy("already-standard");
+        Files.writeString(folder().resolve("extra.yaml"), """
+                realm: "{{env}}-demo"
+                clients:
+                  - clientId: one
+                clients:
+                  - clientId: two
+                """);
+
+        assertThatThrownBy(() -> this.files.planReorganization("demo"))
+                .isInstanceOf(ReorganizationRefusedException.class)
+                .hasMessageContaining("clients")
+                .hasMessageContaining("extra.yaml");
+    }
+
+    @Test
+    void newFilesTakeTheFormatOfTheRealmFile() throws IOException {
+        Files.createDirectories(folder());
+        Files.writeString(folder().resolve("00-realm.yaml"), "realm: \"{{env}}-demo\"\n");
+        Files.writeString(folder().resolve("demo.json"), """
+                {
+                  "realm": "{{env}}-demo",
+                  "enabled": true,
+                  "displayName": "Demo",
+                  "clients": [{"clientId": "frontend"}]
+                }
+                """);
+        this.files = new RealmDefinitionFiles(this.root);
+
+        ReorganizationPlan plan = this.files.planReorganization("demo");
+
+        assertThat(plan.moves()).contains(new Move("clients", OptionalInt.of(1), "demo.json", "20-clients.yaml"));
     }
 
     @Test

@@ -148,6 +148,37 @@ class RealmReorganizeIT {
     }
 
     @Test
+    void aFileLeftEmptyIsShownRemovedAndRemoved() throws IOException {
+        copy("mixed");
+        contexts().run(context -> {
+            script(context, "realm format");
+            Outcome outcome = script(context, "realm reorganize --apply");
+
+            assertThat(outcome.exitCode()).isZero();
+            assertThat(outcome.output())
+                    .contains("  my-clients.yaml removed")
+                    .contains("Realm 'demo' reorganized: 4 files written, 1 removed");
+            assertThat(names()).doesNotContain("my-clients.yaml");
+        });
+    }
+
+    @Test
+    void aWriteThatFailsNamesTheFilesToRestore() throws IOException {
+        copy("monolithic-yaml");
+        Files.createDirectories(this.root.resolve("demo/40-groups.yaml/keep"));
+        contexts().run(context -> {
+            script(context, "realm format");
+            Outcome outcome = script(context, "realm reorganize --apply");
+
+            assertThat(outcome.exitCode()).isEqualTo(2);
+            assertThat(outcome.output())
+                    .contains("The reorganization stopped while writing 40-groups.yaml")
+                    .contains("Files already written: 00-realm.yaml, 50-links.yaml, 20-clients.yaml, 30-roles.yaml")
+                    .contains("Restore the folder with Git");
+        });
+    }
+
+    @Test
     void theQuestionAppliesWhenAnsweredYes() throws IOException {
         copy("monolithic-yaml");
         contexts().run(context -> {
