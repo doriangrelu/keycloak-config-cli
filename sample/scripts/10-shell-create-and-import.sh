@@ -40,7 +40,7 @@ if [ -n "$devs_id" ] && kcadm get "groups/$devs_id" -r "$REALM" | tr -d '\r ' | 
 else
     fail "group /team/devs does not give shop/buyer"
 fi
-if kcadm get "clients/$(client_id_of shop)/client-secret" -r "$REALM" | tr -d '' | grep -qF '"value" : "sample-shop-secret"'; then
+if kcadm get "clients/$(client_id_of shop)/client-secret" -r "$REALM" | tr -d '\r' | grep -qF '"value" : "sample-shop-secret"'; then
     pass "secret of shop set from the variable"
 else
     fail "secret of shop is not the one of the variable"
