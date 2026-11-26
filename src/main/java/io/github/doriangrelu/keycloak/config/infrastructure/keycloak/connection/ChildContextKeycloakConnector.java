@@ -28,28 +28,33 @@ import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 
 /**
  * Opens a connection per target, each in its own Spring context (ADR-010).
  *
- * <p>The context of a target is built on a copy of the environment of the application, with the {@code keycloak.*}
- * properties of the target first: it sees the defaults and the options given at start-up, and holds its own Keycloak
- * client. It is not a child of the application context, so its beans and its events stay apart; closing the
- * connection closes it, and with it the HTTP client.
+ * <p>The context of a target is built on a copy of the environment of the application, in the same order, with the
+ * properties of the target first: it sees the defaults and the options given at start-up (for the import to come),
+ * and holds its own Keycloak client. The copy leaves out every {@code keycloak.*} setting of the application, in any
+ * form ({@code --keycloak.password}, {@code KEYCLOAK_PASSWORD}...): the client of a target only knows what the target
+ * gives (see {@link TargetConnectionConfiguration}). The context is not a child of the application context, so its
+ * beans and its events stay apart; closing the connection closes it, and with it the HTTP client.
  */
 public final class ChildContextKeycloakConnector implements KeycloakConnector {
 
-    /** Name of the property source that Spring Boot attaches to an environment, rebuilt for each copy. */
-    private static final String ATTACHED_SOURCE = "configurationProperties";
+    private static final String KEYCLOAK_PREFIX = "keycloak";
 
     private final ConfigurableEnvironment mainEnvironment;
     private final Supplier<AnnotationConfigApplicationContext> contexts;
@@ -78,7 +83,10 @@ public final class ChildContextKeycloakConnector implements KeycloakConnector {
             context.setEnvironment(environmentOf(target, secret));
             context.register(TargetConnectionConfiguration.class);
             context.refresh();
-            String version = context.getBean(KeycloakProvider.class).getKeycloakVersion();
+            KeycloakProvider provider = context.getBean(KeycloakProvider.class);
+            // the login first: reading the version alone takes a refused login for a server that hides its version
+            provider.getInstance();
+            String version = provider.getKeycloakVersion();
             return new TargetConnection(target, version, context);
         } catch (RuntimeException failure) {
             context.close();
@@ -91,18 +99,38 @@ public final class ChildContextKeycloakConnector implements KeycloakConnector {
         StandardEnvironment environment = new StandardEnvironment();
         MutablePropertySources sources = environment.getPropertySources();
         sources.forEach(source -> sources.remove(source.getName()));
-        for (PropertySource<?> source : this.mainEnvironment.getPropertySources()) {
-            if (!ATTACHED_SOURCE.equals(source.getName())) {
-                sources.addLast(source);
-            }
-        }
+        this.mainEnvironment.getPropertySources().forEach(source -> sources.addLast(withoutKeycloakSettings(source)));
         sources.addFirst(new MapPropertySource(
                 "target '" + target.name() + "'", TargetConnectionConfiguration.propertiesOf(target, secret)));
         environment.setActiveProfiles(this.mainEnvironment.getActiveProfiles());
         environment.setDefaultProfiles(this.mainEnvironment.getDefaultProfiles());
         environment.setConversionService(this.mainEnvironment.getConversionService());
+        // replaces the attached source copied from the application, which wraps the sources of the application
         ConfigurationPropertySources.attach(environment);
         return environment;
+    }
+
+    /** A copy of the source without its {@code keycloak.*} settings; a source that cannot list its names is kept. */
+    private static PropertySource<?> withoutKeycloakSettings(final PropertySource<?> source) {
+        if (!(source instanceof EnumerablePropertySource<?> enumerable)) {
+            return source;
+        }
+        Map<String, Object> kept = new LinkedHashMap<>();
+        for (String name : enumerable.getPropertyNames()) {
+            Object value = enumerable.getProperty(name);
+            if (!isKeycloakSetting(name) && value != null) {
+                kept.put(name, value);
+            }
+        }
+        // an environment variable source keeps its type, which gives the relaxed names (IMPORT_FILES_LOCATIONS...)
+        return source instanceof SystemEnvironmentPropertySource
+                ? new SystemEnvironmentPropertySource(source.getName(), kept)
+                : new MapPropertySource(source.getName(), kept);
+    }
+
+    /** {@code keycloak.url}, {@code keycloak.http-proxy}, {@code KEYCLOAK_PASSWORD}... */
+    private static boolean isKeycloakSetting(final String name) {
+        return name.split("[._\\[]", 2)[0].equalsIgnoreCase(KEYCLOAK_PREFIX);
     }
 
     /**

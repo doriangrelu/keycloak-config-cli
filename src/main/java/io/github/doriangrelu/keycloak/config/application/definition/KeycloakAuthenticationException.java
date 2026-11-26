@@ -27,11 +27,18 @@ import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 /** The Keycloak of a target refused the login (exit code 4, ADR-005). The message never holds the secret. */
 public final class KeycloakAuthenticationException extends ApplicationException {
 
+    /**
+     * @param status the HTTP status of the answer; 404 means the login realm, or the URL, is not the one of Keycloak
+     */
     public KeycloakAuthenticationException(final Target target, final int status, final Throwable cause) {
         super(
-                "Keycloak at " + target.url() + " refused the login to target '" + target.name() + "' ("
+                "Keycloak at " + target.url() + " " + whatHappened(status) + " to target '" + target.name() + "' ("
                         + accountOf(target) + "): HTTP " + status,
                 cause);
+    }
+
+    private static String whatHappened(final int status) {
+        return status == 404 ? "has no such login realm or URL for the login" : "refused the login";
     }
 
     private static String accountOf(final Target target) {

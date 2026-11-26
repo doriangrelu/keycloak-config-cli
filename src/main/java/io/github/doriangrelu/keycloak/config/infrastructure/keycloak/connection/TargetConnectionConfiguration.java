@@ -41,7 +41,16 @@ import org.springframework.context.annotation.Import;
 @Import({KeycloakClientFactory.class, KeycloakProvider.class})
 public class TargetConnectionConfiguration {
 
-    /** The properties of the context of a target. The secret is only given to the Keycloak client. */
+    /** The default read timeout of the command line: a target does not set its own. */
+    private static final String READ_TIMEOUT = "10s";
+
+    /**
+     * The properties of the context of a target. The secret is only given to the Keycloak client.
+     *
+     * <p>The context of a target gets no {@code keycloak.*} setting from the application, so the settings that matter
+     * are given here: no skipped server info and no fallback version (the first call must reach the server), the
+     * default read timeout, no availability check (one call, failing fast). No proxy: a target has none.
+     */
     static Map<String, Object> propertiesOf(final Target target, final String secret) {
         boolean password = target.grantType() == GrantType.PASSWORD;
         Map<String, Object> properties = new HashMap<>();
@@ -55,6 +64,9 @@ public class TargetConnectionConfiguration {
         properties.put("keycloak.client-secret", password ? "" : secret);
         properties.put("keycloak.ssl-verify", Boolean.toString(target.sslVerify()));
         properties.put("keycloak.connect-timeout", target.connectTimeout().toString());
+        properties.put("keycloak.read-timeout", READ_TIMEOUT);
+        properties.put("keycloak.skip-server-info", "false");
+        properties.put("keycloak.version", "");
         properties.put("keycloak.availability-check.enabled", "false");
         return properties;
     }
