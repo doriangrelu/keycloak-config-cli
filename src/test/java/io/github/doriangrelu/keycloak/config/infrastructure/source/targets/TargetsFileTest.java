@@ -183,4 +183,38 @@ class TargetsFileTest {
                 .hasMessageStartingWith("kcc-targets.yaml: ")
                 .hasMessageContaining("duplicate");
     }
+
+    @Test
+    void aTimeoutWithoutUnitIsRefused() throws IOException {
+        TargetsFile targets = with("unitless-timeout.yaml");
+
+        assertThatThrownBy(targets::all)
+                .isInstanceOf(InvalidTargetsFileException.class)
+                .hasMessageStartingWith(PREFIX)
+                .hasMessageContaining("'connect-timeout'")
+                .hasMessageContaining("needs a unit such as 10s, 500ms or 1m");
+    }
+
+    @Test
+    void aSyntaxErrorNeverEchoesTheFile() throws IOException {
+        TargetsFile targets = with("syntax-error.yaml");
+
+        assertThatThrownBy(targets::all)
+                .isInstanceOf(InvalidTargetsFileException.class)
+                .hasMessageStartingWith("kcc-targets.yaml: ")
+                .hasMessageContaining("line")
+                .hasMessageNotContaining("hunter2");
+    }
+
+    @Test
+    void targetsSharingAnEnvironmentVariableAreRefused() throws IOException {
+        assertThatThrownBy(with("same-variable.yaml")::all)
+                .isInstanceOf(InvalidTargetsFileException.class)
+                .hasMessageContaining("'a-b'")
+                .hasMessageContaining("'a_b'");
+        assertThatThrownBy(with("same-variable-case.yaml")::all)
+                .isInstanceOf(InvalidTargetsFileException.class)
+                .hasMessageContaining("'dev'")
+                .hasMessageContaining("'DEV'");
+    }
 }

@@ -1,0 +1,5 @@
+targets:
+  dev:
+    url: https://dev.example.com
+    user: admin
+    connect-timeout: 10

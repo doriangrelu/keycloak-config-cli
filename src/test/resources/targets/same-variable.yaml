@@ -1,0 +1,7 @@
+targets:
+  a-b:
+    url: https://a.example.com
+    user: admin
+  a_b:
+    url: https://b.example.com
+    user: admin

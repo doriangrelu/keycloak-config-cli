@@ -30,8 +30,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -39,6 +41,8 @@ import java.util.regex.Pattern;
 import org.springframework.boot.convert.DurationStyle;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.error.Mark;
+import org.yaml.snakeyaml.error.MarkedYAMLException;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
@@ -58,6 +62,7 @@ public final class TargetsFile implements Targets {
     private static final Set<String> FIELDS =
             Set.of("url", "login-realm", "client-id", "grant-type", "user", "ssl-verify", "connect-timeout");
     private static final Set<String> SECRET_FIELDS = Set.of("password", "client-secret", "secret");
+    private static final Pattern UNITLESS = Pattern.compile("[+-]?\\d+");
     private static final Pattern NAME = Pattern.compile("[A-Za-z0-9_-]+");
 
     private final Path file;
@@ -91,8 +96,16 @@ public final class TargetsFile implements Targets {
             LoaderOptions options = new LoaderOptions();
             options.setAllowDuplicateKeys(false);
             root = new Yaml(options).compose(new StringReader(yaml));
+        } catch (MarkedYAMLException e) {
+            // Never the message of the exception: it quotes the source line, which may hold a secret.
+            String problem = e.getProblem() == null ? "syntax error" : e.getProblem();
+            Mark mark = e.getProblemMark();
+            String position =
+                    mark == null ? "" : " at line " + (mark.getLine() + 1) + ", column " + (mark.getColumn() + 1);
+            throw new InvalidTargetsFileException(
+                    FILE_NAME + ": the file is not valid YAML" + position + ": " + problem);
         } catch (YAMLException e) {
-            throw new InvalidTargetsFileException(FILE_NAME + ": the file is not valid YAML: " + e.getMessage());
+            throw new InvalidTargetsFileException(FILE_NAME + ": the file is not valid YAML");
         }
         if (root == null) {
             return List.of();
@@ -108,7 +121,17 @@ public final class TargetsFile implements Targets {
             return List.of();
         }
         List<Target> result = new ArrayList<>();
-        mapping(targets, FILE_NAME + ": 'targets'").forEach((name, node) -> result.add(target(name, node)));
+        Map<String, String> variables = new HashMap<>();
+        mapping(targets, FILE_NAME + ": 'targets'").forEach((name, node) -> {
+            Target target = target(name, node);
+            String variable = name.toUpperCase(Locale.ROOT).replace('-', '_');
+            String other = variables.putIfAbsent(variable, name);
+            if (other != null) {
+                throw new InvalidTargetsFileException(FILE_NAME + ": target '" + name + "': the name gives the same "
+                        + "environment variable KCC_" + variable + "_* as the target '" + other + "'");
+            }
+            result.add(target);
+        });
         return result;
     }
 
@@ -166,6 +189,10 @@ public final class TargetsFile implements Targets {
     private static Duration connectTimeout(final Map<String, Node> fields, final String where) {
         return text(fields, "connect-timeout", where)
                 .map(value -> {
+                    if (UNITLESS.matcher(value).matches()) {
+                        throw new InvalidTargetsFileException(
+                                where + "'connect-timeout' needs a unit such as 10s, 500ms or 1m, not '" + value + "'");
+                    }
                     Duration duration;
                     try {
                         duration = DurationStyle.detectAndParse(value);
