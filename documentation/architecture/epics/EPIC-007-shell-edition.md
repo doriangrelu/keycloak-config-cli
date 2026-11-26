@@ -1,6 +1,6 @@
 # EPIC-007 — Shell interactif : édition guidée des définitions de realm
 
-**Statut :** En cours
+**Statut :** Terminé
 **ADR :** [ADR-008](../ADR-008-shell-edition-des-definitions.md), [ADR-001](../ADR-001-architecture-en-couches.md), [ADR-007](../ADR-007-fichiers-seule-verite.md)
 
 Donner aux développeurs qui ne connaissent pas bien Keycloak un shell, sur le modèle de la console Doctrine / Symfony, pour créer et modifier les éléments d'un realm par des questions guidées. Le résultat est écrit dans les fichiers de définition, en JSON ou en YAML, sans abîmer ce qui est écrit à la main, avec des variables Mustache, et en respectant des règles de configuration minimale.
@@ -130,7 +130,7 @@ Décisions de conception (25/11/2026, validées avec l'utilisateur) :
 
 ### US-007-11 — Réorganisation d'un realm
 
-**Statut :** À faire
+**Statut :** Terminé
 `realm reorganize` : redécoupe un dossier selon la numérotation standard (pour un export Keycloak monolithique), montre d'abord ce qui sera déplacé, ne garantit pas les commentaires.
 
 Décisions de conception (26/11/2026, validées avec l'utilisateur) :
@@ -248,4 +248,12 @@ Décisions de conception (26/11/2026, validées avec l'utilisateur) :
 - L'ADR-008 est aligné : la confirmation de première déclaration est aussi demandée dans un realm créé par le shell, qui ne peut pas savoir hors ligne que Keycloak n'a pas ce realm.
 - Le dépôt déclare le plugin Claude Code `superpowers` (`.claude/settings.json`).
 - Exécutée par des sous-agents ; la revue finale a relevé trois points importants corrigés avant la fusion : sample impossible à relancer sous Linux, deux scripts non exécutables, documentation qui laissait croire qu'un rôle inconnu pouvait être donné à un groupe. Points mineurs reportés : un BOM UTF-8 en tête d'un fichier `.kcc` n'est pas retiré, une commande qui échoue dans un script n'est pas journalisée, `shell.realm` ouvre le realm sans rien afficher en session, quelques tests manquants (commande inconnue dans un script, `shell.realm` avec `shell.script`, `shell.realm` en session) ; le sample n'a pas été rejoué sous Linux natif.
+
+### US-007-11
+
+- `realm reorganize [--apply]` (`ReorganizeRealm`, `StandardLayout`, `ReorganizationPlan`, `Reorganization` dans l'adaptateur de fichiers) : plan affiché (clé, nombre, origine, cible), avertissement sur les commentaires, confirmation ; en mode script, rien n'est écrit sans `--apply`.
+- `50-links` reçoit six clés qui citent des rôles ou des groupes : `users`, `scopeMappings`, `clientScopeMappings`, `defaultGroups`, `identityProviderMappers`, `defaultRole` (ces deux dernières ajoutées à la revue finale). Limite connue : les `authorizationSettings` d'un client peuvent citer des rôles, groupes ou utilisateurs définis dans des fichiers appliqués après lui ; ils ne peuvent pas être séparés du client (lancer un dry-run).
+- Une clé présente dans plusieurs fichiers est fusionnée (listes concaténées dans l'ordre des noms de fichiers sans doublon, objets fusionnés, valeurs différentes refusées) ; un fichier qui ne garde que `realm` est supprimé ; les noms de fichiers sont comparés sans tenir compte de la casse ; les valeurs gardent le sens que leur donne l'import ; tout est calculé en mémoire, écrit dans des fichiers temporaires, puis mis en place, et un échec nomme les fichiers déjà remplacés (à restaurer avec Git).
+- Sample : le scénario 12 réorganise un export d'un seul fichier, l'importe, vérifie chaque fichier et les éléments dans Keycloak, puis un dry-run n'annonce aucun changement.
+- Exécutée par des sous-agents ; revues de tâche et revue finale ont relevé une perte de données (un fichier standard choisi pour devenir `00-realm`), une fusion manquante des rôles, une valeur écrasée entre deux fichiers, une perte de fichier sous Windows et macOS (casse des noms), des valeurs modifiées (`yes`, entiers octaux…) et des doublons à la relance : tous corrigés avant la fusion. Points mineurs reportés : valeurs YAML `!!binary`, `!!set` et clés de fusion `<<` non gérées, décimaux JSON lus en `double`, `20-clients.yaml` et `20-clients.json` dans un même dossier gardés à part, une erreur autre qu'une erreur d'entrée-sortie pendant la mise en place ne liste pas les fichiers remplacés.
 
