@@ -21,11 +21,18 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
+import io.github.doriangrelu.keycloak.config.domain.definition.Target;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /** No target has this name in kcc-targets.yaml. */
 public final class UnknownTargetException extends ApplicationException {
 
-    public UnknownTargetException(final String target) {
-        super("No target '" + target + "' in kcc-targets.yaml");
+    public UnknownTargetException(final String name, final List<Target> known) {
+        super("Unknown target '" + name + "': "
+                + (known.isEmpty()
+                        ? "no target in kcc-targets.yaml"
+                        : "known targets are "
+                                + known.stream().map(Target::name).collect(Collectors.joining(", "))));
     }
 }
