@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -124,7 +123,7 @@ public final class TargetsFile implements Targets {
         Map<String, String> variables = new HashMap<>();
         mapping(targets, FILE_NAME + ": 'targets'").forEach((name, node) -> {
             Target target = target(name, node);
-            String variable = name.toUpperCase(Locale.ROOT).replace('-', '_');
+            String variable = Target.variableKey(name);
             String other = variables.putIfAbsent(variable, name);
             if (other != null) {
                 throw new InvalidTargetsFileException(FILE_NAME + ": target '" + name + "': the name gives the same "

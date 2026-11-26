@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
+import io.github.doriangrelu.keycloak.config.application.definition.ConnectTarget;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateClient;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
@@ -34,20 +35,25 @@ import io.github.doriangrelu.keycloak.config.application.definition.ReorganizeRe
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import io.github.doriangrelu.keycloak.config.application.definition.SaveElement;
 import io.github.doriangrelu.keycloak.config.application.definition.port.KeycloakBuiltIns;
+import io.github.doriangrelu.keycloak.config.application.definition.port.KeycloakConnector;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RuleFiles;
+import io.github.doriangrelu.keycloak.config.application.definition.port.Targets;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.DefinedRolesRule;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.RuleElement;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.UniqueIdentifierRule;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.shell.ShellProperties;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection.ChildContextKeycloakConnector;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.definition.RealmDefinitionFiles;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.rules.BaselineBuiltIns;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.rules.RuleFilesOnDisk;
+import io.github.doriangrelu.keycloak.config.infrastructure.source.targets.TargetsFile;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
  * Assembles the use cases of the shell on the definition files (ADR-008). The shell itself only sees the application:
@@ -65,6 +71,22 @@ public class ShellAdaptersConfiguration {
     @Bean
     public RuleFiles ruleFiles(final ShellProperties properties) {
         return new RuleFilesOnDisk(properties.getRules());
+    }
+
+    @Bean
+    public Targets targets(final ShellProperties properties) {
+        return new TargetsFile(properties.getRoot());
+    }
+
+    /** One Spring context per connection, built on a copy of the environment of the application. */
+    @Bean
+    public KeycloakConnector keycloakConnector(final ConfigurableEnvironment environment) {
+        return new ChildContextKeycloakConnector(environment);
+    }
+
+    @Bean
+    public ConnectTarget connectTarget(final Targets targets, final KeycloakConnector keycloakConnector) {
+        return new ConnectTarget(targets, keycloakConnector);
     }
 
     @Bean

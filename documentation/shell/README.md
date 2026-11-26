@@ -2,7 +2,7 @@
 
 The shell is a guided editor for the realm definition files. It asks questions, explains the choices, and writes the clients, roles and groups of a realm in the files you later import with keycloak-config-cli. You do not need to know the export format of Keycloak: the shell translates your answers into the right keys, and applies [rules](rules.md) that keep the result safe.
 
-The shell works on files only. It never connects to Keycloak: use a [dry run](../advanced/dry-run.md) to see what an import would change.
+The shell edits files. It connects to Keycloak only when you ask it to, with [`connect`](#connecting-to-keycloak); to see what an import would change, use a [dry run](../advanced/dry-run.md).
 
 ## Pages
 
@@ -23,11 +23,66 @@ java -jar keycloak-config-cli.jar --run.operation=SHELL --shell.root=./realms
 | `run.operation` | `RUN_OPERATION` | `IMPORT` | Set to `SHELL` to start the shell |
 | `shell.root` | `SHELL_ROOT` | `.` | Folder holding one folder per realm |
 | `shell.realm` | `SHELL_REALM` | - | Folder of a realm to open before the first command |
+| `shell.target` | `SHELL_TARGET` | - | Target of `kcc-targets.yaml` to connect to before the first command, see [Connecting to Keycloak](#connecting-to-keycloak) |
 | `shell.command` | `SHELL_COMMAND` | - | One command to run, then exit |
 | `shell.script` | `SHELL_SCRIPT` | - | File of commands to run in one session, then exit |
 | `shell.rules` | `SHELL_RULES` | - | File of the rules of your organisation, see [Rules](rules.md) |
 
 Without `shell.command` and `shell.script`, an interactive session starts. Questions are asked on the console and an invalid answer is asked again.
+
+## Connecting to Keycloak
+
+The shell can connect to a Keycloak server, for the commands that work on the server. A server is a named target of the file `kcc-targets.yaml`, in `shell.root`. The file holds no secret.
+
+```yaml
+targets:
+  local:
+    url: http://localhost:8080
+    user: admin
+  dev:
+    url: https://keycloak.dev.example.org
+    login-realm: kcc
+    client-id: kcc-dev
+    grant-type: client_credentials
+    ssl-verify: true
+    connect-timeout: 15s
+```
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `url` | required | Base URL of Keycloak |
+| `login-realm` | `master` | Realm the user or the client logs in to |
+| `client-id` | `admin-cli` | Client used to log in |
+| `grant-type` | `password` | `password` (a user and a password) or `client_credentials` (a client and its secret) |
+| `user` | required for `password` | User to log in with |
+| `ssl-verify` | `true` | Whether the certificate of the server is verified |
+| `connect-timeout` | `10s` | How long to wait for the server; a unit is required (`500ms`, `10s`, `1m`) |
+
+A target name holds letters, digits, `-` and `_`. The file is read on every command, so an edit is seen without restarting the shell. An unknown field, a missing `url`, a missing `user` for the `password` grant, an invalid value, or a secret written in the file (`password`, `client-secret`, `secret`) is refused with exit code `2`, and the message names the target and the field. The file is optional: without it there is no target.
+
+### The password or the secret
+
+The password (grant `password`) or the secret of the client (grant `client_credentials`) is never read from the file:
+
+| Environment variable | Used for |
+|----------------------|----------|
+| `KCC_<TARGET>_PASSWORD` | The password of the `user`, for the `password` grant |
+| `KCC_<TARGET>_SECRET` | The secret of the client, for the `client_credentials` grant |
+
+`<TARGET>` is the name of the target in upper case, with `-` replaced by `_`: the target `my-dev` reads `KCC_MY_DEV_PASSWORD`. Two names that give the same variable (`my-dev` and `my_dev`) are refused. When the variable is not set, or empty, the shell asks for the secret without echo. In [script mode](#script-mode) nothing can be asked: a missing variable fails with exit code `2`.
+
+### Connecting
+
+In a session, [`connect <target>`](commands.md#connect-target) opens the connection, [`disconnect`](commands.md#disconnect) closes it, and [`target list`](commands.md#target-list) shows the targets. The prompt shows the opened realm and the connected target: `kcc>`, `kcc:shop>`, `kcc@dev>`, `kcc:shop@dev>`.
+
+For a script, `shell.target` connects before the first command. The secret comes from the environment:
+
+```bash
+KCC_DEV_SECRET=... java -jar keycloak-config-cli.jar --run.operation=SHELL --shell.root=./realms \
+  --shell.target=dev --shell.command="target list"
+```
+
+A target that cannot be connected stops the launch with the exit code of the cause (`2`, `3` or `4`). In an interactive session, the secret of `shell.target` is asked on the console. The connection is closed when the shell exits.
 
 ## A session
 
@@ -99,6 +154,8 @@ Use `--declare-type` the first time a script writes an element of a type: see [F
 | Code | Meaning |
 |------|---------|
 | `0` | Success, including a command that only gave advice |
-| `2` | Invalid use or configuration: unknown command, option, realm, client, role or group; a missing answer in script mode; a change refused by the [rules](rules.md); a read-only realm; an invalid rules file; `shell.command` with `shell.script` |
+| `2` | Invalid use or configuration: unknown command, option, realm, client, role, group or target; a missing answer or secret in script mode; a change refused by the [rules](rules.md); a read-only realm; an invalid rules file or `kcc-targets.yaml`; `shell.command` with `shell.script` |
+| `3` | Keycloak cannot be reached or did not answer in time (`connect`, `shell.target`) |
+| `4` | Keycloak refused the login of the target (`connect`, `shell.target`) |
 
 Other codes of [Exit Codes](../reference/exit-codes.md) apply to the cause of an unexpected failure. An invalid rules file stops the shell before the first command, whatever the command.

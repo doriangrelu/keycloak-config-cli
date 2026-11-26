@@ -31,6 +31,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
+import io.github.doriangrelu.keycloak.config.test.util.StubKeycloak;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;

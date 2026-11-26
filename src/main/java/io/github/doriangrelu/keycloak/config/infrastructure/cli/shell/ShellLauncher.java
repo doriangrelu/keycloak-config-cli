@@ -43,6 +43,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.shell.core.InputReader;
+import org.springframework.shell.core.InteractiveShellRunner;
 import org.springframework.shell.core.ShellRunner;
 import org.springframework.shell.core.command.CommandContext;
 import org.springframework.shell.core.command.CommandExecutionException;
@@ -72,6 +73,11 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
         public String readInput(final String prompt) {
             return null;
         }
+
+        @Override
+        public char[] readPassword(final String prompt) {
+            return null;
+        }
     };
 
     private final ShellProperties properties;
@@ -82,7 +88,21 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
     private final CommandRegistry registry;
     private final ObjectProvider<ShellRunner> interactiveShell;
     private final PrintWriter output;
+    private final ConnectionCommands connections;
     private int exitCode = ExitCode.SUCCESS.code();
+
+    /** A launcher that cannot connect: {@code shell.target} is refused. */
+    ShellLauncher(
+            final ShellProperties properties,
+            final RuleBook ruleBook,
+            final ReadRealms readRealms,
+            final ShellSession session,
+            final CommandParser parser,
+            final CommandRegistry registry,
+            final ObjectProvider<ShellRunner> interactiveShell,
+            final PrintWriter output) {
+        this(properties, ruleBook, readRealms, session, parser, registry, interactiveShell, output, null);
+    }
 
     public ShellLauncher(
             final ShellProperties properties,
@@ -92,7 +112,9 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             final CommandParser parser,
             final CommandRegistry registry,
             final ObjectProvider<ShellRunner> interactiveShell,
-            final PrintWriter output) {
+            final PrintWriter output,
+            final ConnectionCommands connections) {
+        this.connections = connections;
         this.properties = Objects.requireNonNull(properties, "properties");
         this.ruleBook = Objects.requireNonNull(ruleBook, "ruleBook");
         this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
@@ -114,15 +136,42 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
                 return;
             }
             openRealm();
+            ShellRunner interactive = command.isEmpty() && script.isEmpty() ? this.interactiveShell.getObject() : null;
+            connectAtStart(interactive);
             if (command.isPresent()) {
                 this.exitCode = runOnce(command.get());
             } else if (script.isPresent()) {
                 this.exitCode = runScript(script.get());
             } else {
-                this.interactiveShell.getObject().run(new String[0]);
+                interactive.run(new String[0]);
             }
         } catch (Exception e) {
             this.exitCode = FailureReporter.report(logger, "shell", e).code();
+        } finally {
+            this.session.close();
+        }
+    }
+
+    /**
+     * The target of {@code shell.target} is connected before the first command; a failure stops the launch with the
+     * code of its cause. In a session the secret is asked on the console; otherwise it comes from the environment.
+     */
+    private void connectAtStart(final ShellRunner interactive) {
+        Optional<String> target = this.properties.getTarget();
+        if (target.isEmpty()) {
+            return;
+        }
+        if (this.connections == null) {
+            throw new IllegalStateException("shell.target needs the connection commands");
+        }
+        InputReader reader = interactive instanceof InteractiveShellRunner runner ? runner.getReader() : NO_ANSWER;
+        try {
+            this.output.println(this.connections.connect(target.get(), new ConsoleQuestions(reader, this.output)));
+            this.output.flush();
+        } catch (ApplicationException e) {
+            this.output.println(e.getMessage());
+            this.output.flush();
+            throw e;
         }
     }
 

@@ -26,6 +26,11 @@ import io.github.doriangrelu.keycloak.config.application.common.ApplicationExcep
 public final class MissingAnswerException extends ApplicationException {
 
     public MissingAnswerException(final String question) {
-        super("No answer to \"" + question + "\": give it as an option of the command");
+        this(question, "give it as an option of the command");
+    }
+
+    /** A question whose answer is given another way than an option, such as an environment variable. */
+    public MissingAnswerException(final String question, final String how) {
+        super("No answer to \"" + question + "\": " + how);
     }
 }

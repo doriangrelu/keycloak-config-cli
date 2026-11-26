@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 /**
  * Options of the shell (ADR-008).
@@ -32,6 +33,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * {@code shell.command}, when given, runs that one command and exits, for a script; without it, an interactive session
  * starts. {@code shell.script}, when given, is a file of commands, one per line, run in one session; it cannot be combined
  * with {@code shell.command}. {@code shell.realm}, when given, is the folder of a realm opened at start.
+ * {@code shell.target}, when given, is the name of a target of {@code kcc-targets.yaml} the shell connects to at start.
  */
 @ConfigurationProperties(prefix = "shell", ignoreUnknownFields = false)
 public class ShellProperties {
@@ -41,14 +43,27 @@ public class ShellProperties {
     private final String command;
     private final String realm;
     private final Path script;
+    private final String target;
 
+    /** Options without a target to connect to at start. */
+    ShellProperties(final Path root, final Path rules, final String command, final String realm, final Path script) {
+        this(root, rules, command, realm, script, null);
+    }
+
+    @ConstructorBinding
     public ShellProperties(
-            final Path root, final Path rules, final String command, final String realm, final Path script) {
+            final Path root,
+            final Path rules,
+            final String command,
+            final String realm,
+            final Path script,
+            final String target) {
         this.root = root == null ? Path.of(".") : root;
         this.rules = rules;
         this.command = command;
         this.realm = realm;
         this.script = script;
+        this.target = target;
     }
 
     public Path getRoot() {
@@ -69,5 +84,9 @@ public class ShellProperties {
 
     public Optional<Path> getScript() {
         return Optional.ofNullable(this.script).filter(path -> !path.toString().isBlank());
+    }
+
+    public Optional<String> getTarget() {
+        return Optional.ofNullable(this.target).map(String::strip).filter(name -> !name.isEmpty());
     }
 }

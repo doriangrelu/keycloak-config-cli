@@ -66,6 +66,15 @@ public interface Questions {
      */
     List<TemplatedValue> askValues(String question, List<TemplatedValue> proposed);
 
+    /**
+     * A secret such as a password, typed without echo and never proposed: an empty answer is asked again. Without a
+     * way to read it, such as in a script, it fails like the others; an adapter that cannot hide what is typed does
+     * not ask.
+     */
+    default String askSecret(final String question) {
+        throw new MissingAnswerException(question);
+    }
+
     /** Yes or no; an empty answer takes {@code byDefault}. */
     boolean confirm(String question, boolean byDefault);
 

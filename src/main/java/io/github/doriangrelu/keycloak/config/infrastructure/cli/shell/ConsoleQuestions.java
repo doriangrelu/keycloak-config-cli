@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.MissingAnswe
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.domain.definition.InvalidTemplatedValueException;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
+import java.io.Console;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -202,6 +203,21 @@ public final class ConsoleQuestions implements Questions {
     }
 
     @Override
+    public String askSecret(final String question) {
+        String prompt = "? " + question + ": ";
+        while (true) {
+            String answer = readSecret(prompt);
+            if (answer == null) {
+                throw new MissingAnswerException(question);
+            }
+            if (!answer.isEmpty()) {
+                return answer;
+            }
+            this.writer.println("  An answer is required.");
+        }
+    }
+
+    @Override
     public boolean confirm(final String question, final boolean byDefault) {
         String prompt = "? " + question + (byDefault ? " [Y/n]" : " [y/N]") + ": ";
         while (true) {
@@ -238,6 +254,36 @@ public final class ConsoleQuestions implements Questions {
         String hint =
                 proposed.isPresent() ? " (Enter keeps " + keeps + ", " + NONE + " for none)" : " (Enter for none)";
         return "? " + question + proposed.map(value -> " [" + value + "]").orElse("") + hint + ": ";
+    }
+
+    /**
+     * The secret typed without echo, or null when there is none to read, as in a script. The reader hides the input
+     * when it can; otherwise the system console does; as a last resort the input is read in clear, after a warning.
+     */
+    private String readSecret(final String prompt) {
+        try {
+            return asText(this.reader.readPassword(prompt));
+        } catch (UnsupportedOperationException cannotHide) {
+            // the reader has no hidden input: the console or, failing that, a plain read
+        } catch (Exception e) {
+            return null;
+        }
+        Console console = System.console();
+        if (console != null && console.isTerminal()) {
+            return asText(console.readPassword("%s", prompt));
+        }
+        this.writer.println("  Warning: this input cannot be hidden, what you type is echoed.");
+        return read(prompt);
+    }
+
+    /** The text of the characters, which are then erased; null when nothing could be read. */
+    private static String asText(final char[] typed) {
+        if (typed == null) {
+            return null;
+        }
+        String text = new String(typed);
+        Arrays.fill(typed, '\0');
+        return text;
     }
 
     /** The answer, or null when there is none to read: a script does not answer, and the question takes its proposal. */

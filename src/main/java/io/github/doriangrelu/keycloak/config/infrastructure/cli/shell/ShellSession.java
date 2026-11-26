@@ -20,14 +20,17 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.Connection;
 import io.github.doriangrelu.keycloak.config.application.definition.NoRealmOpenedException;
+import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import java.util.Objects;
 import java.util.Optional;
 
-/** The realm the commands of a session work on. */
+/** The realm the commands of a session work on, and the Keycloak it is connected to. */
 public final class ShellSession {
 
     private String openedRealm;
+    private Connection connection;
 
     public Optional<String> openedRealm() {
         return Optional.ofNullable(this.openedRealm);
@@ -40,5 +43,38 @@ public final class ShellSession {
 
     public void open(final String folder) {
         this.openedRealm = Objects.requireNonNull(folder, "folder");
+    }
+
+    /** The connection to the Keycloak of a target, when there is one. */
+    public Optional<Connection> connection() {
+        return Optional.ofNullable(this.connection);
+    }
+
+    /**
+     * Makes this connection the current one, which is opened already: the previous one, if any, is closed only now, so
+     * that a failed switch leaves it as it was.
+     */
+    public void connect(final Connection opened) {
+        Connection previous = this.connection;
+        this.connection = Objects.requireNonNull(opened, "opened");
+        if (previous != null) {
+            previous.close();
+        }
+    }
+
+    /** Closes the current connection, which is then forgotten; the target it was to, or none when there was none. */
+    public Optional<Target> disconnect() {
+        Connection current = this.connection;
+        this.connection = null;
+        if (current == null) {
+            return Optional.empty();
+        }
+        current.close();
+        return Optional.of(current.target());
+    }
+
+    /** Ends the session: the connection, if any, is closed. Closing again does nothing. */
+    public void close() {
+        disconnect();
     }
 }

@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.domain.definition;
 
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -44,4 +45,21 @@ public record Target(
         GrantType grantType,
         Optional<String> user,
         boolean sslVerify,
-        Duration connectTimeout) {}
+        Duration connectTimeout) {
+
+    /**
+     * What the name of a target gives in an environment variable: upper case, {@code -} replaced by {@code _}. Two
+     * names with the same key would share their variables.
+     */
+    public static String variableKey(final String name) {
+        return name.toUpperCase(Locale.ROOT).replace('-', '_');
+    }
+
+    /**
+     * The environment variable that holds the secret of this target: {@code KCC_<KEY>_PASSWORD} for the password
+     * grant, {@code KCC_<KEY>_SECRET} for a client.
+     */
+    public String secretVariable() {
+        return "KCC_" + variableKey(this.name) + (this.grantType == GrantType.PASSWORD ? "_PASSWORD" : "_SECRET");
+    }
+}

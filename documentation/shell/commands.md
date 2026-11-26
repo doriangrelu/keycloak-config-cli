@@ -273,3 +273,49 @@ group.defined-roles  group  required  A group gives a role that is defined neith
 ```
 
 The last four rules are built into the tool and written in Java: they keep identifiers unique and the roles of a group defined. They can be disabled like any other rule.
+
+## Connecting to Keycloak
+
+These commands link the shell to a Keycloak server declared in `kcc-targets.yaml`. They need no opened realm. See [Connecting to Keycloak](README.md#connecting-to-keycloak) for the file and the environment variables.
+
+### `connect <target>`
+
+Opens a connection to the named target and checks it with a first call, which reads the version of Keycloak. The password of the user (or the secret of the client, for the `client_credentials` grant) is read from `KCC_<TARGET>_PASSWORD` (or `KCC_<TARGET>_SECRET`) when that variable is set, and asked without echo otherwise. The name of the target is written in upper case and `-` becomes `_`: the target `my-dev` reads `KCC_MY_DEV_PASSWORD`.
+
+```text
+kcc> connect dev
+? Secret of client 'kcc-dev' (or KCC_DEV_SECRET):
+Connected to dev (https://keycloak.dev.example.org, Keycloak 26.5.3)
+kcc@dev>
+```
+
+The shell holds one connection at a time. Connecting to another target opens the new connection first and closes the previous one only when the new one is open: if the new connection fails, the previous one stays. The connection is closed when the shell exits. The secret is never printed, logged or written.
+
+| Failure | Exit code |
+|---------|-----------|
+| Unknown target, invalid `kcc-targets.yaml`, or a secret missing in [script mode](README.md#script-mode) | `2` |
+| Keycloak cannot be reached or does not answer within `connect-timeout` | `3` |
+| Keycloak refuses the login (wrong password or secret, disabled account or client) | `4` |
+
+### `disconnect`
+
+Closes the connection to the current target.
+
+```text
+kcc@dev> disconnect
+Disconnected from dev
+> disconnect
+Not connected: use 'connect <target>'
+```
+
+### `target list`
+
+Lists the targets of `kcc-targets.yaml` in the order of the file: the name, the URL and the grant type, then `(connected)` for the target the shell is connected to.
+
+```text
+kcc> target list
+local  http://localhost:8080  password
+dev  https://keycloak.dev.example.org  client_credentials  (connected)
+```
+
+Without a file, it says `No target in kcc-targets.yaml`.

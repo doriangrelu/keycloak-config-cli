@@ -18,7 +18,7 @@
  * ---license-end
  */
 
-package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection;
+package io.github.doriangrelu.keycloak.config.test.util;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -40,35 +40,35 @@ import java.util.function.Supplier;
  * A few endpoints of Keycloak answered by a plain blocking HTTP/1.1 server, one connection at a time. The JDK
  * {@code HttpServer} is not used: its selector cannot open on some Windows set-ups.
  */
-final class StubKeycloak implements AutoCloseable {
+public final class StubKeycloak implements AutoCloseable {
 
     /** A request received by the stub. */
-    record Request(String method, String path, String authorization, String body) {}
+    public record Request(String method, String path, String authorization, String body) {}
 
     /** The answer of a route. */
-    record Answer(int status, String body) {}
+    public record Answer(int status, String body) {}
 
     private final ServerSocket server;
     private final Map<String, Supplier<Answer>> routes = new ConcurrentHashMap<>();
     private final List<Request> requests = new CopyOnWriteArrayList<>();
 
-    StubKeycloak() throws IOException {
+    public StubKeycloak() throws IOException {
         this.server = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
         Thread thread = new Thread(this::serve, "stub-keycloak");
         thread.setDaemon(true);
         thread.start();
     }
 
-    String url() {
+    public String url() {
         return "http://" + this.server.getInetAddress().getHostAddress() + ":" + this.server.getLocalPort();
     }
 
     /** Answers the requests to this path, whatever their method; other paths are answered 404. */
-    void route(final String path, final Supplier<Answer> answer) {
+    public void route(final String path, final Supplier<Answer> answer) {
         this.routes.put(path, answer);
     }
 
-    List<Request> requestsTo(final String path) {
+    public List<Request> requestsTo(final String path) {
         return this.requests.stream()
                 .filter(request -> request.path().equals(path))
                 .toList();

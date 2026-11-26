@@ -292,4 +292,72 @@ class ConsoleQuestionsTest {
 
         assertThat(this.output.toString()).contains("  Client 'x' already exists");
     }
+
+    /** A reader that hides what is typed: a password is read by {@code readPassword}, never by {@code readInput}. */
+    private static final class HiddenInputReader implements InputReader {
+
+        private final Deque<String> secrets;
+        private int echoedReads;
+
+        HiddenInputReader(final String... secrets) {
+            this.secrets = new ArrayDeque<>(Arrays.asList(secrets));
+        }
+
+        @Override
+        public String readInput() {
+            this.echoedReads++;
+            return null;
+        }
+
+        @Override
+        public String readInput(final String prompt) {
+            this.echoedReads++;
+            return null;
+        }
+
+        @Override
+        public char[] readPassword(final String prompt) {
+            String secret = this.secrets.poll();
+            return secret == null ? null : secret.toCharArray();
+        }
+    }
+
+    @Test
+    void askSecretDoesNotEcho() {
+        HiddenInputReader reader = new HiddenInputReader("s3cr3t-value");
+        ConsoleQuestions questions = new ConsoleQuestions(reader, new PrintWriter(this.output, true));
+
+        assertThat(questions.askSecret("Password of 'admin'")).isEqualTo("s3cr3t-value");
+
+        assertThat(reader.echoedReads).isZero();
+        assertThat(this.output.toString()).doesNotContain("s3cr3t-value");
+    }
+
+    @Test
+    void askSecretFailsInScriptMode() {
+        HiddenInputReader reader = new HiddenInputReader();
+        ConsoleQuestions questions = new ConsoleQuestions(reader, new PrintWriter(this.output, true));
+
+        assertThatThrownBy(() -> questions.askSecret("Password of 'admin'"))
+                .isInstanceOf(MissingAnswerException.class)
+                .hasMessageContaining("Password of 'admin'");
+        assertThat(reader.echoedReads).isZero();
+    }
+
+    @Test
+    void askSecretAsksAgainOnAnEmptyAnswer() {
+        ConsoleQuestions questions =
+                new ConsoleQuestions(new HiddenInputReader("", "second"), new PrintWriter(this.output, true));
+
+        assertThat(questions.askSecret("Password of 'admin'")).isEqualTo("second");
+        assertThat(this.output.toString()).contains("An answer is required.");
+    }
+
+    @Test
+    void askSecretWithAReaderThatCannotHideFailsInScriptMode() {
+        // the default readPassword of the reader is not supported, and a test has no terminal to fall back to
+        ConsoleQuestions questions = answering();
+
+        assertThatThrownBy(() -> questions.askSecret("Password of 'admin'")).isInstanceOf(MissingAnswerException.class);
+    }
 }

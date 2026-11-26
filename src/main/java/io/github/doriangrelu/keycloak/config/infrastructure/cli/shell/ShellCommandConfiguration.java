@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import io.github.doriangrelu.keycloak.config.application.definition.ConnectTarget;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateClient;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
@@ -34,10 +35,12 @@ import io.github.doriangrelu.keycloak.config.application.definition.ReorganizeRe
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import java.io.PrintWriter;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.shell.core.ConsoleInputProvider;
 import org.springframework.shell.core.ShellRunner;
 import org.springframework.shell.core.command.CommandParser;
 import org.springframework.shell.core.command.CommandRegistry;
@@ -100,6 +103,26 @@ public class ShellCommandConfiguration {
         return new GroupCommands(createGroup, editGroup, readRealms, shellSession);
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public EnvironmentVariables environmentVariables() {
+        return EnvironmentVariables.ofProcess();
+    }
+
+    @Bean
+    public ConnectionCommands connectionCommands(
+            final ConnectTarget connectTarget,
+            final ShellSession shellSession,
+            final EnvironmentVariables environmentVariables) {
+        return new ConnectionCommands(connectTarget, shellSession, environmentVariables);
+    }
+
+    /** Replaces the console input of Spring Shell, whose prompt is fixed: it shows the realm and the target. */
+    @Bean
+    public ConsoleInputProvider consoleInputProvider(final ShellSession shellSession) {
+        return new ShellInputProvider(new ShellPrompt(shellSession));
+    }
+
     /** Named as the runner of Spring Shell, which is then not registered. */
     @Bean
     public ShellLauncher springShellApplicationRunner(
@@ -109,7 +132,8 @@ public class ShellCommandConfiguration {
             final ShellSession shellSession,
             final CommandParser commandParser,
             final CommandRegistry commandRegistry,
-            final ObjectProvider<ShellRunner> interactiveShell) {
+            final ObjectProvider<ShellRunner> interactiveShell,
+            final ConnectionCommands connectionCommands) {
         return new ShellLauncher(
                 properties,
                 ruleBook,
@@ -118,6 +142,7 @@ public class ShellCommandConfiguration {
                 commandParser,
                 commandRegistry,
                 interactiveShell,
-                new PrintWriter(System.out, true));
+                new PrintWriter(System.out, true),
+                connectionCommands);
     }
 }
