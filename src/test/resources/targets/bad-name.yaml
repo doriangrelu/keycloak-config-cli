@@ -1,0 +1,4 @@
+targets:
+  "my target":
+    url: https://dev.example.com
+    user: admin

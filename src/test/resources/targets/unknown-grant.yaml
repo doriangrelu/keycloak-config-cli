@@ -1,0 +1,4 @@
+targets:
+  dev:
+    url: https://dev.example.com
+    grant-type: magic

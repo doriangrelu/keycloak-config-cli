@@ -1,0 +1,11 @@
+targets:
+  dev:
+    url: https://dev.example.com
+    user: admin
+    login-realm: ops
+    client-id: cli
+    ssl-verify: false
+    connect-timeout: 500ms
+  local:
+    url: http://localhost:8080
+    user: admin
