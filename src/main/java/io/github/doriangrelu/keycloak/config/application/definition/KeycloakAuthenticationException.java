@@ -24,7 +24,10 @@ import io.github.doriangrelu.keycloak.config.application.common.ApplicationExcep
 import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 
-/** The Keycloak of a target refused the login (exit code 4, ADR-005). The message never holds the secret. */
+/**
+ * The Keycloak of a target refused the login, or an operation of an import for lack of rights (exit code 4, ADR-005).
+ * The message never holds the secret.
+ */
 public final class KeycloakAuthenticationException extends ApplicationException {
 
     /**
@@ -33,13 +36,31 @@ public final class KeycloakAuthenticationException extends ApplicationException 
      *     prints the deepest cause only
      */
     public KeycloakAuthenticationException(final Target target, final int status, final Throwable cause) {
-        super(
+        this(
                 "Keycloak at " + target.url() + " " + whatHappened(status) + " to target '" + target.name() + "' ("
                         + accountOf(target) + "): HTTP " + status,
-                null);
+                cause);
+    }
+
+    private KeycloakAuthenticationException(final String message, final Throwable cause) {
+        super(message, null);
         if (cause != null) {
             addSuppressed(cause);
         }
+    }
+
+    /**
+     * Keycloak refused an operation of an import on a target it let log in: the account lacks the rights it needs.
+     *
+     * @param detail what Keycloak said of the refused operation, which never holds the secret
+     * @param cause the client error, kept as a suppressed exception
+     */
+    public static KeycloakAuthenticationException refusedOperation(
+            final Target target, final String detail, final Throwable cause) {
+        return new KeycloakAuthenticationException(
+                "Keycloak at " + target.url() + " refused an operation of the import on target '" + target.name()
+                        + "' (missing rights?): " + detail,
+                cause);
     }
 
     private static String whatHappened(final int status) {

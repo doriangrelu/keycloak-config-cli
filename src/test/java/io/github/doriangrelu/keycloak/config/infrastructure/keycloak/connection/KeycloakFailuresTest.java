@@ -89,17 +89,37 @@ class KeycloakFailuresTest {
     }
 
     @Test
-    void aRefusalDuringAnImportGivesCode4() {
+    void aRefusalDuringAnImportSaysWhatWasRefusedAndGivesCode4() {
         KeycloakAccessException failure = new KeycloakAccessException(
-                KeycloakFailure.UNAUTHORIZED, 403, "Keycloak responded with HTTP 403", null);
+                KeycloakFailure.UNAUTHORIZED,
+                403,
+                "Keycloak responded with HTTP 403: {\"error\":\"unknown_error\"}",
+                null);
 
         RuntimeException translated = KeycloakFailures.duringImport(TARGET, failure);
 
         assertThat(translated)
                 .isInstanceOf(KeycloakAuthenticationException.class)
-                .hasMessageContaining("HTTP 403")
+                .hasMessage("Keycloak at https://dev.example.org refused an operation of the import on target 'dev'"
+                        + " (missing rights?): Keycloak responded with HTTP 403: {\"error\":\"unknown_error\"}")
                 .hasNoCause();
+        assertThat(translated.getMessage()).doesNotContain("login");
         assertThat(translated.getSuppressed()).containsExactly(failure);
+        assertThat(ExitCodeResolver.resolve(translated).code()).isEqualTo(4);
+    }
+
+    @Test
+    void aRefusalWithoutStatusNeverShowsHttp0() {
+        KeycloakAccessException failure =
+                new KeycloakAccessException(KeycloakFailure.UNAUTHORIZED, "Keycloak refused the operation");
+
+        RuntimeException translated = KeycloakFailures.duringImport(TARGET, failure);
+
+        assertThat(translated)
+                .isInstanceOf(KeycloakAuthenticationException.class)
+                .hasMessageEndingWith("(missing rights?): Keycloak refused the operation")
+                .message()
+                .doesNotContain("HTTP 0");
         assertThat(ExitCodeResolver.resolve(translated).code()).isEqualTo(4);
     }
 
@@ -107,7 +127,10 @@ class KeycloakFailuresTest {
     void aRawRefusalDuringAnImportGivesCode4() {
         RuntimeException translated = KeycloakFailures.duringImport(TARGET, new WebApplicationException(401));
 
-        assertThat(translated).isInstanceOf(KeycloakAuthenticationException.class);
+        assertThat(translated)
+                .isInstanceOf(KeycloakAuthenticationException.class)
+                .hasMessageContaining("refused an operation of the import on target 'dev'")
+                .hasMessageEndingWith("HTTP 401");
         assertThat(ExitCodeResolver.resolve(translated).code()).isEqualTo(4);
     }
 

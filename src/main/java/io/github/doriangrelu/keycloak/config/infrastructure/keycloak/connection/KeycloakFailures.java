@@ -59,7 +59,8 @@ final class KeycloakFailures {
 
     /**
      * A failure of an import on a connected target: Keycloak could not be reached, did not answer in time, or refused
-     * the account ({@code 401}, {@code 403}). A configuration refused by Keycloak ({@code 400}, {@code 404},
+     * an operation to the account ({@code 401}, {@code 403}), told with what Keycloak said of it (an error answer of
+     * Keycloak, which never holds the secret: the secret is only sent to log in). A configuration refused by Keycloak ({@code 400}, {@code 404},
      * {@code 409}...), an invalid file and any other failure are left as they are.
      */
     static RuntimeException duringImport(final Target target, final RuntimeException failure) {
@@ -67,7 +68,8 @@ final class KeycloakFailures {
             if (current instanceof KeycloakAccessException access) {
                 return switch (access.getFailure()) {
                     case UNAVAILABLE, TIMEOUT -> new KeycloakUnreachableException(target, reasonOf(access), failure);
-                    case UNAUTHORIZED -> new KeycloakAuthenticationException(target, access.getStatus(), failure);
+                    case UNAUTHORIZED ->
+                        KeycloakAuthenticationException.refusedOperation(target, access.getMessage(), failure);
                     default -> failure;
                 };
             }
@@ -77,7 +79,8 @@ final class KeycloakFailures {
             if (current instanceof WebApplicationException answered && answered.getResponse() != null) {
                 int status = answered.getResponse().getStatus();
                 return switch (status) {
-                    case 401, 403 -> new KeycloakAuthenticationException(target, status, failure);
+                    case 401, 403 ->
+                        KeycloakAuthenticationException.refusedOperation(target, "HTTP " + status, failure);
                     case 429, 502, 503, 504 -> new KeycloakUnreachableException(target, "HTTP " + status, failure);
                     default -> failure;
                 };
