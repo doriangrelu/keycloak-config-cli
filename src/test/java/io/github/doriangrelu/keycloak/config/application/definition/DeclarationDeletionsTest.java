@@ -21,7 +21,6 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
@@ -235,12 +234,15 @@ class DeclarationDeletionsTest {
 
     @Test
     void theDeletionsOfEveryRealmOfTheReportAreRead() {
-        ImportReport result = new ImportReport(Map.of(
-                "demo", List.of(delete(ResourceType.CLIENT, "a")),
-                "other", List.of(delete(ResourceType.CLIENT, "b"))));
+        Map<String, List<PlannedChange>> byRealm = new java.util.LinkedHashMap<>();
+        byRealm.put("demo", List.of(delete(ResourceType.CLIENT, "a")));
+        byRealm.put("other", List.of(delete(ResourceType.CLIENT, "b")));
+        ImportReport result = new ImportReport(byRealm);
         this.report = () -> result;
 
-        assertThat(warning(client("web"))).contains("(2): ").contains("a").contains("b");
+        assertThat(warning(client("web")))
+                .isEqualTo("At the next import, these clients of Keycloak missing from the files will be deleted on"
+                        + " dev (2): a, b. Confirm?");
     }
 
     private static String generic(final ElementDefinition element, final String reason) {
@@ -280,10 +282,52 @@ class DeclarationDeletionsTest {
     }
 
     @Test
-    void anOtherFailureIsNotHidden() {
-        fails(new IllegalStateException("boom"));
+    void anApplicationFailureGivesTheGenericWarningWithoutItsMessage() {
+        fails(new MissingAnswerException("marker-value"));
 
-        assertThatThrownBy(() -> warning(client("web"))).isInstanceOf(IllegalStateException.class);
+        String text = warning(client("web"));
+
+        assertThat(text).isEqualTo(generic(client("web"), "the dry run failed")).doesNotContain("marker-value");
+    }
+
+    @Test
+    void anyOtherFailureGivesTheGenericWarningWithoutItsMessage() {
+        fails(new IllegalStateException("marker-value"));
+
+        String text = warning(client("web"));
+
+        assertThat(text).isEqualTo(generic(client("web"), "the dry run failed")).doesNotContain("marker-value");
+    }
+
+    @Test
+    void informationHasTheGenericPathToo() {
+        fails(new KeycloakUnreachableException(DEV, "down", null));
+
+        assertThat(deletions().information("demo", client("web"), this.connection, this.remembered))
+                .isEqualTo(generic(client("web"), "Keycloak unreachable"));
+    }
+
+    @Test
+    void aTemplatedClientIdIsComparedRenderedFromMemory() {
+        this.definitions.sources = Map.of("00-realm.yaml", "id: {{env}}-shop");
+        this.remembered.remember("env", "prod");
+        plans(
+                delete(ResourceType.CLIENT_ROLE, RoleKey.client("prod-shop", "buyer")),
+                delete(ResourceType.CLIENT_ROLE, RoleKey.client("dev-shop", "other")));
+
+        assertThat(warning(clientRole("{{env}}-shop", "viewer")))
+                .isEqualTo("At the next import, these roles of client '{{env}}-shop' of Keycloak missing from the"
+                        + " files will be deleted on dev (1): buyer. Confirm?");
+    }
+
+    @Test
+    void aTemplatedClientIdIsComparedRenderedWithItsDefault() {
+        this.definitions.sources = Map.of("00-realm.yaml", "id: {{env:dev}}-shop");
+        plans(
+                delete(ResourceType.CLIENT_ROLE, RoleKey.client("dev-shop", "buyer")),
+                delete(ResourceType.CLIENT_ROLE, RoleKey.client("prod-shop", "other")));
+
+        assertThat(warning(clientRole("{{env:dev}}-shop", "viewer"))).contains("(1): buyer.");
     }
 
     @Test

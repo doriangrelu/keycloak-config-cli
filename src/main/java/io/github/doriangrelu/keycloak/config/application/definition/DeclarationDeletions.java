@@ -81,7 +81,7 @@ public final class DeclarationDeletions {
         try {
             Map<String, String> values = this.variables.resolveKnown(folder, remembered);
             ImportReport report = connection.dryRun(this.definitions.importFilesWith(folder, element, values));
-            return deletions(element, report, target, ending);
+            return deletions(element, values, report, target, ending);
         } catch (MissingVariableException e) {
             reason = "variable '" + e.variable() + "' has no value";
         } catch (KeycloakUnreachableException e) {
@@ -90,17 +90,24 @@ public final class DeclarationDeletions {
             reason = "Keycloak refused the dry run";
         } catch (InvalidImportException e) {
             reason = "a file is invalid";
+        } catch (RuntimeException e) {
+            // advisory: whatever fails, the message of the failure may quote a value and is never shown
+            reason = "the dry run failed";
         }
         return FirstDeclarationException.warning(element) + " (dry run on " + target + " not possible: " + reason + ")";
     }
 
     private static String deletions(
-            final ElementDefinition element, final ImportReport report, final String target, final String ending) {
+            final ElementDefinition element,
+            final Map<String, String> values,
+            final ImportReport report,
+            final String target,
+            final String ending) {
         String cleaned = FirstDeclarationException.cleanedWith(element);
         List<String> names = new ArrayList<>();
         for (List<PlannedChange> plan : report.plans().values()) {
             for (PlannedChange change : plan) {
-                if (change.kind() == PlannedChange.Kind.DELETE && concerns(element, change)) {
+                if (change.kind() == PlannedChange.Kind.DELETE && concerns(element, values, change)) {
                     names.add(nameOf(change.key()));
                 }
             }
@@ -115,15 +122,18 @@ public final class DeclarationDeletions {
                 + target + " (" + names.size() + "): " + listed + more + "." + ending;
     }
 
-    private static boolean concerns(final ElementDefinition element, final PlannedChange change) {
+    private static boolean concerns(
+            final ElementDefinition element, final Map<String, String> values, final PlannedChange change) {
         if (element instanceof RoleDefinition role) {
             if (role.clientId().isEmpty()) {
                 return change.type() == ResourceType.REALM_ROLE;
             }
-            // the client id as written: a placeholder is compared as written, not rendered
+            // the plan holds the rendered client id
             return change.type() == ResourceType.CLIENT_ROLE
                     && change.key() instanceof RoleKey key
-                    && key.client().filter(role.clientId().get().raw()::equals).isPresent();
+                    && key.client()
+                            .filter(role.clientId().get().rendered(values)::equals)
+                            .isPresent();
         }
         return change.type() == (element instanceof GroupDefinition ? ResourceType.GROUP : ResourceType.CLIENT);
     }

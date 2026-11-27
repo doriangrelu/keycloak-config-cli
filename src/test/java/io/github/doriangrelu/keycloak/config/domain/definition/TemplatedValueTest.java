@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.domain.definition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -75,5 +76,14 @@ class TemplatedValueTest {
         assertThatThrownBy(() -> TemplatedValue.of(raw))
                 .isInstanceOf(InvalidTemplatedValueException.class)
                 .hasMessageContaining(raw);
+    }
+
+    @Test
+    void renderedUsesTheValueThenTheDefaultThenNothing() {
+        TemplatedValue value = TemplatedValue.of("{{env}}-{{app:shop}}-{{other}}$1");
+
+        assertThat(value.rendered(Map.of("env", "prod"))).isEqualTo("prod-shop-$1");
+        assertThat(value.rendered(Map.of("env", "a", "app", "b"))).isEqualTo("a-b-$1");
+        assertThat(TemplatedValue.of("plain").rendered(Map.of())).isEqualTo("plain");
     }
 }

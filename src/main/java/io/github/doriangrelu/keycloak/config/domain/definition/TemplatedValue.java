@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.domain.definition;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -80,6 +81,23 @@ public record TemplatedValue(String raw) {
         }
         checkNoBraces(this.raw.substring(end));
         return List.copyOf(variables);
+    }
+
+    /**
+     * The value with each placeholder replaced by the value of its variable, else by its default value, else by
+     * nothing: what the import renders.
+     */
+    public String rendered(final Map<String, String> values) {
+        Matcher matcher = PLACEHOLDER.matcher(this.raw);
+        StringBuilder rendered = new StringBuilder();
+        while (matcher.find()) {
+            Variable variable = variableOf(matcher.group(1));
+            String value =
+                    values.getOrDefault(variable.name(), variable.defaultValue().orElse(""));
+            matcher.appendReplacement(rendered, Matcher.quoteReplacement(value));
+        }
+        matcher.appendTail(rendered);
+        return rendered.toString();
     }
 
     private void checkNoBraces(final String text) {
