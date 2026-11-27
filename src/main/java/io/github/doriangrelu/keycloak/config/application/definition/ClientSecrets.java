@@ -20,8 +20,11 @@
 
 package io.github.doriangrelu.keycloak.config.application.definition;
 
+import java.util.AbstractCollection;
 import java.util.AbstractMap;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +59,28 @@ public final class ClientSecrets extends AbstractMap<String, String> {
     @Override
     public String get(final Object name) {
         return this.secrets.get(name);
+    }
+
+    /** The values, in name order; the text of the collection only tells how many there are. */
+    @Override
+    public Collection<String> values() {
+        Collection<String> values = this.secrets.values();
+        return new AbstractCollection<>() {
+            @Override
+            public Iterator<String> iterator() {
+                return values.iterator();
+            }
+
+            @Override
+            public int size() {
+                return values.size();
+            }
+
+            @Override
+            public String toString() {
+                return "[" + size() + " hidden value(s)]";
+            }
+        };
     }
 
     /** The names only. */

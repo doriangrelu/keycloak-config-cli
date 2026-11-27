@@ -24,7 +24,6 @@ import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import java.util.List;
-import java.util.Map;
 
 /** An open connection to the Keycloak of a target, checked by a first call. Closing it releases every resource. */
 public interface Connection extends AutoCloseable {
@@ -80,7 +79,7 @@ public interface Connection extends AutoCloseable {
      * @throws KeycloakUnreachableException when Keycloak cannot be reached or does not answer in time
      * @throws KeycloakAuthenticationException when Keycloak refuses the account of the target
      */
-    Map<String, String> clientSecrets(String realm);
+    ClientSecrets clientSecrets(String realm);
 
     /** Closes the connection; closing it again does nothing. */
     @Override

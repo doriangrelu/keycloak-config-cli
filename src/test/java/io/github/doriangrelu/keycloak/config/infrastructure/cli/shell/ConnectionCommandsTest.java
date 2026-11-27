@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.doriangrelu.keycloak.config.application.definition.ClientSecrets;
 import io.github.doriangrelu.keycloak.config.application.definition.ConnectTarget;
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
 import io.github.doriangrelu.keycloak.config.application.definition.ExtractedRealm;
@@ -333,7 +334,7 @@ class ConnectionCommandsTest {
         }
 
         @Override
-        public Map<String, String> clientSecrets(final String realm) {
+        public ClientSecrets clientSecrets(final String realm) {
             throw new UnsupportedOperationException("no extraction in this test");
         }
 

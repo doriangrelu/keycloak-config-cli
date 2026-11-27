@@ -32,7 +32,6 @@ import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -70,7 +69,7 @@ class ConnectTargetTest {
         }
 
         @Override
-        public Map<String, String> clientSecrets(final String realm) {
+        public ClientSecrets clientSecrets(final String realm) {
             throw new UnsupportedOperationException("no extraction in this test");
         }
 

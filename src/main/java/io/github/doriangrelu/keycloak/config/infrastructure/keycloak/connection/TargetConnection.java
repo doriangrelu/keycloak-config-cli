@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection;
 
 import io.github.doriangrelu.keycloak.config.application.component.port.ComponentGateway;
+import io.github.doriangrelu.keycloak.config.application.definition.ClientSecrets;
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
 import io.github.doriangrelu.keycloak.config.application.definition.ExtractedRealm;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
@@ -34,11 +35,11 @@ import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.BaselineProvider;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.RealmExportNormalizer;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -130,7 +131,7 @@ final class TargetConnection implements Connection {
     }
 
     @Override
-    public Map<String, String> clientSecrets(final String realm) {
+    public ClientSecrets clientSecrets(final String realm) {
         Objects.requireNonNull(realm, "realm");
         try {
             return extraction().clientSecrets(realm);
@@ -146,7 +147,8 @@ final class TargetConnection implements Connection {
                 this.keycloakVersion,
                 this.context.getBean(KeycloakProvider.class).getInstance(),
                 this.context.getBean(RealmExportNormalizer.class),
-                this.context.getBean(ClientKeycloakMapper.class));
+                this.context.getBean(ClientKeycloakMapper.class),
+                this.context.getBean(BaselineProvider.class));
     }
 
     @Override

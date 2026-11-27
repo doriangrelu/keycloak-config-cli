@@ -34,6 +34,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.SecretVariableNam
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.BaselineProvider;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.RealmExportNormalizer;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.ArrayList;
@@ -63,6 +64,7 @@ import org.keycloak.representations.idm.MappingsRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.userprofile.config.UPConfig;
 
 /**
  * Reads a realm of a target as an import document (ADR-010): the partial export of the admin API, groups, roles and
@@ -85,6 +87,9 @@ final class RealmExtraction {
     private static final String BIND_CREDENTIAL = "bindCredential";
 
     private static final int USER_PAGE = 100;
+
+    /** The realm attribute that makes the import manage the user profile. */
+    private static final String USER_PROFILE_ENABLED = "userProfileEnabled";
 
     /** The keys of a realm that declare a type of resource: an empty one would declare the type, and clean it up. */
     private static final Set<String> TYPES = Set.of(
@@ -110,6 +115,7 @@ final class RealmExtraction {
     private final Keycloak keycloak;
     private final RealmExportNormalizer normalizer;
     private final ClientKeycloakMapper clientMapper;
+    private final BaselineProvider baselines;
     private final ObjectMapper json;
 
     RealmExtraction(
@@ -117,9 +123,11 @@ final class RealmExtraction {
             final String keycloakVersion,
             final Keycloak keycloak,
             final RealmExportNormalizer normalizer,
-            final ClientKeycloakMapper clientMapper) {
+            final ClientKeycloakMapper clientMapper,
+            final BaselineProvider baselines) {
         this.target = Objects.requireNonNull(target, "target");
-        this.keycloakVersion = keycloakVersion;
+        this.baselines = Objects.requireNonNull(baselines, "baselines");
+        this.keycloakVersion = referenceVersion(keycloakVersion, baselines);
         this.keycloak = Objects.requireNonNull(keycloak, "keycloak");
         this.normalizer = Objects.requireNonNull(normalizer, "normalizer");
         this.clientMapper = Objects.requireNonNull(clientMapper, "clientMapper");
@@ -141,6 +149,7 @@ final class RealmExtraction {
         RealmExportNormalizer.Normalized normalized = this.normalizer.normalize(exported, this.keycloakVersion);
         ObjectNode document = this.json.valueToTree(normalized.realm());
         document.remove("id");
+        userProfile(resource, exported, document);
         int skippedUsers = 0;
         if (withUsers) {
             Users users = users(resource, realm);
@@ -148,11 +157,13 @@ final class RealmExtraction {
             skippedUsers = users.skipped();
         }
         withoutEmptyTypes(document);
-        withoutMaskedValues(document);
-        List<String> warnings = normalized.missing().stream()
-                .map(missing -> "Default " + missing.type().label().toLowerCase(Locale.ROOT) + " '" + missing.key()
-                        + "' was deleted in Keycloak: an import may bring it back")
-                .toList();
+        List<String> warnings = new ArrayList<>();
+        normalized
+                .missing()
+                .forEach(missing -> warnings.add("Default "
+                        + missing.type().label().toLowerCase(Locale.ROOT) + " '" + missing.key()
+                        + "' was deleted in Keycloak: an import may bring it back"));
+        warnings.addAll(withoutMaskedValues(document, realm));
         return new ExtractedRealm(realm, write(document), List.copyOf(variables), warnings, skippedUsers);
     }
 
@@ -164,6 +175,37 @@ final class RealmExtraction {
                 .forEach((name, client) -> secrets.put(
                         name, resource.clients().get(client.getId()).getSecret().getValue()));
         return ClientSecrets.of(secrets);
+    }
+
+    /** The version whose reference realm is used: the one of the target, else the latest known one. */
+    static String referenceVersion(final String keycloakVersion, final BaselineProvider baselines) {
+        return keycloakVersion == null || keycloakVersion.isBlank() ? baselines.latestVersion() : keycloakVersion;
+    }
+
+    /**
+     * The user profile, when it is not the one Keycloak gives a new realm (the reference of the version of the target;
+     * always written when that reference has none). The import only manages it when the realm declares the attribute
+     * {@code userProfileEnabled}: the attributes of the realm are written whole with it, since declared attributes
+     * replace the current ones.
+     */
+    private void userProfile(
+            final RealmResource resource, final RealmRepresentation exported, final ObjectNode document) {
+        UPConfig profile = resource.users().userProfile().getConfiguration();
+        JsonNode written = this.json.valueToTree(profile);
+        boolean byDefault = this.baselines
+                .getUserProfile(this.keycloakVersion)
+                .map(reference -> this.json.valueToTree(reference).equals(written))
+                .orElse(false);
+        if (byDefault) {
+            return;
+        }
+        document.set("userProfile", written);
+        ObjectNode attributes = this.json.createObjectNode();
+        if (exported.getAttributes() != null) {
+            new TreeMap<>(exported.getAttributes()).forEach(attributes::put);
+        }
+        attributes.put(USER_PROFILE_ENABLED, "true");
+        document.set("attributes", attributes);
     }
 
     /** The realm, once checked that the target has it. */
@@ -387,21 +429,66 @@ final class RealmExtraction {
         }
     }
 
-    /** Any value Keycloak masked and no placeholder replaced: the field is left out. */
-    private static void withoutMaskedValues(final JsonNode node) {
-        if (node instanceof ObjectNode object) {
-            Iterator<Map.Entry<String, JsonNode>> fields = object.fields();
-            while (fields.hasNext()) {
-                JsonNode value = fields.next().getValue();
-                if (isMasked(value)) {
-                    fields.remove();
-                } else {
-                    withoutMaskedValues(value);
-                }
-            }
-        } else if (node instanceof ArrayNode array) {
-            array.forEach(RealmExtraction::withoutMaskedValues);
+    /**
+     * Any value Keycloak masked and no placeholder replaced: the field is left out, with a warning that names it and
+     * its element, never its value.
+     */
+    static List<String> withoutMaskedValues(final ObjectNode document, final String realm) {
+        List<String> warnings = new ArrayList<>();
+        strip(document, "realm '" + realm + "'", "", warnings);
+        return warnings;
+    }
+
+    private static void strip(
+            final JsonNode node, final String element, final String path, final List<String> warnings) {
+        if (!(node instanceof ObjectNode object)) {
+            return;
         }
+        Iterator<Map.Entry<String, JsonNode>> fields = object.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            String name = path.isEmpty() ? field.getKey() : path + "." + field.getKey();
+            JsonNode value = field.getValue();
+            if (isMasked(value)) {
+                fields.remove();
+                warnings.add(name + " of " + element + " is hidden by Keycloak and was not extracted");
+            } else if (value.isArray()) {
+                for (JsonNode item : value) {
+                    String itemElement = elementOf(field.getKey(), item);
+                    strip(item, itemElement == null ? element : itemElement, itemElement == null ? name : "", warnings);
+                }
+            } else {
+                strip(value, element, name, warnings);
+            }
+        }
+    }
+
+    /** {@code client 'shop'}, {@code component 'ldap'}..., or {@code null} for an item that is no named element. */
+    private static String elementOf(final String collection, final JsonNode item) {
+        if (!item.isObject()) {
+            return null;
+        }
+        for (String identifier : List.of("clientId", "alias", "name", "username")) {
+            if (item.hasNonNull(identifier)) {
+                return kindOf(collection) + " '" + item.get(identifier).asText() + "'";
+            }
+        }
+        return null;
+    }
+
+    private static String kindOf(final String collection) {
+        return switch (collection) {
+            case "clients" -> "client";
+            case "identityProviders" -> "identity provider";
+            case "identityProviderMappers" -> "identity provider mapper";
+            case "clientScopes" -> "client scope";
+            case "protocolMappers" -> "protocol mapper";
+            case "authenticatorConfig" -> "authenticator config";
+            case "requiredActions" -> "required action";
+            case "groups", "subGroups" -> "group";
+            case "users" -> "user";
+            default -> collection.contains(".") ? "component" : collection;
+        };
     }
 
     private static boolean isMasked(final JsonNode value) {

@@ -34,13 +34,17 @@ import io.github.doriangrelu.keycloak.config.application.importation.ImportRepor
 import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.DryRunReport;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.BaselineProvider;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.NormalizationOptions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,6 +60,9 @@ import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.userprofile.config.UPAttribute;
+import org.keycloak.representations.userprofile.config.UPAttributePermissions;
+import org.keycloak.representations.userprofile.config.UPConfig;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.support.GenericApplicationContext;
@@ -72,6 +79,8 @@ class TargetExtractIT {
     private static final String ADMIN_PASSWORD = KEYCLOAK.getEnvMap().get("KEYCLOAK_ADMIN_PASSWORD");
 
     private static final String REALM = "target-extract";
+    private static final String DEFAULT_REALM = "target-extract-default";
+    private static final String PROFILE_REALM = "target-extract-profile";
     private static final String SHOP_SECRET = "shop-secret-value-4f8a2c";
     private static final String GOOGLE_SECRET = "google-secret-value-9d1e7b";
     private static final String SMTP_PASSWORD = "smtp-password-value-3c6f0a";
@@ -149,6 +158,8 @@ class TargetExtractIT {
             google.setAlias("google");
             google.setProviderId("google");
             google.setEnabled(true);
+            // as the admin console creates it
+            google.setFirstBrokerLoginFlowAlias("first broker login");
             google.setConfig(Map.of("clientId", "google-client", "clientSecret", GOOGLE_SECRET));
             created.identityProviders().create(google).close();
 
@@ -173,6 +184,22 @@ class TargetExtractIT {
             created.users().get(aliceId).joinGroup(adminsId);
 
             created.roles().deleteRole("offline_access");
+
+            RealmRepresentation byDefault = new RealmRepresentation();
+            byDefault.setRealm(DEFAULT_REALM);
+            byDefault.setEnabled(true);
+            admin.realms().create(byDefault);
+
+            RealmRepresentation withProfile = new RealmRepresentation();
+            withProfile.setRealm(PROFILE_REALM);
+            withProfile.setEnabled(true);
+            admin.realms().create(withProfile);
+            UPConfig profile = admin.realm(PROFILE_REALM).users().userProfile().getConfiguration();
+            UPAttribute department = new UPAttribute("department");
+            department.setDisplayName("Department");
+            department.setPermissions(new UPAttributePermissions(Set.of("admin", "user"), Set.of("admin")));
+            profile.addOrReplaceAttribute(department);
+            admin.realm(PROFILE_REALM).users().userProfile().update(profile);
         }
     }
 
@@ -181,7 +208,8 @@ class TargetExtractIT {
     static void removeTheRealm() {
         try (Keycloak admin = admin()) {
             admin.realms().findAll().stream()
-                    .filter(realm -> REALM.equals(realm.getRealm()))
+                    .filter(realm ->
+                            List.of(REALM, DEFAULT_REALM, PROFILE_REALM).contains(realm.getRealm()))
                     .forEach(realm -> admin.realm(realm.getRealm()).remove());
         }
     }
@@ -314,28 +342,98 @@ class TargetExtractIT {
                 .contains("Default realm role 'offline_access' was deleted in Keycloak: an import may bring it back");
     }
 
-    /**
-     * The extracted document, users included and given its variables, changes nothing but the realm settings and the
-     * identity provider: Keycloak never gives back the SMTP password nor the secret of an identity provider, so the
-     * import cannot tell they are the same (left to the next task of the story, which checks the whole dry run).
-     */
+    /** The extracted document, given its variables, changes nothing on the target it comes from. */
     @Test
-    void aDryRunOfTheDocumentChangesNothingElse() {
+    void aDryRunOfTheDocumentHasNoChange() {
         try (Connection connection = connect()) {
-            String document = connection
-                    .extract(REALM, true)
-                    .document()
-                    .replace("{{shopSecret}}", SHOP_SECRET)
-                    .replace("{{googleClientSecret}}", GOOGLE_SECRET)
-                    .replace("{{smtpPassword}}", SMTP_PASSWORD);
+            String document = withValues(connection.extract(REALM, false).document());
 
             ImportReport report =
                     connection.dryRun(List.of(new ImportFile("target-extract-it", REALM + ".json", document)));
 
-            assertThat(report.plan(REALM))
-                    .allMatch(change -> change.type() == ResourceType.REALM_SETTINGS
-                            || change.type() == ResourceType.IDENTITY_PROVIDER);
+            assertThat(report.plan(REALM)).isEmpty();
+            assertThat(report.notCompared(REALM))
+                    .extracting(value -> value.field())
+                    .contains("smtpServer.password", "config.clientSecret");
         }
+    }
+
+    @Test
+    void aDryRunOfTheDocumentWithItsUsersHasNoChange() {
+        try (Connection connection = connect()) {
+            String document = withValues(connection.extract(REALM, true).document());
+
+            ImportReport report =
+                    connection.dryRun(List.of(new ImportFile("target-extract-it", REALM + ".json", document)));
+
+            assertThat(report.plan(REALM)).isEmpty();
+        }
+    }
+
+    @Test
+    void theUserProfileIsExtractedWhenItIsNotTheDefaultOne() throws Exception {
+        try (Connection connection = connect()) {
+            JsonNode document =
+                    JSON.readTree(connection.extract(PROFILE_REALM, false).document());
+
+            assertThat(document.path("userProfile").path("attributes").findValuesAsText("name"))
+                    .contains("username", "email", "department");
+            assertThat(document.path("attributes").path("userProfileEnabled").asText())
+                    .isEqualTo("true");
+        }
+    }
+
+    /**
+     * The extracted user profile is the current one; the only change left is the attribute {@code userProfileEnabled}
+     * the import needs to manage the user profile, which a hand-made realm does not have (a known limit, see the
+     * report of the task).
+     */
+    @Test
+    void aDryRunOfAnExtractedUserProfileOnlyAddsTheAttributeOfTheImport() {
+        try (Connection connection = connect()) {
+            String document = connection.extract(PROFILE_REALM, false).document();
+
+            ImportReport report =
+                    connection.dryRun(List.of(new ImportFile("target-extract-it", PROFILE_REALM + ".json", document)));
+
+            assertThat(report.plan(PROFILE_REALM))
+                    .singleElement()
+                    .satisfies(change -> assertThat(change.type()).isEqualTo(ResourceType.REALM_SETTINGS));
+            assertThat(DryRunReport.of(report).toText())
+                    .contains("~ Realm settings '" + PROFILE_REALM + "' (attributes)");
+        }
+    }
+
+    @Test
+    void theDefaultUserProfileIsNotExtracted() throws Exception {
+        try (Connection connection = connect()) {
+            JsonNode document =
+                    JSON.readTree(connection.extract(DEFAULT_REALM, false).document());
+
+            assertThat(document.has("userProfile")).isFalse();
+            assertThat(document.path("attributes").has("userProfileEnabled")).isFalse();
+        }
+    }
+
+    /** The reference of the version of the integration tests is the profile Keycloak gives a new realm. */
+    @Test
+    void theReferenceUserProfileIsTheOneOfANewRealm() throws Exception {
+        try (Keycloak admin = admin()) {
+            UPConfig byDefault =
+                    admin.realm(DEFAULT_REALM).users().userProfile().getConfiguration();
+            String version = admin.serverInfo().getInfo().getSystemInfo().getVersion();
+
+            assertThat(new BaselineProvider(new ObjectMapper(), new NormalizationOptions(null, null))
+                            .getUserProfile(version)
+                            .map(JSON::valueToTree))
+                    .contains(JSON.valueToTree(byDefault));
+        }
+    }
+
+    private static String withValues(final String document) {
+        return document.replace("{{shopSecret}}", SHOP_SECRET)
+                .replace("{{googleClientSecret}}", GOOGLE_SECRET)
+                .replace("{{smtpPassword}}", SMTP_PASSWORD);
     }
 
     private static ExtractedRealm extract(final boolean withUsers) {

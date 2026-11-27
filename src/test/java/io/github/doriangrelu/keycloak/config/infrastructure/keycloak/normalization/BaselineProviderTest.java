@@ -76,4 +76,23 @@ class BaselineProviderTest {
         assertThat(realm.getKeycloakVersion()).isEqualTo("26.5.3");
         assertThat(provider(null).getClient("26.5.3", "app").getClientId()).isEqualTo("app");
     }
+
+    @Test
+    void theLatestVersionIsTheGreatestKnownOne() {
+        assertThat(provider(null).latestVersion()).isEqualTo("26.5.3");
+    }
+
+    @Test
+    void givesTheDefaultUserProfileOfAVersionThatHasOne() {
+        assertThat(provider(null).getUserProfile("26.5.3"))
+                .hasValueSatisfying(profile -> assertThat(profile.getAttributes())
+                        .extracting(attribute -> attribute.getName())
+                        .contains("username", "email", "firstName", "lastName"));
+        assertThat(provider(null).getUserProfile("26.9.9")).isPresent();
+    }
+
+    @Test
+    void givesNoUserProfileForAVersionWithoutOne() {
+        assertThat(provider(null).getUserProfile("19.0.3")).isEmpty();
+    }
 }

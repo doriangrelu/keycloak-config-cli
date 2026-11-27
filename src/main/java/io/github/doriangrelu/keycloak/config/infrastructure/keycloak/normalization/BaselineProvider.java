@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.userprofile.config.UPConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +83,30 @@ public class BaselineProvider {
             throw new NormalizationException(
                     String.format("Failed to load baseline client for version %s", version), ex);
         }
+    }
+
+    /**
+     * The user profile Keycloak gives a new realm, for the reference of a version ({@code
+     * baseline/<version>/user-profile/user-profile.json}); empty when that reference has none.
+     */
+    public java.util.Optional<UPConfig> getUserProfile(final String version) {
+        String baseline = baselineVersion(version);
+        try (var inputStream = getClass()
+                .getResourceAsStream(String.format("/baseline/%s/user-profile/user-profile.json", baseline))) {
+            return inputStream == null
+                    ? java.util.Optional.empty()
+                    : java.util.Optional.of(objectMapper.readValue(inputStream, UPConfig.class));
+        } catch (IOException ex) {
+            throw new NormalizationException(
+                    String.format("Failed to load the reference user profile for version %s", baseline), ex);
+        }
+    }
+
+    /** The greatest version that has a reference realm. */
+    public String latestVersion() {
+        return this.versions.stream()
+                .max(VersionUtil::compareVersions)
+                .orElseThrow(() -> new NormalizationException("No reference realm is known"));
     }
 
     public InputStream getRealmInputStream(String version) {

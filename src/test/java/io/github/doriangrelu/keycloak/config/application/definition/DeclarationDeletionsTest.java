@@ -98,7 +98,7 @@ class DeclarationDeletionsTest {
         }
 
         @Override
-        public Map<String, String> clientSecrets(final String realm) {
+        public ClientSecrets clientSecrets(final String realm) {
             throw new UnsupportedOperationException("no extraction in this test");
         }
 

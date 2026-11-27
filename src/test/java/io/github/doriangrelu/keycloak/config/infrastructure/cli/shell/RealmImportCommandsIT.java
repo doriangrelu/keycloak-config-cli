@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.springframework.shell.test.ShellInputProvider.providerFor;
 
+import io.github.doriangrelu.keycloak.config.application.definition.ClientSecrets;
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
 import io.github.doriangrelu.keycloak.config.application.definition.ExtractedRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
@@ -622,7 +623,7 @@ class RealmImportCommandsIT {
         }
 
         @Override
-        public Map<String, String> clientSecrets(final String realm) {
+        public ClientSecrets clientSecrets(final String realm) {
             throw new UnsupportedOperationException("no extraction in this test");
         }
 

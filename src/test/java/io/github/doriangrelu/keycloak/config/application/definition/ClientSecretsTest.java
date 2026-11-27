@@ -50,6 +50,16 @@ class ClientSecretsTest {
 
         assertThat(secrets.toString()).isEqualTo("ClientSecrets[shopSecret]");
         assertThat(secrets.entrySet().toString()).doesNotContain(VALUE);
+        assertThat(secrets.values().toString()).doesNotContain(VALUE).isEqualTo("[1 hidden value(s)]");
+        assertThat(secrets.entrySet().iterator().next().toString()).isEqualTo("shopSecret");
+    }
+
+    @Test
+    void theValuesCanStillBeRead() {
+        ClientSecrets secrets = ClientSecrets.of(Map.of("shopSecret", VALUE));
+
+        assertThat(secrets.values()).containsExactly(VALUE);
+        assertThat(new java.util.ArrayList<>(secrets.values())).containsExactly(VALUE);
     }
 
     @Test
