@@ -326,7 +326,7 @@ These commands import the opened realm on the connected target: they need an ope
 
 | Option | Meaning |
 |--------|---------|
-| `--var <name>=<value>` | The value of a variable of the realm; repeat the option for each variable. The value may contain `=`. A name that is empty or has no `=` fails with `Invalid --var '<name>': expected name=value` and exit code `2` |
+| `--var <name>=<value>` | The value of a variable of the realm; repeat the option for each variable. The value may contain `=`. An option with an empty name or without `=` fails with `Invalid --var: expected name=value` and exit code `2`; the message holds nothing of the option, and a script echoes it as `--var ***` |
 
 ### The values of the variables
 
@@ -335,12 +335,12 @@ Each [placeholder](../advanced/templating.md) of the realm takes its value from,
 1. the `--var <name>=<value>` option of the command;
 2. the value the session remembers (see below);
 3. the environment variable `KCC_VAR_<name>`, with the name as written in the placeholder (`{{shopSecret}}` reads `KCC_VAR_shopSecret`);
-4. the default value written in the placeholder, `{{name:default}}`;
+4. the default value written in the placeholder, `{{name:default}}`, when every placeholder of the variable gives one: a variable used once without a default needs a value, which then applies to every placeholder;
 5. otherwise the question `Value of '<name>'`, asked without echo when the name contains `secret` or `password` (any case).
 
 In [script mode](README.md#script-mode) nothing can be asked: a variable without a value fails with `Variable '<name>' has no value: give it with --var <name>=… or KCC_VAR_<name>` and exit code `2`, before anything is sent to Keycloak.
 
-The session remembers the values given with `--var` and the answers to the questions, in memory only, so that `realm import` after `realm dry-run` does not ask again. They are forgotten by `realm open`, `realm create`, `connect`, `disconnect` and when the shell exits. A value is never printed, logged or written: the plan names the changed fields, never their values, and a script prints `--var <name>=***` when it echoes its commands. A file that is no longer valid once its variables are rendered is named with the line and the column, or the path of the value, never with its content.
+The session remembers the values given with `--var` and the answers to the questions, in memory only, so that `realm import` after `realm dry-run` does not ask again. They are forgotten by `realm open`, `realm create`, `connect`, `disconnect` and when the shell exits. A value is never printed or written: the plan names the changed fields, never their values, and a script prints `--var <name>=***` when it echoes its commands. It is not logged either, at the default level nor with `DEBUG` or `TRACE` logging: the shell keeps at `INFO` the loggers that would show it (the command parser of Spring Shell, and the logging of the rendered import files and of the compared resources). The HTTP wire log (`logging.level.http=debug`) is the exception: it shows the requests sent to Keycloak, values included, as for the command-line import. A file that is no longer valid once its variables are rendered is named with the line and the column, or the path of the value, never with its content.
 
 ### `realm dry-run`
 

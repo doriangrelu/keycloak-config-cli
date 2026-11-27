@@ -9,7 +9,7 @@ keycloak-config-cli returns a distinct exit code for each kind of failure, so th
 | `2` | Invalid configuration: import file, properties, or a reference to a missing resource | Fix the configuration |
 | `3` | Keycloak is unreachable or did not answer in time | Retry later |
 | `4` | Keycloak refused an operation: missing rights, rejected or conflicting configuration | Check the account rights or the configuration |
-| `10` | Dry run only: changes are pending | Review the planned changes |
+| `10` | Dry run only: changes are pending (`import.dry-run=true`, or `realm dry-run` of the [shell](../shell/commands.md#realm-dry-run) in script mode). A `shell.script` goes on after it, and ends with `10` when no command failed | Review the planned changes |
 
 Exit codes are part of the public interface of the tool: they only change with a major version.
 

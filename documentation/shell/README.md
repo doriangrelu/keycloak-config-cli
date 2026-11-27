@@ -120,7 +120,7 @@ KCC_DEV_SECRET=... KCC_VAR_shopSecret=... java -jar keycloak-config-cli.jar --ru
   --shell.root=./realms --shell.realm=shop --shell.target=dev --shell.command="realm import --apply"
 ```
 
-`realm dry-run` ends with exit code `10` when changes are pending, as the command-line [dry run](../advanced/dry-run.md) does.
+In script mode (`shell.command` or `shell.script`), `realm dry-run` ends with exit code `10` when changes are pending, as the command-line [dry run](../advanced/dry-run.md) does; in an interactive session, pending changes are not an error.
 
 ## A session
 
