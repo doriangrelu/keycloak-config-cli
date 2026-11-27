@@ -1,6 +1,7 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
@@ -20,6 +21,8 @@ import java.util.Optional;
 final class FakeRealmDefinitions implements RealmDefinitions {
 
     final RealmDefinition realm;
+    final List<ImportFile> importFiles = new ArrayList<>();
+    Map<String, String> importedWith = Map.of();
     final List<String> unformatted = new ArrayList<>();
     final Map<ElementType, String> files = new EnumMap<>(ElementType.class);
     final List<String> formatted = new ArrayList<>();
@@ -37,6 +40,12 @@ final class FakeRealmDefinitions implements RealmDefinitions {
 
     FakeRealmDefinitions(final RealmDefinition realm) {
         this.realm = realm;
+    }
+
+    @Override
+    public List<ImportFile> importFiles(final String folder, final Map<String, String> values) {
+        this.importedWith = Map.copyOf(values);
+        return List.copyOf(this.importFiles);
     }
 
     @Override

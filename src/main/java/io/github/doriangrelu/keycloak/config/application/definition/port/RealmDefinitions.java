@@ -20,6 +20,8 @@
 
 package io.github.doriangrelu.keycloak.config.application.definition.port;
 
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
+import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementType;
@@ -104,4 +106,16 @@ public interface RealmDefinitions {
      * @return the files written
      */
     List<String> reorganize(String folder, ReorganizationPlan plan);
+
+    /**
+     * The files of a realm folder, read as the import reads {@code import.files.locations=<folder>} (same order, hidden
+     * files ignored), with their placeholders rendered: the {@code values} first, then the default values of the
+     * placeholders. Nothing is written.
+     *
+     * @param values the explicit value of each variable; a value never appears in an error message
+     * @throws io.github.doriangrelu.keycloak.config.application.definition.UnknownRealmFolderException when the folder
+     *     is not a realm of the shell
+     * @throws InvalidImportException when a file cannot be read or a placeholder has no value
+     */
+    List<ImportFile> importFiles(String folder, Map<String, String> values);
 }

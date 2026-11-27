@@ -21,7 +21,9 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
 import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
+import io.github.doriangrelu.keycloak.config.application.definition.UnknownRealmFolderException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.domain.common.DomainException;
 import io.github.doriangrelu.keycloak.config.domain.definition.ClientDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Defined;
@@ -38,6 +40,9 @@ import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyPath;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.KeyValue;
+import io.github.doriangrelu.keycloak.config.infrastructure.source.FileLocations;
+import io.github.doriangrelu.keycloak.config.infrastructure.source.ImportFileReader;
+import io.github.doriangrelu.keycloak.config.infrastructure.source.MustacheTemplates;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +59,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
  * The realm definitions of a root folder: one folder per realm, its files split by type, in YAML or JSON (ADR-008).
@@ -67,6 +73,19 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
 
     public RealmDefinitionFiles(final Path root) {
         this.root = Objects.requireNonNull(root, "root");
+    }
+
+    @Override
+    public List<ImportFile> importFiles(final String folder, final Map<String, String> values) {
+        Objects.requireNonNull(values, "values");
+        Path directory = this.root.resolve(folder);
+        if (!Files.isDirectory(directory) || !folders().contains(folder)) {
+            throw new UnknownRealmFolderException(folder);
+        }
+        // The import defaults: no exclusion, hidden files ignored
+        FileLocations locations = new FileLocations(new PathMatchingResourcePatternResolver(), List.of(), false);
+        ImportFileReader reader = new ImportFileReader(locations, Optional.of(new MustacheTemplates(values)));
+        return reader.read(List.of(directory.toUri() + "*"));
     }
 
     @Override
