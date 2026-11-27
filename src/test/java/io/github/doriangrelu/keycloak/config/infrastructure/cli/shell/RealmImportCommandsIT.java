@@ -292,7 +292,8 @@ class RealmImportCommandsIT {
                     .doesNotContain("Apply these")
                     .contains("Realm 'demo' imported on local: 1 change(s) applied");
             assertThat(this.calls).containsExactly("dry-run local", "apply local");
-            assertThat(this.applied).containsExactly(this.dryRuns.getFirst());
+            // the files of the plan, not a second reading of the folder
+            assertThat(this.applied).singleElement().isSameAs(this.dryRuns.getFirst());
             assertThat(sentContent(this.applied.getFirst())).contains("secret: \"" + SECRET + "\"");
         });
     }
@@ -443,6 +444,60 @@ class RealmImportCommandsIT {
             assertThat(sentContent(this.applied.getFirst()))
                     .contains("secret: \"" + SECRET + "\"")
                     .contains("displayName: \"Shop\"");
+        });
+    }
+
+    @Test
+    void anUnbalancedQuoteNeverShowsTheValue() throws IOException {
+        String secret = "ab'cd-s3cr3t-marker-unbalanced";
+        contexts().run(context -> {
+            Outcome inScript = script(context, "demo", "connect local", "realm dry-run --var shopSecret=" + secret);
+            Outcome inCommand = command(context, "realm import --apply --var \"shopSecret=" + secret, "demo", "local");
+
+            assertThat(inScript.exitCode()).isEqualTo(2);
+            assertThat(inScript.output())
+                    .contains("Unbalanced quote (') in input: realm dry-run --var shopSecret=***")
+                    .contains("Stopped at line 2: realm dry-run --var shopSecret=***")
+                    .doesNotContain("s3cr3t-marker");
+            assertThat(inCommand.exitCode()).isEqualTo(2);
+            assertThat(inCommand.output()).contains("Unbalanced quote").doesNotContain("s3cr3t-marker");
+            assertThat(this.dryRuns).isEmpty();
+        });
+    }
+
+    @Test
+    void aValueIsReadFromTheEnvironment() {
+        this.changes = List.of(clientCreated());
+        this.environment.put("KCC_VAR_shopSecret", SECRET);
+        contexts().run(context -> {
+            Outcome outcome = command(context, "realm import --apply", "demo", "local");
+
+            assertThat(outcome.exitCode()).isZero();
+            assertThat(outcome.output()).contains("Realm 'demo' imported on local: 1 change(s) applied");
+            assertThat(sentContent(this.applied.getFirst())).contains("secret: \"" + SECRET + "\"");
+        });
+    }
+
+    @Test
+    void aConfirmationAnsweredYesApplies() {
+        this.changes = List.of(clientCreated());
+        contexts().run(context -> {
+            ShellTestClient shell =
+                    new ShellTestClient(context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+            shell.sendCommand("realm open demo");
+            shell.sendCommand("connect local");
+
+            List<String> lines = shell.sendCommand(providerFor("realm import --var shopSecret=" + SECRET)
+                            .withInput("y")
+                            .build())
+                    .lines();
+
+            String output = String.join("\n", lines);
+            assertThat(output)
+                    .contains("Apply these 1 change(s) to local? [y/N]")
+                    .contains("Realm 'demo' imported on local: 1 change(s) applied")
+                    .doesNotContain(SECRET);
+            assertThat(this.applied).singleElement().isSameAs(this.dryRuns.getFirst());
         });
     }
 

@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
@@ -85,5 +86,47 @@ class RealmDocumentsTest {
                         .parse(file("realm: a\nprotectedResources:\n  - rule: PATTERN\n    matcher: \"a(\"\n")))
                 .isInstanceOf(InvalidImportException.class)
                 .hasMessageContaining("a(");
+    }
+
+    @Test
+    void anInvalidYamlDocumentTellsWhereWithoutItsContent() {
+        Throwable failure = catchThrowable(() -> RealmDocuments.parse(
+                file("realm: a\nclients:\n  - clientId: shop\n    secret: *s3cr3t-marker\n"),
+                RealmRepresentation.class));
+
+        assertThat(failure).isInstanceOf(InvalidImportException.class);
+        assertThat(((InvalidImportException) failure).safeMessage())
+                .hasValue("Unable to parse file 'file:/realms/realm.yaml' at line 4, column 13");
+    }
+
+    @Test
+    void anInvalidJsonDocumentTellsWhereWithoutItsContent() {
+        Throwable failure = catchThrowable(() -> RealmDocuments.parse(
+                file("{\"realm\": \"a\",\n \"clients\": [{\"clientId\": \"shop\", \"secret\": *s3cr3t-marker}]}"),
+                RealmRepresentation.class));
+
+        assertThat(((InvalidImportException) failure).safeMessage())
+                .hasValueSatisfying(message -> assertThat(message)
+                        .startsWith("Unable to parse file 'file:/realms/realm.yaml' at line 2, column ")
+                        .doesNotContain("s3cr3t-marker"));
+    }
+
+    @Test
+    void aValueOfTheWrongTypeTellsItsPathWithoutTheValue() {
+        Throwable failure = catchThrowable(() -> RealmDocuments.parse(
+                file("realm: a\nclients:\n  - clientId: shop\n    secret: [s3cr3t-marker]\n"),
+                RealmRepresentation.class));
+
+        assertThat(((InvalidImportException) failure).safeMessage())
+                .hasValue("Unable to parse file 'file:/realms/realm.yaml': invalid value at clients[0].secret");
+    }
+
+    @Test
+    void anUnknownPropertyIsNamedWithoutAnyValue() {
+        Throwable failure = catchThrowable(
+                () -> RealmDocuments.parse(file("realm: a\nunknownKey: 1\n"), RealmRepresentation.class));
+
+        assertThat(((InvalidImportException) failure).safeMessage())
+                .hasValue("Unable to parse file 'file:/realms/realm.yaml': unknown property 'unknownKey'");
     }
 }

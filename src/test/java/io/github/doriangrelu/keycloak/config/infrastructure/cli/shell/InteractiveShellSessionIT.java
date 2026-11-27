@@ -220,4 +220,20 @@ class InteractiveShellSessionIT {
             verify(this.console).readLine("%s", "kcc:100%d-folder> ");
         });
     }
+
+    @Test
+    void aParseErrorInTheSessionNeverShowsTheValueOfAVar() {
+        String secret = "ab'cd-s3cr3t-marker-of-a-session";
+        shellContexts().run(context -> {
+            assertThat(ReflectionTestUtils.getField(context.getBean(ShellRunner.class), "commandParser"))
+                    .isInstanceOf(SafeCommandParser.class);
+
+            interactive(context, null, "realm dry-run --var shopSecret=" + secret);
+
+            assertThat(this.printed.toString())
+                    .contains("Error while parsing command: Unbalanced quote (') in input: realm dry-run --var"
+                            + " shopSecret=***")
+                    .doesNotContain("s3cr3t-marker");
+        });
+    }
 }

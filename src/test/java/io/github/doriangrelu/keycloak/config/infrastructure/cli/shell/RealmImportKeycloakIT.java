@@ -21,6 +21,8 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.springframework.shell.test.ShellInputProvider.providerFor;
 
 import io.github.doriangrelu.keycloak.config.AbstractImportIT;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
@@ -55,6 +57,7 @@ import org.springframework.shell.core.ShellRunner;
 import org.springframework.shell.core.autoconfigure.SpringShellAutoConfiguration;
 import org.springframework.shell.core.command.CommandParser;
 import org.springframework.shell.core.command.CommandRegistry;
+import org.springframework.shell.test.ShellTestClient;
 import org.testcontainers.containers.GenericContainer;
 
 /** {@code realm dry-run} and {@code realm import} through the real launcher, against a real Keycloak. */
@@ -199,7 +202,7 @@ class RealmImportKeycloakIT {
      * nothing is written.
      */
     @Test
-    void aRefusedLoginDuringImportEndsWithCode4() throws Exception {
+    void aRefusedOperationDuringImportEndsWithCode4() throws Exception {
         writeRealm(REFUSED_REALM);
         createTemporaryAdmin();
         shellContexts(Map.of("KCC_TEMPORARY_PASSWORD", TEMPORARY_PASSWORD)).run(context -> {
@@ -221,6 +224,57 @@ class RealmImportKeycloakIT {
                     .doesNotContain(TEMPORARY_PASSWORD);
         });
         assertThat(realmExists(REFUSED_REALM)).isFalse();
+    }
+
+    /**
+     * A value that breaks the file once rendered (an unquoted placeholder): the parser of the import would quote it.
+     * The shell names the file and the place, never the content, in a script and in a session.
+     */
+    @Test
+    void anInvalidFileAfterRenderingNeverShowsTheValue() throws Exception {
+        String secret = "*s3cr3t-marker-breaking-the-file";
+        Path yaml = Files.createDirectories(this.root.resolve("broken-yaml"));
+        Files.writeString(
+                yaml.resolve("00-realm.yaml"),
+                "realm: broken-yaml\nenabled: true\nclients:\n  - clientId: shop\n    secret: {{shopSecret}}\n",
+                StandardCharsets.UTF_8);
+        Path json = Files.createDirectories(this.root.resolve("broken-json"));
+        Files.writeString(
+                json.resolve("00-realm.json"),
+                "{\"realm\": \"broken-json\",\n \"clients\": [{\"clientId\": \"shop\", \"secret\": {{shopSecret}}}]}\n",
+                StandardCharsets.UTF_8);
+        shellContexts(Map.of("KCC_LOCAL_PASSWORD", ADMIN_PASSWORD)).run(context -> {
+            for (String realm : List.of("broken-yaml", "broken-json")) {
+                Outcome outcome = script(
+                        context,
+                        realm,
+                        "connect local",
+                        "realm dry-run --var shopSecret=" + secret,
+                        "realm import --apply");
+
+                assertThat(outcome.exitCode()).as(outcome.output()).isEqualTo(2);
+                assertThat(outcome.output())
+                        .contains("Unable to parse file '")
+                        .contains(" at line ")
+                        .doesNotContain("s3cr3t-marker");
+
+                ShellTestClient shell = new ShellTestClient(
+                        context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+                shell.sendCommand("realm open " + realm);
+                shell.sendCommand("connect local");
+                Throwable failure = catchThrowable(() -> shell.sendCommand(
+                        providerFor("realm import --apply").withPassword(secret).build()));
+                assertThat(failure).isNotNull();
+                for (Throwable current = failure; current != null; current = current.getCause()) {
+                    assertThat(String.valueOf(current.getMessage())).doesNotContain("s3cr3t-marker");
+                    for (Throwable suppressed : current.getSuppressed()) {
+                        assertThat(String.valueOf(suppressed.getMessage())).doesNotContain("s3cr3t-marker");
+                    }
+                }
+            }
+        });
+        assertThat(realmExists("broken-yaml")).isFalse();
+        assertThat(realmExists("broken-json")).isFalse();
     }
 
     /** Answers nothing, as in a script. */

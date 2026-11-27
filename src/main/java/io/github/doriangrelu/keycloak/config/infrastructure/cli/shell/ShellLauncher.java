@@ -128,7 +128,7 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             ShellRunner interactive = command.isEmpty() && script.isEmpty() ? this.interactiveShell.getObject() : null;
             connectAtStart(interactive);
             if (command.isPresent()) {
-                this.exitCode = runOnce(command.get());
+                this.exitCode = runSafely(command.get());
             } else if (script.isPresent()) {
                 this.exitCode = runScript(script.get());
             } else {
@@ -324,7 +324,10 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
         return ExitCode.INVALID_CONFIGURATION.code();
     }
 
-    /** A command that cannot even be parsed fails like any other, so that the script reports where it stopped. */
+    /**
+     * A command that cannot even be parsed fails like any other, with its message (its {@code --var} values hidden by
+     * the parser): a script reports where it stopped, a single command says why.
+     */
     private int runSafely(final String line) {
         try {
             return runOnce(line);

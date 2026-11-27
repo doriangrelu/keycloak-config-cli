@@ -48,6 +48,7 @@ import org.springframework.shell.core.ConsoleInputProvider;
 import org.springframework.shell.core.ShellRunner;
 import org.springframework.shell.core.command.CommandParser;
 import org.springframework.shell.core.command.CommandRegistry;
+import org.springframework.shell.core.command.DefaultCommandParser;
 
 /** The shell command (ADR-008): a second input adapter, next to the import and the normalization. */
 @Configuration(proxyBeanMethods = false)
@@ -137,6 +138,15 @@ public class ShellCommandConfiguration {
                                 listVariables, name -> Optional.ofNullable(environmentVariables.get(name)), questions),
                         realmDefinitions),
                 shellSession);
+    }
+
+    /**
+     * The parser of the commands, for the session and the scripts: its errors never show the value of a
+     * {@code --var}.
+     */
+    @Bean
+    public CommandParser commandParser(final CommandRegistry commandRegistry) {
+        return new SafeCommandParser(new DefaultCommandParser(commandRegistry));
     }
 
     /** Replaces the console input of Spring Shell, whose prompt is fixed: it shows the realm and the target. */

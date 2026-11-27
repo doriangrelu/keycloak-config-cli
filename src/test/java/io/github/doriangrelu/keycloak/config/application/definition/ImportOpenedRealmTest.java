@@ -21,9 +21,12 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
+import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
@@ -70,13 +73,63 @@ class ImportOpenedRealmTest {
     @Test
     void applyUsesTheSameValues() {
         ImportOpenedRealm importOpenedRealm = importOpenedRealm();
-        importOpenedRealm.dryRun("demo", this.connection, Map.of("shopUrl", "https://shop"), this.remembered);
 
-        ImportReport report = importOpenedRealm.apply("demo", this.connection, Map.of(), this.remembered);
+        PreparedImport prepared =
+                importOpenedRealm.prepare("demo", this.connection, Map.of("shopUrl", "https://shop"), this.remembered);
+        ImportReport report = importOpenedRealm.apply(prepared);
 
+        assertThat(prepared.report()).isSameAs(this.connection.report);
         assertThat(report).isSameAs(this.connection.report);
         assertThat(this.definitions.importedWith).containsExactly(Map.entry("shopUrl", "https://shop"));
+        assertThat(this.remembered.get("shopUrl")).contains("https://shop");
         assertThat(this.connection.applied).containsExactly(List.of(RENDERED));
+    }
+
+    @Test
+    void applyImportsTheFilesOfThePlanEvenWhenTheFolderChangedSince() {
+        ImportOpenedRealm importOpenedRealm = importOpenedRealm();
+        PreparedImport prepared =
+                importOpenedRealm.prepare("demo", this.connection, Map.of("shopUrl", "https://shop"), this.remembered);
+        // the folder changes while the user reads the plan
+        this.definitions.importFiles.clear();
+        this.definitions.importFiles.add(new ImportFile("demo", "00-realm.yaml", "realm: demo\nenabled: false\n"));
+
+        importOpenedRealm.apply(prepared);
+
+        assertThat(this.connection.applied).singleElement().isSameAs(this.connection.dryRuns.getFirst());
+        assertThat(this.connection.applied.getFirst()).containsExactly(RENDERED);
+    }
+
+    @Test
+    void anInvalidFileAfterRenderingIsToldWithoutItsContent() {
+        ImportOpenedRealm importOpenedRealm = importOpenedRealm();
+        this.connection.failure = new InvalidImportException(
+                "Unable to parse file '00-realm.yaml': found undefined alias s3cr3t-marker",
+                new IllegalStateException("snippet: secret: *s3cr3t-marker"),
+                "Unable to parse file '00-realm.yaml' at line 4, column 13");
+
+        Throwable dryRun = catchThrowable(() -> importOpenedRealm.dryRun(
+                "demo", this.connection, Map.of("shopUrl", "*s3cr3t-marker"), this.remembered));
+
+        assertThat(dryRun)
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageStartingWith("Unable to parse file '00-realm.yaml' at line 4, column 13")
+                .hasMessageNotContaining("s3cr3t-marker")
+                .hasNoCause();
+        assertThat(dryRun.getSuppressed()).isEmpty();
+    }
+
+    @Test
+    void anInvalidFileWithoutLocationIsToldWithoutItsContent() {
+        ImportOpenedRealm importOpenedRealm = importOpenedRealm();
+        this.connection.failure = new InvalidImportException("bad value s3cr3t-marker");
+
+        assertThatThrownBy(() -> importOpenedRealm.prepare(
+                        "demo", this.connection, Map.of("shopUrl", "s3cr3t-marker"), this.remembered))
+                .isInstanceOf(InvalidImportException.class)
+                .hasMessageContaining("'demo'")
+                .hasMessageNotContaining("s3cr3t-marker")
+                .hasNoCause();
     }
 
     /** Records the files it is given, and answers an empty report. */
@@ -85,6 +138,7 @@ class ImportOpenedRealmTest {
         final List<List<ImportFile>> dryRuns = new ArrayList<>();
         final List<List<ImportFile>> applied = new ArrayList<>();
         final ImportReport report = new ImportReport(Map.of("demo", List.of()));
+        RuntimeException failure;
 
         @Override
         public Target target() {
@@ -106,6 +160,9 @@ class ImportOpenedRealmTest {
 
         @Override
         public ImportReport dryRun(final List<ImportFile> files) {
+            if (this.failure != null) {
+                throw this.failure;
+            }
             this.dryRuns.add(files);
             return this.report;
         }

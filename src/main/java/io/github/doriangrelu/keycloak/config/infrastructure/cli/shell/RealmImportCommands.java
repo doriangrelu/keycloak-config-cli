@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
 import io.github.doriangrelu.keycloak.config.application.definition.ImportOpenedRealm;
+import io.github.doriangrelu.keycloak.config.application.definition.PreparedImport;
 import io.github.doriangrelu.keycloak.config.application.definition.ResolveVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
@@ -110,7 +111,8 @@ public class RealmImportCommands {
         writer.println("Import of '%s' on %s".formatted(folder, where(target)));
         writer.flush();
         ImportOpenedRealm importer = importer(context.inputReader(), writer);
-        ImportReport plan = importer.dryRun(folder, connection, given, this.session.variables());
+        PreparedImport prepared = importer.prepare(folder, connection, given, this.session.variables());
+        ImportReport plan = prepared.report();
         DryRunReport planned = DryRunReport.of(plan.plans());
         String changes = planned.changesText().stripTrailing();
         if (!changes.isEmpty()) {
@@ -129,8 +131,8 @@ public class RealmImportCommands {
                 return reader.unanswered ? "Nothing written: run again with --apply" : "Nothing written";
             }
         }
-        // the same files: every value given or answered for the dry run is remembered by the session
-        ImportReport applied = importer.apply(folder, connection, given, this.session.variables());
+        // the files of the plan the user saw, not a second reading of the folder
+        ImportReport applied = importer.apply(prepared);
         Map<String, ?> realms = applied.plans().isEmpty() ? plan.plans() : applied.plans();
         return "Realm '%s' imported on %s: %d change(s) applied"
                 .formatted(

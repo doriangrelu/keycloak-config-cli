@@ -340,7 +340,7 @@ Each [placeholder](../advanced/templating.md) of the realm takes its value from,
 
 In [script mode](README.md#script-mode) nothing can be asked: a variable without a value fails with `Variable '<name>' has no value: give it with --var <name>=… or KCC_VAR_<name>` and exit code `2`, before anything is sent to Keycloak.
 
-The session remembers the values given with `--var` and the answers to the questions, in memory only, so that `realm import` after `realm dry-run` does not ask again. They are forgotten by `realm open`, `realm create`, `connect`, `disconnect` and when the shell exits. A value is never printed, logged or written: the plan names the changed fields, never their values, and a script prints `--var <name>=***` when it echoes its commands.
+The session remembers the values given with `--var` and the answers to the questions, in memory only, so that `realm import` after `realm dry-run` does not ask again. They are forgotten by `realm open`, `realm create`, `connect`, `disconnect` and when the shell exits. A value is never printed, logged or written: the plan names the changed fields, never their values, and a script prints `--var <name>=***` when it echoes its commands. A file that is no longer valid once its variables are rendered is named with the line and the column, or the path of the value, never with its content.
 
 ### `realm dry-run`
 

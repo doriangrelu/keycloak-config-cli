@@ -21,18 +21,36 @@
 package io.github.doriangrelu.keycloak.config.application.importation;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
+import java.util.Optional;
 
 /**
  * An import file cannot be used: missing location, unreadable or unparsable file, invalid template, undefined variable
  * (ADR-005). Reported as an invalid configuration.
+ *
+ * <p>The message of a file that cannot be parsed quotes its content, as the parser tells it. A file rendered with the
+ * values of variables may hold a secret there: such a failure also has a {@linkplain #safeMessage() safe message},
+ * which names the file and where it fails, never its content.
  */
 public final class InvalidImportException extends ApplicationException {
 
+    private final String safeMessage;
+
     public InvalidImportException(final String message) {
-        super(message);
+        this(message, null, null);
     }
 
     public InvalidImportException(final String message, final Throwable cause) {
+        this(message, cause, null);
+    }
+
+    /** @param safeMessage what the failure is, without any content of the file: the file and the place */
+    public InvalidImportException(final String message, final Throwable cause, final String safeMessage) {
         super(message, cause);
+        this.safeMessage = safeMessage;
+    }
+
+    /** The failure told without the content of the file, when it is known. */
+    public Optional<String> safeMessage() {
+        return Optional.ofNullable(this.safeMessage);
     }
 }
