@@ -67,6 +67,14 @@ class SecretVariableNamesTest {
     }
 
     @Test
+    void aSecretOfAnAuthenticatorConfigIsNamedAfterItsAliasAndKey() {
+        assertThat(SecretVariableNames.authenticatorConfig("captcha-action", "secret"))
+                .isEqualTo("captchaActionSecret");
+        assertThat(SecretVariableNames.authenticatorConfig("captcha", "api.key"))
+                .isEqualTo("captchaApiKey");
+    }
+
+    @Test
     void aPrivateKeyOfAClientIsNamedAfterTheClientAndItsUse() {
         assertThat(SecretVariableNames.clientPrivateKey("shop", "signing")).isEqualTo("shopSigningPrivateKey");
         assertThat(SecretVariableNames.clientPrivateKey("https://saml.example.org", "encryption"))

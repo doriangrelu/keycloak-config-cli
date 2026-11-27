@@ -77,6 +77,11 @@ public final class SecretVariableNames {
         return camelCase(clientId, "client") + upperFirst(camelCase(use, "key")) + "PrivateKey";
     }
 
+    /** A secret of an authenticator config: {@code captcha-action} and {@code secret} give {@code captchaActionSecret}. */
+    public static String authenticatorConfig(final String alias, final String key) {
+        return camelCase(alias, "authenticatorConfig") + upperFirst(camelCase(key, "secret"));
+    }
+
     /** The bind credential of a component: {@code corporate ldap} gives {@code corporateLdapBindCredential}. */
     public static String component(final String name) {
         return camelCase(name, "component") + "BindCredential";

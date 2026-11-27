@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.keycloak.representations.idm.AuthenticatorConfigRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -39,6 +40,84 @@ class RealmExtractionTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String MASK = RealmExtraction.MASK;
+
+    @Test
+    void secretsAreRecognizedByTheirName() {
+        assertThat(RealmExtraction.isSecretKey("secret")).isTrue();
+        assertThat(RealmExtraction.isSecretKey("authTokenClientSecret")).isTrue();
+        assertThat(RealmExtraction.isSecretKey("keystorePassword")).isTrue();
+        assertThat(RealmExtraction.isSecretKey("jwt.private_key")).isTrue();
+        assertThat(RealmExtraction.isSecretKey("api.key")).isTrue();
+        assertThat(RealmExtraction.isSecretKey("API_KEY")).isTrue();
+        assertThat(RealmExtraction.isSecretKey("site.key")).isFalse();
+        assertThat(RealmExtraction.isSecretKey("clientId")).isFalse();
+        // a setting about a password is no secret: only a name ending with the kind of secret is one
+        assertThat(RealmExtraction.isSecretKey("require.password.update.after.registration"))
+                .isFalse();
+        assertThat(RealmExtraction.isSecretKey("secretExpirationTime")).isFalse();
+    }
+
+    @Test
+    void theSecretsOfTheSmtpServerBecomeVariablesEvenInClear() {
+        RealmRepresentation exported = new RealmRepresentation();
+        exported.setSmtpServer(
+                Map.of("host", "smtp.example.org", "authType", "token", "authTokenClientSecret", "clear-token-secret"));
+        Set<String> taken = new HashSet<>();
+
+        RealmExtraction.smtpSecrets(exported, taken);
+
+        assertThat(exported.getSmtpServer())
+                .containsEntry("authTokenClientSecret", "{{smtpAuthTokenClientSecret}}")
+                .containsEntry("authType", "token");
+        assertThat(taken).containsExactly("smtpAuthTokenClientSecret");
+    }
+
+    @Test
+    void theSecretsOfAnIdentityProviderBecomeVariablesEvenInClear() {
+        IdentityProviderRepresentation corporate = new IdentityProviderRepresentation();
+        corporate.setAlias("corporate");
+        corporate.setConfig(Map.of("clientId", "app", "jwtPrivateKey", "clear-private-key", "clientSecret", "clear"));
+        Set<String> taken = new HashSet<>();
+
+        RealmExtraction.identityProviderSecrets(List.of(corporate), taken);
+
+        assertThat(corporate.getConfig())
+                .containsEntry("clientId", "app")
+                .containsEntry("clientSecret", "{{corporateClientSecret}}")
+                .containsEntry("jwtPrivateKey", "{{corporateJwtPrivateKey}}");
+    }
+
+    @Test
+    void theSecretsOfAnAuthenticatorConfigBecomeVariables() {
+        AuthenticatorConfigRepresentation captcha = new AuthenticatorConfigRepresentation();
+        captcha.setAlias("captcha");
+        captcha.setConfig(
+                Map.of("site.key", "public", "secret", "clear-secret", "api.key", MASK, "action", "register"));
+        Set<String> taken = new HashSet<>();
+
+        RealmExtraction.authenticatorConfigSecrets(List.of(captcha), taken);
+
+        assertThat(captcha.getConfig())
+                .containsEntry("site.key", "public")
+                .containsEntry("action", "register")
+                .containsEntry("secret", "{{captchaSecret}}")
+                .containsEntry("api.key", "{{captchaApiKey}}");
+        assertThat(taken).containsExactlyInAnyOrder("captchaSecret", "captchaApiKey");
+    }
+
+    @Test
+    void theRotatedSecretOfAClientIsNeverWritten() {
+        ClientRepresentation shop = new ClientRepresentation();
+        shop.setClientId("shop");
+        shop.setAttributes(Map.of("client.secret.rotated", "previous-secret", "kept", "yes"));
+        List<String> warnings = new java.util.ArrayList<>();
+
+        RealmExtraction.withoutClientSecretAttributes(List.of(shop), warnings);
+
+        assertThat(shop.getAttributes()).containsOnlyKeys("kept");
+        assertThat(warnings)
+                .containsExactly("attributes.client.secret.rotated of client 'shop' is a secret and was not extracted");
+    }
 
     @Test
     void everyHiddenEntryOfTheSmtpServerBecomesAVariable() {

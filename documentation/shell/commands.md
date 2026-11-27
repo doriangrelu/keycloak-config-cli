@@ -358,12 +358,13 @@ What is written:
 | Secret of a confidential client | `{{<clientId>Secret}}`: `shop` gives `{{shopSecret}}`, `my-api` gives `{{myApiSecret}}` |
 | Secret of an identity provider (`config.clientSecret`) | `{{<alias>ClientSecret}}`: `google` gives `{{googleClientSecret}}` |
 | SMTP password (`smtpServer.password`) | `{{smtpPassword}}` |
-| Other entry of the SMTP server that Keycloak hides (it answers `**********`) | `{{smtp<Key>}}`: `authTokenClientSecret` gives `{{smtpAuthTokenClientSecret}}` |
-| Other entry of an identity provider configuration that Keycloak hides | `{{<alias><Key>}}`: `google` and `clientAssertionKey` give `{{googleClientAssertionKey}}` |
+| Other secret of the SMTP server: an entry Keycloak hides (it answers `**********`), or whose name holds `secret`, `password`, `privateKey` or `apiKey` | `{{smtp<Key>}}`: `authTokenClientSecret` gives `{{smtpAuthTokenClientSecret}}` |
+| Other secret of an identity provider configuration, found the same way | `{{<alias><Key>}}`: `google` and `clientAssertionKey` give `{{googleClientAssertionKey}}` |
+| Secret of an authenticator config (reCAPTCHA `secret`, `api.key`...), which Keycloak gives in clear, found the same way | `{{<config alias><Key>}}`: `captcha` and `secret` give `{{captchaSecret}}` |
 | Bind credential of a component (`config.bindCredential`, LDAP) | `{{<component name>BindCredential}}` |
 | Private key of a SAML client (`saml.signing.private.key`, `saml.encryption.private.key`), which Keycloak gives in clear | `{{<clientId>SigningPrivateKey}}`, `{{<clientId>EncryptionPrivateKey}}` |
 
-The SMTP server and the configuration of an identity provider are replaced whole by the import, so every entry Keycloak hides in them becomes a variable. Elsewhere (the configuration of a component, the attributes of a client), the import keeps the entries a file does not declare: a value Keycloak hides there is not written, and the command says so: `<field> of <element> is hidden by Keycloak and was not extracted`. A secret kept in the vault of Keycloak (`${vault.<name>}`) is written as it is.
+The SMTP server, the configuration of an identity provider and the configuration of an authenticator are replaced whole by the import, so every secret in them becomes a variable. The previous secret a rotation keeps on a client (`client.secret.rotated`) is never written, with a warning. Elsewhere (the configuration of a component, the attributes of a client), the import keeps the entries a file does not declare: a value Keycloak hides there is not written, and the command says so: `<field> of <element> is hidden by Keycloak and was not extracted`. A secret kept in the vault of Keycloak (`${vault.<name>}`) is written as it is.
 
 **The secrets of the clients are kept for the session.** Keycloak gives back the current secret of a confidential client: right after writing the files, the command reads them and keeps them in the memory of the session, under the name of their variable, as if they had been given with `--var`. They are never written nor shown, and they are forgotten, like any value, when the realm or the target changes or when the shell exits. So `Variables to give at import` lists only the other variables, the ones Keycloak never gives back (identity providers, SMTP, LDAP): give them to `realm dry-run` or `realm import` with `--var`, `KCC_VAR_<name>`, or the question. When the secrets of the clients cannot be read, the files stay written and the realm opened, and the command prints `The client secrets could not be read from <target>: give them at import`; they are then listed with the other variables.
 
@@ -371,11 +372,12 @@ The SMTP server and the configuration of an identity provider are replaced whole
 
 The normalization warnings are printed too, such as `Default realm role 'offline_access' was deleted in Keycloak: an import may bring it back`. The extraction does not check the [rules](rules.md); opening the realm then reports the findings, as `realm open` does.
 
-Right after the extraction, on the same target, `realm dry-run` with the listed variables given their current value announces `Dry run: no change pending.`, with the hidden secrets noted as not compared (see [Secrets Keycloak hides](../advanced/dry-run.md#secrets-keycloak-hides)). A client with Authorization Services and its authorization settings shows no change either (checked on Keycloak 26.5.3). The known exceptions:
+Right after the extraction, on the same target, `realm dry-run` with the listed variables given their current value announces `Dry run: no change pending.`, with the hidden secrets noted as not compared (see [Secrets Keycloak hides](../advanced/dry-run.md#secrets-keycloak-hides)). The known exceptions:
 
 - A realm with a user profile of its own. The import manages the user profile only when the realm declares the attribute `userProfileEnabled`, so the extraction writes it with the other realm attributes; on a realm made by hand, which does not have that attribute, the first dry run shows one change, `~ Realm settings '<realm>' (attributes)`. Once imported, the attribute exists and the next dry runs show no change. On a Keycloak version without a reference user profile (only `26.5.3` has one), the user profile is always written, with the same first change.
 - An identity provider created without a first broker login flow (through the admin API; the admin console sets one): the first dry run shows `~ Identity provider '<alias>' (firstBrokerLoginFlowAlias)`, the import setting the flow of Keycloak, `first broker login`.
 - The secrets Keycloak hides are not compared: see [Secrets Keycloak hides](../advanced/dry-run.md#secrets-keycloak-hides).
+- A client with Authorization Services may be listed as an update, `~ Client authorization '<clientId>'`, as for any import (see the limits of the [dry run](../advanced/dry-run.md#limits)).
 
 | Failure | Exit code |
 |---------|-----------|

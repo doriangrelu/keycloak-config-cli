@@ -57,6 +57,7 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.common.util.MultivaluedHashMap;
+import org.keycloak.representations.idm.AuthenticatorConfigRepresentation;
 import org.keycloak.representations.idm.ClientMappingsRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ComponentExportRepresentation;
@@ -89,6 +90,12 @@ final class RealmExtraction {
     private static final String BIND_CREDENTIAL = "bindCredential";
 
     private static final int USER_PAGE = 100;
+
+    /** How the name of a configuration entry holding a secret ends, once lower-cased and without separators. */
+    private static final List<String> SECRET_NAMES = List.of("secret", "password", "privatekey", "apikey");
+
+    /** Attributes of a client that hold a secret the import does not need: never written. */
+    private static final Set<String> SECRET_CLIENT_ATTRIBUTES = Set.of("client.secret.rotated");
 
     /** The attributes of a client that hold a private key, by what the key is for. */
     private static final Map<String, String> PRIVATE_KEY_ATTRIBUTES =
@@ -152,9 +159,12 @@ final class RealmExtraction {
                 exported.getClients(),
                 client -> this.clientMapper.toClient(client).isOwnedByKeycloak(realm),
                 variables);
+        List<String> secretWarnings = new ArrayList<>();
+        withoutClientSecretAttributes(exported.getClients(), secretWarnings);
         identityProviderSecrets(exported.getIdentityProviders(), variables);
         smtpSecrets(exported, variables);
         bindCredentials(exported.getComponents(), variables);
+        authenticatorConfigSecrets(authenticatorConfigsOf(exported), variables);
 
         RealmExportNormalizer.Normalized normalized = this.normalizer.normalize(exported, this.keycloakVersion);
         ObjectNode document = this.json.valueToTree(normalized.realm());
@@ -172,7 +182,7 @@ final class RealmExtraction {
             skippedUsers = users.skipped();
         }
         withoutEmptyTypes(document);
-        List<String> warnings = new ArrayList<>();
+        List<String> warnings = new ArrayList<>(secretWarnings);
         normalized
                 .missing()
                 .forEach(missing -> warnings.add("Default "
@@ -301,7 +311,7 @@ final class RealmExtraction {
                                 variable(SecretVariableNames.identityProvider(provider.getAlias()), taken));
                     }
                     new TreeMap<>(config).forEach((key, value) -> {
-                        if (MASK.equals(value)) {
+                        if (isHiddenOrSecret(key, value) && !isPlaceholder(value)) {
                             config.put(
                                     key,
                                     variable(SecretVariableNames.identityProvider(provider.getAlias(), key), taken));
@@ -325,7 +335,7 @@ final class RealmExtraction {
             withPlaceholders.put(SMTP_PASSWORD, variable(SecretVariableNames.smtpPassword(), taken));
         }
         new TreeMap<>(withPlaceholders).forEach((key, value) -> {
-            if (MASK.equals(value)) {
+            if (isHiddenOrSecret(key, value) && !isPlaceholder(value)) {
                 withPlaceholders.put(key, variable(SecretVariableNames.smtp(key), taken));
             }
         });
@@ -363,6 +373,79 @@ final class RealmExtraction {
                     });
                     client.setAttributes(attributes);
                 });
+    }
+
+    /**
+     * The secrets of the authenticator configs (reCAPTCHA...), which Keycloak exports in clear, sorted by alias: every
+     * entry Keycloak hides or whose name tells a secret. The import replaces a configuration whole: none may be left
+     * out.
+     */
+    static void authenticatorConfigSecrets(
+            final List<AuthenticatorConfigRepresentation> configs, final Set<String> taken) {
+        if (configs == null) {
+            return;
+        }
+        configs.stream()
+                .filter(config -> config.getAlias() != null && config.getConfig() != null)
+                .sorted(Comparator.comparing(AuthenticatorConfigRepresentation::getAlias))
+                .forEach(config -> {
+                    Map<String, String> entries = new HashMap<>(config.getConfig());
+                    new TreeMap<>(entries).forEach((key, value) -> {
+                        if (isHiddenOrSecret(key, value)) {
+                            entries.put(
+                                    key,
+                                    variable(SecretVariableNames.authenticatorConfig(config.getAlias(), key), taken));
+                        }
+                    });
+                    config.setConfig(entries);
+                });
+    }
+
+    @SuppressWarnings("deprecation") // the authenticator configs of an export
+    private static List<AuthenticatorConfigRepresentation> authenticatorConfigsOf(final RealmRepresentation exported) {
+        return exported.getAuthenticatorConfig();
+    }
+
+    /**
+     * The attributes of the clients that hold a secret the import does not need ({@code client.secret.rotated}): left
+     * out, with a warning that names them. The import keeps the attributes a file does not declare.
+     */
+    static void withoutClientSecretAttributes(final List<ClientRepresentation> clients, final List<String> warnings) {
+        if (clients == null) {
+            return;
+        }
+        clients.stream()
+                .filter(client -> client.getAttributes() != null)
+                .sorted(Comparator.comparing(client -> String.valueOf(client.getClientId())))
+                .forEach(client -> {
+                    Map<String, String> attributes = new HashMap<>(client.getAttributes());
+                    new TreeSet<>(SECRET_CLIENT_ATTRIBUTES).forEach(attribute -> {
+                        if (attributes.remove(attribute) != null) {
+                            warnings.add("attributes." + attribute + " of client '" + client.getClientId()
+                                    + "' is a secret and was not extracted");
+                        }
+                    });
+                    client.setAttributes(attributes);
+                });
+    }
+
+    /**
+     * Whether the name of a configuration entry tells a secret: it ends with secret, password, private key or API key
+     * ({@code authTokenClientSecret}, {@code api.key}), unlike a setting about one
+     * ({@code require.password.update.after.registration}).
+     */
+    static boolean isSecretKey(final String key) {
+        String name = key.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        return SECRET_NAMES.stream().anyMatch(name::endsWith);
+    }
+
+    /** A value Keycloak hides, or a secret value under a name that tells a secret. */
+    private static boolean isHiddenOrSecret(final String key, final String value) {
+        return MASK.equals(value) || (isSecretKey(key) && isSecret(value));
+    }
+
+    private static boolean isPlaceholder(final String value) {
+        return value != null && value.startsWith("{{") && value.endsWith("}}");
     }
 
     /** A placeholder for a new variable, its name made unique and taken. */
