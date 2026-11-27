@@ -44,6 +44,13 @@ infrastructure  ──▶  application  ──▶  domain
 | Cache par checksum, état distant, modes gérés, import parallèle, substitution `$(...)` | Retirés | ADR-007 |
 | Variabilisation des fichiers | Mustache seul ; une variable manquante sans valeur par défaut est une erreur | ADR-007 |
 
+## Décisions du 27/11/2026
+
+| Question | Décision | Où |
+|---|---|---|
+| Secrets que Keycloak masque (`smtpServer`, `config` d'un fournisseur d'identité ou d'un composant) | Non comparés : jamais un changement à eux seuls, envoyés quand l'élément est mis à jour pour une autre raison, notés par le dry-run (`notCompared`) | ADR-007 |
+| Secrets des clients après `realm extract` | Lus sur la cible et gardés en mémoire de la session (option A) | ADR-010 |
+
 ## Changements incompatibles de la 7.0.0
 
 Repris dans le [CHANGELOG](CHANGELOG.md) et le [guide de migration](documentation/getting-started/migration-7.md) :

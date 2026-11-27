@@ -349,7 +349,7 @@ Dry run: no change pending.
 
 What is written:
 
-- The whole realm, read with the partial export of the admin API (groups, roles and clients included), then [normalized](../advanced/normalization.md) against the reference realm of the version of the target (or the closest reference version): what Keycloak sets by default is left out, and a type that holds only defaults is not written. The user profile is written when it differs from the one Keycloak gives a new realm.
+- The whole realm, read with the partial export of the admin API (groups, roles and clients included), then [normalized](../advanced/normalization.md) against the reference realm of the version of the target (or the closest reference version): what Keycloak sets by default is left out, and a type that holds only defaults is not written. The user profile is written when it differs from the one Keycloak gives a new realm. The attributes of the realm (where Keycloak keeps settings such as the frontend URL, OTP reuse, CIBA or PAR) are written whole, because the import replaces them whole; the attributes former versions of keycloak-config-cli kept are left out. Custom key providers are not written: Keycloak owns the keys of a realm.
 - The files of the [standard layout](files.md#the-standard-layout) (`00-realm`, `20-clients`, `30-roles`, `40-groups`, `50-links`), each with the `realm` key, in the chosen format; the folder is written whole or not at all.
 - No secret value: each secret becomes a [placeholder](../advanced/templating.md) whose name follows the rule of the shell (camel case, separators removed), with a suffix `2`, `3`… when two secrets would have the same name:
 
@@ -358,9 +358,12 @@ What is written:
 | Secret of a confidential client | `{{<clientId>Secret}}`: `shop` gives `{{shopSecret}}`, `my-api` gives `{{myApiSecret}}` |
 | Secret of an identity provider (`config.clientSecret`) | `{{<alias>ClientSecret}}`: `google` gives `{{googleClientSecret}}` |
 | SMTP password (`smtpServer.password`) | `{{smtpPassword}}` |
+| Other entry of the SMTP server that Keycloak hides (it answers `**********`) | `{{smtp<Key>}}`: `authTokenClientSecret` gives `{{smtpAuthTokenClientSecret}}` |
+| Other entry of an identity provider configuration that Keycloak hides | `{{<alias><Key>}}`: `google` and `clientAssertionKey` give `{{googleClientAssertionKey}}` |
 | Bind credential of a component (`config.bindCredential`, LDAP) | `{{<component name>BindCredential}}` |
+| Private key of a SAML client (`saml.signing.private.key`, `saml.encryption.private.key`), which Keycloak gives in clear | `{{<clientId>SigningPrivateKey}}`, `{{<clientId>EncryptionPrivateKey}}` |
 
-A value Keycloak hides that is not one of these (it answers `**********`) is not written, and the command says so: `<field> of <element> is hidden by Keycloak and was not extracted`.
+The SMTP server and the configuration of an identity provider are replaced whole by the import, so every entry Keycloak hides in them becomes a variable. Elsewhere (the configuration of a component, the attributes of a client), the import keeps the entries a file does not declare: a value Keycloak hides there is not written, and the command says so: `<field> of <element> is hidden by Keycloak and was not extracted`. A secret kept in the vault of Keycloak (`${vault.<name>}`) is written as it is.
 
 **The secrets of the clients are kept for the session.** Keycloak gives back the current secret of a confidential client: right after writing the files, the command reads them and keeps them in the memory of the session, under the name of their variable, as if they had been given with `--var`. They are never written nor shown, and they are forgotten, like any value, when the realm or the target changes or when the shell exits. So `Variables to give at import` lists only the other variables, the ones Keycloak never gives back (identity providers, SMTP, LDAP): give them to `realm dry-run` or `realm import` with `--var`, `KCC_VAR_<name>`, or the question. When the secrets of the clients cannot be read, the files stay written and the realm opened, and the command prints `The client secrets could not be read from <target>: give them at import`; they are then listed with the other variables.
 
@@ -368,7 +371,11 @@ A value Keycloak hides that is not one of these (it answers `**********`) is not
 
 The normalization warnings are printed too, such as `Default realm role 'offline_access' was deleted in Keycloak: an import may bring it back`. The extraction does not check the [rules](rules.md); opening the realm then reports the findings, as `realm open` does.
 
-Right after the extraction, on the same target, `realm dry-run` with the listed variables given their current value announces `Dry run: no change pending.`, with the hidden secrets noted as not compared (see [Secrets Keycloak hides](../advanced/dry-run.md#secrets-keycloak-hides)). One exception: a realm with a user profile of its own. The import manages the user profile only when the realm declares the attribute `userProfileEnabled`, so the extraction writes it with the other realm attributes; on a realm made by hand, which does not have that attribute, the first dry run shows one change, `~ Realm settings '<realm>' (attributes)`. Once imported, the attribute exists and the next dry runs show no change.
+Right after the extraction, on the same target, `realm dry-run` with the listed variables given their current value announces `Dry run: no change pending.`, with the hidden secrets noted as not compared (see [Secrets Keycloak hides](../advanced/dry-run.md#secrets-keycloak-hides)). A client with Authorization Services and its authorization settings shows no change either (checked on Keycloak 26.5.3). The known exceptions:
+
+- A realm with a user profile of its own. The import manages the user profile only when the realm declares the attribute `userProfileEnabled`, so the extraction writes it with the other realm attributes; on a realm made by hand, which does not have that attribute, the first dry run shows one change, `~ Realm settings '<realm>' (attributes)`. Once imported, the attribute exists and the next dry runs show no change. On a Keycloak version without a reference user profile (only `26.5.3` has one), the user profile is always written, with the same first change.
+- An identity provider created without a first broker login flow (through the admin API; the admin console sets one): the first dry run shows `~ Identity provider '<alias>' (firstBrokerLoginFlowAlias)`, the import setting the flow of Keycloak, `first broker login`.
+- The secrets Keycloak hides are not compared: see [Secrets Keycloak hides](../advanced/dry-run.md#secrets-keycloak-hides).
 
 | Failure | Exit code |
 |---------|-----------|
