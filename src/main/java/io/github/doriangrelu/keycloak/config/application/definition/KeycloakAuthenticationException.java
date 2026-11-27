@@ -29,12 +29,17 @@ public final class KeycloakAuthenticationException extends ApplicationException 
 
     /**
      * @param status the HTTP status of the answer; 404 means the login realm, or the URL, is not the one of Keycloak
+     * @param cause the client error: kept as a suppressed exception, never as the cause, because an interactive shell
+     *     prints the deepest cause only
      */
     public KeycloakAuthenticationException(final Target target, final int status, final Throwable cause) {
         super(
                 "Keycloak at " + target.url() + " " + whatHappened(status) + " to target '" + target.name() + "' ("
                         + accountOf(target) + "): HTTP " + status,
-                cause);
+                null);
+        if (cause != null) {
+            addSuppressed(cause);
+        }
     }
 
     private static String whatHappened(final int status) {

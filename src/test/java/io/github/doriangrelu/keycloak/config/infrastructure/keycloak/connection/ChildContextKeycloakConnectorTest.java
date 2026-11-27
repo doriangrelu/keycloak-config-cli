@@ -224,6 +224,48 @@ class ChildContextKeycloakConnectorTest {
     }
 
     @Test
+    void aRefusedLoginKeepsItsClearMessageAsTheDeepestCause() {
+        this.tokenStatus = 401;
+
+        Throwable failure = catchThrowable(() -> connector().connect(target(stubUrl()), SECRET));
+
+        // an interactive shell prints the deepest cause: nothing may hide the message behind a client error
+        assertThat(failure).isInstanceOf(KeycloakAuthenticationException.class).hasNoCause();
+        assertThat(failure.getSuppressed()).hasSize(1);
+        assertThat(everythingPrintedBy(failure)).doesNotContain(SECRET);
+    }
+
+    @Test
+    void anUnreachableKeycloakKeepsItsClearMessageAsTheDeepestCause() throws IOException {
+        Throwable failure =
+                catchThrowable(() -> connector().connect(target("http://localhost:" + aClosedPort()), SECRET));
+
+        assertThat(failure).isInstanceOf(KeycloakUnreachableException.class).hasNoCause();
+        assertThat(failure.getSuppressed()).hasSize(1);
+        assertThat(everythingPrintedBy(failure)).doesNotContain(SECRET);
+    }
+
+    @Test
+    void theReadTimeoutIsNeverShorterThanTheConnectTimeout() {
+        assertThat(TargetConnectionConfiguration.propertiesOf(targetWithConnectTimeout(Duration.ofSeconds(45)), SECRET))
+                .containsEntry("keycloak.read-timeout", "PT45S");
+        assertThat(TargetConnectionConfiguration.propertiesOf(targetWithConnectTimeout(Duration.ofSeconds(2)), SECRET))
+                .containsEntry("keycloak.read-timeout", "10s");
+    }
+
+    private Target targetWithConnectTimeout(final Duration connectTimeout) {
+        return new Target(
+                "slow",
+                stubUrl(),
+                "master",
+                "admin-cli",
+                GrantType.PASSWORD,
+                Optional.of("admin"),
+                true,
+                connectTimeout);
+    }
+
+    @Test
     void aClosedPortIsUnreachableAndFailsFast() throws IOException {
         String url = "http://localhost:" + aClosedPort();
         Target target = target(url);

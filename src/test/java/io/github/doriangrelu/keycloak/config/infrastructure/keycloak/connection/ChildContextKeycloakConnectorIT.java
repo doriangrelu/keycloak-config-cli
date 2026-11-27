@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -84,6 +85,20 @@ class ChildContextKeycloakConnectorIT {
         mainEnvironment = main.getEnvironment();
 
         createServiceAccountClient();
+    }
+
+    /** The realm lives in the container shared by the other ITs: it is removed. */
+    @AfterAll
+    static void removeTheServiceRealm() {
+        try (Keycloak admin = KeycloakBuilder.builder()
+                .serverUrl(URL)
+                .realm("master")
+                .clientId("admin-cli")
+                .username(ADMIN)
+                .password(ADMIN_PASSWORD)
+                .build()) {
+            admin.realm(SERVICE_REALM).remove();
+        }
     }
 
     @Test

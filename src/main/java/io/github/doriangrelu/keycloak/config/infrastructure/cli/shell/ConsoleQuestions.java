@@ -258,11 +258,13 @@ public final class ConsoleQuestions implements Questions {
 
     /**
      * The secret typed without echo, or null when there is none to read, as in a script. The reader hides the input
-     * when it can; otherwise the system console does; as a last resort the input is read in clear, after a warning.
+     * when it can; otherwise the system console does; as a last resort (no terminal at all, such as a pipe) the input is
+     * read in clear, after a warning that says so: the question is then still answered rather than lost.
      */
     private String readSecret(final String prompt) {
         try {
-            return asText(this.reader.readPassword(prompt));
+            // the reader of the console takes the prompt for a format: a "%" of a user or a folder name is escaped
+            return asText(this.reader.readPassword(prompt.replace("%", "%%")));
         } catch (UnsupportedOperationException cannotHide) {
             // the reader has no hidden input: the console or, failing that, a plain read
         } catch (Exception e) {

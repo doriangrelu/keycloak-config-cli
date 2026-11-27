@@ -25,9 +25,13 @@ import io.github.doriangrelu.keycloak.config.application.definition.NoRealmOpene
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** The realm the commands of a session work on, and the Keycloak it is connected to. */
 public final class ShellSession {
+
+    private static final Logger logger = LoggerFactory.getLogger(ShellSession.class);
 
     private String openedRealm;
     private Connection connection;
@@ -52,14 +56,25 @@ public final class ShellSession {
 
     /**
      * Makes this connection the current one, which is opened already: the previous one, if any, is closed only now, so
-     * that a failed switch leaves it as it was.
+     * that a failed switch leaves it as it was. A previous connection that cannot be closed does not undo the switch:
+     * the new one stays current, and what happened is told.
+     *
+     * @return a warning for the user, when the previous connection could not be closed
      */
-    public void connect(final Connection opened) {
+    public Optional<String> connect(final Connection opened) {
         Connection previous = this.connection;
         this.connection = Objects.requireNonNull(opened, "opened");
-        if (previous != null) {
-            previous.close();
+        if (previous == null) {
+            return Optional.empty();
         }
+        try {
+            previous.close();
+        } catch (RuntimeException failure) {
+            String name = previous.target().name();
+            logger.warn("The connection to {} could not be closed", name, failure);
+            return Optional.of("Warning: the previous connection to " + name + " could not be closed cleanly");
+        }
+        return Optional.empty();
     }
 
     /** Closes the current connection, which is then forgotten; the target it was to, or none when there was none. */

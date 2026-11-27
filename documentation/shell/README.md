@@ -56,9 +56,9 @@ targets:
 | `grant-type` | `password` | `password` (a user and a password) or `client_credentials` (a client and its secret) |
 | `user` | required for `password` | User to log in with |
 | `ssl-verify` | `true` | Whether the certificate of the server is verified |
-| `connect-timeout` | `10s` | How long to wait for the server; a unit is required (`500ms`, `10s`, `1m`) |
+| `connect-timeout` | `10s` | How long to wait for the server to accept the connection; a unit is required (`500ms`, `10s`, `1m`). A server that accepts it but does not answer is waited for 10 seconds, or `connect-timeout` when larger |
 
-A target name holds letters, digits, `-` and `_`. The file is read on every command, so an edit is seen without restarting the shell. An unknown field, a missing `url`, a missing `user` for the `password` grant, an invalid value, or a secret written in the file (`password`, `client-secret`, `secret`) is refused with exit code `2`, and the message names the target and the field. The file is optional: without it there is no target.
+A target name holds letters, digits, `-` and `_`. The file is read on every command, so an edit is seen without restarting the shell. An unknown field, a missing `url`, a missing `user` for the `password` grant, an invalid value, or a secret written in the file (`password`, `client-secret`, `secret`) is refused with exit code `2`, and the message names the target and the field. The file is optional: without it there is no target. A target does not use `keycloak.http-proxy`: `connect` reaches the server directly.
 
 ### The password or the secret
 

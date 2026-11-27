@@ -67,9 +67,10 @@ public interface Questions {
     List<TemplatedValue> askValues(String question, List<TemplatedValue> proposed);
 
     /**
-     * A secret such as a password, typed without echo and never proposed: an empty answer is asked again. Without a
-     * way to read it, such as in a script, it fails like the others; an adapter that cannot hide what is typed does
-     * not ask.
+     * A secret such as a password, never proposed: an empty answer is asked again. Without a
+     * way to read it, such as in a script, it fails like the others. It is typed without echo whenever the adapter can
+     * hide it; an adapter with no way at all to hide what is typed (no terminal, such as a pipe) warns the user and
+     * reads it in clear rather than lose the answer, and never does so silently.
      */
     default String askSecret(final String question) {
         throw new MissingAnswerException(question);

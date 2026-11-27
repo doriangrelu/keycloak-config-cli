@@ -45,11 +45,6 @@ public class ShellProperties {
     private final Path script;
     private final String target;
 
-    /** Options without a target to connect to at start. */
-    ShellProperties(final Path root, final Path rules, final String command, final String realm, final Path script) {
-        this(root, rules, command, realm, script, null);
-    }
-
     @ConstructorBinding
     public ShellProperties(
             final Path root,

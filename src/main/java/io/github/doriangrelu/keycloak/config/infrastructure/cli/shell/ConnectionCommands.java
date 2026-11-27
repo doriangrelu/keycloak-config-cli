@@ -65,9 +65,10 @@ public class ConnectionCommands {
      */
     String connect(final String name, final Questions questions) {
         Connection opened = this.connectTarget.connect(name, target -> secretOf(target, questions));
-        this.session.connect(opened);
-        return "Connected to %s (%s, Keycloak %s)"
+        Optional<String> warning = this.session.connect(opened);
+        String connected = "Connected to %s (%s, Keycloak %s)"
                 .formatted(opened.target().name(), opened.target().url(), opened.keycloakVersion());
+        return warning.map(text -> connected + System.lineSeparator() + text).orElse(connected);
     }
 
     @Command(name = "disconnect", group = "Connection", description = "Close the connection to the current target")

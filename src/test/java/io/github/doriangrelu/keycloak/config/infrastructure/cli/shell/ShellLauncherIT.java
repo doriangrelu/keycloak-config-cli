@@ -135,14 +135,15 @@ class ShellLauncherIT {
             final ApplicationContext context, final String command, final String realm, final Path script) {
         StringWriter output = new StringWriter();
         ShellLauncher launcher = new ShellLauncher(
-                new ShellProperties(this.root, null, command, realm, script),
+                new ShellProperties(this.root, null, command, realm, script, null),
                 context.getBean(RuleBook.class),
                 context.getBean(ReadRealms.class),
                 context.getBean(ShellSession.class),
                 context.getBean(CommandParser.class),
                 context.getBean(CommandRegistry.class),
                 context.getBeanProvider(org.springframework.shell.core.ShellRunner.class),
-                new PrintWriter(output, true));
+                new PrintWriter(output, true),
+                context.getBean(ConnectionCommands.class));
         launcher.run(new DefaultApplicationArguments());
         return new Outcome(launcher.getExitCode(), output.toString());
     }
@@ -261,7 +262,7 @@ class ShellLauncherIT {
 
     @Test
     void aBlankScriptIsNoScript() {
-        assertThat(new ShellProperties(null, null, null, null, Path.of("")).getScript())
+        assertThat(new ShellProperties(null, null, null, null, Path.of(""), null).getScript())
                 .isEmpty();
     }
 
@@ -277,7 +278,7 @@ class ShellLauncherIT {
 
     private static ShellLauncher launcher(
             final ApplicationContext context, final String command, final StringWriter output) {
-        ShellProperties properties = new ShellProperties(null, null, command, null, null);
+        ShellProperties properties = new ShellProperties(null, null, command, null, null, null);
         return new ShellLauncher(
                 properties,
                 context.getBean(RuleBook.class),
@@ -286,6 +287,7 @@ class ShellLauncherIT {
                 context.getBean(CommandParser.class),
                 context.getBean(CommandRegistry.class),
                 context.getBeanProvider(org.springframework.shell.core.ShellRunner.class),
-                new PrintWriter(output, true));
+                new PrintWriter(output, true),
+                context.getBean(ConnectionCommands.class));
     }
 }

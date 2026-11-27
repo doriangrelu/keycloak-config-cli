@@ -24,25 +24,25 @@ import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakClientFactory;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 /**
  * The beans of the Spring context of one target: the Keycloak client of the command-line import, built from the
  * properties of the target. Its classes are registered by name, never found by scanning, so that the context holds
- * nothing else; the import will be added here (US-008-02).
+ * nothing else; the import will be added here (US-008-02). It carries no {@code @Configuration}, which component
+ * scanning would pick up in the main context: {@code @Import} alone makes it a configuration class when registered.
  *
  * <p>The context runs with {@code run.operation=IMPORT}, the operation these beans are made for: the conditions they
  * carry for the main context hold in the context of a target without being changed.
  */
-@Configuration(proxyBeanMethods = false)
 @Import({KeycloakClientFactory.class, KeycloakProvider.class})
 public class TargetConnectionConfiguration {
 
-    /** The default read timeout of the command line: a target does not set its own. */
-    private static final String READ_TIMEOUT = "10s";
+    /** The read timeout of the command line, which a target does not set; it never waits less than it connects. */
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
 
     /**
      * The properties of the context of a target. The secret is only given to the Keycloak client.
@@ -64,10 +64,17 @@ public class TargetConnectionConfiguration {
         properties.put("keycloak.client-secret", password ? "" : secret);
         properties.put("keycloak.ssl-verify", Boolean.toString(target.sslVerify()));
         properties.put("keycloak.connect-timeout", target.connectTimeout().toString());
-        properties.put("keycloak.read-timeout", READ_TIMEOUT);
+        properties.put("keycloak.read-timeout", readTimeoutOf(target));
         properties.put("keycloak.skip-server-info", "false");
         properties.put("keycloak.version", "");
         properties.put("keycloak.availability-check.enabled", "false");
         return properties;
+    }
+
+    /** The default read timeout, or the connect timeout of the target when that one is larger. */
+    private static String readTimeoutOf(final Target target) {
+        return target.connectTimeout().compareTo(READ_TIMEOUT) > 0
+                ? target.connectTimeout().toString()
+                : "10s";
     }
 }

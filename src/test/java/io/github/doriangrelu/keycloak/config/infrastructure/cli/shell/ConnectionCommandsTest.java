@@ -56,6 +56,7 @@ class ConnectionCommandsTest {
     private final List<String> typed = new ArrayList<>();
     private final Map<String, String> secretsSeen = new HashMap<>();
     private final List<String> unreachable = new ArrayList<>();
+    private final List<String> failingToClose = new ArrayList<>();
     private final ShellSession session = new ShellSession();
     private final StringWriter output = new StringWriter();
 
@@ -65,7 +66,7 @@ class ConnectionCommandsTest {
         }
         this.events.add("open " + target.name());
         this.secretsSeen.put(target.name(), secret);
-        return new RecordingConnection(target, this.events);
+        return new RecordingConnection(target, this.events, this.failingToClose.contains(target.name()));
     };
 
     private final ConnectionCommands commands = new ConnectionCommands(
@@ -195,6 +196,22 @@ class ConnectionCommandsTest {
     }
 
     @Test
+    void aPreviousConnectionThatCannotBeClosedDoesNotFailTheSwitch() {
+        this.environment.put("KCC_LOCAL_PASSWORD", "a");
+        this.failingToClose.add("local");
+        this.environment.put("KCC_DEV_EU_SECRET", "b");
+        this.commands.connect("local", questions());
+
+        String result = this.commands.connect("dev-eu", questions());
+
+        assertThat(result)
+                .startsWith("Connected to dev-eu (http://dev-eu:8080, Keycloak 26.5.3)")
+                .contains("Warning")
+                .contains("local");
+        assertThat(this.session.connection()).map(c -> c.target().name()).contains("dev-eu");
+    }
+
+    @Test
     void aFailedSwitchKeepsThePreviousConnection() {
         this.environment.put("KCC_LOCAL_PASSWORD", "a");
         this.environment.put("KCC_DEV_EU_SECRET", "b");
@@ -279,10 +296,12 @@ class ConnectionCommandsTest {
         private final Target target;
         private final List<String> events;
         private boolean closed;
+        private final boolean failingToClose;
 
-        RecordingConnection(final Target target, final List<String> events) {
+        RecordingConnection(final Target target, final List<String> events, final boolean failingToClose) {
             this.target = target;
             this.events = events;
+            this.failingToClose = failingToClose;
         }
 
         @Override
@@ -300,6 +319,9 @@ class ConnectionCommandsTest {
             if (!this.closed) {
                 this.closed = true;
                 this.events.add("close " + this.target.name());
+                if (this.failingToClose) {
+                    throw new IllegalStateException("cannot close " + this.target.name());
+                }
             }
         }
     }

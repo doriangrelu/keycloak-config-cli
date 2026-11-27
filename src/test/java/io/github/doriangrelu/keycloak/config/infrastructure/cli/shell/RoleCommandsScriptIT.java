@@ -69,14 +69,15 @@ class RoleCommandsScriptIT {
     private static Outcome script(final AssertableApplicationContext context, final String command) {
         StringWriter output = new StringWriter();
         ShellLauncher launcher = new ShellLauncher(
-                new ShellProperties(null, null, command, null, null),
+                new ShellProperties(null, null, command, null, null, null),
                 context.getBean(RuleBook.class),
                 context.getBean(ReadRealms.class),
                 context.getBean(ShellSession.class),
                 context.getBean(CommandParser.class),
                 context.getBean(CommandRegistry.class),
                 context.getBeanProvider(ShellRunner.class),
-                new PrintWriter(output, true));
+                new PrintWriter(output, true),
+                context.getBean(ConnectionCommands.class));
         launcher.run(new DefaultApplicationArguments());
         return new Outcome(launcher.getExitCode(), output.toString());
     }

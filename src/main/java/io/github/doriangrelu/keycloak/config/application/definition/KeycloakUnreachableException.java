@@ -28,8 +28,13 @@ public final class KeycloakUnreachableException extends ApplicationException {
 
     /**
      * @param reason why Keycloak could not be reached, as given by the HTTP client; it never holds the secret
+     * @param cause the client error: kept as a suppressed exception, never as the cause, because an interactive shell
+     *     prints the deepest cause only
      */
     public KeycloakUnreachableException(final Target target, final String reason, final Throwable cause) {
-        super("Cannot reach Keycloak at " + target.url() + " (target '" + target.name() + "'): " + reason, cause);
+        super("Cannot reach Keycloak at " + target.url() + " (target '" + target.name() + "'): " + reason, null);
+        if (cause != null) {
+            addSuppressed(cause);
+        }
     }
 }

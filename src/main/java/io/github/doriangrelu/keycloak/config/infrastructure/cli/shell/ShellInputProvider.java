@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
+import java.io.Console;
 import java.util.Objects;
 import org.springframework.shell.core.ConsoleInputProvider;
 
@@ -31,12 +32,20 @@ public final class ShellInputProvider extends ConsoleInputProvider {
 
     private final ShellPrompt prompt;
 
+    /** Reads on the system console. */
     public ShellInputProvider(final ShellPrompt prompt) {
+        this.prompt = Objects.requireNonNull(prompt, "prompt");
+    }
+
+    /** Reads on this console. */
+    public ShellInputProvider(final ShellPrompt prompt, final Console console) {
+        super(console);
         this.prompt = Objects.requireNonNull(prompt, "prompt");
     }
 
     @Override
     public String readInput() {
-        return getConsole().readLine(this.prompt.text() + " ");
+        // the prompt holds names typed by the user, which may hold a percent sign: it is an argument, never the format
+        return getConsole().readLine("%s", this.prompt.text() + " ");
     }
 }

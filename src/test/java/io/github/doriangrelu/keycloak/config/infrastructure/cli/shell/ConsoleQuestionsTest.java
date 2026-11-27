@@ -29,6 +29,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
@@ -359,5 +360,27 @@ class ConsoleQuestionsTest {
         ConsoleQuestions questions = answering();
 
         assertThatThrownBy(() -> questions.askSecret("Password of 'admin'")).isInstanceOf(MissingAnswerException.class);
+    }
+
+    /** A reader that takes the prompt for a format, as the one of the console does. */
+    private static final class FormattingReader implements InputReader {
+
+        private final List<String> shown = new ArrayList<>();
+
+        @Override
+        public char[] readPassword(final String prompt) {
+            this.shown.add(String.format(prompt));
+            return "typed".toCharArray();
+        }
+    }
+
+    @Test
+    void aPercentSignInTheQuestionIsNeverAFormat() {
+        FormattingReader reader = new FormattingReader();
+        ConsoleQuestions questions = new ConsoleQuestions(reader, new PrintWriter(this.output, true));
+
+        assertThat(questions.askSecret("Password of '100%d%s'")).isEqualTo("typed");
+
+        assertThat(reader.shown).singleElement().asString().contains("Password of '100%d%s'");
     }
 }

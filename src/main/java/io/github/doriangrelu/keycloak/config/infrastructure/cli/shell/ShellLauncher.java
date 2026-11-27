@@ -91,19 +91,6 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
     private final ConnectionCommands connections;
     private int exitCode = ExitCode.SUCCESS.code();
 
-    /** A launcher that cannot connect: {@code shell.target} is refused. */
-    ShellLauncher(
-            final ShellProperties properties,
-            final RuleBook ruleBook,
-            final ReadRealms readRealms,
-            final ShellSession session,
-            final CommandParser parser,
-            final CommandRegistry registry,
-            final ObjectProvider<ShellRunner> interactiveShell,
-            final PrintWriter output) {
-        this(properties, ruleBook, readRealms, session, parser, registry, interactiveShell, output, null);
-    }
-
     public ShellLauncher(
             final ShellProperties properties,
             final RuleBook ruleBook,
@@ -114,7 +101,6 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             final ObjectProvider<ShellRunner> interactiveShell,
             final PrintWriter output,
             final ConnectionCommands connections) {
-        this.connections = connections;
         this.properties = Objects.requireNonNull(properties, "properties");
         this.ruleBook = Objects.requireNonNull(ruleBook, "ruleBook");
         this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
@@ -123,6 +109,7 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
         this.registry = Objects.requireNonNull(registry, "registry");
         this.interactiveShell = Objects.requireNonNull(interactiveShell, "interactiveShell");
         this.output = Objects.requireNonNull(output, "output");
+        this.connections = Objects.requireNonNull(connections, "connections");
     }
 
     @Override
@@ -161,10 +148,7 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
         if (target.isEmpty()) {
             return;
         }
-        if (this.connections == null) {
-            throw new IllegalStateException("shell.target needs the connection commands");
-        }
-        InputReader reader = interactive instanceof InteractiveShellRunner runner ? runner.getReader() : NO_ANSWER;
+        InputReader reader = readerOf(interactive);
         try {
             this.output.println(this.connections.connect(target.get(), new ConsoleQuestions(reader, this.output)));
             this.output.flush();
@@ -173,6 +157,22 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             this.output.flush();
             throw e;
         }
+    }
+
+    /**
+     * The reader of the session, which asks on its console. A runner that cannot ask (the non-interactive one, or none:
+     * a script) answers nothing, and the secret then has to come from the environment: this is said, not hidden.
+     */
+    private static InputReader readerOf(final ShellRunner interactive) {
+        if (interactive instanceof InteractiveShellRunner runner) {
+            return runner.getReader();
+        }
+        if (interactive != null) {
+            logger.warn(
+                    "The shell runner {} cannot ask a question: the secret of shell.target must be in the environment",
+                    interactive.getClass().getSimpleName());
+        }
+        return NO_ANSWER;
     }
 
     /** An invalid rules file stops the shell before the first command, with the reason. */

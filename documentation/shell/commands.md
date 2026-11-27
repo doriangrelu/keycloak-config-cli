@@ -294,7 +294,7 @@ The shell holds one connection at a time. Connecting to another target opens the
 | Failure | Exit code |
 |---------|-----------|
 | Unknown target, invalid `kcc-targets.yaml`, or a secret missing in [script mode](README.md#script-mode) | `2` |
-| Keycloak cannot be reached or does not answer within `connect-timeout` | `3` |
+| Keycloak cannot be reached (no connection within `connect-timeout`) or does not answer | `3` |
 | Keycloak refuses the login (wrong password or secret, disabled account or client) | `4` |
 
 ### `disconnect`
@@ -304,7 +304,7 @@ Closes the connection to the current target.
 ```text
 kcc@dev> disconnect
 Disconnected from dev
-> disconnect
+kcc> disconnect
 Not connected: use 'connect <target>'
 ```
 
