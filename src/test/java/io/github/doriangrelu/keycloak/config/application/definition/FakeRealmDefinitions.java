@@ -22,6 +22,7 @@ final class FakeRealmDefinitions implements RealmDefinitions {
 
     final RealmDefinition realm;
     final List<ImportFile> importFiles = new ArrayList<>();
+    final List<ElementDefinition> importedWithElement = new ArrayList<>();
     Map<String, String> importedWith = Map.of();
     final List<String> unformatted = new ArrayList<>();
     final Map<ElementType, String> files = new EnumMap<>(ElementType.class);
@@ -44,6 +45,14 @@ final class FakeRealmDefinitions implements RealmDefinitions {
 
     @Override
     public List<ImportFile> importFiles(final String folder, final Map<String, String> values) {
+        this.importedWith = Map.copyOf(values);
+        return List.copyOf(this.importFiles);
+    }
+
+    @Override
+    public List<ImportFile> importFilesWith(
+            final String folder, final ElementDefinition element, final Map<String, String> values) {
+        this.importedWithElement.add(element);
         this.importedWith = Map.copyOf(values);
         return List.copyOf(this.importFiles);
     }

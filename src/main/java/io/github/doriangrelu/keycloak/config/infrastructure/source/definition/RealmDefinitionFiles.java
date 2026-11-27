@@ -50,6 +50,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -78,14 +79,79 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
     @Override
     public List<ImportFile> importFiles(final String folder, final Map<String, String> values) {
         Objects.requireNonNull(values, "values");
+        return renderedFiles(folder, values, Optional.empty());
+    }
+
+    @Override
+    public List<ImportFile> importFilesWith(
+            final String folder, final ElementDefinition element, final Map<String, String> values) {
+        Objects.requireNonNull(element, "element");
+        Objects.requireNonNull(values, "values");
         Path directory = this.root.resolve(folder);
+        requireFolder(folder, directory);
+        // The same edit as save, kept in memory
+        Edit edit = edit(folder, element, Optional.empty(), ElementKeys.empty(), true);
+        return renderedFiles(
+                folder,
+                values,
+                Optional.of(
+                        new Written(directory.resolve(edit.name()), edit.tree().render())));
+    }
+
+    /** A file as {@link #save} would write it. */
+    private record Written(Path file, String content) {}
+
+    private void requireFolder(final String folder, final Path directory) {
         if (!Files.isDirectory(directory) || !folders().contains(folder)) {
             throw new UnknownRealmFolderException(folder);
         }
+    }
+
+    /**
+     * The files the import reads for the folder, rendered; {@code written} replaces the file of the same name, or is
+     * added in the import order when the folder has no such file.
+     */
+    private List<ImportFile> renderedFiles(
+            final String folder, final Map<String, String> values, final Optional<Written> written) {
+        Path directory = this.root.resolve(folder);
+        requireFolder(folder, directory);
         // The import defaults: no exclusion, hidden files ignored
         FileLocations locations = new FileLocations(new PathMatchingResourcePatternResolver(), List.of(), false);
-        ImportFileReader reader = new ImportFileReader(locations, Optional.of(new MustacheTemplates(values)));
-        return reader.read(List.of(directory.toUri() + "*"));
+        String location = directory.toUri() + "*";
+        MustacheTemplates templates = new MustacheTemplates(values);
+        if (written.isEmpty()) {
+            return new ImportFileReader(locations, Optional.of(templates)).read(List.of(location));
+        }
+        List<ImportFile> files =
+                new ArrayList<>(new ImportFileReader(locations, Optional.empty()).read(List.of(location)));
+        String name = written.get().file().getFileName().toString();
+        boolean replaced = false;
+        for (int i = 0; i < files.size(); i++) {
+            ImportFile file = files.get(i);
+            if (fileName(file).equals(name)) {
+                files.set(
+                        i,
+                        new ImportFile(
+                                file.location(), file.name(), written.get().content()));
+                replaced = true;
+            }
+        }
+        if (!replaced) {
+            files.add(new ImportFile(
+                    location,
+                    written.get().file().toFile().toURI().toString(),
+                    written.get().content()));
+            files.sort(Comparator.comparing(ImportFile::name));
+        }
+        return files.stream()
+                .map(file ->
+                        new ImportFile(file.location(), file.name(), templates.render(file.name(), file.content())))
+                .toList();
+    }
+
+    private static String fileName(final ImportFile file) {
+        String name = file.name();
+        return name.substring(name.lastIndexOf('/') + 1);
     }
 
     @Override

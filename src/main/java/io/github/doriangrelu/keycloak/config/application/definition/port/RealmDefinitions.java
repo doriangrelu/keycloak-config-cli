@@ -118,4 +118,13 @@ public interface RealmDefinitions {
      * @throws InvalidImportException when a file cannot be read or a placeholder has no value
      */
     List<ImportFile> importFiles(String folder, Map<String, String> values);
+
+    /**
+     * The files the import of a realm folder would read after {@code save(folder, element, Optional.empty(),
+     * ElementKeys.empty())}: same order, rendering and errors as {@link #importFiles}, the element written in its file
+     * (or in the file {@code save} would create). Computed in memory: nothing is written, no file is created.
+     *
+     * @param values the explicit value of each variable; a value never appears in an error message
+     */
+    List<ImportFile> importFilesWith(String folder, ElementDefinition element, Map<String, String> values);
 }
