@@ -43,7 +43,7 @@ Connecté, la confirmation de première déclaration d'un type liste ce que le p
 
 ### US-008-04 — Extraction d'un realm
 
-**Statut :** À faire
+**Statut :** Terminé
 `realm extract <realm> [--folder] [--format] [--with-users]` : nouveau dossier, contenu normalisé (EPIC-005), découpé (`StandardLayout`), secrets en variables, liste des variables à fournir. Critère : un dry-run juste après n'annonce aucun changement.
 
 ### US-008-05 — Comparaison d'un élément
@@ -109,3 +109,18 @@ Documentation utilisateur (anglais) du mode connecté ; scénarios du sample : c
 - Tests : `RealmImportFilesWithElementTest`, `DeclarationDeletionsTest`, `ResolveVariablesTest`, `TemplatedValueTest`, `FirstDeclarationConnectedIT`, `FirstDeclarationKeycloakIT` (la liste est celle du `realm dry-run` lancé ensuite ; les clients créés par Keycloak n'y figurent pas).
 - Exécutée par des sous-agents ; les revues ont fait corriger avant la fusion : un client à l'identifiant variabilisé comparé sans rendu, une simulation en échec qui faisait échouer la création, une variable propre au nouvel élément jamais résolue, un fichier au nom contenant une espace dupliqué en mémoire.
 - Points mineurs reportés : le texte d'échec en script se lit « …Confirm? In a script, add --declare-type. » ; la méthode `save` à cinq arguments de `SaveElement` est publique ; l'ancien `resolveKnown(folder, remembered)` n'est plus utilisé que par les tests ; la simulation a lieu avant les vérifications de lecture seule et des règles ; `TemplatedValue.rendered` gère mal `{{{x}}}` ; les sous-groupes retirés par mise à jour d'un groupe existant ne sont pas listés ; pas de test Keycloak montrant que les rôles par défaut du realm sont écartés.
+
+### US-008-04
+
+- `realm extract <realm> [--folder] [--format yaml|json] [--with-users]` : export partiel du realm sur la cible, normalisé par le moteur de l'EPIC-005 (realm de référence de la version de la cible, sinon le plus proche), découpé selon `StandardLayout` dans un nouveau dossier (refusé s'il existe), puis le realm est ouvert. Realm absent : code 4.
+- Secrets → variables (`SecretVariableNames`) : secret d'un client (`{{shopSecret}}`), toute valeur masquée ou de nom secret (`…secret`, `…password`, `…privateKey`, `…apiKey`) de la configuration d'un fournisseur d'identité, du serveur SMTP et des authentificateurs, identifiant LDAP, clés privées des clients SAML. **Keycloak 26.5.3 rend en clair, dans l'export partiel, les clés privées SAML et les secrets reCAPTCHA** : ils sont variabilisés. `client.secret.rotated` est écarté avec un avertissement. Les variables restant à fournir sont listées.
+- Décision de l'utilisateur (option A) : les secrets actuels des clients sont lus par l'API et gardés dans la mémoire de la session pour le realm ouvert ; ils ne sont jamais écrits ni affichés.
+- Décisions de l'utilisateur prises en cours de story :
+  - **l'import ne compte plus comme un changement un secret que Keycloak masque** (`**********` : mot de passe SMTP, configuration d'un fournisseur d'identité ou d'un composant) ; il l'envoie quand l'élément est mis à jour pour une autre raison ; le plan affiche une note « not compared ». Exception consignée dans l'ADR-007 ; vaut aussi pour l'import en ligne de commande (CHANGELOG) ;
+  - **le profil utilisateur est extrait** quand il diffère de celui d'un nouveau realm (référence `baseline/26.5.3/user-profile`).
+- Les attributs du realm sont écrits en entier (l'import remplace la table entière). Utilisateurs avec `--with-users` seulement, sans identifiants ni mots de passe, hors annuaire.
+- Critère de l'ADR vérifié contre Keycloak : `realm extract` puis `realm dry-run` (secrets des clients pris dans la mémoire, autres variables par `--var`) annonce `Dry run: no change pending.`, y compris avec `frontendUrl`, un client SAML et des utilisateurs.
+- Tests : `SecretVariableNamesTest`, `ExtractedRealmFilesTest`, `TargetExtractIT`, `ImportHiddenValuesIT`, `RealmExtractionTest`, `ExtractRealmTest`, `RealmExtractCommandsIT`, `RealmExtractKeycloakIT`.
+- Exécutée par des sous-agents ; les revues ont fait corriger avant la fusion : un message d'erreur qui citait le document, des secrets masqués retirés au lieu d'être variabilisés, des attributs du realm écrits partiellement, et des secrets que Keycloak exporte en clair (SAML, reCAPTCHA).
+- Limites connues (documentées) : le premier import d'un realm extrait avec un profil personnalisé ajoute le marqueur `userProfileEnabled` (un changement, une fois) ; un fournisseur d'identité sans flux de première connexion (`null`) est mis à jour une fois par l'import ; un client avec Authorization Services a une fois été annoncé modifié sans cause trouvée (25 essais sans) ; la règle des noms de secrets est heuristique ; les comptes de service ne sont pas extraits ; un changement du seul secret masqué n'est ni annoncé ni appliqué.
+- Points mineurs reportés : l'échec de lecture des secrets des clients n'a pas de raison affichée ; pas de test d'un client confidentiel sans secret rendu ; un échec de `realm open` après l'écriture perd le résumé ; un document `null` donne une NullPointerException ; `dry-run.md` et `commands.md` divergent sur le libellé de la limite Authorization Services.
