@@ -29,6 +29,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.DeclarationD
 import io.github.doriangrelu.keycloak.config.application.definition.EditClient;
 import io.github.doriangrelu.keycloak.config.application.definition.EditGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.EditRole;
+import io.github.doriangrelu.keycloak.config.application.definition.ExtractRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ImportOpenedRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
@@ -80,6 +81,12 @@ public class ShellCommandConfiguration {
             final ReorganizeRealm reorganizeRealm,
             final ShellSession shellSession) {
         return new RealmCommands(readRealms, formatRealm, createRealm, reorganizeRealm, shellSession);
+    }
+
+    @Bean
+    public RealmExtractCommands realmExtractCommands(
+            final ExtractRealm extractRealm, final RealmCommands realmCommands, final ShellSession shellSession) {
+        return new RealmExtractCommands(extractRealm, realmCommands, shellSession);
     }
 
     @Bean

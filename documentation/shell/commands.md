@@ -320,6 +320,62 @@ dev  https://keycloak.dev.example.org  client_credentials  (connected)
 
 Without a file, it says `No target in kcc-targets.yaml`.
 
+## Extracting a realm of the target
+
+### `realm extract <realm>`
+
+Reads a realm of the connected target and writes it to a new realm folder, ready to import, then opens it. It is the way to bring a realm made by hand in the admin console under the files: extract it, commit the folder, then change it with the shell.
+
+| Option | Meaning |
+|--------|---------|
+| `--folder <folder>` | The folder to write. Default: the name of the realm. The same checks as [`realm create`](#realm-create): a plain name, and no existing folder, even with another case |
+| `--format yaml\|json` | The format of the files. Default: `yaml` |
+| `--with-users` | Extract the users too (see below) |
+
+```text
+kcc@dev> realm extract shop
+Realm 'shop' extracted to shop/: 00-realm.yaml, 20-clients.yaml, 30-roles.yaml, 40-groups.yaml
+Variables to give at import: googleClientSecret, smtpPassword
+(client secrets read from dev and kept for this session)
+Default realm role 'offline_access' was deleted in Keycloak: an import may bring it back
+Realm 'shop' opened (2 clients, 2 roles, 2 groups)
+kcc:shop@dev> realm dry-run --var googleClientSecret=... --var smtpPassword=...
+Dry run of 'shop' on dev (https://keycloak.dev.example.org)
+Realm 'shop': 0 change(s)
+  (not compared: smtpServer.password of Realm settings 'shop', Keycloak hides it)
+  (not compared: config.clientSecret of Identity provider 'google', Keycloak hides it)
+Dry run: no change pending.
+```
+
+What is written:
+
+- The whole realm, read with the partial export of the admin API (groups, roles and clients included), then [normalized](../advanced/normalization.md) against the reference realm of the version of the target (or the closest reference version): what Keycloak sets by default is left out, and a type that holds only defaults is not written. The user profile is written when it differs from the one Keycloak gives a new realm.
+- The files of the [standard layout](files.md#the-standard-layout) (`00-realm`, `20-clients`, `30-roles`, `40-groups`, `50-links`), each with the `realm` key, in the chosen format; the folder is written whole or not at all.
+- No secret value: each secret becomes a [placeholder](../advanced/templating.md) whose name follows the rule of the shell (camel case, separators removed), with a suffix `2`, `3`… when two secrets would have the same name:
+
+| Secret | Variable |
+|--------|----------|
+| Secret of a confidential client | `{{<clientId>Secret}}`: `shop` gives `{{shopSecret}}`, `my-api` gives `{{myApiSecret}}` |
+| Secret of an identity provider (`config.clientSecret`) | `{{<alias>ClientSecret}}`: `google` gives `{{googleClientSecret}}` |
+| SMTP password (`smtpServer.password`) | `{{smtpPassword}}` |
+| Bind credential of a component (`config.bindCredential`, LDAP) | `{{<component name>BindCredential}}` |
+
+A value Keycloak hides that is not one of these (it answers `**********`) is not written, and the command says so: `<field> of <element> is hidden by Keycloak and was not extracted`.
+
+**The secrets of the clients are kept for the session.** Keycloak gives back the current secret of a confidential client: right after writing the files, the command reads them and keeps them in the memory of the session, under the name of their variable, as if they had been given with `--var`. They are never written nor shown, and they are forgotten, like any value, when the realm or the target changes or when the shell exits. So `Variables to give at import` lists only the other variables, the ones Keycloak never gives back (identity providers, SMTP, LDAP): give them to `realm dry-run` or `realm import` with `--var`, `KCC_VAR_<name>`, or the question. When the secrets of the clients cannot be read, the files stay written and the realm opened, and the command prints `The client secrets could not be read from <target>: give them at import`; they are then listed with the other variables.
+
+**Users.** Without `--with-users`, no user is written. With it, the users are read with their `username`, `enabled`, `email`, `emailVerified`, `firstName`, `lastName`, `attributes`, `requiredActions`, realm roles, client roles and groups; never an identifier, a date, a password or any other credential. The users from a directory (`federationLink`) and the service accounts are left out, and the command prints `<n> users from a directory or service accounts not extracted`. Remember that the import never deletes a user.
+
+The normalization warnings are printed too, such as `Default realm role 'offline_access' was deleted in Keycloak: an import may bring it back`. The extraction does not check the [rules](rules.md); opening the realm then reports the findings, as `realm open` does.
+
+Right after the extraction, on the same target, `realm dry-run` with the listed variables given their current value announces `Dry run: no change pending.`, with the hidden secrets noted as not compared (see [Secrets Keycloak hides](../advanced/dry-run.md#secrets-keycloak-hides)). One exception: a realm with a user profile of its own. The import manages the user profile only when the realm declares the attribute `userProfileEnabled`, so the extraction writes it with the other realm attributes; on a realm made by hand, which does not have that attribute, the first dry run shows one change, `~ Realm settings '<realm>' (attributes)`. Once imported, the attribute exists and the next dry runs show no change.
+
+| Failure | Exit code |
+|---------|-----------|
+| Not connected (`Not connected: use 'connect <target>'`), an invalid folder name, an existing folder, or an unknown format: Keycloak is not called and nothing is written | `2` |
+| Keycloak cannot be reached or does not answer in time: nothing is written | `3` |
+| The target has no such realm (`Realm '<realm>' not found on <target>`), or Keycloak refuses the account of the target: nothing is written | `4` |
+
 ## Importing the opened realm
 
 These commands import the opened realm on the connected target: they need an opened realm (`No realm opened: use 'realm open <folder>'`) and a connection (`Not connected: use 'connect <target>'`), both with exit code `2`. The files imported are the ones the command-line import would read with `import.files.locations=<folder of the realm>`: hidden files are skipped, the files are read in name order, and the import runs with the default import options (`import.validate`, `import.behaviors.*`), which the shell does not let change. As with the command-line import, what the files of the realm no longer declare is deleted from Keycloak.
@@ -333,14 +389,14 @@ These commands import the opened realm on the connected target: they need an ope
 Each [placeholder](../advanced/templating.md) of the realm takes its value from, in this order:
 
 1. the `--var <name>=<value>` option of the command;
-2. the value the session remembers (see below);
+2. the value the session remembers (see below), including the secrets of the clients [`realm extract`](#realm-extract-realm) read;
 3. the environment variable `KCC_VAR_<name>`, with the name as written in the placeholder (`{{shopSecret}}` reads `KCC_VAR_shopSecret`);
 4. the default value written in the placeholder, `{{name:default}}`, when every placeholder of the variable gives one: a variable used once without a default needs a value, which then applies to every placeholder;
 5. otherwise the question `Value of '<name>'`, asked without echo when the name contains `secret` or `password` (any case).
 
 In [script mode](README.md#script-mode) nothing can be asked: a variable without a value fails with `Variable '<name>' has no value: give it with --var <name>=… or KCC_VAR_<name>` and exit code `2`, before anything is sent to Keycloak.
 
-The session remembers the values given with `--var` and the answers to the questions, in memory only, so that `realm import` after `realm dry-run` does not ask again. They are forgotten by `realm open`, `realm create`, `connect`, `disconnect` and when the shell exits. A value is never printed or written: the plan names the changed fields, never their values, and a script prints `--var <name>=***` when it echoes its commands. It is not logged either, at the default level nor with `DEBUG` or `TRACE` logging: the shell keeps at `INFO` the loggers that would show it (the command parser of Spring Shell, and the logging of the rendered import files and of the compared resources). The HTTP wire log (`logging.level.http=debug`) is the exception: it shows the requests sent to Keycloak, values included, as for the command-line import. A file that is no longer valid once its variables are rendered is named with the line and the column, or the path of the value, never with its content.
+The session remembers the values given with `--var` and the answers to the questions, in memory only, so that `realm import` after `realm dry-run` does not ask again. They are forgotten by `realm open`, `realm create`, `realm extract` (which then keeps the secrets of the clients it read, see [`realm extract`](#realm-extract-realm)), `connect`, `disconnect` and when the shell exits. A value is never printed or written: the plan names the changed fields, never their values, and a script prints `--var <name>=***` when it echoes its commands. It is not logged either, at the default level nor with `DEBUG` or `TRACE` logging: the shell keeps at `INFO` the loggers that would show it (the command parser of Spring Shell, and the logging of the rendered import files and of the compared resources). The HTTP wire log (`logging.level.http=debug`) is the exception: it shows the requests sent to Keycloak, values included, as for the command-line import. A file that is no longer valid once its variables are rendered is named with the line and the column, or the path of the value, never with its content.
 
 ### `realm dry-run`
 

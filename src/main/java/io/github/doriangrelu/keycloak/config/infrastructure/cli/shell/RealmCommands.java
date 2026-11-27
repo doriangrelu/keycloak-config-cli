@@ -127,7 +127,8 @@ public class RealmCommands {
         return Optional.ofNullable(option).map(String::strip).filter(value -> !value.isEmpty());
     }
 
-    private static DefinitionFormat formatOf(final String format) {
+    /** @throws UnknownFormatException when the format is neither yaml nor json */
+    static DefinitionFormat formatOf(final String format) {
         return switch (format.toLowerCase(Locale.ROOT)) {
             case "yaml" -> DefinitionFormat.YAML;
             case "json" -> DefinitionFormat.JSON;

@@ -28,6 +28,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.CreateRole;
 import io.github.doriangrelu.keycloak.config.application.definition.EditClient;
 import io.github.doriangrelu.keycloak.config.application.definition.EditGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.EditRole;
+import io.github.doriangrelu.keycloak.config.application.definition.ExtractRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
@@ -181,6 +182,11 @@ public class ShellAdaptersConfiguration {
     @Bean
     public CreateRealm createRealm(final RealmDefinitions realmDefinitions, final RuleBook ruleBook) {
         return new CreateRealm(realmDefinitions, ruleBook);
+    }
+
+    @Bean
+    public ExtractRealm extractRealm(final RealmDefinitions realmDefinitions, final CreateRealm createRealm) {
+        return new ExtractRealm(realmDefinitions, createRealm);
     }
 
     @Bean

@@ -2,7 +2,7 @@
 
 The shell is a guided editor for the realm definition files. It asks questions, explains the choices, and writes the clients, roles and groups of a realm in the files you later import with keycloak-config-cli. You do not need to know the export format of Keycloak: the shell translates your answers into the right keys, and applies [rules](rules.md) that keep the result safe.
 
-The shell edits files. It connects to Keycloak only when you ask it to, with [`connect`](#connecting-to-keycloak); connected, it shows what importing the opened realm would change and imports it, see [Dry run and import](#dry-run-and-import).
+The shell edits files. It connects to Keycloak only when you ask it to, with [`connect`](#connecting-to-keycloak); connected, it shows what importing the opened realm would change and imports it, see [Dry run and import](#dry-run-and-import), and it extracts a realm of the server into files, see [Extracting a realm](#extracting-a-realm).
 
 ## Pages
 
@@ -120,11 +120,33 @@ KCC_DEV_SECRET=... KCC_VAR_shopSecret=... java -jar keycloak-config-cli.jar --ru
   --shell.root=./realms --shell.realm=shop --shell.target=dev --shell.command="realm import --apply"
 ```
 
+### Extracting a realm
+
+A realm made by hand in the admin console is brought under the files with [`realm extract`](commands.md#realm-extract-realm): connect, extract, then check with a dry run that the files match the target.
+
+```text
+kcc> connect dev
+Connected to dev (https://keycloak.dev.example.org, Keycloak 26.5.3)
+kcc@dev> realm extract shop
+Realm 'shop' extracted to shop/: 00-realm.yaml, 20-clients.yaml, 30-roles.yaml, 40-groups.yaml
+Variables to give at import: googleClientSecret, smtpPassword
+(client secrets read from dev and kept for this session)
+Realm 'shop' opened (2 clients, 2 roles, 2 groups)
+kcc:shop@dev> realm dry-run --var googleClientSecret=... --var smtpPassword=...
+Dry run of 'shop' on dev (https://keycloak.dev.example.org)
+Realm 'shop': 0 change(s)
+  (not compared: smtpServer.password of Realm settings 'shop', Keycloak hides it)
+  (not compared: config.clientSecret of Identity provider 'google', Keycloak hides it)
+Dry run: no change pending.
+```
+
+The files hold no secret: each one is a placeholder (`{{shopSecret}}`, `{{googleClientSecret}}`, `{{smtpPassword}}`). The current secrets of the confidential clients are read and kept in the memory of the session, never written nor shown; the secrets Keycloak never gives back are listed, to give at import. A realm with a user profile of its own shows one change on its first dry run (`~ Realm settings 'shop' (attributes)`): see [`realm extract`](commands.md#realm-extract-realm). Commit the folder, then change it with the shell.
+
 In script mode (`shell.command` or `shell.script`), `realm dry-run` ends with exit code `10` when changes are pending, as the command-line [dry run](../advanced/dry-run.md) does; in an interactive session, pending changes are not an error.
 
 ## A session
 
-A session works on one realm at a time. `realm open <folder>` or `realm create` opens a realm; the other commands (`client`, `role`, `group`, `variables`, `realm show`, `realm format`, `realm reorganize`) work on it. `realm list` and `rules list` need no open realm.
+A session works on one realm at a time. `realm open <folder>`, `realm create` or `realm extract <realm>` (connected) opens a realm; the other commands (`client`, `role`, `group`, `variables`, `realm show`, `realm format`, `realm reorganize`) work on it. `realm list` and `rules list` need no open realm.
 
 | Command | Purpose |
 |---------|---------|
