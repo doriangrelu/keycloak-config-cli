@@ -57,6 +57,20 @@ public interface Reconciler<K, T extends Resource<K>> {
         return false;
     }
 
+    /**
+     * The target as it compares with the current resource: the values Keycloak hides in {@code current} (it answers a
+     * mask, {@link io.github.doriangrelu.keycloak.config.domain.common.HiddenValues}) are taken from it, so that they
+     * never count as a change. The target itself is what an update sends.
+     */
+    default T comparable(T current, T target) {
+        return target;
+    }
+
+    /** The fields {@code desired} declares whose value Keycloak hides in {@code current}: not compared. */
+    default List<String> hiddenFields(T current, T desired) {
+        return List.of();
+    }
+
     /** Resources created by Keycloak itself, such as default roles: never deleted. */
     boolean isOwnedByKeycloak(RealmContext context, T resource);
 

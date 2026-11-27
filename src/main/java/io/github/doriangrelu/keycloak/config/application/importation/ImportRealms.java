@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.application.importation.port.Import
 import io.github.doriangrelu.keycloak.config.application.importation.port.RealmDeclarationParser;
 import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway;
 import io.github.doriangrelu.keycloak.config.application.reconcile.DesiredState;
+import io.github.doriangrelu.keycloak.config.application.reconcile.NotComparedValue;
 import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
 import io.github.doriangrelu.keycloak.config.application.reconcile.RealmContext;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
@@ -164,7 +165,11 @@ public final class ImportRealms {
 
     private static ImportReport reportOf(final Map<String, RealmContext> contexts) {
         Map<String, List<PlannedChange>> plans = new LinkedHashMap<>();
-        contexts.forEach((realm, context) -> plans.put(realm, context.plan()));
-        return new ImportReport(plans);
+        Map<String, List<NotComparedValue>> notCompared = new LinkedHashMap<>();
+        contexts.forEach((realm, context) -> {
+            plans.put(realm, context.plan());
+            notCompared.put(realm, context.notCompared());
+        });
+        return new ImportReport(plans, notCompared);
     }
 }

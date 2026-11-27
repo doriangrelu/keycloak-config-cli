@@ -43,6 +43,21 @@ public final class Changes {
      */
     public static <K, T extends Resource<K>> List<Change<T>> toApply(
             final Collection<T> desired, final Collection<T> actual, final BinaryOperator<T> merge) {
+        return toApply(desired, actual, merge, (current, target) -> target);
+    }
+
+    /**
+     * Creations and updates needed to reach {@code desired}, an update being planned only if the merged resource, made
+     * comparable with the actual one, differs from it. The update carries the merged resource itself.
+     *
+     * @param comparable gives the merged resource as it compares with the actual one, from the actual one and the
+     *     merged one: the values Keycloak hides are taken from the actual resource
+     */
+    public static <K, T extends Resource<K>> List<Change<T>> toApply(
+            final Collection<T> desired,
+            final Collection<T> actual,
+            final BinaryOperator<T> merge,
+            final BinaryOperator<T> comparable) {
         Map<K, T> actualByKey = byKey(actual);
         List<Change<T>> changes = new ArrayList<>();
         for (T wanted : desired) {
@@ -52,7 +67,7 @@ public final class Changes {
                 continue;
             }
             T target = merge.apply(current, wanted);
-            if (!target.equals(current)) {
+            if (!comparable.apply(current, target).equals(current)) {
                 changes.add(new Change.Update<>(current, target));
             }
         }

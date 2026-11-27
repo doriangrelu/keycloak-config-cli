@@ -111,10 +111,14 @@ public final class ReconciliationEngine {
         }
 
         List<T> current = currentOf(context, reconciler, desired);
-        List<Change<T>> changes =
-                Changes.toApply(desired, current, (actual, wanted) -> reconciler.merge(context, actual, wanted));
+        noteHiddenValues(context, reconciler, desired, current);
+        List<Change<T>> changes = Changes.toApply(
+                desired,
+                current,
+                (actual, wanted) -> reconciler.merge(context, actual, wanted),
+                reconciler::comparable);
         run(context, reconciler, changes, change -> {
-            record(context, reconciler.type(), change);
+            record(context, reconciler.type(), shown(reconciler, change));
             if (context.isDryRun()) {
                 return;
             }
@@ -125,6 +129,33 @@ public final class ReconciliationEngine {
                     throw new IllegalStateException("Unexpected deletion while applying " + deletion.resource());
             }
         });
+    }
+
+    /** The declared values Keycloak hides: noted as not compared. */
+    private static <K, T extends Resource<K>> void noteHiddenValues(
+            final RealmContext context,
+            final Reconciler<K, T> reconciler,
+            final List<T> desired,
+            final List<T> current) {
+        Map<K, T> currentByKey = new LinkedHashMap<>();
+        current.forEach(resource -> currentByKey.putIfAbsent(resource.key(), resource));
+        for (T wanted : desired) {
+            T actual = currentByKey.get(wanted.key());
+            if (actual != null) {
+                reconciler
+                        .hiddenFields(actual, wanted)
+                        .forEach(field ->
+                                context.noteNotCompared(new NotComparedValue(reconciler.type(), wanted.key(), field)));
+            }
+        }
+    }
+
+    /** The change as the plan shows it: an update without the values Keycloak hides, which are not compared. */
+    private static <K, T extends Resource<K>> Change<T> shown(
+            final Reconciler<K, T> reconciler, final Change<T> change) {
+        return change instanceof Change.Update<T> update
+                ? new Change.Update<>(update.current(), reconciler.comparable(update.current(), update.resource()))
+                : change;
     }
 
     private static <K, T extends Resource<K>> void pruneType(

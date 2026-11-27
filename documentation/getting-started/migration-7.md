@@ -64,7 +64,7 @@ Former versions stored their remote state and checksums in realm attributes name
 
 ## Every Run Compares Every File
 
-There is no cache any more: every import compares every file with Keycloak. A change made by hand in Keycloak, on something the files declare, is undone by the next import, and a dry run always shows it.
+There is no cache any more: every import compares every file with Keycloak. A change made by hand in Keycloak, on something the files declare, is undone by the next import, and a dry run always shows it. The exception is a secret Keycloak never gives back (SMTP password, secret of an identity provider, bind credential of an LDAP user storage): it cannot be compared, so a change of that secret alone is neither shown nor applied (see [Secrets Keycloak hides](../advanced/dry-run.md#secrets-keycloak-hides)).
 
 All the files are read and parsed before anything is changed: an unreadable file, an invalid template or an invalid protection rule fails the import with exit code `2`, and Keycloak is left as it was.
 

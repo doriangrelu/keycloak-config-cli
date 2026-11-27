@@ -64,6 +64,16 @@ public final class IdentityProviderReconciler implements Reconciler<String, Iden
     }
 
     @Override
+    public IdentityProvider comparable(final IdentityProvider current, final IdentityProvider target) {
+        return target.withHiddenValuesOf(current);
+    }
+
+    @Override
+    public List<String> hiddenFields(final IdentityProvider current, final IdentityProvider desired) {
+        return current.hiddenFieldsOf(desired);
+    }
+
+    @Override
     public void create(final RealmContext context, final IdentityProvider resource) {
         this.identityProviders.create(context.realm(), resource);
     }

@@ -88,7 +88,7 @@ public class ImportRunner implements CommandLineRunner, ExitCodeGenerator {
      * configured. Pending changes give exit code {@code 10} (ADR-005).
      */
     private ExitCode reportDryRun(final ImportReport importReport) {
-        DryRunReport report = DryRunReport.of(importReport.plans());
+        DryRunReport report = DryRunReport.of(importReport);
         String content = importConfigProperties.getDryRunFormat() == ImportConfigProperties.DryRunFormat.JSON
                 ? report.toJson()
                 : report.toText();

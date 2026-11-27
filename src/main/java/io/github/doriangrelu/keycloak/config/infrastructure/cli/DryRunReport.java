@@ -20,9 +20,11 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
 import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
 import io.github.doriangrelu.keycloak.config.domain.common.UnmodeledAttributes;
 import java.lang.reflect.RecordComponent;
@@ -37,15 +39,22 @@ import java.util.Set;
 
 /**
  * The report of a dry run (EPIC-004): by realm, the resources to create, update and delete, with the fields an update
- * changes. Field values are never shown, so that no secret ends up in a log.
+ * changes, then the values the files declare that Keycloak hides, which are not compared and count as no change.
+ * Field values are never shown, so that no secret ends up in a log.
  */
 public final class DryRunReport {
 
     /** A change of the report. */
     record Entry(String type, String label, String key, String change, List<String> fields) {}
 
-    /** The changes of one realm. */
-    record RealmEntry(String realm, List<Entry> changes) {}
+    /** A value the files declare that Keycloak hides: not compared, never a change. */
+    record NotCompared(String type, String label, String key, String field) {}
+
+    /** The changes of one realm, and the values that were not compared. */
+    record RealmEntry(
+            String realm,
+            List<Entry> changes,
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<NotCompared> notCompared) {}
 
     private final List<RealmEntry> realms;
 
@@ -55,9 +64,23 @@ public final class DryRunReport {
 
     /** @param plans changes by realm, as the reconciliation planned them */
     public static DryRunReport of(final Map<String, List<PlannedChange>> plans) {
+        return of(new ImportReport(plans));
+    }
+
+    /** The report of an import: its changes, and the values Keycloak hides, which were not compared. */
+    public static DryRunReport of(final ImportReport report) {
         List<RealmEntry> realms = new ArrayList<>();
-        plans.forEach((realm, changes) -> realms.add(new RealmEntry(
-                realm, changes.stream().map(DryRunReport::entryOf).toList())));
+        report.plans()
+                .forEach((realm, changes) -> realms.add(new RealmEntry(
+                        realm,
+                        changes.stream().map(DryRunReport::entryOf).toList(),
+                        report.notCompared(realm).stream()
+                                .map(value -> new NotCompared(
+                                        value.type().name(),
+                                        value.type().label(),
+                                        String.valueOf(value.key()),
+                                        value.field()))
+                                .toList())));
         return new DryRunReport(realms);
     }
 
@@ -132,6 +155,11 @@ public final class DryRunReport {
                         change.label(),
                         change.key(),
                         change.fields().isEmpty() ? "" : " (" + String.join(", ", change.fields()) + ")"));
+            }
+            for (NotCompared value : realm.notCompared()) {
+                text.append(String.format(
+                        "  (not compared: %s of %s '%s', Keycloak hides it)%n",
+                        value.field(), value.label(), value.key()));
             }
         }
         return text.toString();

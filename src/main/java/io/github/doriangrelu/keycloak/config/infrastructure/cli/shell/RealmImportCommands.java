@@ -78,7 +78,7 @@ public class RealmImportCommands {
         writer.flush();
         ImportReport plan =
                 importer(context.inputReader(), writer).dryRun(folder, connection, given, this.session.variables());
-        DryRunReport report = DryRunReport.of(plan.plans());
+        DryRunReport report = DryRunReport.of(plan);
         if (report.pendingChanges() > 0) {
             this.session.notePendingChanges();
         }
@@ -113,7 +113,7 @@ public class RealmImportCommands {
         ImportOpenedRealm importer = importer(context.inputReader(), writer);
         PreparedImport prepared = importer.prepare(folder, connection, given, this.session.variables());
         ImportReport plan = prepared.report();
-        DryRunReport planned = DryRunReport.of(plan.plans());
+        DryRunReport planned = DryRunReport.of(plan);
         String changes = planned.changesText().stripTrailing();
         if (!changes.isEmpty()) {
             writer.println(changes);

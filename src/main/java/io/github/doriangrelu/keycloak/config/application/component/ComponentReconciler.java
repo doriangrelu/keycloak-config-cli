@@ -87,6 +87,16 @@ public final class ComponentReconciler implements Reconciler<Component.Key, Comp
     }
 
     @Override
+    public Component comparable(final Component current, final Component target) {
+        return target.withHiddenValuesOf(current);
+    }
+
+    @Override
+    public List<String> hiddenFields(final Component current, final Component desired) {
+        return current.hiddenFieldsOf(desired);
+    }
+
+    @Override
     public void create(final RealmContext context, final Component resource) {
         this.components.create(context.realm(), resource);
     }

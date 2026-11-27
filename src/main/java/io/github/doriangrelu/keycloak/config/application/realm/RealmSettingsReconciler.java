@@ -69,6 +69,16 @@ public final class RealmSettingsReconciler implements Reconciler<String, RealmSe
     }
 
     @Override
+    public RealmSettings comparable(final RealmSettings current, final RealmSettings target) {
+        return target.withHiddenValuesOf(current);
+    }
+
+    @Override
+    public List<String> hiddenFields(final RealmSettings current, final RealmSettings desired) {
+        return current.hiddenFieldsOf(desired);
+    }
+
+    @Override
     public void create(final RealmContext context, final RealmSettings resource) {
         this.realms.create(resource);
     }

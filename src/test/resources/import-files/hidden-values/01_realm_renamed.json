@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "realm": "realmWithHiddenValues",
+  "displayName": "Hidden values renamed",
+  "smtpServer": {
+    "host": "smtp.example.org",
+    "port": "587",
+    "from": "noreply@example.org",
+    "auth": "true",
+    "user": "mailer",
+    "password": "smtp-password-value"
+  },
+  "identityProviders": [
+    {
+      "alias": "google",
+      "providerId": "google",
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "enabled": true,
+      "config": {
+        "clientId": "google-client",
+        "clientSecret": "google-secret-value"
+      }
+    }
+  ]
+}

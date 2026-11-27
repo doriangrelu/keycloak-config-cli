@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.domain.identityprovider.model;
 
+import io.github.doriangrelu.keycloak.config.domain.common.HiddenValues;
 import io.github.doriangrelu.keycloak.config.domain.common.UnmodeledAttributes;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import java.util.Objects;
@@ -37,6 +38,8 @@ public record IdentityProvider(
 
     /** First broker login flow of Keycloak, used when an identity provider declares none. */
     public static final String DEFAULT_FIRST_BROKER_LOGIN_FLOW = "first broker login";
+
+    private static final String CONFIG = "config";
 
     public IdentityProvider {
         Objects.requireNonNull(alias, "alias");
@@ -62,5 +65,19 @@ public record IdentityProvider(
                         : DEFAULT_FIRST_BROKER_LOGIN_FLOW,
                 desired.postBrokerLoginFlowAlias,
                 this.unmodeled.overriddenBy(desired.unmodeled));
+    }
+
+    /** The fields of {@code declared} whose value Keycloak hides in this current one: {@code config.clientSecret}. */
+    public java.util.List<String> hiddenFieldsOf(final IdentityProvider declared) {
+        return HiddenValues.hiddenFields(this.unmodeled, declared.unmodeled, CONFIG);
+    }
+
+    /** This identity provider as it compares with {@code current}: the values Keycloak hides are taken from it. */
+    public IdentityProvider withHiddenValuesOf(final IdentityProvider current) {
+        UnmodeledAttributes comparable = HiddenValues.withHiddenValuesOf(current.unmodeled, this.unmodeled, CONFIG);
+        return comparable == this.unmodeled
+                ? this
+                : new IdentityProvider(
+                        this.alias, this.firstBrokerLoginFlowAlias, this.postBrokerLoginFlowAlias, comparable);
     }
 }

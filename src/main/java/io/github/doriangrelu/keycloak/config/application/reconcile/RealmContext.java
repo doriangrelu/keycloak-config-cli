@@ -50,6 +50,7 @@ public final class RealmContext {
     private final Map<ResourceType, Map<Object, Resource<?>>> desired = new EnumMap<>(ResourceType.class);
     private final Map<ResourceType, Set<String>> scopes = new EnumMap<>(ResourceType.class);
     private final List<PlannedChange> plan = new ArrayList<>();
+    private final java.util.Set<NotComparedValue> notCompared = new java.util.LinkedHashSet<>();
     private boolean pruned;
 
     public RealmContext(final String realm) {
@@ -139,6 +140,15 @@ public final class RealmContext {
 
     void record(final PlannedChange change) {
         this.plan.add(change);
+    }
+
+    void noteNotCompared(final NotComparedValue value) {
+        this.notCompared.add(value);
+    }
+
+    /** The declared values Keycloak hides, which were not compared; each one once. */
+    public List<NotComparedValue> notCompared() {
+        return List.copyOf(this.notCompared);
     }
 
     public List<PlannedChange> plan() {

@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.domain.realm.model;
 
+import io.github.doriangrelu.keycloak.config.domain.common.HiddenValues;
 import io.github.doriangrelu.keycloak.config.domain.common.UnmodeledAttributes;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import java.util.LinkedHashMap;
@@ -38,6 +39,8 @@ public record RealmSettings(String realm, UnmodeledAttributes settings) implemen
     static final String ATTRIBUTES = "attributes";
 
     static final String ENABLED = "enabled";
+
+    static final String SMTP_SERVER = "smtpServer";
 
     public RealmSettings {
         Objects.requireNonNull(realm, "realm");
@@ -79,6 +82,20 @@ public record RealmSettings(String realm, UnmodeledAttributes settings) implemen
             merged = withAttributes(merged, kept);
         }
         return new RealmSettings(this.realm, merged);
+    }
+
+    /**
+     * The fields of {@code declared} whose value Keycloak hides in these current settings: the entries of the SMTP
+     * server ({@code smtpServer.password}).
+     */
+    public java.util.List<String> hiddenFieldsOf(final RealmSettings declared) {
+        return HiddenValues.hiddenFields(this.settings, declared.settings, SMTP_SERVER);
+    }
+
+    /** These settings as they compare with {@code current}: the values Keycloak hides in it are taken from it. */
+    public RealmSettings withHiddenValuesOf(final RealmSettings current) {
+        UnmodeledAttributes comparable = HiddenValues.withHiddenValuesOf(current.settings, this.settings, SMTP_SERVER);
+        return comparable == this.settings ? this : new RealmSettings(this.realm, comparable);
     }
 
     private static UnmodeledAttributes withAttributes(

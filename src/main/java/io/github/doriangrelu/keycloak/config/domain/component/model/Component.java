@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.domain.component.model;
 
+import io.github.doriangrelu.keycloak.config.domain.common.HiddenValues;
 import io.github.doriangrelu.keycloak.config.domain.reconcile.Resource;
 import java.util.Collections;
 import java.util.HashMap;
@@ -117,6 +118,19 @@ public record Component(Key key, String id, String providerId, Map<String, List<
         mergedConfig.putAll(desired.config);
         return new Component(
                 this.key, this.id, desired.providerId != null ? desired.providerId : this.providerId, mergedConfig);
+    }
+
+    /** The fields of {@code declared} whose value Keycloak hides in this current one: {@code config.bindCredential}. */
+    public List<String> hiddenFieldsOf(final Component declared) {
+        return HiddenValues.hiddenKeys(this.config, declared.config).stream()
+                .map(name -> "config." + name)
+                .toList();
+    }
+
+    /** This component as it compares with {@code current}: the values Keycloak hides are taken from it. */
+    public Component withHiddenValuesOf(final Component current) {
+        Map<String, List<String>> comparable = HiddenValues.withHiddenValuesOf(current.config, this.config);
+        return comparable == this.config ? this : new Component(this.key, this.id, this.providerId, comparable);
     }
 
     private static Map<String, List<String>> copyOf(final Map<String, List<String>> config) {

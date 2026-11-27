@@ -22,6 +22,8 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
+import io.github.doriangrelu.keycloak.config.application.reconcile.NotComparedValue;
 import io.github.doriangrelu.keycloak.config.application.reconcile.PlannedChange;
 import io.github.doriangrelu.keycloak.config.domain.common.UnmodeledAttributes;
 import io.github.doriangrelu.keycloak.config.domain.messagebundle.model.MessageBundle;
@@ -101,6 +103,46 @@ class DryRunReportTest {
                 .contains("\"change\" : \"update\"")
                 .contains("\"fields\" : [ \"displayName\", \"smtpServer\" ]")
                 .doesNotContain("secret");
+    }
+
+    private static ImportReport withHiddenValues() {
+        Map<String, List<NotComparedValue>> notCompared = new LinkedHashMap<>();
+        notCompared.put(
+                "realm",
+                List.of(
+                        new NotComparedValue(ResourceType.REALM_SETTINGS, "realm", "smtpServer.password"),
+                        new NotComparedValue(ResourceType.IDENTITY_PROVIDER, "google", "config.clientSecret")));
+        return new ImportReport(Map.of("realm", List.of()), notCompared);
+    }
+
+    @Test
+    void theHiddenValuesAreNotedOnTheirOwnLineAndAreNoChange() {
+        DryRunReport report = DryRunReport.of(withHiddenValues());
+
+        assertThat(report.pendingChanges()).isZero();
+        assertThat(report.toText())
+                .contains(String.format("Realm 'realm': 0 change(s)%n"
+                        + "  (not compared: smtpServer.password of Realm settings 'realm', Keycloak hides it)%n"
+                        + "  (not compared: config.clientSecret of Identity provider 'google', Keycloak hides it)%n"))
+                .contains("Dry run: no change pending.");
+    }
+
+    @Test
+    void theJsonReportListsTheHiddenValues() {
+        assertThat(DryRunReport.of(withHiddenValues()).toJson())
+                .contains("\"pendingChanges\" : 0")
+                .contains("\"notCompared\" : [ {")
+                .contains("\"type\" : \"IDENTITY_PROVIDER\"")
+                .contains("\"key\" : \"google\"")
+                .contains("\"field\" : \"config.clientSecret\"");
+    }
+
+    @Test
+    void aReportWithoutHiddenValueHasNoNote() {
+        DryRunReport report = DryRunReport.of(new ImportReport(plans()));
+
+        assertThat(report.toText()).doesNotContain("not compared");
+        assertThat(report.toJson()).doesNotContain("notCompared");
     }
 
     @Test

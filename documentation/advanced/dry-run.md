@@ -74,6 +74,34 @@ The same report as JSON, with `--import.dry-run-format=json`:
 
 The report never shows field values: a changed secret, password or credential is listed by its name only.
 
+## Secrets Keycloak hides
+
+Keycloak never gives back some secrets: it answers `**********` instead of the SMTP password of a realm (`smtpServer.password`), the secret of an identity provider (`config.clientSecret`, and any other entry of its `config` Keycloak hides) or the bind credential of an LDAP user storage (`config.bindCredential`, and any other entry of a component `config` Keycloak hides). The import cannot compare these values with the files, so:
+
+- such a value alone is never a change: importing the same files twice changes nothing;
+- when its element is updated for another reason, the value of the files is sent with the update, and is not listed among the changed fields;
+- the report notes each such value the files declare, on its own line and without its value, and it does not count as a pending change (exit code `0` when nothing else changes):
+
+```text
+Realm 'my-realm': 0 change(s)
+  (not compared: smtpServer.password of Realm settings 'my-realm', Keycloak hides it)
+  (not compared: config.clientSecret of Identity provider 'google', Keycloak hides it)
+Dry run: no change pending.
+```
+
+In the JSON report, the realm lists them under `notCompared`, absent when there is none:
+
+```json
+"notCompared" : [ {
+  "type" : "IDENTITY_PROVIDER",
+  "label" : "Identity provider",
+  "key" : "google",
+  "field" : "config.clientSecret"
+} ]
+```
+
+To change such a secret alone, change it in Keycloak, or change another value of its element in the same import.
+
 ## Exit code
 
 | Code | Meaning |
@@ -109,4 +137,5 @@ The report file holds the report alone, without the logs of the run: it is the o
 
 - **Realm to create:** when the realm does not exist yet, everything the import declares is listed as a creation. Nothing can be read from a realm that does not exist.
 - **Changes that depend on earlier ones:** a type planned after another one does not see the earlier changes, since they are not applied.
+- **Hidden secrets:** a secret Keycloak hides is not compared (see above): a change of that secret alone is neither shown nor applied.
 - **Client authorization:** it is always listed as an update. Its resources and policies name Keycloak objects through placeholders (`client.resource.$my-client`), resolved only when they are applied.
