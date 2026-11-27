@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
+import java.util.Optional;
 
 /** What the user is told, and asked to confirm, when an element is the first of its type in a realm. */
 @FunctionalInterface
@@ -31,4 +32,12 @@ public interface DeclarationWarning {
 
     /** The warning for this element, to be written in the realm of this folder. */
     String of(String folder, ElementDefinition element);
+
+    /**
+     * What the user is told when writing the first element of its type is confirmed in advance, such as with
+     * {@code --declare-type}: nothing by default.
+     */
+    default Optional<String> information(final String folder, final ElementDefinition element) {
+        return Optional.empty();
+    }
 }

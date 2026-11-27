@@ -1,5 +1,6 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
+import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
@@ -41,6 +42,19 @@ public final class SaveElement {
             final ElementDefinition definition,
             final Optional<Origin> existing,
             final boolean declareType) {
+        return save(folder, definition, existing, declareType, FirstDeclarationException.warning(definition));
+    }
+
+    /**
+     * Like {@link #save(String, ElementDefinition, Optional, boolean)}, with the warning the user was asked to
+     * confirm: an unconfirmed first declaration fails with it.
+     */
+    public SaveResult save(
+            final String folder,
+            final ElementDefinition definition,
+            final Optional<Origin> existing,
+            final boolean declareType,
+            final String warning) {
         RealmDefinition realm =
                 this.definitions.load(folder).orElseThrow(() -> new UnknownRealmFolderException(folder));
         if (realm.isReadOnly()) {
@@ -52,7 +66,7 @@ public final class SaveElement {
             throw new UnformattedFileException(target.get());
         }
         if (!realm.declares(definition) && !declareType) {
-            throw new FirstDeclarationException(definition);
+            throw new FirstDeclarationException(definition, warning);
         }
         RuleElement element = RuleElement.of(definition.type());
         RuleEngine engine = this.rules.engine();
@@ -69,6 +83,33 @@ public final class SaveElement {
             throw new RuleViolationException(verdict.blocking());
         }
         return new SaveResult(this.definitions.save(folder, definition, existing, added), verdict, added);
+    }
+
+    /**
+     * Writes a new element of a realm. The first element of its type is written once confirmed: by the user, who is
+     * asked with the text of the warning, or in advance, and the user is then told what the warning has to tell. The
+     * warning is made only for a first element, and once.
+     *
+     * @param realm the realm, as the questions of the command read it
+     * @param declareType whether writing the first element of its type is confirmed in advance
+     * @throws FirstDeclarationException with the text of the warning, when the first element is not confirmed
+     */
+    SaveResult saveNew(
+            final String folder,
+            final RealmDefinition realm,
+            final ElementDefinition definition,
+            final boolean declareType,
+            final Questions questions,
+            final DeclarationWarning warning) {
+        if (realm.declares(definition)) {
+            return save(folder, definition, Optional.empty(), true);
+        }
+        if (declareType) {
+            warning.information(folder, definition).ifPresent(questions::tell);
+            return save(folder, definition, Optional.empty(), true);
+        }
+        String text = warning.of(folder, definition);
+        return save(folder, definition, Optional.empty(), questions.confirm(text, false), text);
     }
 
     /** The defaults come with the creation of an element, and when a client changes its application type. */

@@ -46,7 +46,16 @@ public final class CreateClient {
     }
 
     /**
+     * Like {@link #create(String, ClientAnswers, Questions, DeclarationWarning)}, with the general warning of a first
+     * declaration.
+     */
+    public SaveResult create(final String folder, final ClientAnswers given, final Questions questions) {
+        return create(folder, given, questions, DeclarationWarning.OFFLINE);
+    }
+
+    /**
      * @param given the answers already given, which are not asked
+     * @param warning what the first element of its type is confirmed with
      * @return the file written, with what the rules say about the client
      * @throws UnknownRealmFolderException when the folder is not a realm of the shell
      * @throws ClientExistsException when the given id is taken by a client of the realm
@@ -54,7 +63,11 @@ public final class CreateClient {
      * @throws RuleViolationException when the client fails a required rule: nothing is written
      * @throws MissingAnswerException when an answer is missing and cannot be asked
      */
-    public SaveResult create(final String folder, final ClientAnswers given, final Questions questions) {
+    public SaveResult create(
+            final String folder,
+            final ClientAnswers given,
+            final Questions questions,
+            final DeclarationWarning warning) {
         RealmDefinition realm =
                 this.definitions.load(folder).orElseThrow(() -> new UnknownRealmFolderException(folder));
         TemplatedValue clientId = clientId(realm, given, questions);
@@ -89,10 +102,7 @@ public final class CreateClient {
         }
         ClientDefinition client =
                 new ClientDefinition(clientId, name, description, type, redirectUris, webOrigins, Map.of(), secret);
-        boolean declareType = given.declareType()
-                || realm.declares(client)
-                || questions.confirm(FirstDeclarationException.warning(client), false);
-        return this.saveElement.save(folder, client, Optional.empty(), declareType);
+        return this.saveElement.saveNew(folder, realm, client, given.declareType(), questions, warning);
     }
 
     private static TemplatedValue clientId(

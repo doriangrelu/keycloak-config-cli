@@ -54,16 +54,19 @@ public class ClientCommands {
     private final EditClient editClient;
     private final ReadRealms readRealms;
     private final ShellSession session;
+    private final SessionDeclarationWarning declarationWarning;
 
     public ClientCommands(
             final CreateClient createClient,
             final EditClient editClient,
             final ReadRealms readRealms,
-            final ShellSession session) {
+            final ShellSession session,
+            final SessionDeclarationWarning declarationWarning) {
         this.createClient = Objects.requireNonNull(createClient, "createClient");
         this.editClient = Objects.requireNonNull(editClient, "editClient");
         this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
         this.session = Objects.requireNonNull(session, "session");
+        this.declarationWarning = Objects.requireNonNull(declarationWarning, "declarationWarning");
     }
 
     @Command(
@@ -119,7 +122,7 @@ public class ClientCommands {
                 secretOf(secret),
                 declareType);
         Set<String> before = clientIds(folder);
-        SaveResult result = this.createClient.create(folder, answers, questions);
+        SaveResult result = this.createClient.create(folder, answers, questions, this.declarationWarning.of(questions));
         String created = value(id).map(TemplatedValue::raw).orElseGet(() -> newClient(folder, before));
         return String.join(System.lineSeparator(), SaveResultLines.of(folder, "Client '" + created + "'", result));
     }

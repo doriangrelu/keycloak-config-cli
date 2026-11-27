@@ -357,6 +357,21 @@ Dry run: 2 change(s) pending.
 
 In script mode the command ends with exit code `10` when changes are pending, `0` otherwise. In a `shell.script`, the code `10` does not stop the script: the script goes on, and ends with `10` when no command failed and a dry run found changes. In an interactive session, pending changes are not an error.
 
+### The first declaration on a connected target
+
+When `client create`, `role create` or `group create` is about to write the first client, realm role, role of a client or group of the realm (see [Files](files.md#the-first-declaration-of-a-type)), a connected shell runs a dry run of the files with the new element on the target, writing nothing, and its confirmation lists what the next import would delete there:
+
+```text
+kcc:shop@dev> group create --name team --realm-roles none --client-roles none
+? At the next import, these groups of Keycloak missing from the files will be deleted on dev (2): /legacy, /old. Confirm? [y/N]:
+```
+
+- Only the deletions of the type are listed: the clients for a client, the realm roles for a realm role, the roles of that client for a client role, the groups for a group. They are the ones `realm dry-run` shows right after: what the import never deletes (the clients and roles Keycloak creates, the protected resources) is not listed. At most 10 names are shown, followed by `and <m> more`.
+- When nothing would be deleted now: `No groups of Keycloak would be deleted on dev now, but at each import the groups missing from the files will be. Confirm?`.
+- The dry run uses only the values the session already knows: the session (a value given earlier with `--var`), then `KCC_VAR_<name>`, then the default value of the placeholder. Nothing is asked and nothing is remembered. When it cannot run, the general warning is shown with the reason, such as `(dry run on dev not possible: variable 'shopSecret' has no value)`; the other reasons are `Keycloak unreachable`, `Keycloak refused the dry run` and `a file is invalid`. A value is never shown.
+- In a script, without `--declare-type`, the command fails with exit code `2` and the same text followed by `In a script, add --declare-type.`; with `--declare-type`, the list is printed for information and the element is written.
+- The dry run runs only for the first element of a type, once per command. Offline, the general warning is unchanged.
+
 ### `realm import`
 
 Imports the opened realm on the connected target. The command first computes the changes, as `realm dry-run` does, and shows them. With no change, it prints `Nothing to import` and writes nothing. Otherwise it asks `Apply these <n> change(s) to <target>?` (default: no), then applies the same rendered files.

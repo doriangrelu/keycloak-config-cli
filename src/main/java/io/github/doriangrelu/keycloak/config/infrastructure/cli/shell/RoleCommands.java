@@ -57,16 +57,19 @@ public class RoleCommands {
     private final EditRole editRole;
     private final ReadRealms readRealms;
     private final ShellSession session;
+    private final SessionDeclarationWarning declarationWarning;
 
     public RoleCommands(
             final CreateRole createRole,
             final EditRole editRole,
             final ReadRealms readRealms,
-            final ShellSession session) {
+            final ShellSession session,
+            final SessionDeclarationWarning declarationWarning) {
         this.createRole = Objects.requireNonNull(createRole, "createRole");
         this.editRole = Objects.requireNonNull(editRole, "editRole");
         this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
         this.session = Objects.requireNonNull(session, "session");
+        this.declarationWarning = Objects.requireNonNull(declarationWarning, "declarationWarning");
     }
 
     @Command(
@@ -94,7 +97,7 @@ public class RoleCommands {
         Questions questions = new ConsoleQuestions(context.inputReader(), context.outputWriter());
         RoleAnswers answers = new RoleAnswers(value(client), value(name), value(description), declareType);
         Set<String> before = roleKeys(folder);
-        SaveResult result = this.createRole.create(folder, answers, questions);
+        SaveResult result = this.createRole.create(folder, answers, questions, this.declarationWarning.of(questions));
         String created = value(name).map(TemplatedValue::raw).orElseGet(() -> newRole(folder, before));
         return String.join(System.lineSeparator(), SaveResultLines.of(folder, "Role '" + created + "'", result));
     }

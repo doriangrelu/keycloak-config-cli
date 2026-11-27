@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -50,6 +51,26 @@ public final class DeclarationDeletions {
     public DeclarationDeletions(final ResolveVariables variables, final RealmDefinitions definitions) {
         this.variables = Objects.requireNonNull(variables, "variables");
         this.definitions = Objects.requireNonNull(definitions, "definitions");
+    }
+
+    /**
+     * The warning of the first declarations on this connection: the question lists the deletions, and so does the
+     * information given when the declaration is confirmed in advance.
+     */
+    public DeclarationWarning on(final Connection connection, final VariableValues remembered) {
+        Objects.requireNonNull(connection, "connection");
+        Objects.requireNonNull(remembered, "remembered");
+        return new DeclarationWarning() {
+            @Override
+            public String of(final String folder, final ElementDefinition element) {
+                return warning(folder, element, connection, remembered);
+            }
+
+            @Override
+            public Optional<String> information(final String folder, final ElementDefinition element) {
+                return Optional.of(DeclarationDeletions.this.information(folder, element, connection, remembered));
+            }
+        };
     }
 
     /** The text to confirm: the deletions the simulation shows, or the general warning when it cannot be made. */

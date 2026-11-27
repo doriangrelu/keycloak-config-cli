@@ -52,16 +52,19 @@ public class GroupCommands {
     private final EditGroup editGroup;
     private final ReadRealms readRealms;
     private final ShellSession session;
+    private final SessionDeclarationWarning declarationWarning;
 
     public GroupCommands(
             final CreateGroup createGroup,
             final EditGroup editGroup,
             final ReadRealms readRealms,
-            final ShellSession session) {
+            final ShellSession session,
+            final SessionDeclarationWarning declarationWarning) {
         this.createGroup = Objects.requireNonNull(createGroup, "createGroup");
         this.editGroup = Objects.requireNonNull(editGroup, "editGroup");
         this.readRealms = Objects.requireNonNull(readRealms, "readRealms");
         this.session = Objects.requireNonNull(session, "session");
+        this.declarationWarning = Objects.requireNonNull(declarationWarning, "declarationWarning");
     }
 
     @Command(
@@ -99,7 +102,8 @@ public class GroupCommands {
         Questions questions = new ConsoleQuestions(context.inputReader(), context.outputWriter());
         GroupAnswers answers =
                 new GroupAnswers(value(name), given(parent), list(realmRoles), list(clientRoles), declareType);
-        CreatedGroup created = this.createGroup.create(folder, answers, questions);
+        CreatedGroup created =
+                this.createGroup.create(folder, answers, questions, this.declarationWarning.of(questions));
         return String.join(
                 System.lineSeparator(), SaveResultLines.of(folder, "Group '" + created.path() + "'", created.result()));
     }

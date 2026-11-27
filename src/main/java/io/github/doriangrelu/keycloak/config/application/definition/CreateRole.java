@@ -49,7 +49,16 @@ public final class CreateRole {
     }
 
     /**
+     * Like {@link #create(String, RoleAnswers, Questions, DeclarationWarning)}, with the general warning of a first
+     * declaration.
+     */
+    public SaveResult create(final String folder, final RoleAnswers given, final Questions questions) {
+        return create(folder, given, questions, DeclarationWarning.OFFLINE);
+    }
+
+    /**
      * @param given the answers already given, which are not asked
+     * @param warning what the first element of its type is confirmed with
      * @return the file written, with what the rules say about the role
      * @throws UnknownRealmFolderException when the folder is not a realm of the shell
      * @throws UnknownClientException when the given client is not defined in the folder
@@ -59,7 +68,8 @@ public final class CreateRole {
      * @throws RuleViolationException when the role fails a required rule: nothing is written
      * @throws MissingAnswerException when an answer is missing and cannot be asked
      */
-    public SaveResult create(final String folder, final RoleAnswers given, final Questions questions) {
+    public SaveResult create(
+            final String folder, final RoleAnswers given, final Questions questions, final DeclarationWarning warning) {
         RealmDefinition realm =
                 this.definitions.load(folder).orElseThrow(() -> new UnknownRealmFolderException(folder));
         Optional<TemplatedValue> client = owner(realm, given, questions);
@@ -67,10 +77,7 @@ public final class CreateRole {
         Optional<TemplatedValue> description =
                 given.description().or(() -> questions.askOptionalValue("Description", Optional.empty()));
         RoleDefinition role = new RoleDefinition(name, client, description);
-        boolean declareType = given.declareType()
-                || realm.declares(role)
-                || questions.confirm(FirstDeclarationException.warning(role), false);
-        return this.saveElement.save(folder, role, Optional.empty(), declareType);
+        return this.saveElement.saveNew(folder, realm, role, given.declareType(), questions, warning);
     }
 
     private Optional<TemplatedValue> owner(

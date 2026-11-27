@@ -25,6 +25,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.CreateClient
 import io.github.doriangrelu.keycloak.config.application.definition.CreateGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.CreateRole;
+import io.github.doriangrelu.keycloak.config.application.definition.DeclarationDeletions;
 import io.github.doriangrelu.keycloak.config.application.definition.EditClient;
 import io.github.doriangrelu.keycloak.config.application.definition.EditGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.EditRole;
@@ -96,8 +97,9 @@ public class ShellCommandConfiguration {
             final CreateClient createClient,
             final EditClient editClient,
             final ReadRealms readRealms,
-            final ShellSession shellSession) {
-        return new ClientCommands(createClient, editClient, readRealms, shellSession);
+            final ShellSession shellSession,
+            final SessionDeclarationWarning sessionDeclarationWarning) {
+        return new ClientCommands(createClient, editClient, readRealms, shellSession, sessionDeclarationWarning);
     }
 
     @Bean
@@ -105,8 +107,9 @@ public class ShellCommandConfiguration {
             final CreateRole createRole,
             final EditRole editRole,
             final ReadRealms readRealms,
-            final ShellSession shellSession) {
-        return new RoleCommands(createRole, editRole, readRealms, shellSession);
+            final ShellSession shellSession,
+            final SessionDeclarationWarning sessionDeclarationWarning) {
+        return new RoleCommands(createRole, editRole, readRealms, shellSession, sessionDeclarationWarning);
     }
 
     @Bean
@@ -114,14 +117,33 @@ public class ShellCommandConfiguration {
             final CreateGroup createGroup,
             final EditGroup editGroup,
             final ReadRealms readRealms,
-            final ShellSession shellSession) {
-        return new GroupCommands(createGroup, editGroup, readRealms, shellSession);
+            final ShellSession shellSession,
+            final SessionDeclarationWarning sessionDeclarationWarning) {
+        return new GroupCommands(createGroup, editGroup, readRealms, shellSession, sessionDeclarationWarning);
     }
 
     @Bean
     @ConditionalOnMissingBean
     public EnvironmentVariables environmentVariables() {
         return EnvironmentVariables.ofProcess();
+    }
+
+    /**
+     * The warning of a first declaration: connected, the use case simulates the import on the target, with the values
+     * the session knows and {@code KCC_VAR_<name>}; it asks nothing.
+     */
+    @Bean
+    public SessionDeclarationWarning sessionDeclarationWarning(
+            final ListVariables listVariables,
+            final RealmDefinitions realmDefinitions,
+            final EnvironmentVariables environmentVariables,
+            final ShellSession shellSession) {
+        return new SessionDeclarationWarning(
+                questions -> new DeclarationDeletions(
+                        new ResolveVariables(
+                                listVariables, name -> Optional.ofNullable(environmentVariables.get(name)), questions),
+                        realmDefinitions),
+                shellSession);
     }
 
     @Bean
