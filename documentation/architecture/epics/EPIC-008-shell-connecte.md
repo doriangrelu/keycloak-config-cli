@@ -38,7 +38,7 @@ Fichier `kcc-targets.yaml` (cibles nommées, sans secret), `connect <cible>`, `d
 
 ### US-008-03 — Première déclaration précise
 
-**Statut :** À faire
+**Statut :** Terminé
 Connecté, la confirmation de première déclaration d'un type liste ce que le prochain import supprimerait sur la cible.
 
 ### US-008-04 — Extraction d'un realm
@@ -98,3 +98,14 @@ Documentation utilisateur (anglais) du mode connecté ; scénarios du sample : c
 - Tests : `ResolveVariablesTest`, `VariableValuesTest`, `RealmImportFilesTest`, `TargetImportIT`, `KeycloakFailuresTest`, `ImportOpenedRealmTest`, `RealmImportCommandsIT`, `RealmImportKeycloakIT`, `ShellLauncherTest`, `SafeCommandParserTest`. Documentation : `documentation/shell/`, CHANGELOG, codes de sortie.
 - Exécutée par des sous-agents ; les revues ont relevé, et fait corriger avant la fusion, trois fuites possibles de valeurs (écho des scripts, erreur d'analyse, message d'un fichier invalide), un import qui relisait les fichiers après la confirmation, et une variable à valeur par défaut partielle jamais résolue.
 - Points mineurs reportés : `variables list` affiche `default:` pour une variable dont un usage n'a pas de valeur par défaut ; `--var nom valeur` (espace, sans `=`) ne masque que le premier mot ; un dry-run avec changements suivi d'un import dans le même script garde le code 10 ; un `--var` inutilisé est accepté sans avertissement ; une `PreparedImport` reste utilisable après `disconnect` ; le corps de la réponse de Keycloak est repris sans limite dans le message d'un refus ; un dossier dont le nom contient `*`, `?` ou `{}` est lu comme un motif ; chaque `connect` démarre un contexte plus gros.
+
+### US-008-03
+
+- Connecté, la confirmation du premier client, du premier groupe, des premiers rôles du realm ou d'un client liste ce que le prochain import supprimerait sur la cible : `At the next import, these <type> of Keycloak missing from the files will be deleted on <cible> (<n>): …` (10 noms au plus, puis `and <m> more`), ou `No <type> of Keycloak would be deleted on <cible> now, …`. Hors connexion, rien ne change.
+- La liste vient d'une **simulation de l'import** (`DeclarationDeletions`) : les fichiers tels qu'ils seraient après l'enregistrement de l'élément, calculés en mémoire par le code d'enregistrement (`RealmDefinitions.importFilesWith`, `sourcesWith`), simulés par la `Connection` ; seules les suppressions du type déclaré sont gardées (pour un rôle de client, celles de ce client, identifiant rendu avec les variables). Les éléments que l'import épargne (créés par Keycloak, rôles par défaut, protégés) n'y figurent donc pas.
+- Variables (décision de l'utilisateur, option A) : seulement les valeurs déjà connues (mémoire de la session, `KCC_VAR_<nom>`, valeur par défaut), y compris pour un placeholder du nouvel élément ; aucune question.
+- La simulation est indicative : si elle est impossible (variable sans valeur, Keycloak injoignable ou qui refuse, fichier invalide, autre échec), l'avertissement générique est affiché avec la raison, sans jamais reprendre le message d'origine, et la commande continue.
+- Script : sans `--declare-type`, l'échec (code 2) porte le même texte ; avec `--declare-type`, connecté, la liste est affichée pour information.
+- Tests : `RealmImportFilesWithElementTest`, `DeclarationDeletionsTest`, `ResolveVariablesTest`, `TemplatedValueTest`, `FirstDeclarationConnectedIT`, `FirstDeclarationKeycloakIT` (la liste est celle du `realm dry-run` lancé ensuite ; les clients créés par Keycloak n'y figurent pas).
+- Exécutée par des sous-agents ; les revues ont fait corriger avant la fusion : un client à l'identifiant variabilisé comparé sans rendu, une simulation en échec qui faisait échouer la création, une variable propre au nouvel élément jamais résolue, un fichier au nom contenant une espace dupliqué en mémoire.
+- Points mineurs reportés : le texte d'échec en script se lit « …Confirm? In a script, add --declare-type. » ; la méthode `save` à cinq arguments de `SaveElement` est publique ; l'ancien `resolveKnown(folder, remembered)` n'est plus utilisé que par les tests ; la simulation a lieu avant les vérifications de lecture seule et des règles ; `TemplatedValue.rendered` gère mal `{{{x}}}` ; les sous-groupes retirés par mise à jour d'un groupe existant ne sont pas listés ; pas de test Keycloak montrant que les rôles par défaut du realm sont écartés.

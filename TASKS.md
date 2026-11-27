@@ -13,7 +13,7 @@
 | [EPIC-005](documentation/architecture/epics/EPIC-005-normalisation.md) | Normalisation sur le nouveau socle | Terminé |
 | [EPIC-006](documentation/architecture/epics/EPIC-006-simplification.md) | Simplification : les fichiers comme seule vérité, Mustache seul moteur de template | Terminé |
 | [EPIC-007](documentation/architecture/epics/EPIC-007-shell-edition.md) | Shell interactif : édition guidée des définitions de realm (clients, rôles, groupes), hors ligne | Terminé |
-| [EPIC-008](documentation/architecture/epics/EPIC-008-shell-connecte.md) | Shell en mode connecté : connexion, dry-run et import, extraction d'un realm, comparaison, complétion depuis Keycloak | En cours (US-008-01 et 02 terminées) |
+| [EPIC-008](documentation/architecture/epics/EPIC-008-shell-connecte.md) | Shell en mode connecté : connexion, dry-run et import, extraction d'un realm, comparaison, complétion depuis Keycloak | En cours (US-008-01 à 03 terminées) |
 
 ## Après la refonte
 
