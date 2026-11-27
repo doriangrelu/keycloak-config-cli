@@ -1,0 +1,412 @@
+/*-
+ * ---license-start
+ * keycloak-config-cli
+ * ---
+ * Copyright (C) 2017 - 2026 keycloak-config-cli contributors
+ * ---
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ---license-end
+ */
+
+package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.doriangrelu.keycloak.config.AbstractImportIT;
+import io.github.doriangrelu.keycloak.config.application.definition.Connection;
+import io.github.doriangrelu.keycloak.config.application.definition.ExtractedRealm;
+import io.github.doriangrelu.keycloak.config.application.definition.RealmNotFoundOnTargetException;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
+import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
+import io.github.doriangrelu.keycloak.config.domain.definition.Target;
+import io.github.doriangrelu.keycloak.config.domain.reconcile.ResourceType;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.IdentityProviderRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.testcontainers.containers.GenericContainer;
+
+/** The extraction of a hand-made realm from a connected target, against the Keycloak of the integration tests. */
+@Timeout(value = 180, unit = TimeUnit.SECONDS)
+class TargetExtractIT {
+
+    private static final GenericContainer<?> KEYCLOAK = AbstractImportIT.KEYCLOAK_CONTAINER;
+    private static final String URL = System.getProperty("keycloak.url");
+    private static final String ADMIN = KEYCLOAK.getEnvMap().get("KEYCLOAK_ADMIN");
+    private static final String ADMIN_PASSWORD = KEYCLOAK.getEnvMap().get("KEYCLOAK_ADMIN_PASSWORD");
+
+    private static final String REALM = "target-extract";
+    private static final String SHOP_SECRET = "shop-secret-value-4f8a2c";
+    private static final String GOOGLE_SECRET = "google-secret-value-9d1e7b";
+    private static final String SMTP_PASSWORD = "smtp-password-value-3c6f0a";
+    private static final String USER_PASSWORD = "alice-password-value-7b2e9d";
+    private static final String MASK = "**********";
+
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    private static ConfigurableEnvironment mainEnvironment;
+
+    @BeforeAll
+    static void createTheRealm() {
+        GenericApplicationContext main = new GenericApplicationContext();
+        TestPropertyValues.of("run.operation=SHELL").applyTo(main);
+        new ConfigDataApplicationContextInitializer().initialize(main);
+        mainEnvironment = main.getEnvironment();
+        removeTheRealm();
+        try (Keycloak admin = admin()) {
+            RealmRepresentation realm = new RealmRepresentation();
+            realm.setRealm(REALM);
+            realm.setEnabled(true);
+            realm.setLoginWithEmailAllowed(false);
+            realm.setSmtpServer(Map.of(
+                    "host", "smtp.example.org",
+                    "port", "587",
+                    "from", "noreply@example.org",
+                    "auth", "true",
+                    "user", "mailer",
+                    "password", SMTP_PASSWORD));
+            admin.realms().create(realm);
+            RealmResource created = admin.realm(REALM);
+
+            ClientRepresentation shop = new ClientRepresentation();
+            shop.setClientId("shop");
+            shop.setPublicClient(false);
+            shop.setSecret(SHOP_SECRET);
+            shop.setServiceAccountsEnabled(true);
+            shop.setRedirectUris(List.of("https://shop.example.org/*"));
+            created.clients().create(shop).close();
+            ClientRepresentation web = new ClientRepresentation();
+            web.setClientId("web");
+            web.setPublicClient(true);
+            web.setRedirectUris(List.of("https://web.example.org/*"));
+            created.clients().create(web).close();
+
+            created.roles().create(role("manager"));
+            String shopId = created.clients().findByClientId("shop").getFirst().getId();
+            created.clients().get(shopId).roles().create(role("viewer"));
+
+            GroupRepresentation staff = new GroupRepresentation();
+            staff.setName("staff");
+            created.groups().add(staff).close();
+            String staffId = created.groups().groups().stream()
+                    .filter(group -> "staff".equals(group.getName()))
+                    .findFirst()
+                    .orElseThrow()
+                    .getId();
+            GroupRepresentation admins = new GroupRepresentation();
+            admins.setName("admins");
+            created.groups().group(staffId).subGroup(admins).close();
+            created.groups()
+                    .group(staffId)
+                    .roles()
+                    .realmLevel()
+                    .add(List.of(created.roles().get("manager").toRepresentation()));
+            String adminsId = created.getGroupByPath("/staff/admins").getId();
+            created.groups()
+                    .group(adminsId)
+                    .roles()
+                    .clientLevel(shopId)
+                    .add(List.of(
+                            created.clients().get(shopId).roles().get("viewer").toRepresentation()));
+
+            IdentityProviderRepresentation google = new IdentityProviderRepresentation();
+            google.setAlias("google");
+            google.setProviderId("google");
+            google.setEnabled(true);
+            google.setConfig(Map.of("clientId", "google-client", "clientSecret", GOOGLE_SECRET));
+            created.identityProviders().create(google).close();
+
+            UserRepresentation alice = new UserRepresentation();
+            alice.setUsername("alice");
+            alice.setEnabled(true);
+            alice.setEmail("alice@example.org");
+            alice.setFirstName("Alice");
+            alice.setLastName("Martin");
+            CredentialRepresentation password = new CredentialRepresentation();
+            password.setType(CredentialRepresentation.PASSWORD);
+            password.setValue(USER_PASSWORD);
+            password.setTemporary(false);
+            alice.setCredentials(List.of(password));
+            created.users().create(alice).close();
+            String aliceId = created.users().search("alice", true).getFirst().getId();
+            created.users()
+                    .get(aliceId)
+                    .roles()
+                    .realmLevel()
+                    .add(List.of(created.roles().get("manager").toRepresentation()));
+            created.users().get(aliceId).joinGroup(adminsId);
+
+            created.roles().deleteRole("offline_access");
+        }
+    }
+
+    /** The realm lives in the container shared by the other ITs: it is removed. */
+    @AfterAll
+    static void removeTheRealm() {
+        try (Keycloak admin = admin()) {
+            admin.realms().findAll().stream()
+                    .filter(realm -> REALM.equals(realm.getRealm()))
+                    .forEach(realm -> admin.realm(realm.getRealm()).remove());
+        }
+    }
+
+    @Test
+    void theDocumentHoldsTheConfiguredElements() throws Exception {
+        JsonNode document = document(extract(false));
+
+        assertThat(document.path("realm").asText()).isEqualTo(REALM);
+        assertThat(document.path("loginWithEmailAllowed").asBoolean(true)).isFalse();
+        assertThat(clientIds(document)).contains("shop", "web");
+        assertThat(names(document.path("roles").path("realm"))).contains("manager");
+        assertThat(names(document.path("roles").path("client").path("shop"))).containsExactly("viewer");
+        JsonNode staff = byName(document.path("groups"), "staff");
+        assertThat(names(staff.path("subGroups"))).containsExactly("admins");
+        assertThat(staff.path("realmRoles").get(0).asText()).isEqualTo("manager");
+        assertThat(byField(document.path("identityProviders"), "alias", "google"))
+                .isNotNull();
+        assertThat(document.path("smtpServer").path("host").asText()).isEqualTo("smtp.example.org");
+        assertThat(document.has("id")).isFalse();
+    }
+
+    @Test
+    void defaultsAreLeftOut() throws Exception {
+        JsonNode document = document(extract(false));
+
+        assertThat(clientIds(document))
+                .doesNotContain(
+                        "account",
+                        "account-console",
+                        "admin-cli",
+                        "broker",
+                        "realm-management",
+                        "security-admin-console");
+        assertThat(names(document.path("roles").path("realm"))).doesNotContain("uma_authorization");
+    }
+
+    @Test
+    void noTypeIsDeclaredEmpty() throws Exception {
+        JsonNode document = document(extract(false));
+
+        document.properties().forEach(field -> {
+            JsonNode value = field.getValue();
+            if (value.isArray() || value.isObject()) {
+                assertThat(value.isEmpty()).as(field.getKey()).isFalse();
+            }
+        });
+    }
+
+    @Test
+    void secretsBecomeVariables() throws Exception {
+        ExtractedRealm extracted = extract(false);
+        JsonNode document = document(extracted);
+
+        assertThat(byField(document.path("clients"), "clientId", "shop")
+                        .path("secret")
+                        .asText())
+                .isEqualTo("{{shopSecret}}");
+        assertThat(byField(document.path("identityProviders"), "alias", "google")
+                        .path("config")
+                        .path("clientSecret")
+                        .asText())
+                .isEqualTo("{{googleClientSecret}}");
+        assertThat(document.path("smtpServer").path("password").asText()).isEqualTo("{{smtpPassword}}");
+        assertThat(extracted.variables()).containsExactly("googleClientSecret", "shopSecret", "smtpPassword");
+    }
+
+    @Test
+    void noSecretValueAndNoMaskInTheDocument() {
+        ExtractedRealm extracted = extract(true);
+
+        assertThat(extracted.document()).doesNotContain(SHOP_SECRET, GOOGLE_SECRET, SMTP_PASSWORD, USER_PASSWORD, MASK);
+        assertThat(extracted.toString()).doesNotContain(extracted.document()).doesNotContain("{{shopSecret}}");
+    }
+
+    @Test
+    void usersOnlyWithTheOption() throws Exception {
+        assertThat(document(extract(false)).has("users")).isFalse();
+
+        ExtractedRealm extracted = extract(true);
+        JsonNode users = document(extracted).path("users");
+
+        assertThat(users.findValuesAsText("username")).containsExactly("alice");
+        JsonNode alice = users.get(0);
+        assertThat(alice.path("email").asText()).isEqualTo("alice@example.org");
+        assertThat(alice.path("firstName").asText()).isEqualTo("Alice");
+        assertThat(alice.path("enabled").asBoolean()).isTrue();
+        assertThat(texts(alice.path("realmRoles"))).containsExactly("manager");
+        assertThat(texts(alice.path("groups"))).containsExactly("/staff/admins");
+        assertThat(extracted.skippedUsers()).isZero();
+    }
+
+    @Test
+    void usersHaveNoCredentials() throws Exception {
+        JsonNode alice = document(extract(true)).path("users").get(0);
+
+        assertThat(alice.has("credentials")).isFalse();
+        assertThat(alice.has("id")).isFalse();
+        assertThat(alice.has("createdTimestamp")).isFalse();
+        assertThat(alice.has("totp")).isFalse();
+    }
+
+    @Test
+    void clientSecretsAreTheCurrentOnes() {
+        try (Connection connection = connect()) {
+            Map<String, String> secrets = connection.clientSecrets(REALM);
+
+            assertThat(secrets).containsExactly(Map.entry("shopSecret", SHOP_SECRET));
+            assertThat(secrets.toString()).doesNotContain(SHOP_SECRET);
+        }
+    }
+
+    @Test
+    void anUnknownRealmFailsWithCode4() {
+        try (Connection connection = connect()) {
+            Throwable extraction = catchThrowable(() -> connection.extract("no-such-realm", false));
+            Throwable secrets = catchThrowable(() -> connection.clientSecrets("no-such-realm"));
+
+            assertThat(extraction)
+                    .isInstanceOf(RealmNotFoundOnTargetException.class)
+                    .hasMessage("Realm 'no-such-realm' not found on local");
+            assertThat(ExitCodeResolver.resolve(extraction).code()).isEqualTo(4);
+            assertThat(secrets).isInstanceOf(RealmNotFoundOnTargetException.class);
+        }
+    }
+
+    @Test
+    void aDeletedDefaultIsWarned() {
+        assertThat(extract(false).warnings())
+                .contains("Default realm role 'offline_access' was deleted in Keycloak: an import may bring it back");
+    }
+
+    /**
+     * The extracted document, users included and given its variables, changes nothing but the realm settings and the
+     * identity provider: Keycloak never gives back the SMTP password nor the secret of an identity provider, so the
+     * import cannot tell they are the same (left to the next task of the story, which checks the whole dry run).
+     */
+    @Test
+    void aDryRunOfTheDocumentChangesNothingElse() {
+        try (Connection connection = connect()) {
+            String document = connection
+                    .extract(REALM, true)
+                    .document()
+                    .replace("{{shopSecret}}", SHOP_SECRET)
+                    .replace("{{googleClientSecret}}", GOOGLE_SECRET)
+                    .replace("{{smtpPassword}}", SMTP_PASSWORD);
+
+            ImportReport report =
+                    connection.dryRun(List.of(new ImportFile("target-extract-it", REALM + ".json", document)));
+
+            assertThat(report.plan(REALM))
+                    .allMatch(change -> change.type() == ResourceType.REALM_SETTINGS
+                            || change.type() == ResourceType.IDENTITY_PROVIDER);
+        }
+    }
+
+    private static ExtractedRealm extract(final boolean withUsers) {
+        try (Connection connection = connect()) {
+            return connection.extract(REALM, withUsers);
+        }
+    }
+
+    private static JsonNode document(final ExtractedRealm extracted) throws Exception {
+        return JSON.readTree(extracted.document());
+    }
+
+    private static List<String> clientIds(final JsonNode document) {
+        return document.path("clients").findValuesAsText("clientId");
+    }
+
+    private static List<String> names(final JsonNode elements) {
+        List<String> names = new ArrayList<>();
+        elements.forEach(element -> names.add(element.path("name").asText()));
+        return names;
+    }
+
+    private static List<String> texts(final JsonNode elements) {
+        List<String> texts = new ArrayList<>();
+        elements.forEach(element -> texts.add(element.asText()));
+        return texts;
+    }
+
+    private static JsonNode byName(final JsonNode elements, final String name) {
+        return byField(elements, "name", name);
+    }
+
+    private static JsonNode byField(final JsonNode elements, final String field, final String value) {
+        for (JsonNode element : elements) {
+            if (value.equals(element.path(field).asText())) {
+                return element;
+            }
+        }
+        return null;
+    }
+
+    private static RoleRepresentation role(final String name) {
+        RoleRepresentation role = new RoleRepresentation();
+        role.setName(name);
+        return role;
+    }
+
+    private static Connection connect() {
+        return new ChildContextKeycloakConnector(mainEnvironment, ShellAdaptersConfiguration.defaultImportOptions())
+                .connect(passwordTarget(), ADMIN_PASSWORD);
+    }
+
+    private static Target passwordTarget() {
+        return new Target(
+                "local",
+                URL,
+                "master",
+                "admin-cli",
+                GrantType.PASSWORD,
+                Optional.of(ADMIN),
+                true,
+                Duration.ofSeconds(5));
+    }
+
+    private static Keycloak admin() {
+        return KeycloakBuilder.builder()
+                .serverUrl(URL)
+                .realm("master")
+                .clientId("admin-cli")
+                .username(ADMIN)
+                .password(ADMIN_PASSWORD)
+                .build();
+    }
+}

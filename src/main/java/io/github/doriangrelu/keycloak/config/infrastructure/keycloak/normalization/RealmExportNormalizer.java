@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalizat
 import io.github.doriangrelu.keycloak.config.application.normalization.NormalizedRealm;
 import io.github.doriangrelu.keycloak.config.application.normalization.RealmNormalization;
 import io.github.doriangrelu.keycloak.config.application.normalization.port.ReferenceRealmGateway;
+import java.util.List;
 import java.util.Objects;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.slf4j.Logger;
@@ -70,7 +71,7 @@ public class RealmExportNormalizer {
         String realm = exported.getRealm();
         logger.info("Normalizing realm {}", realm);
 
-        NormalizedRealm normalized = this.normalization.normalize(realm, exportVersion, this.reader.read(exported));
+        Normalized normalized = normalize(exported, exportVersion);
         normalized
                 .missing()
                 .forEach(missing -> logger.warn(
@@ -80,11 +81,37 @@ public class RealmExportNormalizer {
                         missing.key(),
                         realm));
 
-        RealmRepresentation result = this.writer.write(realm, normalized.resources());
+        RealmRepresentation result = normalized.realm();
         // The id of a realm is only kept when it is not its name
         if (!Objects.equals(exported.getId(), realm)) {
             result.setId(exported.getId());
         }
         return result;
+    }
+
+    /**
+     * A realm normalized against the reference realm of a Keycloak version, without its id. The missing defaults are
+     * given, not logged.
+     *
+     * @param keycloakVersion the version whose reference realm is used, or the closest known one
+     */
+    public Normalized normalize(final RealmRepresentation exported, final String keycloakVersion) {
+        String realm = exported.getRealm();
+        NormalizedRealm normalized = this.normalization.normalize(realm, keycloakVersion, this.reader.read(exported));
+        return new Normalized(this.writer.write(realm, normalized.resources()), normalized.missing());
+    }
+
+    /**
+     * A normalized realm.
+     *
+     * @param realm the import file of the realm
+     * @param missing the resources of the reference realm missing from the export: an import may bring them back
+     */
+    public record Normalized(RealmRepresentation realm, List<NormalizedRealm.MissingResource> missing) {
+
+        public Normalized {
+            Objects.requireNonNull(realm, "realm");
+            missing = List.copyOf(missing);
+        }
     }
 }

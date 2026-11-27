@@ -93,6 +93,16 @@ class DeclarationDeletionsTest {
         }
 
         @Override
+        public ExtractedRealm extract(final String realm, final boolean withUsers) {
+            throw new UnsupportedOperationException("no extraction in this test");
+        }
+
+        @Override
+        public Map<String, String> clientSecrets(final String realm) {
+            throw new UnsupportedOperationException("no extraction in this test");
+        }
+
+        @Override
         public void close() {}
     };
 

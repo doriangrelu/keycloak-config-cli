@@ -32,6 +32,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -61,6 +62,16 @@ class ConnectTargetTest {
         @Override
         public ImportReport apply(final List<ImportFile> files) {
             throw new UnsupportedOperationException("no import in this test");
+        }
+
+        @Override
+        public ExtractedRealm extract(final String realm, final boolean withUsers) {
+            throw new UnsupportedOperationException("no extraction in this test");
+        }
+
+        @Override
+        public Map<String, String> clientSecrets(final String realm) {
+            throw new UnsupportedOperationException("no extraction in this test");
         }
 
         @Override

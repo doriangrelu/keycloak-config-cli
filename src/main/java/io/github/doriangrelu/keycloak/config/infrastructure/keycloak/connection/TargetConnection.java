@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection
 
 import io.github.doriangrelu.keycloak.config.application.component.port.ComponentGateway;
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
+import io.github.doriangrelu.keycloak.config.application.definition.ExtractedRealm;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportOptions;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportRealms;
@@ -32,14 +33,18 @@ import io.github.doriangrelu.keycloak.config.application.importation.port.RealmD
 import io.github.doriangrelu.keycloak.config.application.realm.port.RealmGateway;
 import io.github.doriangrelu.keycloak.config.application.reconcile.ReconciliationEngine;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.RealmExportNormalizer;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * A connection held by the Spring context of its target, where the import lives: closing the connection closes the
- * context.
+ * A connection held by the Spring context of its target, where the import and the extraction live: closing the
+ * connection closes the context.
  */
 final class TargetConnection implements Connection {
 
@@ -112,6 +117,36 @@ final class TargetConnection implements Connection {
         } catch (RuntimeException failure) {
             throw KeycloakFailures.duringImport(this.target, failure);
         }
+    }
+
+    @Override
+    public ExtractedRealm extract(final String realm, final boolean withUsers) {
+        Objects.requireNonNull(realm, "realm");
+        try {
+            return extraction().extract(realm, withUsers);
+        } catch (RuntimeException failure) {
+            throw KeycloakFailures.duringExtraction(this.target, failure);
+        }
+    }
+
+    @Override
+    public Map<String, String> clientSecrets(final String realm) {
+        Objects.requireNonNull(realm, "realm");
+        try {
+            return extraction().clientSecrets(realm);
+        } catch (RuntimeException failure) {
+            throw KeycloakFailures.duringExtraction(this.target, failure);
+        }
+    }
+
+    /** The extraction on the beans of the context: the Keycloak client and the normalization. */
+    private RealmExtraction extraction() {
+        return new RealmExtraction(
+                this.target,
+                this.keycloakVersion,
+                this.context.getBean(KeycloakProvider.class).getInstance(),
+                this.context.getBean(RealmExportNormalizer.class),
+                this.context.getBean(ClientKeycloakMapper.class));
     }
 
     @Override

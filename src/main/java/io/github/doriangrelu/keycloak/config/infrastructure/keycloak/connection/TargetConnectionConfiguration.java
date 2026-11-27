@@ -33,6 +33,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.identitypro
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.ReconciliationConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.UnmodeledAttributesConverter;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.messagebundle.MessageBundleKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.TargetNormalizationConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.realm.RealmKeycloakGateway;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakGateway;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakGateway;
@@ -58,6 +59,8 @@ import org.springframework.context.annotation.Import;
  *       packages only. The normalization, the connection itself, the command line and the shell are never scanned:
  *       the context holds no runner. The use case of the import is built for each call (see
  *       {@link TargetConnection}).
+ *   <li>the normalization of an extracted realm ({@link TargetNormalizationConfiguration}): reader, writer, reference
+ *       realms and normalizer, on the mappers of the import; neither the runner of the normalization nor its files.
  * </ul>
  *
  * <p>The import options ({@code KeycloakImportOptions}) are registered by the connector. This class carries no
@@ -67,7 +70,7 @@ import org.springframework.context.annotation.Import;
  * <p>The context runs with {@code run.operation=IMPORT}, the operation these beans are made for: the conditions they
  * carry for the main context hold in the context of a target without being changed.
  */
-@Import({KeycloakClientFactory.class, KeycloakProvider.class})
+@Import({KeycloakClientFactory.class, KeycloakProvider.class, TargetNormalizationConfiguration.class})
 @ComponentScan(
         basePackageClasses = {
             ReconciliationConfiguration.class,

@@ -24,6 +24,7 @@ import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import java.util.List;
+import java.util.Map;
 
 /** An open connection to the Keycloak of a target, checked by a first call. Closing it releases every resource. */
 public interface Connection extends AutoCloseable {
@@ -58,6 +59,28 @@ public interface Connection extends AutoCloseable {
      * @throws KeycloakAuthenticationException when Keycloak refuses the account of the target
      */
     ImportReport apply(List<ImportFile> files);
+
+    /**
+     * Reads a realm of the target as an import document: the whole realm, normalized against the reference realm of
+     * the version of the target (what Keycloak sets by default is left out), its secrets replaced by placeholders.
+     *
+     * @param withUsers whether the users are read too, without their credentials; the users from a directory and the
+     *     service accounts are left out
+     * @throws RealmNotFoundOnTargetException when the target has no such realm
+     * @throws KeycloakUnreachableException when Keycloak cannot be reached or does not answer in time
+     * @throws KeycloakAuthenticationException when Keycloak refuses the account of the target
+     */
+    ExtractedRealm extract(String realm, boolean withUsers);
+
+    /**
+     * The current secrets of the confidential clients of a realm, by the name of the variable an extraction gives them
+     * ({@code shopSecret}). The map never shows a value in its text.
+     *
+     * @throws RealmNotFoundOnTargetException when the target has no such realm
+     * @throws KeycloakUnreachableException when Keycloak cannot be reached or does not answer in time
+     * @throws KeycloakAuthenticationException when Keycloak refuses the account of the target
+     */
+    Map<String, String> clientSecrets(String realm);
 
     /** Closes the connection; closing it again does nothing. */
     @Override

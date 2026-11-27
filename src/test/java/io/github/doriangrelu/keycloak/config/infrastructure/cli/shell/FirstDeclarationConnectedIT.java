@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.springframework.shell.test.ShellInputProvider.providerFor;
 
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
+import io.github.doriangrelu.keycloak.config.application.definition.ExtractedRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.FirstDeclarationException;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
@@ -384,6 +385,16 @@ class FirstDeclarationConnectedIT {
         @Override
         public ImportReport apply(final List<ImportFile> files) {
             throw new AssertionError("nothing is imported");
+        }
+
+        @Override
+        public ExtractedRealm extract(final String realm, final boolean withUsers) {
+            throw new UnsupportedOperationException("no extraction in this test");
+        }
+
+        @Override
+        public Map<String, String> clientSecrets(final String realm) {
+            throw new UnsupportedOperationException("no extraction in this test");
         }
 
         @Override

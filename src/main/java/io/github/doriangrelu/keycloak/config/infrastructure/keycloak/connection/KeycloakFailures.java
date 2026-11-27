@@ -64,12 +64,26 @@ final class KeycloakFailures {
      * {@code 409}...), an invalid file and any other failure are left as they are.
      */
     static RuntimeException duringImport(final Target target, final RuntimeException failure) {
+        return during(target, "the import", failure);
+    }
+
+    /**
+     * A failure of an extraction on a connected target, translated as for an import: Keycloak could not be reached or
+     * refused to read the realm to the account. Any other failure is left as it is.
+     */
+    static RuntimeException duringExtraction(final Target target, final RuntimeException failure) {
+        return during(target, "the extraction", failure);
+    }
+
+    private static RuntimeException during(
+            final Target target, final String operation, final RuntimeException failure) {
         for (Throwable current = failure; current != null; current = current.getCause()) {
             if (current instanceof KeycloakAccessException access) {
                 return switch (access.getFailure()) {
                     case UNAVAILABLE, TIMEOUT -> new KeycloakUnreachableException(target, reasonOf(access), failure);
                     case UNAUTHORIZED ->
-                        KeycloakAuthenticationException.refusedOperation(target, access.getMessage(), failure);
+                        KeycloakAuthenticationException.refusedOperation(
+                                target, operation, access.getMessage(), failure);
                     default -> failure;
                 };
             }
@@ -80,7 +94,7 @@ final class KeycloakFailures {
                 int status = answered.getResponse().getStatus();
                 return switch (status) {
                     case 401, 403 ->
-                        KeycloakAuthenticationException.refusedOperation(target, "HTTP " + status, failure);
+                        KeycloakAuthenticationException.refusedOperation(target, operation, "HTTP " + status, failure);
                     case 429, 502, 503, 504 -> new KeycloakUnreachableException(target, "HTTP " + status, failure);
                     default -> failure;
                 };

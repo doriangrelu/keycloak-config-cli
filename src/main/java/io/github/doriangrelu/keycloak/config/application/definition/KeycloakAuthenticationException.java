@@ -57,8 +57,20 @@ public final class KeycloakAuthenticationException extends ApplicationException 
      */
     public static KeycloakAuthenticationException refusedOperation(
             final Target target, final String detail, final Throwable cause) {
+        return refusedOperation(target, "the import", detail, cause);
+    }
+
+    /**
+     * Keycloak refused an operation to the account of a target it let log in: the account lacks the rights it needs.
+     *
+     * @param operation what was refused: {@code the import}, {@code the extraction}
+     * @param detail what Keycloak said of the refused operation, which never holds the secret
+     * @param cause the client error, kept as a suppressed exception
+     */
+    public static KeycloakAuthenticationException refusedOperation(
+            final Target target, final String operation, final String detail, final Throwable cause) {
         return new KeycloakAuthenticationException(
-                "Keycloak at " + target.url() + " refused an operation of the import on target '" + target.name()
+                "Keycloak at " + target.url() + " refused an operation of " + operation + " on target '" + target.name()
                         + "' (missing rights?): " + detail,
                 cause);
     }

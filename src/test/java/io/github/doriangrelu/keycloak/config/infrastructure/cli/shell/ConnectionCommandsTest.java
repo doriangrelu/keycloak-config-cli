@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.doriangrelu.keycloak.config.application.definition.ConnectTarget;
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
+import io.github.doriangrelu.keycloak.config.application.definition.ExtractedRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.KeycloakUnreachableException;
 import io.github.doriangrelu.keycloak.config.application.definition.MissingAnswerException;
 import io.github.doriangrelu.keycloak.config.application.definition.UnknownTargetException;
@@ -324,6 +325,16 @@ class ConnectionCommandsTest {
         @Override
         public ImportReport apply(final List<ImportFile> files) {
             throw new UnsupportedOperationException("no import in this test");
+        }
+
+        @Override
+        public ExtractedRealm extract(final String realm, final boolean withUsers) {
+            throw new UnsupportedOperationException("no extraction in this test");
+        }
+
+        @Override
+        public Map<String, String> clientSecrets(final String realm) {
+            throw new UnsupportedOperationException("no extraction in this test");
         }
 
         @Override

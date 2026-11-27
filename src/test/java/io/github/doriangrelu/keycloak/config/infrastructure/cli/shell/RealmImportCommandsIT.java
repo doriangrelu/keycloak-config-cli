@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.springframework.shell.test.ShellInputProvider.providerFor;
 
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
+import io.github.doriangrelu.keycloak.config.application.definition.ExtractedRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
 import io.github.doriangrelu.keycloak.config.application.definition.port.KeycloakConnector;
@@ -613,6 +614,16 @@ class RealmImportCommandsIT {
             String realm =
                     files.getFirst().content().lines().findFirst().orElseThrow().substring("realm: ".length());
             return new ImportReport(Map.of(realm, RealmImportCommandsIT.this.changes));
+        }
+
+        @Override
+        public ExtractedRealm extract(final String realm, final boolean withUsers) {
+            throw new UnsupportedOperationException("no extraction in this test");
+        }
+
+        @Override
+        public Map<String, String> clientSecrets(final String realm) {
+            throw new UnsupportedOperationException("no extraction in this test");
         }
 
         @Override
