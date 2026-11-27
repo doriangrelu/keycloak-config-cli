@@ -36,7 +36,11 @@ class ShellLauncherTest {
                 "realm import --var title=\"a b\" --apply | realm import --var title=*** --apply",
                 "realm import --var \"title=a b\" --apply | realm import --var \"title=***\" --apply",
                 "realm dry-run --var =s3cr3t | realm dry-run --var =***",
-                "realm dry-run --var noEqual | realm dry-run --var noEqual",
+                "realm dry-run --var noEqual | realm dry-run --var ***",
+                "realm dry-run --var shopSecret:s3cr3t --apply | realm dry-run --var *** --apply",
+                "realm dry-run --var=shopSecret:s3cr3t | realm dry-run --var=***",
+                "realm dry-run --var \"shopSecret s3cr3t\" | realm dry-run --var ***",
+                "realm dry-run --var | realm dry-run --var",
                 "realm dry-run --variant x=y | realm dry-run --variant x=y",
                 "realm show | realm show"
             })

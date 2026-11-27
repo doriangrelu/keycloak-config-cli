@@ -21,8 +21,10 @@
 package io.github.doriangrelu.keycloak.config.domain.definition;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -45,6 +47,7 @@ public final class Variables {
     public static List<VariableUse> of(final Map<String, String> sourcesByFile) {
         Map<String, TreeSet<String>> defaults = new TreeMap<>();
         Map<String, TreeSet<String>> files = new TreeMap<>();
+        Set<String> withoutDefault = new HashSet<>();
         sourcesByFile.forEach((file, source) -> {
             Matcher matcher = PLACEHOLDER.matcher(source);
             while (matcher.find()) {
@@ -52,13 +55,13 @@ public final class Variables {
                     files.computeIfAbsent(variable.name(), name -> new TreeSet<>())
                             .add(file);
                     TreeSet<String> values = defaults.computeIfAbsent(variable.name(), name -> new TreeSet<>());
-                    variable.defaultValue().ifPresent(values::add);
+                    variable.defaultValue().ifPresentOrElse(values::add, () -> withoutDefault.add(variable.name()));
                 }
             }
         });
         List<VariableUse> uses = new ArrayList<>();
-        files.forEach((name, usedIn) ->
-                uses.add(new VariableUse(name, List.copyOf(defaults.get(name)), List.copyOf(usedIn))));
+        files.forEach((name, usedIn) -> uses.add(new VariableUse(
+                name, List.copyOf(defaults.get(name)), List.copyOf(usedIn), withoutDefault.contains(name))));
         return uses;
     }
 

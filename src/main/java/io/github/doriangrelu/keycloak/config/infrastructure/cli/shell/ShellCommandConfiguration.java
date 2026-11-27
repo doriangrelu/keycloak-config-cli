@@ -42,6 +42,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.logging.LoggingSystem;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.shell.core.ConsoleInputProvider;
@@ -55,6 +56,15 @@ import org.springframework.shell.core.command.DefaultCommandParser;
 @ConditionalOnProperty(prefix = "run", name = "operation", havingValue = "SHELL")
 @EnableConfigurationProperties(ShellProperties.class)
 public class ShellCommandConfiguration {
+
+    /**
+     * Created with the first beans, before any command: the loggers that would show the value of a variable stay at
+     * {@code INFO} at most.
+     */
+    @Bean
+    public ShellLogLevels shellLogLevels() {
+        return ShellLogLevels.pin(LoggingSystem.get(ShellCommandConfiguration.class.getClassLoader()));
+    }
 
     @Bean
     public ShellSession shellSession() {

@@ -63,7 +63,7 @@ public final class ResolveVariables {
             int equal = option.indexOf('=');
             String name = equal < 0 ? option : option.substring(0, equal);
             if (equal < 0 || name.isBlank()) {
-                throw new InvalidVariableOptionException(name);
+                throw new InvalidVariableOptionException();
             }
             values.put(name, option.substring(equal + 1));
         }
@@ -94,7 +94,9 @@ public final class ResolveVariables {
         Optional<String> value = Optional.ofNullable(given.get(name))
                 .or(() -> remembered.get(name))
                 .or(() -> this.environment.apply(ENVIRONMENT_PREFIX + name));
-        if (value.isPresent() || !use.defaultValues().isEmpty()) {
+        // a variable with a default value in every placeholder needs none; one placeholder without a default is
+        // enough to need a value, which then applies to every placeholder
+        if (value.isPresent() || !use.usedWithoutDefault()) {
             return value;
         }
         String answer = answer(name);

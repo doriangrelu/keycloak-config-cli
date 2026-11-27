@@ -182,11 +182,41 @@ class ResolveVariablesTest {
 
     @Test
     void parseVarsRefusesAnOptionWithoutEqualSign() {
-        assertThatThrownBy(() -> ResolveVariables.parseVars(List.of("shopUrl")))
+        assertThatThrownBy(() -> ResolveVariables.parseVars(List.of("shopSecret:marker-s3cr3t")))
                 .isInstanceOf(InvalidVariableOptionException.class)
-                .hasMessage("Invalid --var 'shopUrl': expected name=value");
+                .hasMessage("Invalid --var: expected name=value");
         assertThatThrownBy(() -> ResolveVariables.parseVars(List.of("=marker-s3cr3t")))
                 .isInstanceOf(InvalidVariableOptionException.class)
                 .hasMessageNotContaining("marker-s3cr3t");
+    }
+
+    @Test
+    void aVariableWithADefaultInOnlyOnePlaceIsAskedLikeOneWithout() {
+        realmUses("a: {{shopUrl:http://default}}", "b: {{shopUrl}}");
+
+        Map<String, String> values =
+                resolver(new ScriptedQuestions("https://shop")).resolve("demo", Map.of(), this.remembered);
+
+        assertThat(values).containsExactly(Map.entry("shopUrl", "https://shop"));
+        assertThat(this.remembered.get("shopUrl")).contains("https://shop");
+    }
+
+    @Test
+    void aVariableWithADefaultInOnlyOnePlaceIsMissingInScriptMode() {
+        realmUses("a: {{shopUrl:http://default}}", "b: {{shopUrl}}");
+
+        assertThatThrownBy(() -> resolver(new ScriptedQuestions()).resolve("demo", Map.of(), this.remembered))
+                .isInstanceOf(MissingVariableException.class)
+                .hasMessage("Variable 'shopUrl' has no value: give it with --var shopUrl=… or KCC_VAR_shopUrl");
+    }
+
+    @Test
+    void aVariableWithADefaultInOnlyOnePlaceTakesTheEnvironment() {
+        realmUses("a: {{shopUrl:http://default}}", "b: {{shopUrl}}");
+        this.environment.put("KCC_VAR_shopUrl", "from-env");
+
+        Map<String, String> values = resolver(new ScriptedQuestions()).resolve("demo", Map.of(), this.remembered);
+
+        assertThat(values).containsExactly(Map.entry("shopUrl", "from-env"));
     }
 }

@@ -265,8 +265,15 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
                 equal++;
             }
             if (equal == command.length() || command.charAt(equal) != '=') {
-                shown.append(command, index, equal);
-                index = equal;
+                if (name == command.length()) {
+                    // no argument at all
+                    shown.append(command, index, name);
+                    index = name;
+                    continue;
+                }
+                // no "=": nothing tells the name from the value, the whole argument is hidden
+                shown.append(command, index, name).append("***");
+                index = endOfWord(command, name, (char) 0);
                 continue;
             }
             char nameQuote = isQuote(command.charAt(name)) ? command.charAt(name) : 0;

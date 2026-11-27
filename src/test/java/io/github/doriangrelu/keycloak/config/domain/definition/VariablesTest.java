@@ -64,4 +64,17 @@ class VariablesTest {
                         .hasConflictingDefaults())
                 .isFalse();
     }
+
+    @Test
+    void aVariableUsedOnceWithoutDefaultIsSaidSo() {
+        VariableUse mixed = Variables.of(Map.of("a.yaml", "x: {{url:a}}", "b.yaml", "y: {{url}}"))
+                .getFirst();
+        VariableUse everywhere = Variables.of(Map.of("a.yaml", "x: {{url:a}}", "b.yaml", "y: {{url:b}}"))
+                .getFirst();
+        VariableUse never = Variables.of(Map.of("a.yaml", "x: {{url}}")).getFirst();
+
+        assertThat(mixed.usedWithoutDefault()).isTrue();
+        assertThat(everywhere.usedWithoutDefault()).isFalse();
+        assertThat(never.usedWithoutDefault()).isTrue();
+    }
 }

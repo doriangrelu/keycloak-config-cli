@@ -22,10 +22,13 @@ package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
 
-/** A {@code --var} option is not written {@code name=value}. The message never holds the value. */
+/**
+ * A {@code --var} option is not written {@code name=value}. The message holds nothing of the option: without its
+ * {@code =}, nothing tells the name from the value.
+ */
 public final class InvalidVariableOptionException extends ApplicationException {
 
-    public InvalidVariableOptionException(final String name) {
-        super("Invalid --var '" + name + "': expected name=value");
+    public InvalidVariableOptionException() {
+        super("Invalid --var: expected name=value");
     }
 }

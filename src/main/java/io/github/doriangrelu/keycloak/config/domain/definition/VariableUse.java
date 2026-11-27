@@ -28,12 +28,18 @@ import java.util.List;
  * @param name the name of the variable
  * @param defaultValues the distinct default values written in the placeholders
  * @param files the files that hold a placeholder of the variable
+ * @param usedWithoutDefault whether a placeholder of the variable has no default value
  */
-public record VariableUse(String name, List<String> defaultValues, List<String> files) {
+public record VariableUse(String name, List<String> defaultValues, List<String> files, boolean usedWithoutDefault) {
 
     public VariableUse {
         defaultValues = List.copyOf(defaultValues);
         files = List.copyOf(files);
+    }
+
+    /** A variable used without default value only when no placeholder gives one. */
+    public VariableUse(final String name, final List<String> defaultValues, final List<String> files) {
+        this(name, defaultValues, files, defaultValues.isEmpty());
     }
 
     /** Whether the placeholders give different default values: the import would use only one of them. */

@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.springframework.shell.test.ShellInputProvider.providerFor;
 
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
@@ -52,6 +53,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.logging.LogLevel;
+import org.springframework.boot.logging.LoggingSystem;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.shell.core.ShellRunner;
@@ -351,7 +354,7 @@ class RealmImportCommandsIT {
 
             assertThat(outcome.exitCode()).isEqualTo(2);
             assertThat(outcome.output())
-                    .contains("Invalid --var '': expected name=value")
+                    .contains("Invalid --var: expected name=value")
                     .doesNotContain(SECRET);
         });
     }
@@ -499,6 +502,78 @@ class RealmImportCommandsIT {
                     .doesNotContain(SECRET);
             assertThat(this.applied).singleElement().isSameAs(this.dryRuns.getFirst());
         });
+    }
+
+    @Test
+    void aVarWithoutEqualSignNeverShowsItsArgument() throws IOException {
+        String marker = "s3cr3t-marker-without-equal";
+        contexts().run(context -> {
+            Outcome outcome = script(context, "demo", "connect local", "realm dry-run --var shopSecret:" + marker);
+
+            assertThat(outcome.exitCode()).isEqualTo(2);
+            assertThat(outcome.output())
+                    .contains("> realm dry-run --var ***")
+                    .contains("Invalid --var: expected name=value")
+                    .contains("Stopped at line 2: realm dry-run --var ***")
+                    .doesNotContain(marker);
+
+            ShellTestClient shell =
+                    new ShellTestClient(context.getBean(CommandParser.class), context.getBean(CommandRegistry.class));
+            Throwable failure = catchThrowable(() -> shell.sendCommand("realm dry-run --var shopSecret:" + marker));
+            assertThat(failure).isNotNull();
+            for (Throwable current = failure; current != null; current = current.getCause()) {
+                assertThat(String.valueOf(current.getMessage())).doesNotContain(marker);
+            }
+            assertThat(this.dryRuns).isEmpty();
+        });
+    }
+
+    @Test
+    void aVariableWithADefaultInOnlyOnePlaceNeedsAValue() throws IOException {
+        Path folder = Files.createDirectories(this.root.resolve("mixed"));
+        Files.writeString(
+                folder.resolve("00-realm.yaml"),
+                "realm: mixed\nenabled: true\ndisplayName: \"{{brand:Shop}}\"\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(
+                folder.resolve("20-clients.yaml"),
+                "realm: mixed\nclients:\n  - clientId: shop\n    description: \"{{brand}}\"\n",
+                StandardCharsets.UTF_8);
+        contexts().run(context -> {
+            Outcome missing = command(context, "realm dry-run", "mixed", "local");
+            Outcome given = command(context, "realm dry-run --var brand=Market", "mixed", "local");
+
+            assertThat(missing.exitCode()).isEqualTo(2);
+            assertThat(missing.output())
+                    .contains("Variable 'brand' has no value: give it with --var brand=… or KCC_VAR_brand")
+                    .doesNotContain("import.mustache");
+            assertThat(given.exitCode()).isZero();
+            assertThat(sentContent(this.dryRuns.getLast()))
+                    .contains("displayName: \"Market\"")
+                    .contains("description: \"Market\"");
+        });
+    }
+
+    @Test
+    void theLoggersThatWouldShowAValueStayAtInfo() {
+        List<String> loggers = List.of(
+                "org.springframework.shell.core.command.DefaultCommandParser",
+                "org.springframework.shell.core.command.adapter.MethodInvokerCommandAdapter",
+                "io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.RealmDocuments",
+                "io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.CloneUtil");
+        LoggingSystem logging = LoggingSystem.get(getClass().getClassLoader());
+        loggers.forEach(name -> logging.setLogLevel(name, LogLevel.TRACE));
+        try {
+            contexts().run(context -> {
+                for (String name : loggers) {
+                    assertThat(logging.getLoggerConfiguration(name).getEffectiveLevel())
+                            .as(name)
+                            .isEqualTo(LogLevel.INFO);
+                }
+            });
+        } finally {
+            loggers.forEach(name -> logging.setLogLevel(name, null));
+        }
     }
 
     /** Records the files of each dry run and import, and answers the changes of the test. */
