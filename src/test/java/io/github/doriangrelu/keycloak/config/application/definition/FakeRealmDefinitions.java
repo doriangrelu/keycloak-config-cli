@@ -32,6 +32,7 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     ElementKeys previewed = ElementKeys.empty();
     ReorganizationPlan plan = new ReorganizationPlan(List.of(), List.of(), List.of());
     List<String> written = List.of();
+    Map<String, String> sources = Map.of();
     final List<ReorganizationPlan> reorganized = new ArrayList<>();
 
     FakeRealmDefinitions(final RealmDefinition realm) {
@@ -61,7 +62,7 @@ final class FakeRealmDefinitions implements RealmDefinitions {
 
     @Override
     public Map<String, String> sources(final String folder) {
-        return Map.of();
+        return this.sources;
     }
 
     @Override
