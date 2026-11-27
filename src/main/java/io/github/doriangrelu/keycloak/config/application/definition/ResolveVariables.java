@@ -88,6 +88,26 @@ public final class ResolveVariables {
         return values;
     }
 
+    /**
+     * The value of each variable that has one, from the session and the environment only: nothing is asked, nothing
+     * is remembered.
+     *
+     * @throws MissingVariableException for the first variable that has no value and no default value
+     * @throws UnknownRealmFolderException when the folder is not a realm
+     */
+    public Map<String, String> resolveKnown(final String folder, final VariableValues remembered) {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (VariableUse use : this.variables.list(folder)) {
+            String name = use.name();
+            Optional<String> value = remembered.get(name).or(() -> this.environment.apply(ENVIRONMENT_PREFIX + name));
+            if (value.isEmpty() && use.usedWithoutDefault()) {
+                throw new MissingVariableException(name);
+            }
+            value.ifPresent(known -> values.put(name, known));
+        }
+        return values;
+    }
+
     private Optional<String> valueOf(
             final VariableUse use, final Map<String, String> given, final VariableValues remembered) {
         String name = use.name();

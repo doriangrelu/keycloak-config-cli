@@ -14,6 +14,11 @@ public final class FirstDeclarationException extends ApplicationException {
         super(warning(element) + " In a script, add --declare-type.");
     }
 
+    /** The message is the given warning, which a script cannot confirm. */
+    public FirstDeclarationException(final ElementDefinition element, final String warning) {
+        super(warning + " In a script, add --declare-type.");
+    }
+
     /** What the user is asked to confirm: the import will delete what the files do not declare. */
     public static String warning(final ElementDefinition element) {
         return "At the next import, all the " + cleanedWith(element)
@@ -21,7 +26,7 @@ public final class FirstDeclarationException extends ApplicationException {
     }
 
     /** What the import cleans with this element: its type, or the realm roles, or the roles of its client. */
-    private static String cleanedWith(final ElementDefinition element) {
+    static String cleanedWith(final ElementDefinition element) {
         if (element instanceof RoleDefinition role) {
             return role.clientId()
                     .map(clientId -> "roles of client '" + clientId.raw() + "'")

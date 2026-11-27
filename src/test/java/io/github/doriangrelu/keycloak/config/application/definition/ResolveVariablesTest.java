@@ -219,4 +219,27 @@ class ResolveVariablesTest {
 
         assertThat(values).containsExactly(Map.entry("shopUrl", "from-env"));
     }
+
+    @Test
+    void resolveKnownNeverAsks() {
+        realmUses("url: {{shopUrl}}", "port: {{port:8080}}", "ext: {{extra}}");
+        this.remembered.remember("shopUrl", "from-memory");
+        this.environment.put("KCC_VAR_extra", "from-env");
+
+        Map<String, String> values = resolver(new ScriptedQuestions()).resolveKnown("demo", this.remembered);
+
+        assertThat(values).containsOnly(Map.entry("shopUrl", "from-memory"), Map.entry("extra", "from-env"));
+    }
+
+    @Test
+    void resolveKnownNamesTheMissingVariable() {
+        realmUses("url: {{shopUrl}}");
+        Questions questions = mock(Questions.class);
+
+        assertThatThrownBy(() -> resolver(questions).resolveKnown("demo", this.remembered))
+                .isInstanceOf(MissingVariableException.class)
+                .hasMessageContaining("shopUrl");
+        assertThat(this.remembered.get("shopUrl")).isEmpty();
+        verify(questions, never()).ask(any(), any());
+    }
 }

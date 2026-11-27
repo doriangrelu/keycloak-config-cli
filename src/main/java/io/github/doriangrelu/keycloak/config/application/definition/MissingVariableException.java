@@ -25,7 +25,15 @@ import io.github.doriangrelu.keycloak.config.application.common.ApplicationExcep
 /** A variable has no value and nobody can be asked for it, such as in a script. The message holds no value. */
 public final class MissingVariableException extends ApplicationException {
 
+    private final String variable;
+
     public MissingVariableException(final String name) {
         super("Variable '" + name + "' has no value: give it with --var " + name + "=… or KCC_VAR_" + name);
+        this.variable = name;
+    }
+
+    /** The name of the variable, never a value. */
+    public String variable() {
+        return this.variable;
     }
 }
