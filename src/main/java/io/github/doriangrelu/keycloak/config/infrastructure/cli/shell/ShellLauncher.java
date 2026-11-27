@@ -80,6 +80,8 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
         }
     };
 
+    private static final String VAR_OPTION = "--var";
+
     private final ShellProperties properties;
     private final RuleBook ruleBook;
     private final ReadRealms readRealms;
@@ -203,7 +205,7 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
 
     /**
      * Runs the commands of the file in order, in one session: the first one that fails stops the script with its exit
-     * code.
+     * code. A dry run that finds changes (code 10) does not stop it: the script then ends with 10 when nothing failed.
      */
     private int runScript(final Path file) {
         List<String> lines;
@@ -215,16 +217,21 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             return fail("Cannot read " + file + ": " + messageOf(e));
         }
         boolean any = false;
+        boolean pendingChanges = false;
         for (int index = 0; index < lines.size(); index++) {
             String command = lines.get(index).strip();
             if (command.isEmpty() || command.startsWith("#")) {
                 continue;
             }
             any = true;
-            this.output.println("> " + command);
+            this.output.println("> " + shown(command));
             int code = runSafely(command);
+            if (code == ExitCode.PENDING_CHANGES.code()) {
+                pendingChanges = true;
+                continue;
+            }
             if (code != ExitCode.SUCCESS.code()) {
-                this.output.println("Stopped at line " + (index + 1) + ": " + command);
+                this.output.println("Stopped at line " + (index + 1) + ": " + shown(command));
                 this.output.flush();
                 return code;
             }
@@ -233,7 +240,82 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
             this.output.println("No command in " + file);
             this.output.flush();
         }
-        return ExitCode.SUCCESS.code();
+        return pendingChanges ? ExitCode.PENDING_CHANGES.code() : ExitCode.SUCCESS.code();
+    }
+
+    /**
+     * The command as the script shows it: the value of each {@code --var name=value} option is hidden, quoted or not,
+     * as the parser of Spring Shell reads it.
+     */
+    static String shown(final String command) {
+        StringBuilder shown = new StringBuilder();
+        int index = 0;
+        int option;
+        while ((option = command.indexOf(VAR_OPTION, index)) >= 0) {
+            int name = skipSeparators(command, option + VAR_OPTION.length());
+            if (name < 0) {
+                shown.append(command, index, option + VAR_OPTION.length());
+                index = option + VAR_OPTION.length();
+                continue;
+            }
+            int equal = name;
+            while (equal < command.length()
+                    && command.charAt(equal) != '='
+                    && !Character.isWhitespace(command.charAt(equal))) {
+                equal++;
+            }
+            if (equal == command.length() || command.charAt(equal) != '=') {
+                shown.append(command, index, equal);
+                index = equal;
+                continue;
+            }
+            char nameQuote = isQuote(command.charAt(name)) ? command.charAt(name) : 0;
+            int end = endOfWord(command, equal + 1, nameQuote);
+            shown.append(command, index, equal + 1).append("***");
+            if (nameQuote != 0) {
+                shown.append(nameQuote);
+            }
+            index = end;
+        }
+        return shown.append(command.substring(index)).toString();
+    }
+
+    /** Where the value of the option starts: after {@code =}, or after the blanks; -1 when it is another option. */
+    private static int skipSeparators(final String command, final int from) {
+        if (from < command.length() && command.charAt(from) == '=') {
+            return from + 1;
+        }
+        int index = from;
+        while (index < command.length() && Character.isWhitespace(command.charAt(index))) {
+            index++;
+        }
+        return index == from && index < command.length() ? -1 : index;
+    }
+
+    /** Where the word ends, as the parser of Spring Shell splits words: at a blank outside quotes. */
+    private static int endOfWord(final String command, final int from, final char openedQuote) {
+        char opened = openedQuote;
+        int index = from;
+        while (index < command.length()) {
+            char current = command.charAt(index);
+            if (current == '\\' && index + 1 < command.length()) {
+                index++;
+            } else if (opened != 0) {
+                if (current == opened) {
+                    opened = 0;
+                }
+            } else if (isQuote(current)) {
+                opened = current;
+            } else if (Character.isWhitespace(current)) {
+                break;
+            }
+            index++;
+        }
+        return index;
+    }
+
+    private static boolean isQuote(final char character) {
+        return character == '"' || character == '\'';
     }
 
     private int fail(final String message) {
@@ -252,12 +334,21 @@ public class ShellLauncher implements ApplicationRunner, ExitCodeGenerator {
         }
     }
 
+    /**
+     * Runs one command: {@code 0} when it succeeds, or {@code 10} when it is a dry run that found changes, which the
+     * command tells the session (Spring Shell gives no other code to a command that succeeds, and an interactive
+     * session would print any other {@link ExitStatus} as an error).
+     */
     private int runOnce(final String line) throws Exception {
         ParsedInput parsed = this.parser.parse(line);
+        this.session.takePendingChanges();
         try {
             ExitStatus status = new CommandExecutor(this.registry)
                     .execute(new CommandContext(parsed, this.registry, this.output, NO_ANSWER));
-            return status.code() == 0 ? ExitCode.SUCCESS.code() : ExitCode.INVALID_CONFIGURATION.code();
+            if (status.code() != 0) {
+                return ExitCode.INVALID_CONFIGURATION.code();
+            }
+            return this.session.takePendingChanges() ? ExitCode.PENDING_CHANGES.code() : ExitCode.SUCCESS.code();
         } catch (CommandNotFoundException e) {
             this.output.println(e.getMessage());
             return ExitCode.INVALID_CONFIGURATION.code();

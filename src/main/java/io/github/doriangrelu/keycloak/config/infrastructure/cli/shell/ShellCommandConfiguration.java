@@ -29,11 +29,15 @@ import io.github.doriangrelu.keycloak.config.application.definition.EditClient;
 import io.github.doriangrelu.keycloak.config.application.definition.EditGroup;
 import io.github.doriangrelu.keycloak.config.application.definition.EditRole;
 import io.github.doriangrelu.keycloak.config.application.definition.FormatRealm;
+import io.github.doriangrelu.keycloak.config.application.definition.ImportOpenedRealm;
 import io.github.doriangrelu.keycloak.config.application.definition.ListVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.ReadRealms;
 import io.github.doriangrelu.keycloak.config.application.definition.ReorganizeRealm;
+import io.github.doriangrelu.keycloak.config.application.definition.ResolveVariables;
 import io.github.doriangrelu.keycloak.config.application.definition.RuleBook;
+import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
 import java.io.PrintWriter;
+import java.util.Optional;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -115,6 +119,24 @@ public class ShellCommandConfiguration {
             final ShellSession shellSession,
             final EnvironmentVariables environmentVariables) {
         return new ConnectionCommands(connectTarget, shellSession, environmentVariables);
+    }
+
+    /**
+     * The dry run and the import of the opened realm: the use case is built for each command, to ask its questions on
+     * the console of that command; {@code KCC_VAR_<name>} is read from the environment.
+     */
+    @Bean
+    public RealmImportCommands realmImportCommands(
+            final ListVariables listVariables,
+            final RealmDefinitions realmDefinitions,
+            final EnvironmentVariables environmentVariables,
+            final ShellSession shellSession) {
+        return new RealmImportCommands(
+                questions -> new ImportOpenedRealm(
+                        new ResolveVariables(
+                                listVariables, name -> Optional.ofNullable(environmentVariables.get(name)), questions),
+                        realmDefinitions),
+                shellSession);
     }
 
     /** Replaces the console input of Spring Shell, whose prompt is fixed: it shows the realm and the target. */

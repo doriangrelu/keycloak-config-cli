@@ -110,6 +110,17 @@ public final class DryRunReport {
 
     /** Report for people. */
     public String toText() {
+        StringBuilder text = new StringBuilder(changesText());
+        int pending = pendingChanges();
+        text.append(
+                pending == 0
+                        ? String.format("Dry run: no change pending.%n")
+                        : String.format("Dry run: %d change(s) pending.%n", pending));
+        return text.toString();
+    }
+
+    /** The changes of each realm, as {@link #toText()} shows them, without its last line on the dry run. */
+    public String changesText() {
         StringBuilder text = new StringBuilder();
         for (RealmEntry realm : this.realms) {
             text.append(String.format(
@@ -123,11 +134,6 @@ public final class DryRunReport {
                         change.fields().isEmpty() ? "" : " (" + String.join(", ", change.fields()) + ")"));
             }
         }
-        int pending = pendingChanges();
-        text.append(
-                pending == 0
-                        ? String.format("Dry run: no change pending.%n")
-                        : String.format("Dry run: %d change(s) pending.%n", pending));
         return text.toString();
     }
 

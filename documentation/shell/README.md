@@ -2,7 +2,7 @@
 
 The shell is a guided editor for the realm definition files. It asks questions, explains the choices, and writes the clients, roles and groups of a realm in the files you later import with keycloak-config-cli. You do not need to know the export format of Keycloak: the shell translates your answers into the right keys, and applies [rules](rules.md) that keep the result safe.
 
-The shell edits files. It connects to Keycloak only when you ask it to, with [`connect`](#connecting-to-keycloak); to see what an import would change, use a [dry run](../advanced/dry-run.md).
+The shell edits files. It connects to Keycloak only when you ask it to, with [`connect`](#connecting-to-keycloak); connected, it shows what importing the opened realm would change and imports it, see [Dry run and import](#dry-run-and-import).
 
 ## Pages
 
@@ -84,6 +84,44 @@ KCC_DEV_SECRET=... java -jar keycloak-config-cli.jar --run.operation=SHELL --she
 
 A target that cannot be connected stops the launch with the exit code of the cause (`2`, `3` or `4`). In an interactive session, the secret of `shell.target` is asked on the console. The connection is closed when the shell exits.
 
+### Dry run and import
+
+Once connected, the shell imports the opened realm: connect, look at the changes, then import them.
+
+```text
+kcc> realm open shop
+Realm 'shop' opened (2 clients, 3 roles, 1 groups)
+kcc:shop> connect dev
+Connected to dev (https://keycloak.dev.example.org, Keycloak 26.5.3)
+kcc:shop@dev> realm dry-run
+Dry run of 'shop' on dev (https://keycloak.dev.example.org)
+? Value of 'shopSecret':
+Realm 'shop': 1 change(s)
+  + Client 'shop-web'
+Dry run: 1 change(s) pending.
+kcc:shop@dev> realm import
+Import of 'shop' on dev (https://keycloak.dev.example.org)
+Realm 'shop': 1 change(s)
+  + Client 'shop-web'
+? Apply these 1 change(s) to dev? [y/N]: y
+Realm 'shop' imported on dev: 1 change(s) applied
+kcc:shop@dev> realm dry-run
+Dry run of 'shop' on dev (https://keycloak.dev.example.org)
+Realm 'shop': 0 change(s)
+Dry run: no change pending.
+```
+
+The values of the variables come from `--var <name>=<value>`, the session, `KCC_VAR_<name>`, the default value of the placeholder, or a question; the session remembers them until the realm or the target changes. The files imported, the options and the deletions are the ones of the command-line import. See [`realm dry-run`](commands.md#realm-dry-run) and [`realm import`](commands.md#realm-import).
+
+In a script, give the values with `--var` or `KCC_VAR_<name>`, and `--apply` to import:
+
+```bash
+KCC_DEV_SECRET=... KCC_VAR_shopSecret=... java -jar keycloak-config-cli.jar --run.operation=SHELL \
+  --shell.root=./realms --shell.realm=shop --shell.target=dev --shell.command="realm import --apply"
+```
+
+`realm dry-run` ends with exit code `10` when changes are pending, as the command-line [dry run](../advanced/dry-run.md) does.
+
 ## A session
 
 A session works on one realm at a time. `realm open <folder>` or `realm create` opens a realm; the other commands (`client`, `role`, `group`, `variables`, `realm show`, `realm format`, `realm reorganize`) work on it. `realm list` and `rules list` need no open realm.
@@ -143,7 +181,7 @@ client create --id=shop-web --type=spa --url=https://shop.example.com --declare-
 group create --name=customers --realm-roles=customer --declare-type
 ```
 
-Empty lines and lines starting with `#` are ignored. Each command is printed after `> ` before its result. The first command that fails stops the script with its exit code and the line, for example `Stopped at line 3: client create ...`. The commands run in one session, so `realm create` opens the realm for the next ones, and `shell.realm` can open an existing one first. A line that has run stays written when a later line fails: nothing is rolled back.
+Empty lines and lines starting with `#` are ignored. Each command is printed after `> ` before its result. The first command that fails stops the script with its exit code and the line, for example `Stopped at line 3: client create ...`; a `realm dry-run` that finds changes (code `10`) is not a failure and does not stop it. The values of `--var` options are printed as `***`. The commands run in one session, so `realm create` opens the realm for the next ones, and `shell.realm` can open an existing one first. A line that has run stays written when a later line fails: nothing is rolled back.
 
 `shell.command` and `shell.script` cannot be used together. A `shell.script` file that does not exist fails with exit code `2` before any command runs; a file with no command prints `No command in <file>` and succeeds.
 
@@ -154,8 +192,9 @@ Use `--declare-type` the first time a script writes an element of a type: see [F
 | Code | Meaning |
 |------|---------|
 | `0` | Success, including a command that only gave advice |
-| `2` | Invalid use or configuration: unknown command, option, realm, client, role, group or target; a missing answer or secret in script mode; a change refused by the [rules](rules.md); a read-only realm; an invalid rules file or `kcc-targets.yaml`; `shell.command` with `shell.script` |
-| `3` | Keycloak cannot be reached or did not answer in time (`connect`, `shell.target`) |
-| `4` | Keycloak refused the login of the target (`connect`, `shell.target`) |
+| `2` | Invalid use or configuration: unknown command, option, realm, client, role, group or target; a missing answer, secret or variable value in script mode; no opened realm or no connection for an import; an invalid import file; a change refused by the [rules](rules.md); a read-only realm; an invalid rules file or `kcc-targets.yaml`; `shell.command` with `shell.script` |
+| `3` | Keycloak cannot be reached or did not answer in time (`connect`, `shell.target`, `realm dry-run`, `realm import`) |
+| `4` | Keycloak refused the login of the target, or an operation of an import (`connect`, `shell.target`, `realm dry-run`, `realm import`) |
+| `10` | `realm dry-run` found pending changes; in a `shell.script`, the script goes on and ends with `10` when no command failed |
 
 Other codes of [Exit Codes](../reference/exit-codes.md) apply to the cause of an unexpected failure. An invalid rules file stops the shell before the first command, whatever the command.

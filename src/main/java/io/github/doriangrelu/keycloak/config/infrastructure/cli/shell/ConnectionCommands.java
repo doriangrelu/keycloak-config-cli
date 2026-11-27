@@ -23,6 +23,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.cli.shell;
 import io.github.doriangrelu.keycloak.config.application.definition.ConnectTarget;
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
 import io.github.doriangrelu.keycloak.config.application.definition.MissingAnswerException;
+import io.github.doriangrelu.keycloak.config.application.definition.NotConnectedException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
@@ -76,7 +77,7 @@ public class ConnectionCommands {
         return this.session
                 .disconnect()
                 .map(target -> "Disconnected from " + target.name())
-                .orElse("Not connected: use 'connect <target>'");
+                .orElse(NotConnectedException.MESSAGE);
     }
 
     @Command(

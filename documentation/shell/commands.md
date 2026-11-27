@@ -246,7 +246,7 @@ team  [realm: customer]  40-groups.yaml:2
 
 ### `variables list`
 
-Lists the placeholders of the opened realm with their default value and the files that use them. These are the values to give at import with `import.mustache.variables.*` (see [Templating with Mustache](../advanced/templating.md)).
+Lists the placeholders of the opened realm with their default value and the files that use them. These are the values to give at import with `import.mustache.variables.*` (see [Templating with Mustache](../advanced/templating.md)), or to [`realm dry-run` and `realm import`](#the-values-of-the-variables) in the shell.
 
 ```text
 > variables list
@@ -319,3 +319,67 @@ dev  https://keycloak.dev.example.org  client_credentials  (connected)
 ```
 
 Without a file, it says `No target in kcc-targets.yaml`.
+
+## Importing the opened realm
+
+These commands import the opened realm on the connected target: they need an opened realm (`No realm opened: use 'realm open <folder>'`) and a connection (`Not connected: use 'connect <target>'`), both with exit code `2`. The files imported are the ones the command-line import would read with `import.files.locations=<folder of the realm>`: hidden files are skipped, the files are read in name order, and the import runs with the default import options (`import.validate`, `import.behaviors.*`), which the shell does not let change. As with the command-line import, what the files of the realm no longer declare is deleted from Keycloak.
+
+| Option | Meaning |
+|--------|---------|
+| `--var <name>=<value>` | The value of a variable of the realm; repeat the option for each variable. The value may contain `=`. A name that is empty or has no `=` fails with `Invalid --var '<name>': expected name=value` and exit code `2` |
+
+### The values of the variables
+
+Each [placeholder](../advanced/templating.md) of the realm takes its value from, in this order:
+
+1. the `--var <name>=<value>` option of the command;
+2. the value the session remembers (see below);
+3. the environment variable `KCC_VAR_<name>`, with the name as written in the placeholder (`{{shopSecret}}` reads `KCC_VAR_shopSecret`);
+4. the default value written in the placeholder, `{{name:default}}`;
+5. otherwise the question `Value of '<name>'`, asked without echo when the name contains `secret` or `password` (any case).
+
+In [script mode](README.md#script-mode) nothing can be asked: a variable without a value fails with `Variable '<name>' has no value: give it with --var <name>=… or KCC_VAR_<name>` and exit code `2`, before anything is sent to Keycloak.
+
+The session remembers the values given with `--var` and the answers to the questions, in memory only, so that `realm import` after `realm dry-run` does not ask again. They are forgotten by `realm open`, `realm create`, `connect`, `disconnect` and when the shell exits. A value is never printed, logged or written: the plan names the changed fields, never their values, and a script prints `--var <name>=***` when it echoes its commands.
+
+### `realm dry-run`
+
+Shows what importing the opened realm would change on the connected target, without writing anything: a realm that does not exist yet is not created. The report is the one of the command-line [dry run](../advanced/dry-run.md): `+` for a creation, `~` for an update with its changed fields, `-` for a deletion.
+
+```text
+kcc:shop@dev> realm dry-run --var shopSecret=...
+Dry run of 'shop' on dev (https://keycloak.dev.example.org)
+Realm 'shop': 2 change(s)
+  + Client 'shop-web'
+  ~ Client 'shop-api' (redirectUris)
+Dry run: 2 change(s) pending.
+```
+
+In script mode the command ends with exit code `10` when changes are pending, `0` otherwise. In a `shell.script`, the code `10` does not stop the script: the script goes on, and ends with `10` when no command failed and a dry run found changes. In an interactive session, pending changes are not an error.
+
+### `realm import`
+
+Imports the opened realm on the connected target. The command first computes the changes, as `realm dry-run` does, and shows them. With no change, it prints `Nothing to import` and writes nothing. Otherwise it asks `Apply these <n> change(s) to <target>?` (default: no), then applies the same rendered files.
+
+| Option | Meaning |
+|--------|---------|
+| `--var <name>=<value>` | As for `realm dry-run` |
+| `--apply` | Apply the changes without asking |
+
+```text
+kcc:shop@dev> realm import
+Import of 'shop' on dev (https://keycloak.dev.example.org)
+? Value of 'shopSecret':
+Realm 'shop': 1 change(s)
+  + Client 'shop-web'
+? Apply these 1 change(s) to dev? [y/N]: y
+Realm 'shop' imported on dev: 1 change(s) applied
+```
+
+Answering no prints `Nothing written`. In a script, where nothing answers, the question takes its default: nothing is written, the command ends with `Nothing written: run again with --apply` and exit code `0`.
+
+| Failure | Exit code |
+|---------|-----------|
+| No opened realm, no connection, an invalid `--var`, a variable without value in script mode, or a file that is not a valid import file | `2` |
+| Keycloak cannot be reached or does not answer in time | `3` |
+| Keycloak refuses the account of the target, or an operation of the import (missing rights) | `4` |
