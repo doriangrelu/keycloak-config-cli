@@ -1,6 +1,6 @@
 # EPIC-008 — Shell en mode connecté
 
-**Statut :** À faire
+**Statut :** En cours
 **ADR :** [ADR-010](../ADR-010-shell-mode-connecte.md), [ADR-008](../ADR-008-shell-edition-des-definitions.md), [ADR-004](../ADR-004-moteur-de-reconciliation.md), [ADR-007](../ADR-007-fichiers-seule-verite.md)
 
 Connecter le shell à un Keycloak local, de développement ou de qualification (jamais la production) pour appliquer et simuler le realm ouvert, extraire un realm configuré à la main en fichiers découpés et nettoyés, comparer un élément entre Keycloak et les fichiers, et proposer dans les questions ce que Keycloak contient.
@@ -28,7 +28,7 @@ Ordre décidé avec l'utilisateur : connexion, dry-run et import, extraction, co
 
 ### US-008-01 — Cibles et connexion
 
-**Statut :** À faire
+**Statut :** Terminé
 Fichier `kcc-targets.yaml` (cibles nommées, sans secret), `connect <cible>`, `disconnect`, cible affichée dans le prompt, `shell.target` pour les scripts, secret demandé sans écho ou lu dans `KCC_<CIBLE>_PASSWORD` / `KCC_<CIBLE>_SECRET`. Client Keycloak construit par cible, derrière un port de l'application.
 
 ### US-008-02 — Dry-run et import du realm ouvert
@@ -75,4 +75,14 @@ Documentation utilisateur (anglais) du mode connecté ; scénarios du sample : c
 
 ## Réalisé
 
-(vide)
+### US-008-01
+
+- Domaine : `Target` (nom, url, realm de login, client, type de grant, utilisateur, `ssl-verify`, `connect-timeout`) et `GrantType` (`password`, `client_credentials`). Ports `Targets` et `KeycloakConnector` dans `application.definition.port` ; cas d'usage `ConnectTarget` et `Connection` (cible, url, version de Keycloak, fermeture).
+- `kcc-targets.yaml` lu par `TargetsFile` (`infrastructure.source.targets`) à la racine des dossiers de realms ; un fichier invalide fait échouer la commande (code 2) sans recopier le contenu du fichier. Les durées exigent une unité.
+- Secret : `KCC_<CIBLE>_PASSWORD` ou `KCC_<CIBLE>_SECRET`, sinon demandé sans écho (`Questions.askSecret`) ; en mode script, seulement la variable d'environnement. Quand la console ne peut pas masquer l'écho, le secret est lu en clair après un avertissement (décision consignée dans le contrat de `askSecret`).
+- Client Keycloak par cible : `ChildContextKeycloakConnector` construit un contexte Spring autonome par connexion (`TargetConnectionConfiguration`, importé et non scanné), qui reprend l'environnement principal sans aucune clé `keycloak*` puis pose celles de la cible ; version lue sur le serveur, pas d'attente de disponibilité, `read-timeout` jamais plus court que `connect-timeout`, pas de proxy pour une cible. L'import en ligne de commande garde ses beans. `KeycloakProvider.close()` libère désormais le client HTTP.
+- Erreurs : `KeycloakUnreachableException` (code 3) et `KeycloakAuthenticationException` (code 4), sans l'erreur HTTP en cause (gardée en exception supprimée) pour que la session affiche un message clair ; un login refusé n'est jamais pris pour une connexion.
+- Commandes `connect <cible>`, `disconnect`, `target list` (`ConnectionCommands`) ; prompt `kcc@cible>` ou `kcc:realm@cible>` (`ShellInputProvider`) ; `shell.target` connecte au démarrage, en script comme en session. Une nouvelle connexion remplace la précédente ; un échec de fermeture de l'ancienne devient un avertissement.
+- Tests : `TargetsFileTest`, `ChildContextKeycloakConnectorTest` (Keycloak simulé), `ChildContextKeycloakConnectorIT` et `ConnectionCommandsKeycloakIT` (Keycloak 26.5.3, cibles `password` et `client_credentials`), `ConnectTargetTest`, `ConnectionCommandsIT`, `InteractiveShellSessionIT` (vrai lanceur de Spring Shell, console simulée), `MainContextWiringTest`. Aucun secret dans une sortie ni dans une trace.
+- Exécutée par des sous-agents ; la revue finale a relevé un point critique (login refusé avalé par le repli de version) et deux points importants (erreur HTTP brute affichée en session, `shell.target` sans lecteur en session), corrigés avant la fusion.
+- Points mineurs reportés : pas de test du code 2 d'une cible inconnue ; les messages d'erreur de `ssl-verify`, `connect-timeout` et `grant-type` recopient la valeur fautive ; `ConsoleQuestions.read` reste sensible à un `%` dans une question qui n'est pas un secret ; pas de test d'un `connect-timeout` vers une adresse qui ne répond jamais ; console simulée par Mockito dans le test de session ; les arguments de ligne de commande qui ne sont pas des options ne sont pas transmis au contexte d'une cible. Saisie réelle (prompt, Ctrl-D, secret sans écho) à vérifier à la main sur un vrai terminal.
