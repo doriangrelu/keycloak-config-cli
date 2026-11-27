@@ -97,6 +97,13 @@ public interface RealmDefinitions {
     /** The text of each definition file of a realm, as written (comments included), by file name. */
     Map<String, String> sources(String folder);
 
+    /**
+     * The text of each definition file of a realm as {@link #sources} gives it, after {@code save(folder, element,
+     * Optional.empty(), ElementKeys.empty())}: the file of the element holds it (or is added, as {@code save} would
+     * create it). Computed in memory: nothing is written.
+     */
+    Map<String, String> sourcesWith(String folder, ElementDefinition element);
+
     /** What reorganizing the files of a realm into the standard layout would do, without writing anything. */
     ReorganizationPlan planReorganization(String folder);
 

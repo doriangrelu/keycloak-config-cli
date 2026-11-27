@@ -393,4 +393,35 @@ class DeclarationDeletionsTest {
         assertThat(new FirstDeclarationException(client("web"), "Precise text. Confirm?").getMessage())
                 .isEqualTo("Precise text. Confirm? In a script, add --declare-type.");
     }
+
+    @Test
+    void aVariableNewInTheElementTakesTheEnvironment() {
+        this.definitions.sourcesWith = Map.of("20-clients.yaml", "clients:\n  - clientId: \"{{appId}}\"");
+        this.environment.put("KCC_VAR_appId", "prod-app");
+        plans(delete(ResourceType.CLIENT, "legacy"));
+
+        assertThat(warning(client("{{appId}}"))).contains("(1): legacy.");
+        assertThat(this.definitions.importedWith).containsEntry("appId", "prod-app");
+    }
+
+    @Test
+    void aVariableNewInTheElementTakesTheEnvironmentOverItsDefault() {
+        this.definitions.sourcesWith = Map.of("20-clients.yaml", "clients:\n  - clientId: \"{{appId:dev-app}}\"");
+        this.environment.put("KCC_VAR_appId", "prod-app");
+        plans();
+
+        warning(client("{{appId:dev-app}}"));
+
+        // rendered as the dry run renders it: the environment wins over the default
+        assertThat(this.definitions.importedWith).containsEntry("appId", "prod-app");
+    }
+
+    @Test
+    void aVariableNewInTheElementWithoutValueIsNamed() {
+        this.definitions.sourcesWith = Map.of("20-clients.yaml", "clients:\n  - clientId: \"{{appId}}\"");
+
+        assertThat(warning(client("{{appId}}")))
+                .isEqualTo(generic(client("{{appId}}"), "variable 'appId' has no value"));
+        assertThat(this.simulated).isEmpty();
+    }
 }

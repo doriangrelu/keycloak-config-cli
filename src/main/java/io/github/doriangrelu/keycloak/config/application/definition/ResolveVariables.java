@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
+import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.VariableUse;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -96,8 +97,24 @@ public final class ResolveVariables {
      * @throws UnknownRealmFolderException when the folder is not a realm
      */
     public Map<String, String> resolveKnown(final String folder, final VariableValues remembered) {
+        return known(this.variables.list(folder), remembered);
+    }
+
+    /**
+     * Like {@link #resolveKnown(String, VariableValues)}, for the files of the realm once the element is written in
+     * its file: the variables the element brings are resolved too.
+     *
+     * @throws MissingVariableException for the first variable that has no value and no default value
+     * @throws UnknownRealmFolderException when the folder is not a realm
+     */
+    public Map<String, String> resolveKnown(
+            final String folder, final ElementDefinition element, final VariableValues remembered) {
+        return known(this.variables.listWith(folder, element), remembered);
+    }
+
+    private Map<String, String> known(final List<VariableUse> uses, final VariableValues remembered) {
         Map<String, String> values = new LinkedHashMap<>();
-        for (VariableUse use : this.variables.list(folder)) {
+        for (VariableUse use : uses) {
             String name = use.name();
             Optional<String> value = remembered.get(name).or(() -> this.environment.apply(ENVIRONMENT_PREFIX + name));
             if (value.isEmpty() && use.usedWithoutDefault()) {

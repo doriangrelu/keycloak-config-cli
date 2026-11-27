@@ -327,9 +327,32 @@ class FirstDeclarationConnectedIT {
                     GROUP + " --declare-type");
 
             assertThat(outcome.exitCode()).as(outcome.output()).isEqualTo(10);
-            assertThat(outcome.output()).contains(LISTED).doesNotContain("has no value");
+            assertThat(outcome.output())
+                    .contains(LISTED)
+                    .doesNotContain("has no value")
+                    .doesNotContain(APP_ID);
             assertThat(this.dryRuns).hasSize(2);
             assertThat(sent(this.dryRuns.getLast())).contains(APP_ID).contains("team");
+        });
+    }
+
+    @Test
+    void aVariableNewInTheElementIsResolvedAsTheDryRunDoes() {
+        this.environment.put("KCC_VAR_appId", APP_ID);
+        contexts().run(context -> {
+            Outcome outcome = script(
+                    context,
+                    "connect local",
+                    "client create --id \"{{appId:dev-app}}\" --type spa --url https://front.example.org"
+                            + " --declare-type");
+
+            assertThat(outcome.exitCode()).as(outcome.output()).isZero();
+            assertThat(outcome.output())
+                    .contains("At the next import, these clients of Keycloak missing from the files will be deleted"
+                            + " on local (1): old-app.")
+                    .doesNotContain("not possible")
+                    .doesNotContain(APP_ID);
+            assertThat(sent(this.dryRuns.getFirst())).contains(APP_ID).doesNotContain("dev-app");
         });
     }
 

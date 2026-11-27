@@ -21,6 +21,7 @@
 package io.github.doriangrelu.keycloak.config.application.definition;
 
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
+import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.VariableUse;
 import io.github.doriangrelu.keycloak.config.domain.definition.Variables;
 import java.util.List;
@@ -44,5 +45,18 @@ public final class ListVariables {
             throw new UnknownRealmFolderException(folder);
         }
         return Variables.of(this.definitions.sources(folder));
+    }
+
+    /**
+     * The variables of a realm once the element is written in its file, nothing being written.
+     *
+     * @return the variables, sorted by name
+     * @throws UnknownRealmFolderException when the folder is not a realm
+     */
+    public List<VariableUse> listWith(final String folder, final ElementDefinition element) {
+        if (this.definitions.load(folder).isEmpty()) {
+            throw new UnknownRealmFolderException(folder);
+        }
+        return Variables.of(this.definitions.sourcesWith(folder, element));
     }
 }

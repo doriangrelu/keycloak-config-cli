@@ -200,4 +200,31 @@ class RealmImportFilesWithElementTest {
                 .contains("acme-app")
                 .doesNotContain("{{");
     }
+
+    @Test
+    void aTargetFileWithASpaceInItsNameIsReplaced() throws IOException {
+        write("20 clients.yaml", "realm: master\nclients:\n  - clientId: existing\n");
+
+        List<ImportFile> read = this.files.importFilesWith("master", client("added"), Map.of());
+
+        assertThat(read)
+                .extracting(RealmImportFilesWithElementTest::simpleName)
+                .containsExactly("00-realm.yaml", "20 clients.yaml");
+        assertThat(named(read, "20 clients.yaml").content())
+                .contains("clientId: existing")
+                .contains("clientId: added");
+    }
+
+    @Test
+    void theSourcesWithTheElementHoldIt() throws IOException {
+        write("20-clients.yaml", "realm: master\nclients:\n  - clientId: existing\n");
+        Map<String, String> before = this.files.sources("master");
+
+        Map<String, String> with = this.files.sourcesWith("master", group("{{team}}"));
+
+        assertThat(with).containsKeys("00-realm.yaml", "20-clients.yaml", "40-groups.yaml");
+        assertThat(with.get("20-clients.yaml")).isEqualTo(before.get("20-clients.yaml"));
+        assertThat(with.get("40-groups.yaml")).contains("{{team}}");
+        assertThat(this.folder.resolve("40-groups.yaml")).doesNotExist();
+    }
 }

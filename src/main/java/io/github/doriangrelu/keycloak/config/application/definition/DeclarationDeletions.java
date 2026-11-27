@@ -100,7 +100,7 @@ public final class DeclarationDeletions {
         String target = connection.target().name();
         String reason;
         try {
-            Map<String, String> values = this.variables.resolveKnown(folder, remembered);
+            Map<String, String> values = this.variables.resolveKnown(folder, element, remembered);
             ImportReport report = connection.dryRun(this.definitions.importFilesWith(folder, element, values));
             return deletions(element, values, report, target, ending);
         } catch (MissingVariableException e) {

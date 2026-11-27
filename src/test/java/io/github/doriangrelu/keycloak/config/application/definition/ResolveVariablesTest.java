@@ -30,7 +30,10 @@ import static org.mockito.Mockito.when;
 
 import io.github.doriangrelu.keycloak.config.application.common.ApplicationException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
+import io.github.doriangrelu.keycloak.config.domain.definition.ElementDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.GroupDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -241,5 +244,18 @@ class ResolveVariablesTest {
                 .hasMessageContaining("shopUrl");
         assertThat(this.remembered.get("shopUrl")).isEmpty();
         verify(questions, never()).ask(any(), any());
+    }
+
+    @Test
+    void resolveKnownWithAnElementReadsTheSourcesWithIt() {
+        realmUses("realm: demo");
+        this.definitions.sourcesWith = Map.of("00-realm.yaml", "realm: demo", "20-clients.yaml", "id: {{appId:dev}}");
+        this.environment.put("KCC_VAR_appId", "prod");
+        ElementDefinition element =
+                new GroupDefinition("/{{appId:dev}}", TemplatedValue.of("{{appId:dev}}"), Set.of(), Map.of());
+
+        Map<String, String> values = resolver(new ScriptedQuestions()).resolveKnown("demo", element, this.remembered);
+
+        assertThat(values).containsOnly(Map.entry("appId", "prod"));
     }
 }

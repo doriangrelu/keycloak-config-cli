@@ -37,6 +37,9 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     ReorganizationPlan plan = new ReorganizationPlan(List.of(), List.of(), List.of());
     List<String> written = List.of();
     Map<String, String> sources = Map.of();
+    /** The sources with the element written; the sources when not given. */
+    Map<String, String> sourcesWith;
+
     final List<ReorganizationPlan> reorganized = new ArrayList<>();
 
     FakeRealmDefinitions(final RealmDefinition realm) {
@@ -76,6 +79,11 @@ final class FakeRealmDefinitions implements RealmDefinitions {
     public List<String> format(final String folder) {
         this.formatted.add(folder);
         return List.copyOf(this.unformatted);
+    }
+
+    @Override
+    public Map<String, String> sourcesWith(final String folder, final ElementDefinition element) {
+        return this.sourcesWith == null ? this.sources : this.sourcesWith;
     }
 
     @Override

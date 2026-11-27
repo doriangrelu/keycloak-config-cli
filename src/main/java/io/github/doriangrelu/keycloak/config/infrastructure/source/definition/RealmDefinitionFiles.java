@@ -45,6 +45,7 @@ import io.github.doriangrelu.keycloak.config.infrastructure.source.ImportFileRea
 import io.github.doriangrelu.keycloak.config.infrastructure.source.MustacheTemplates;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -149,9 +150,9 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
                 .toList();
     }
 
+    /** The name of the file, decoded: the name of an import file is a URI, where a space is {@code %20}. */
     private static String fileName(final ImportFile file) {
-        String name = file.name();
-        return name.substring(name.lastIndexOf('/') + 1);
+        return Path.of(URI.create(file.name())).getFileName().toString();
     }
 
     @Override
@@ -261,6 +262,17 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         for (Path file : definitionFiles(this.root.resolve(folder))) {
             sources.put(file.getFileName().toString(), readFile(file));
         }
+        return sources;
+    }
+
+    @Override
+    public Map<String, String> sourcesWith(final String folder, final ElementDefinition element) {
+        Objects.requireNonNull(element, "element");
+        requireFolder(folder, this.root.resolve(folder));
+        // The same edit as save, kept in memory
+        Edit edit = edit(folder, element, Optional.empty(), ElementKeys.empty(), true);
+        Map<String, String> sources = new LinkedHashMap<>(sources(folder));
+        sources.put(edit.name(), edit.tree().render());
         return sources;
     }
 
