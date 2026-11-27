@@ -20,6 +20,9 @@
 
 package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.doriangrelu.keycloak.config.application.definition.InvalidRealmFolderException;
 import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
 import io.github.doriangrelu.keycloak.config.application.definition.UnknownRealmFolderException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.RealmDefinitions;
@@ -35,6 +38,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.Origin;
 import io.github.doriangrelu.keycloak.config.domain.definition.RealmDefinition;
 import io.github.doriangrelu.keycloak.config.domain.definition.ReorganizationPlan;
 import io.github.doriangrelu.keycloak.config.domain.definition.RoleDefinition;
+import io.github.doriangrelu.keycloak.config.domain.definition.StandardLayout;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
 import io.github.doriangrelu.keycloak.config.domain.definition.UnreadableFile;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.ElementKeys;
@@ -51,6 +55,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -70,6 +75,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 public final class RealmDefinitionFiles implements RealmDefinitions {
 
     private static final int MAX_FORMAT_PASSES = 4;
+    private static final ObjectMapper EXTRACTED_MAPPER = new ObjectMapper();
+    private static final TypeReference<LinkedHashMap<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     private final Path root;
 
@@ -407,6 +414,107 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         }
         writeFile(this.root.resolve(folder).resolve(name), tree.render());
         return name;
+    }
+
+    @Override
+    public List<String> createExtractedRealm(
+            final String folder, final DefinitionFormat format, final String document) {
+        Objects.requireNonNull(format, "format");
+        Map<String, Object> keys = parseDocument(document);
+        if (folder == null
+                || folder.isEmpty()
+                || folder.startsWith(".")
+                || !this.root.resolve(folder).normalize().equals(this.root.resolve(folder))
+                || !this.root.equals(this.root.resolve(folder).getParent())) {
+            throw new InvalidRealmFolderException(folder);
+        }
+        if (folders().stream().anyMatch(existing -> existing.equalsIgnoreCase(folder))
+                || Files.exists(this.root.resolve(folder))) {
+            throw new RealmFolderExistsException(folder);
+        }
+        // Every file is computed before anything is written
+        Map<String, String> contents = new LinkedHashMap<>();
+        Object realm = keys.get("realm");
+        for (String stem : StandardLayout.stems()) {
+            String name = stem + format.extension();
+            DocumentTree tree = DocumentTrees.parse(name, "");
+            boolean content = false;
+            for (Map.Entry<String, Object> key : keys.entrySet()) {
+                if (key.getKey().equals("realm")
+                        || !StandardLayout.fileStemOf(key.getKey()).equals(stem)) {
+                    continue;
+                }
+                if (!stem.equals(StandardLayout.stems().getFirst()) && isEmpty(key.getValue())) {
+                    continue;
+                }
+                tree.root().put(key.getKey(), new PlainEntry(key.getValue()));
+                content = true;
+            }
+            if (content || stem.equals(StandardLayout.stems().getFirst())) {
+                if (realm != null) {
+                    // The realm key comes first in every file
+                    DocumentTree withRealm = DocumentTrees.parse(name, "");
+                    withRealm.root().put("realm", new PlainEntry(realm));
+                    for (String key : tree.root().keys()) {
+                        withRealm.root().put(key, tree.root().entry(key).orElseThrow());
+                    }
+                    tree = withRealm;
+                }
+                contents.put(name, tree.render());
+            }
+        }
+        writeAllOrNothing(folder, contents);
+        return List.copyOf(contents.keySet());
+    }
+
+    private static Map<String, Object> parseDocument(final String document) {
+        try {
+            return EXTRACTED_MAPPER.readValue(Objects.requireNonNull(document, "document"), MAP_TYPE);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("The extracted realm is not a JSON object", e);
+        }
+    }
+
+    private static boolean isEmpty(final Object value) {
+        return value == null
+                || value instanceof Collection<?> collection && collection.isEmpty()
+                || value instanceof Map<?, ?> map && map.isEmpty();
+    }
+
+    /** A value written as it is: the tree rebuilds it from its content. */
+    private record PlainEntry(Object plain) implements TreeObject.Entry {}
+
+    /** Writes the files in a temporary folder, then moves it into place: a failure leaves nothing. */
+    private void writeAllOrNothing(final String folder, final Map<String, String> contents) {
+        Path temporary = null;
+        try {
+            Files.createDirectories(this.root);
+            temporary = Files.createTempDirectory(this.root, ".extract-");
+            for (Map.Entry<String, String> file : contents.entrySet()) {
+                writeFile(temporary.resolve(file.getKey()), file.getValue());
+            }
+            // Without ATOMIC_MOVE or REPLACE_EXISTING: an existing folder is refused, never replaced
+            Files.move(temporary, this.root.resolve(folder));
+        } catch (FileAlreadyExistsException e) {
+            deleteTree(temporary);
+            throw new RealmFolderExistsException(folder);
+        } catch (IOException | RuntimeException e) {
+            deleteTree(temporary);
+            throw e instanceof RuntimeException runtime ? runtime : new UncheckedIOException((IOException) e);
+        }
+    }
+
+    private static void deleteTree(final Path directory) {
+        if (directory == null || !Files.exists(directory)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(directory)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        } catch (IOException e) {
+            // Best effort: the original failure is the one reported
+        }
     }
 
     private static TreeObject existingOrNew(

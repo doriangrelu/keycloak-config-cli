@@ -20,16 +20,11 @@
 
 package io.github.doriangrelu.keycloak.config.application.definition;
 
+import io.github.doriangrelu.keycloak.config.domain.definition.SecretVariableNames;
 import io.github.doriangrelu.keycloak.config.domain.definition.TemplatedValue;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.regex.Pattern;
 
 /** The variable proposed for the secret of a client. */
 final class SecretVariables {
-
-    private static final Pattern PLACEHOLDER = Pattern.compile("\\{\\{[^{}]*}}");
-    private static final Pattern SEPARATOR = Pattern.compile("[^A-Za-z0-9]+");
 
     private SecretVariables() {}
 
@@ -38,27 +33,6 @@ final class SecretVariables {
      * {@code Secret}: {@code my-api} gives {@code {{myApiSecret}}}, {@code {{env}}-api} gives {@code {{apiSecret}}}.
      */
     static TemplatedValue proposedFor(final TemplatedValue clientId) {
-        String literal = PLACEHOLDER.matcher(clientId.raw()).replaceAll(" ");
-        String[] parts = Arrays.stream(SEPARATOR.split(literal))
-                .filter(part -> !part.isEmpty())
-                .toArray(String[]::new);
-        StringBuilder name = new StringBuilder();
-        for (int i = 0; i < parts.length; i++) {
-            name.append(i == 0 ? lowerFirst(parts[i]) : upperFirst(parts[i]));
-        }
-        if (name.isEmpty()) {
-            name.append("client");
-        } else if (Character.isDigit(name.charAt(0))) {
-            name.insert(0, "client");
-        }
-        return TemplatedValue.of("{{" + name + "Secret}}");
-    }
-
-    private static String lowerFirst(final String text) {
-        return text.substring(0, 1).toLowerCase(Locale.ROOT) + text.substring(1);
-    }
-
-    private static String upperFirst(final String text) {
-        return text.substring(0, 1).toUpperCase(Locale.ROOT) + text.substring(1);
+        return TemplatedValue.of("{{" + SecretVariableNames.client(clientId.raw()) + "}}");
     }
 }

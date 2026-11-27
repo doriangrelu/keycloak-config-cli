@@ -115,6 +115,15 @@ final class FakeRealmDefinitions implements RealmDefinitions {
         return "00-realm" + format.extension();
     }
 
+    final List<String> extracted = new ArrayList<>();
+
+    @Override
+    public List<String> createExtractedRealm(
+            final String folder, final DefinitionFormat format, final String document) {
+        this.extracted.add(folder + ":" + format + ":" + document);
+        return List.of("00-realm" + format.extension());
+    }
+
     @Override
     public ElementKeys preview(
             final String folder,

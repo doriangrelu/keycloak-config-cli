@@ -20,6 +20,7 @@
 
 package io.github.doriangrelu.keycloak.config.application.definition.port;
 
+import io.github.doriangrelu.keycloak.config.application.definition.RealmFolderExistsException;
 import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
 import io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException;
 import io.github.doriangrelu.keycloak.config.domain.definition.DefinitionFormat;
@@ -93,6 +94,20 @@ public interface RealmDefinitions {
      * @return the name of the file written
      */
     String createRealm(String folder, TemplatedValue realm, DefinitionFormat format, ElementKeys added);
+
+    /**
+     * Creates the folder of a realm extracted from Keycloak, split by the standard layout: {@code 00-realm} with the
+     * keys that are not elements, {@code 20-clients}, {@code 30-roles}, {@code 40-groups} and {@code 50-links}, each
+     * with the {@code realm} key; a type without content has no file. Every file is computed in memory, then written:
+     * on a failure nothing remains.
+     *
+     * @param document the realm in the import format of Keycloak, as JSON, with its placeholders
+     * @return the names of the files written, in the order of the standard files
+     * @throws io.github.doriangrelu.keycloak.config.application.definition.InvalidRealmFolderException when the
+     *     folder is not a plain name
+     * @throws RealmFolderExistsException when the folder exists already, whatever its case
+     */
+    List<String> createExtractedRealm(String folder, DefinitionFormat format, String document);
 
     /** The text of each definition file of a realm, as written (comments included), by file name. */
     Map<String, String> sources(String folder);
