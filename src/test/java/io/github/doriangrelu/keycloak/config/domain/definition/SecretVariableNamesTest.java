@@ -51,6 +51,29 @@ class SecretVariableNamesTest {
     }
 
     @Test
+    void anotherHiddenSmtpEntryIsNamedAfterItsKey() {
+        assertThat(SecretVariableNames.smtp("authTokenClientSecret")).isEqualTo("smtpAuthTokenClientSecret");
+        assertThat(SecretVariableNames.smtp("password")).isEqualTo(SecretVariableNames.smtpPassword());
+    }
+
+    @Test
+    void anotherHiddenIdentityProviderEntryIsNamedAfterTheAliasAndTheKey() {
+        assertThat(SecretVariableNames.identityProvider("google", "clientAssertionKey"))
+                .isEqualTo("googleClientAssertionKey");
+        assertThat(SecretVariableNames.identityProvider("google", "clientSecret"))
+                .isEqualTo(SecretVariableNames.identityProvider("google"));
+        assertThat(SecretVariableNames.identityProvider("corp-saml", "signing.key"))
+                .isEqualTo("corpSamlSigningKey");
+    }
+
+    @Test
+    void aPrivateKeyOfAClientIsNamedAfterTheClientAndItsUse() {
+        assertThat(SecretVariableNames.clientPrivateKey("shop", "signing")).isEqualTo("shopSigningPrivateKey");
+        assertThat(SecretVariableNames.clientPrivateKey("https://saml.example.org", "encryption"))
+                .isEqualTo("httpsSamlExampleOrgEncryptionPrivateKey");
+    }
+
+    @Test
     void aTakenNameGetsANumber() {
         assertThat(SecretVariableNames.unique("shopSecret", Set.of())).isEqualTo("shopSecret");
         assertThat(SecretVariableNames.unique("shopSecret", Set.of("shopSecret")))

@@ -76,7 +76,7 @@ public class ReconciliationConfiguration {
      * Prefix of the realm attributes where former versions kept their remote state and checksums, removed by any import
      * (ADR-007).
      */
-    static final String OBSOLETE_ATTRIBUTE_PREFIX = "io.github.doriangrelu.keycloak.config.";
+    public static final String OBSOLETE_ATTRIBUTE_PREFIX = "io.github.doriangrelu.keycloak.config.";
 
     @Bean
     public ReconciliationEngine reconciliationEngine(

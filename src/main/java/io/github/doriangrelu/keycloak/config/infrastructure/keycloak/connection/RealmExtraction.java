@@ -34,6 +34,7 @@ import io.github.doriangrelu.keycloak.config.domain.definition.SecretVariableNam
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.domain.user.model.User;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakMapper;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.ReconciliationConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.BaselineProvider;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.normalization.RealmExportNormalizer;
 import jakarta.ws.rs.WebApplicationException;
@@ -51,6 +52,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
@@ -87,6 +89,10 @@ final class RealmExtraction {
     private static final String BIND_CREDENTIAL = "bindCredential";
 
     private static final int USER_PAGE = 100;
+
+    /** The attributes of a client that hold a private key, by what the key is for. */
+    private static final Map<String, String> PRIVATE_KEY_ATTRIBUTES =
+            Map.of("saml.signing.private.key", "signing", "saml.encryption.private.key", "encryption");
 
     /** The realm attribute that makes the import manage the user profile. */
     private static final String USER_PROFILE_ENABLED = "userProfileEnabled";
@@ -142,14 +148,23 @@ final class RealmExtraction {
         Set<String> variables = new HashSet<>();
         confidentialClients(realm, exported.getClients(), variables)
                 .forEach((name, client) -> client.setSecret(placeholder(name)));
+        clientPrivateKeys(
+                exported.getClients(),
+                client -> this.clientMapper.toClient(client).isOwnedByKeycloak(realm),
+                variables);
         identityProviderSecrets(exported.getIdentityProviders(), variables);
-        smtpPassword(exported, variables);
+        smtpSecrets(exported, variables);
         bindCredentials(exported.getComponents(), variables);
 
         RealmExportNormalizer.Normalized normalized = this.normalizer.normalize(exported, this.keycloakVersion);
         ObjectNode document = this.json.valueToTree(normalized.realm());
         document.remove("id");
-        userProfile(resource, exported, document);
+        boolean customProfile = userProfile(resource, document);
+        ObjectNode attributes = attributesOf(exported.getAttributes(), customProfile);
+        document.remove("attributes");
+        if (attributes != null) {
+            document.set("attributes", attributes);
+        }
         int skippedUsers = 0;
         if (withUsers) {
             Users users = users(resource, realm);
@@ -184,28 +199,42 @@ final class RealmExtraction {
 
     /**
      * The user profile, when it is not the one Keycloak gives a new realm (the reference of the version of the target;
-     * always written when that reference has none). The import only manages it when the realm declares the attribute
-     * {@code userProfileEnabled}: the attributes of the realm are written whole with it, since declared attributes
-     * replace the current ones.
+     * always written when that reference has none).
+     *
+     * @return whether the profile was written
      */
-    private void userProfile(
-            final RealmResource resource, final RealmRepresentation exported, final ObjectNode document) {
+    private boolean userProfile(final RealmResource resource, final ObjectNode document) {
         UPConfig profile = resource.users().userProfile().getConfiguration();
         JsonNode written = this.json.valueToTree(profile);
         boolean byDefault = this.baselines
                 .getUserProfile(this.keycloakVersion)
                 .map(reference -> this.json.valueToTree(reference).equals(written))
                 .orElse(false);
-        if (byDefault) {
-            return;
+        if (!byDefault) {
+            document.set("userProfile", written);
         }
-        document.set("userProfile", written);
-        ObjectNode attributes = this.json.createObjectNode();
-        if (exported.getAttributes() != null) {
-            new TreeMap<>(exported.getAttributes()).forEach(attributes::put);
+        return !byDefault;
+    }
+
+    /**
+     * The attributes of the realm, written whole since declared attributes replace the current ones (the normalization
+     * would keep only the ones that differ from the reference realm), sorted, without the obsolete attributes of former
+     * versions, which the import removes; with {@code userProfileEnabled}, which makes the import manage a written user
+     * profile. {@code null} when there is none.
+     */
+    static ObjectNode attributesOf(final Map<String, String> exported, final boolean userProfile) {
+        ObjectNode attributes = new ObjectMapper().createObjectNode();
+        if (exported != null) {
+            new TreeMap<>(exported).forEach((name, value) -> {
+                if (value != null && !name.startsWith(ReconciliationConfiguration.OBSOLETE_ATTRIBUTE_PREFIX)) {
+                    attributes.put(name, value);
+                }
+            });
         }
-        attributes.put(USER_PROFILE_ENABLED, "true");
-        document.set("attributes", attributes);
+        if (userProfile) {
+            attributes.put(USER_PROFILE_ENABLED, "true");
+        }
+        return attributes.isEmpty() ? null : attributes;
     }
 
     /** The realm, once checked that the target has it. */
@@ -253,34 +282,94 @@ final class RealmExtraction {
         return confidential;
     }
 
-    private static void identityProviderSecrets(
-            final List<IdentityProviderRepresentation> providers, final Set<String> taken) {
+    /**
+     * The secrets of the identity providers, sorted by alias: the client secret, then every other entry of the
+     * configuration Keycloak hides, sorted. The import replaces the configuration whole: none may be left out.
+     */
+    static void identityProviderSecrets(final List<IdentityProviderRepresentation> providers, final Set<String> taken) {
         if (providers == null) {
             return;
         }
         providers.stream()
                 .filter(provider -> provider.getAlias() != null && provider.getConfig() != null)
-                .filter(provider -> isSecret(provider.getConfig().get(CLIENT_SECRET)))
                 .sorted(Comparator.comparing(IdentityProviderRepresentation::getAlias))
                 .forEach(provider -> {
-                    String name = SecretVariableNames.unique(
-                            SecretVariableNames.identityProvider(provider.getAlias()), taken);
-                    taken.add(name);
                     Map<String, String> config = new HashMap<>(provider.getConfig());
-                    config.put(CLIENT_SECRET, placeholder(name));
+                    if (isSecret(config.get(CLIENT_SECRET))) {
+                        config.put(
+                                CLIENT_SECRET,
+                                variable(SecretVariableNames.identityProvider(provider.getAlias()), taken));
+                    }
+                    new TreeMap<>(config).forEach((key, value) -> {
+                        if (MASK.equals(value)) {
+                            config.put(
+                                    key,
+                                    variable(SecretVariableNames.identityProvider(provider.getAlias(), key), taken));
+                        }
+                    });
                     provider.setConfig(config);
                 });
     }
 
-    private static void smtpPassword(final RealmRepresentation exported, final Set<String> taken) {
+    /**
+     * The secrets of the SMTP server: the password, then every other entry Keycloak hides, sorted. The import replaces
+     * the SMTP server whole: none may be left out.
+     */
+    static void smtpSecrets(final RealmRepresentation exported, final Set<String> taken) {
         Map<String, String> smtp = exported.getSmtpServer();
-        if (smtp != null && isSecret(smtp.get(SMTP_PASSWORD))) {
-            String name = SecretVariableNames.unique(SecretVariableNames.smtpPassword(), taken);
-            taken.add(name);
-            Map<String, String> withPlaceholder = new HashMap<>(smtp);
-            withPlaceholder.put(SMTP_PASSWORD, placeholder(name));
-            exported.setSmtpServer(withPlaceholder);
+        if (smtp == null) {
+            return;
         }
+        Map<String, String> withPlaceholders = new HashMap<>(smtp);
+        if (isSecret(smtp.get(SMTP_PASSWORD))) {
+            withPlaceholders.put(SMTP_PASSWORD, variable(SecretVariableNames.smtpPassword(), taken));
+        }
+        new TreeMap<>(withPlaceholders).forEach((key, value) -> {
+            if (MASK.equals(value)) {
+                withPlaceholders.put(key, variable(SecretVariableNames.smtp(key), taken));
+            }
+        });
+        exported.setSmtpServer(withPlaceholders);
+    }
+
+    /**
+     * The private keys of the clients (SAML signing and encryption keys), which Keycloak exports in clear: each one
+     * becomes a variable, sorted by client id. The keys of a client Keycloak owns are left out.
+     */
+    static void clientPrivateKeys(
+            final List<ClientRepresentation> clients,
+            final Predicate<ClientRepresentation> ownedByKeycloak,
+            final Set<String> taken) {
+        if (clients == null) {
+            return;
+        }
+        clients.stream()
+                .filter(client -> client.getClientId() != null && client.getAttributes() != null)
+                .sorted(Comparator.comparing(ClientRepresentation::getClientId))
+                .forEach(client -> {
+                    Map<String, String> attributes = new HashMap<>(client.getAttributes());
+                    new TreeMap<>(PRIVATE_KEY_ATTRIBUTES).forEach((attribute, use) -> {
+                        String value = attributes.get(attribute);
+                        if (value == null || value.isBlank() || value.startsWith(VAULT)) {
+                            return;
+                        }
+                        if (ownedByKeycloak.test(client)) {
+                            attributes.remove(attribute);
+                        } else {
+                            attributes.put(
+                                    attribute,
+                                    variable(SecretVariableNames.clientPrivateKey(client.getClientId(), use), taken));
+                        }
+                    });
+                    client.setAttributes(attributes);
+                });
+    }
+
+    /** A placeholder for a new variable, its name made unique and taken. */
+    private static String variable(final String name, final Set<String> taken) {
+        String unique = SecretVariableNames.unique(name, taken);
+        taken.add(unique);
+        return placeholder(unique);
     }
 
     /** The bind credentials of the components (LDAP), sub-components included, sorted by component name. */

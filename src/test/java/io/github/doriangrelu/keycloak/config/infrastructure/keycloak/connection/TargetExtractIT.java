@@ -81,11 +81,15 @@ class TargetExtractIT {
     private static final String REALM = "target-extract";
     private static final String DEFAULT_REALM = "target-extract-default";
     private static final String PROFILE_REALM = "target-extract-profile";
+    private static final String AUTHZ_REALM = "target-extract-authz";
+    private static final String API_SECRET = "api-secret-value-5e1c8b";
     private static final String SHOP_SECRET = "shop-secret-value-4f8a2c";
     private static final String GOOGLE_SECRET = "google-secret-value-9d1e7b";
     private static final String SMTP_PASSWORD = "smtp-password-value-3c6f0a";
     private static final String USER_PASSWORD = "alice-password-value-7b2e9d";
     private static final String MASK = "**********";
+    private static final String SIGNING_KEY = privateKey();
+    private static final String ENCRYPTION_KEY = privateKey();
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -103,6 +107,8 @@ class TargetExtractIT {
             realm.setRealm(REALM);
             realm.setEnabled(true);
             realm.setLoginWithEmailAllowed(false);
+            // a setting Keycloak keeps as an attribute of the realm
+            realm.setAttributes(Map.of("frontendUrl", "https://sso.example.org"));
             realm.setSmtpServer(Map.of(
                     "host", "smtp.example.org",
                     "port", "587",
@@ -125,6 +131,20 @@ class TargetExtractIT {
             web.setPublicClient(true);
             web.setRedirectUris(List.of("https://web.example.org/*"));
             created.clients().create(web).close();
+            ClientRepresentation saml = new ClientRepresentation();
+            saml.setClientId("https://saml.example.org");
+            saml.setProtocol("saml");
+            saml.setRedirectUris(List.of("https://saml.example.org/*"));
+            saml.setAttributes(Map.of(
+                    "saml.client.signature",
+                    "true",
+                    "saml.encrypt",
+                    "true",
+                    "saml.signing.private.key",
+                    SIGNING_KEY,
+                    "saml.encryption.private.key",
+                    ENCRYPTION_KEY));
+            created.clients().create(saml).close();
 
             created.roles().create(role("manager"));
             String shopId = created.clients().findByClientId("shop").getFirst().getId();
@@ -200,6 +220,18 @@ class TargetExtractIT {
             department.setPermissions(new UPAttributePermissions(Set.of("admin", "user"), Set.of("admin")));
             profile.addOrReplaceAttribute(department);
             admin.realm(PROFILE_REALM).users().userProfile().update(profile);
+
+            RealmRepresentation withAuthorization = new RealmRepresentation();
+            withAuthorization.setRealm(AUTHZ_REALM);
+            withAuthorization.setEnabled(true);
+            admin.realms().create(withAuthorization);
+            ClientRepresentation api = new ClientRepresentation();
+            api.setClientId("api");
+            api.setPublicClient(false);
+            api.setSecret(API_SECRET);
+            api.setServiceAccountsEnabled(true);
+            api.setAuthorizationServicesEnabled(true);
+            admin.realm(AUTHZ_REALM).clients().create(api).close();
         }
     }
 
@@ -208,8 +240,8 @@ class TargetExtractIT {
     static void removeTheRealm() {
         try (Keycloak admin = admin()) {
             admin.realms().findAll().stream()
-                    .filter(realm ->
-                            List.of(REALM, DEFAULT_REALM, PROFILE_REALM).contains(realm.getRealm()))
+                    .filter(realm -> List.of(REALM, DEFAULT_REALM, PROFILE_REALM, AUTHZ_REALM)
+                            .contains(realm.getRealm()))
                     .forEach(realm -> admin.realm(realm.getRealm()).remove());
         }
     }
@@ -230,6 +262,9 @@ class TargetExtractIT {
                 .isNotNull();
         assertThat(document.path("smtpServer").path("host").asText()).isEqualTo("smtp.example.org");
         assertThat(document.has("id")).isFalse();
+        // a setting kept as an attribute, with the other attributes: the import replaces them whole
+        assertThat(document.path("attributes").path("frontendUrl").asText()).isEqualTo("https://sso.example.org");
+        assertThat(document.path("attributes").has("cibaInterval")).isTrue();
     }
 
     @Test
@@ -274,14 +309,29 @@ class TargetExtractIT {
                         .asText())
                 .isEqualTo("{{googleClientSecret}}");
         assertThat(document.path("smtpServer").path("password").asText()).isEqualTo("{{smtpPassword}}");
-        assertThat(extracted.variables()).containsExactly("googleClientSecret", "shopSecret", "smtpPassword");
+        assertThat(extracted.variables())
+                .containsExactly(
+                        "googleClientSecret",
+                        "httpsSamlExampleOrgEncryptionPrivateKey",
+                        "httpsSamlExampleOrgSecret",
+                        "httpsSamlExampleOrgSigningPrivateKey",
+                        "shopSecret",
+                        "smtpPassword");
+        JsonNode saml = byField(document.path("clients"), "clientId", "https://saml.example.org");
+        assertThat(saml.path("attributes").path("saml.signing.private.key").asText())
+                .isEqualTo("{{httpsSamlExampleOrgSigningPrivateKey}}");
+        assertThat(saml.path("attributes").path("saml.encryption.private.key").asText())
+                .isEqualTo("{{httpsSamlExampleOrgEncryptionPrivateKey}}");
     }
 
     @Test
     void noSecretValueAndNoMaskInTheDocument() {
         ExtractedRealm extracted = extract(true);
 
-        assertThat(extracted.document()).doesNotContain(SHOP_SECRET, GOOGLE_SECRET, SMTP_PASSWORD, USER_PASSWORD, MASK);
+        assertThat(extracted.document())
+                .doesNotContain(SHOP_SECRET, GOOGLE_SECRET, SMTP_PASSWORD, USER_PASSWORD, MASK)
+                .doesNotContain(SIGNING_KEY, ENCRYPTION_KEY)
+                .doesNotContain(samlKey("saml.signing.private.key"), samlKey("saml.encryption.private.key"));
         assertThat(extracted.toString()).doesNotContain(extracted.document()).doesNotContain("{{shopSecret}}");
     }
 
@@ -317,7 +367,10 @@ class TargetExtractIT {
         try (Connection connection = connect()) {
             Map<String, String> secrets = connection.clientSecrets(REALM);
 
-            assertThat(secrets).containsExactly(Map.entry("shopSecret", SHOP_SECRET));
+            // the SAML client is confidential too: Keycloak gave it a secret
+            assertThat(secrets)
+                    .containsEntry("shopSecret", SHOP_SECRET)
+                    .containsOnlyKeys("httpsSamlExampleOrgSecret", "shopSecret");
             assertThat(secrets.toString()).doesNotContain(SHOP_SECRET);
         }
     }
@@ -415,6 +468,20 @@ class TargetExtractIT {
         }
     }
 
+    /** A client with Authorization Services and its default authorization: no change either. */
+    @Test
+    void aDryRunOfAClientWithAuthorizationHasNoChange() {
+        try (Connection connection = connect()) {
+            String document = connection.extract(AUTHZ_REALM, false).document().replace("{{apiSecret}}", API_SECRET);
+
+            ImportReport report =
+                    connection.dryRun(List.of(new ImportFile("target-extract-it", AUTHZ_REALM + ".json", document)));
+
+            assertThat(document).contains("authorizationSettings");
+            assertThat(report.plan(AUTHZ_REALM)).isEmpty();
+        }
+    }
+
     /** The reference of the version of the integration tests is the profile Keycloak gives a new realm. */
     @Test
     void theReferenceUserProfileIsTheOneOfANewRealm() throws Exception {
@@ -430,10 +497,36 @@ class TargetExtractIT {
         }
     }
 
+    /** A private key of the SAML client, as Keycloak keeps it (it makes its own signing key). */
+    private static String samlKey(final String attribute) {
+        try (Keycloak admin = admin()) {
+            return admin.realm(REALM)
+                    .clients()
+                    .findByClientId("https://saml.example.org")
+                    .getFirst()
+                    .getAttributes()
+                    .get(attribute);
+        }
+    }
+
+    private static String samlSecret() {
+        try (Keycloak admin = admin()) {
+            String id = admin.realm(REALM)
+                    .clients()
+                    .findByClientId("https://saml.example.org")
+                    .getFirst()
+                    .getId();
+            return admin.realm(REALM).clients().get(id).getSecret().getValue();
+        }
+    }
+
     private static String withValues(final String document) {
         return document.replace("{{shopSecret}}", SHOP_SECRET)
                 .replace("{{googleClientSecret}}", GOOGLE_SECRET)
-                .replace("{{smtpPassword}}", SMTP_PASSWORD);
+                .replace("{{smtpPassword}}", SMTP_PASSWORD)
+                .replace("{{httpsSamlExampleOrgSecret}}", samlSecret())
+                .replace("{{httpsSamlExampleOrgSigningPrivateKey}}", samlKey("saml.signing.private.key"))
+                .replace("{{httpsSamlExampleOrgEncryptionPrivateKey}}", samlKey("saml.encryption.private.key"));
     }
 
     private static ExtractedRealm extract(final boolean withUsers) {
@@ -506,5 +599,17 @@ class TargetExtractIT {
                 .username(ADMIN)
                 .password(ADMIN_PASSWORD)
                 .build();
+    }
+
+    /** A private key, encoded as Keycloak keeps the keys of a SAML client. */
+    private static String privateKey() {
+        try {
+            java.security.KeyPairGenerator generator = java.security.KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            return java.util.Base64.getEncoder()
+                    .encodeToString(generator.generateKeyPair().getPrivate().getEncoded());
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
     }
 }

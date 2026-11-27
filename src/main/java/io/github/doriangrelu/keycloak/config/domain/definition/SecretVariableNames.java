@@ -55,6 +55,28 @@ public final class SecretVariableNames {
         return "smtpPassword";
     }
 
+    /**
+     * Another entry of an identity provider configuration Keycloak hides: {@code google} and {@code clientAssertionKey}
+     * give {@code googleClientAssertionKey}; {@code clientSecret} gives the name of {@link #identityProvider(String)}.
+     */
+    public static String identityProvider(final String alias, final String key) {
+        return camelCase(alias, "identityProvider") + upperFirst(camelCase(key, "secret"));
+    }
+
+    /** An entry of the SMTP server Keycloak hides: {@code authTokenClientSecret} gives {@code smtpAuthTokenClientSecret}. */
+    public static String smtp(final String key) {
+        return "smtp" + upperFirst(camelCase(key, "secret"));
+    }
+
+    /**
+     * A private key of a client: {@code shop} and {@code signing} give {@code shopSigningPrivateKey}.
+     *
+     * @param use what the key is for: {@code signing}, {@code encryption}
+     */
+    public static String clientPrivateKey(final String clientId, final String use) {
+        return camelCase(clientId, "client") + upperFirst(camelCase(use, "key")) + "PrivateKey";
+    }
+
     /** The bind credential of a component: {@code corporate ldap} gives {@code corporateLdapBindCredential}. */
     public static String component(final String name) {
         return camelCase(name, "component") + "BindCredential";
