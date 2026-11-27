@@ -42,8 +42,10 @@ import io.github.doriangrelu.keycloak.config.application.definition.port.Targets
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.DefinedRolesRule;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.RuleElement;
 import io.github.doriangrelu.keycloak.config.domain.definition.rules.UniqueIdentifierRule;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.properties.ImportConfigProperties;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.shell.ShellProperties;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection.ChildContextKeycloakConnector;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection.TargetImportOptions;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.definition.RealmDefinitionFiles;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.rules.BaselineBuiltIns;
 import io.github.doriangrelu.keycloak.config.infrastructure.source.rules.RuleFilesOnDisk;
@@ -51,6 +53,8 @@ import io.github.doriangrelu.keycloak.config.infrastructure.source.targets.Targe
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -78,10 +82,25 @@ public class ShellAdaptersConfiguration {
         return new TargetsFile(properties.getRoot());
     }
 
-    /** One Spring context per connection, built on a copy of the environment of the application. */
+    /**
+     * One Spring context per connection, built on a copy of the environment of the application, importing with the
+     * default options of the command-line import.
+     */
     @Bean
     public KeycloakConnector keycloakConnector(final ConfigurableEnvironment environment) {
-        return new ChildContextKeycloakConnector(environment);
+        return new ChildContextKeycloakConnector(environment, defaultImportOptions());
+    }
+
+    /**
+     * The options of an import from the shell: the default values of the {@code import.*} properties, which the shell
+     * does not let change ({@code import.validate}, {@code import.behaviors.*}).
+     */
+    public static TargetImportOptions defaultImportOptions() {
+        ImportConfigProperties defaults =
+                new Binder().bindOrCreate("import", Bindable.of(ImportConfigProperties.class));
+        return new TargetImportOptions(
+                ImportCommandConfiguration.keycloakImportOptionsOf(defaults),
+                defaults.getBehaviors().isSyncUserFederation());
     }
 
     @Bean

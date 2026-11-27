@@ -21,13 +21,10 @@
 package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection;
 
 import io.github.doriangrelu.keycloak.config.application.definition.Connection;
-import io.github.doriangrelu.keycloak.config.application.definition.KeycloakAuthenticationException;
-import io.github.doriangrelu.keycloak.config.application.definition.KeycloakUnreachableException;
 import io.github.doriangrelu.keycloak.config.application.definition.port.KeycloakConnector;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.KeycloakImportOptions;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
-import jakarta.ws.rs.ProcessingException;
-import jakarta.ws.rs.WebApplicationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -46,10 +43,10 @@ import org.springframework.core.env.SystemEnvironmentPropertySource;
  * Opens a connection per target, each in its own Spring context (ADR-010).
  *
  * <p>The context of a target is built on a copy of the environment of the application, in the same order, with the
- * properties of the target first: it sees the defaults and the options given at start-up (for the import to come),
- * and holds its own Keycloak client. The copy leaves out every {@code keycloak.*} setting of the application, in any
- * form ({@code --keycloak.password}, {@code KEYCLOAK_PASSWORD}...): the client of a target only knows what the target
- * gives (see {@link TargetConnectionConfiguration}). The context is not a child of the application context, so its
+ * properties of the target first: it sees the defaults and the options given at start-up, and holds its own Keycloak
+ * client and the import (see {@link TargetConnectionConfiguration}), with the import options given here. The copy
+ * leaves out every {@code keycloak.*} setting of the application, in any form ({@code --keycloak.password},
+ * {@code KEYCLOAK_PASSWORD}...): the client of a target only knows what the target gives. The context is not a child of the application context, so its
  * beans and its events stay apart; closing the connection closes it, and with it the HTTP client.
  */
 public final class ChildContextKeycloakConnector implements KeycloakConnector {
@@ -57,19 +54,24 @@ public final class ChildContextKeycloakConnector implements KeycloakConnector {
     private static final String KEYCLOAK_PREFIX = "keycloak";
 
     private final ConfigurableEnvironment mainEnvironment;
+    private final TargetImportOptions importOptions;
     private final Supplier<AnnotationConfigApplicationContext> contexts;
 
     /**
      * @param mainEnvironment the environment of the application, which is read and never changed
+     * @param importOptions the options of the imports on every target
      */
-    public ChildContextKeycloakConnector(final ConfigurableEnvironment mainEnvironment) {
-        this(mainEnvironment, AnnotationConfigApplicationContext::new);
+    public ChildContextKeycloakConnector(
+            final ConfigurableEnvironment mainEnvironment, final TargetImportOptions importOptions) {
+        this(mainEnvironment, importOptions, AnnotationConfigApplicationContext::new);
     }
 
     ChildContextKeycloakConnector(
             final ConfigurableEnvironment mainEnvironment,
+            final TargetImportOptions importOptions,
             final Supplier<AnnotationConfigApplicationContext> contexts) {
         this.mainEnvironment = Objects.requireNonNull(mainEnvironment, "mainEnvironment");
+        this.importOptions = Objects.requireNonNull(importOptions, "importOptions");
         this.contexts = Objects.requireNonNull(contexts, "contexts");
     }
 
@@ -81,16 +83,17 @@ public final class ChildContextKeycloakConnector implements KeycloakConnector {
         try {
             context.setDisplayName("Keycloak target " + target.name());
             context.setEnvironment(environmentOf(target, secret));
+            context.registerBean("keycloakImportOptions", KeycloakImportOptions.class, this.importOptions::keycloak);
             context.register(TargetConnectionConfiguration.class);
             context.refresh();
             KeycloakProvider provider = context.getBean(KeycloakProvider.class);
             // the login first: reading the version alone takes a refused login for a server that hides its version
             provider.getInstance();
             String version = provider.getKeycloakVersion();
-            return new TargetConnection(target, version, context);
+            return new TargetConnection(target, version, context, this.importOptions.syncUserFederation());
         } catch (RuntimeException failure) {
             context.close();
-            throw translated(target, failure);
+            throw KeycloakFailures.atConnection(target, failure);
         }
     }
 
@@ -131,37 +134,5 @@ public final class ChildContextKeycloakConnector implements KeycloakConnector {
     /** {@code keycloak.url}, {@code keycloak.http-proxy}, {@code KEYCLOAK_PASSWORD}... */
     private static boolean isKeycloakSetting(final String name) {
         return name.split("[._\\[]", 2)[0].equalsIgnoreCase(KEYCLOAK_PREFIX);
-    }
-
-    /**
-     * A failure of the first calls: the HTTP client could not reach Keycloak, or Keycloak answered the login with an
-     * error. Any other failure is left as it is.
-     */
-    private static RuntimeException translated(final Target target, final RuntimeException failure) {
-        for (Throwable current = failure; current != null; current = current.getCause()) {
-            if (current instanceof ProcessingException unreachable) {
-                return new KeycloakUnreachableException(target, reasonOf(unreachable), failure);
-            }
-            if (current instanceof WebApplicationException answered && answered.getResponse() != null) {
-                int status = answered.getResponse().getStatus();
-                return switch (status) {
-                    case 400, 401, 403, 404 -> new KeycloakAuthenticationException(target, status, failure);
-                    case 429, 502, 503, 504 -> new KeycloakUnreachableException(target, "HTTP " + status, failure);
-                    default -> failure;
-                };
-            }
-        }
-        return failure;
-    }
-
-    /** The deepest message of the HTTP client error: "Connection refused", "Connect timed out", the unknown host. */
-    private static String reasonOf(final Throwable error) {
-        String reason = error.getMessage();
-        for (Throwable current = error; current != null; current = current.getCause()) {
-            if (current.getMessage() != null && !current.getMessage().isBlank()) {
-                reason = current.getClass().getSimpleName() + ": " + current.getMessage();
-            }
-        }
-        return reason;
     }
 }

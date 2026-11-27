@@ -29,6 +29,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.KeycloakUnre
 import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakConfigProperties;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import io.github.doriangrelu.keycloak.config.test.util.StubKeycloak;
@@ -271,8 +272,9 @@ class ChildContextKeycloakConnectorTest {
         Target target = target(url);
         long start = System.nanoTime();
 
-        Throwable failure =
-                catchThrowable(() -> new ChildContextKeycloakConnector(this.mainEnvironment).connect(target, SECRET));
+        Throwable failure = catchThrowable(() -> new ChildContextKeycloakConnector(
+                        this.mainEnvironment, ShellAdaptersConfiguration.defaultImportOptions())
+                .connect(target, SECRET));
 
         assertThat(failure)
                 .isInstanceOf(KeycloakUnreachableException.class)
@@ -286,7 +288,8 @@ class ChildContextKeycloakConnectorTest {
 
     @Test
     void anUnknownHostIsUnreachable() {
-        Throwable failure = catchThrowable(() -> new ChildContextKeycloakConnector(this.mainEnvironment)
+        Throwable failure = catchThrowable(() -> new ChildContextKeycloakConnector(
+                        this.mainEnvironment, ShellAdaptersConfiguration.defaultImportOptions())
                 .connect(target("http://kcc-unknown-host.invalid:8080"), SECRET));
 
         assertThat(failure).isInstanceOf(KeycloakUnreachableException.class);
@@ -297,11 +300,12 @@ class ChildContextKeycloakConnectorTest {
     @Test
     void aFailedConnectionClosesItsContextAndItsHttpClient() throws IOException {
         List<RecordingContext> contexts = new ArrayList<>();
-        ChildContextKeycloakConnector connector = new ChildContextKeycloakConnector(this.mainEnvironment, () -> {
-            RecordingContext context = new RecordingContext();
-            contexts.add(context);
-            return context;
-        });
+        ChildContextKeycloakConnector connector = new ChildContextKeycloakConnector(
+                this.mainEnvironment, ShellAdaptersConfiguration.defaultImportOptions(), () -> {
+                    RecordingContext context = new RecordingContext();
+                    contexts.add(context);
+                    return context;
+                });
 
         catchThrowable(() -> connector.connect(target("http://localhost:" + aClosedPort()), SECRET));
 
@@ -317,11 +321,12 @@ class ChildContextKeycloakConnectorTest {
     @Test
     void theContextOfATargetSeesTheMainPropertiesButNoKeycloakSetting() throws IOException {
         List<RecordingContext> contexts = new ArrayList<>();
-        ChildContextKeycloakConnector connector = new ChildContextKeycloakConnector(this.mainEnvironment, () -> {
-            RecordingContext context = new RecordingContext();
-            contexts.add(context);
-            return context;
-        });
+        ChildContextKeycloakConnector connector = new ChildContextKeycloakConnector(
+                this.mainEnvironment, ShellAdaptersConfiguration.defaultImportOptions(), () -> {
+                    RecordingContext context = new RecordingContext();
+                    contexts.add(context);
+                    return context;
+                });
         int mainSources = this.mainEnvironment.getPropertySources().size();
 
         catchThrowable(() -> connector.connect(target("http://localhost:" + aClosedPort()), SECRET));
@@ -341,7 +346,8 @@ class ChildContextKeycloakConnectorTest {
     }
 
     private ChildContextKeycloakConnector connector() {
-        return new ChildContextKeycloakConnector(this.mainEnvironment);
+        return new ChildContextKeycloakConnector(
+                this.mainEnvironment, ShellAdaptersConfiguration.defaultImportOptions());
     }
 
     private String stubUrl() {

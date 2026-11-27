@@ -31,6 +31,8 @@ import io.github.doriangrelu.keycloak.config.application.definition.UnknownTarge
 import io.github.doriangrelu.keycloak.config.application.definition.port.KeycloakConnector;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Questions;
 import io.github.doriangrelu.keycloak.config.application.definition.port.Targets;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
 import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import java.io.PrintWriter;
@@ -312,6 +314,16 @@ class ConnectionCommandsTest {
         @Override
         public String keycloakVersion() {
             return "26.5.3";
+        }
+
+        @Override
+        public ImportReport dryRun(final List<ImportFile> files) {
+            throw new UnsupportedOperationException("no import in this test");
+        }
+
+        @Override
+        public ImportReport apply(final List<ImportFile> files) {
+            throw new UnsupportedOperationException("no import in this test");
         }
 
         @Override

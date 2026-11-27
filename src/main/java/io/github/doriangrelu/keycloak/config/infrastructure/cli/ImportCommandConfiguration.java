@@ -63,6 +63,11 @@ public class ImportCommandConfiguration {
 
     @Bean
     public KeycloakImportOptions keycloakImportOptions(final ImportConfigProperties properties) {
+        return keycloakImportOptionsOf(properties);
+    }
+
+    /** The options of the import that concern Keycloak itself, read from the {@code import.*} properties. */
+    static KeycloakImportOptions keycloakImportOptionsOf(final ImportConfigProperties properties) {
         return new KeycloakImportOptions(
                 properties.isValidate(),
                 properties.getBehaviors().isRemoveDefaultRoleFromUser(),

@@ -20,7 +20,10 @@
 
 package io.github.doriangrelu.keycloak.config.application.definition;
 
+import io.github.doriangrelu.keycloak.config.application.importation.ImportFile;
+import io.github.doriangrelu.keycloak.config.application.importation.ImportReport;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
+import java.util.List;
 
 /** An open connection to the Keycloak of a target, checked by a first call. Closing it releases every resource. */
 public interface Connection extends AutoCloseable {
@@ -30,6 +33,31 @@ public interface Connection extends AutoCloseable {
 
     /** The version of the Keycloak server, read when the connection was opened. */
     String keycloakVersion();
+
+    /**
+     * Computes what importing the files would change on the target, without writing anything: a missing realm is not
+     * created. The import options are those of the command-line import by default.
+     *
+     * @param files the import files, in the order they are applied
+     * @return the changes the import would make, by realm
+     * @throws io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException when a file is not
+     *     a valid import file
+     * @throws KeycloakUnreachableException when Keycloak cannot be reached or does not answer in time
+     * @throws KeycloakAuthenticationException when Keycloak refuses the account of the target
+     */
+    ImportReport dryRun(List<ImportFile> files);
+
+    /**
+     * Imports the files on the target, then removes what they no longer declare, as the command-line import does.
+     *
+     * @param files the import files, in the order they are applied
+     * @return the changes made, by realm
+     * @throws io.github.doriangrelu.keycloak.config.application.importation.InvalidImportException when a file is not
+     *     a valid import file; nothing is changed then
+     * @throws KeycloakUnreachableException when Keycloak cannot be reached or does not answer in time
+     * @throws KeycloakAuthenticationException when Keycloak refuses the account of the target
+     */
+    ImportReport apply(List<ImportFile> files);
 
     /** Closes the connection; closing it again does nothing. */
     @Override

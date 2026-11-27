@@ -30,6 +30,7 @@ import io.github.doriangrelu.keycloak.config.application.definition.KeycloakUnre
 import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
 import io.github.doriangrelu.keycloak.config.infrastructure.cli.ExitCodeResolver;
+import io.github.doriangrelu.keycloak.config.infrastructure.cli.ShellAdaptersConfiguration;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -206,11 +207,12 @@ class ChildContextKeycloakConnectorIT {
     @Test
     void aFailedConnectionReleasesItsContextAndItsHttpClient() throws IOException {
         List<RecordingContext> contexts = new ArrayList<>();
-        ChildContextKeycloakConnector connector = new ChildContextKeycloakConnector(mainEnvironment, () -> {
-            RecordingContext context = new RecordingContext();
-            contexts.add(context);
-            return context;
-        });
+        ChildContextKeycloakConnector connector = new ChildContextKeycloakConnector(
+                mainEnvironment, ShellAdaptersConfiguration.defaultImportOptions(), () -> {
+                    RecordingContext context = new RecordingContext();
+                    contexts.add(context);
+                    return context;
+                });
         String closedPortUrl = "http://localhost:" + aClosedPort();
 
         catchThrowable(() -> connector.connect(passwordTarget(URL), "not-the-password-4242"));
@@ -242,7 +244,7 @@ class ChildContextKeycloakConnectorIT {
     }
 
     private static ChildContextKeycloakConnector connector() {
-        return new ChildContextKeycloakConnector(mainEnvironment);
+        return new ChildContextKeycloakConnector(mainEnvironment, ShellAdaptersConfiguration.defaultImportOptions());
     }
 
     private static Target passwordTarget(final String url) {

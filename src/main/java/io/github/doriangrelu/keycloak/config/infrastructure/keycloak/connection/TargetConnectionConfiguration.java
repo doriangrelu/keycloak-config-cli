@@ -22,23 +22,72 @@ package io.github.doriangrelu.keycloak.config.infrastructure.keycloak.connection
 
 import io.github.doriangrelu.keycloak.config.domain.definition.GrantType;
 import io.github.doriangrelu.keycloak.config.domain.definition.Target;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.authenticationflow.AuthenticationFlowKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.client.ClientKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientauthorization.ClientAuthorizationKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientpolicy.ClientPolicyKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.clientscope.ClientScopeKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.component.ComponentKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.group.GroupKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.identityprovider.IdentityProviderKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.importation.ReconciliationConfiguration;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.mapping.UnmodeledAttributesConverter;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.messagebundle.MessageBundleKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.realm.RealmKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.requiredaction.RequiredActionKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.role.RoleKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.scopemapping.ScopeMappingKeycloakGateway;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakClientFactory;
 import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.sdk.KeycloakProvider;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.user.UserKeycloakGateway;
+import io.github.doriangrelu.keycloak.config.infrastructure.keycloak.userprofile.UserProfileKeycloakGateway;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
 /**
- * The beans of the Spring context of one target: the Keycloak client of the command-line import, built from the
- * properties of the target. Its classes are registered by name, never found by scanning, so that the context holds
- * nothing else; the import will be added here (US-008-02). It carries no {@code @Configuration}, which component
- * scanning would pick up in the main context: {@code @Import} alone makes it a configuration class when registered.
+ * The beans of the Spring context of one target: the Keycloak client and the import of the command line, built from
+ * the properties of the target.
+ *
+ * <ul>
+ *   <li>the Keycloak client ({@link KeycloakClientFactory}, {@link KeycloakProvider}), registered by name;
+ *   <li>the import: the parser of the import files and the reconciliation engine ({@code importation}), the mappers
+ *       ({@code mapping} and each resource package) and the gateways of each resource, found by scanning these
+ *       packages only. The normalization, the connection itself, the command line and the shell are never scanned:
+ *       the context holds no runner. The use case of the import is built for each call (see
+ *       {@link TargetConnection}).
+ * </ul>
+ *
+ * <p>The import options ({@code KeycloakImportOptions}) are registered by the connector. This class carries no
+ * {@code @Configuration}, which component scanning would pick up in the main context: {@code @Import} and
+ * {@code @ComponentScan} alone make it a configuration class when registered.
  *
  * <p>The context runs with {@code run.operation=IMPORT}, the operation these beans are made for: the conditions they
  * carry for the main context hold in the context of a target without being changed.
  */
 @Import({KeycloakClientFactory.class, KeycloakProvider.class})
+@ComponentScan(
+        basePackageClasses = {
+            ReconciliationConfiguration.class,
+            UnmodeledAttributesConverter.class,
+            AuthenticationFlowKeycloakGateway.class,
+            ClientKeycloakGateway.class,
+            ClientAuthorizationKeycloakGateway.class,
+            ClientPolicyKeycloakGateway.class,
+            ClientScopeKeycloakGateway.class,
+            ComponentKeycloakGateway.class,
+            GroupKeycloakGateway.class,
+            IdentityProviderKeycloakGateway.class,
+            MessageBundleKeycloakGateway.class,
+            RealmKeycloakGateway.class,
+            RequiredActionKeycloakGateway.class,
+            RoleKeycloakGateway.class,
+            ScopeMappingKeycloakGateway.class,
+            UserKeycloakGateway.class,
+            UserProfileKeycloakGateway.class
+        })
 public class TargetConnectionConfiguration {
 
     /** The read timeout of the command line, which a target does not set; it never waits less than it connects. */
