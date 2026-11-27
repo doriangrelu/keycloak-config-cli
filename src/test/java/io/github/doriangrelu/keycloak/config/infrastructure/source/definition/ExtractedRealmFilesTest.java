@@ -22,6 +22,7 @@ package io.github.doriangrelu.keycloak.config.infrastructure.source.definition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -183,6 +184,28 @@ class ExtractedRealmFilesTest {
 
         assertThat(files().folders()).isEmpty();
         assertThat(names(".")).isEmpty();
+    }
+
+    @Test
+    void aMalformedDocumentNeverQuotesItsContent() {
+        Throwable thrown = catchThrowable(() -> files().createExtractedRealm(
+                        "demo", DefinitionFormat.YAML, "{\"realm\": \"demo\", \"secret\": \"MARKER-VALUE\" oops"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+        for (Throwable t = thrown; t != null; t = t.getCause()) {
+            assertThat(t.getMessage()).doesNotContain("MARKER-VALUE");
+            for (Throwable suppressed : t.getSuppressed()) {
+                assertThat(String.valueOf(suppressed.getMessage())).doesNotContain("MARKER-VALUE");
+            }
+        }
+        assertThat(thrown.getCause()).isNull();
+    }
+
+    @Test
+    void aDocumentWithoutARealmNameIsRefused() {
+        assertThatThrownBy(() -> files().createExtractedRealm("demo", DefinitionFormat.YAML, "{\"enabled\": true}"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(files().folders()).isEmpty();
     }
 
     @Test

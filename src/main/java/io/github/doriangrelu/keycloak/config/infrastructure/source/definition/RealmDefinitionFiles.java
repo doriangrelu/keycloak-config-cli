@@ -435,9 +435,14 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         // Every file is computed before anything is written
         Map<String, String> contents = new LinkedHashMap<>();
         Object realm = keys.get("realm");
+        if (!(realm instanceof String)) {
+            throw new IllegalArgumentException("The extracted realm has no \"realm\" name");
+        }
         for (String stem : StandardLayout.stems()) {
             String name = stem + format.extension();
             DocumentTree tree = DocumentTrees.parse(name, "");
+            // The realm key comes first in every file
+            tree.root().put("realm", new PlainEntry(realm));
             boolean content = false;
             for (Map.Entry<String, Object> key : keys.entrySet()) {
                 if (key.getKey().equals("realm")
@@ -451,15 +456,6 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
                 content = true;
             }
             if (content || stem.equals(StandardLayout.stems().getFirst())) {
-                if (realm != null) {
-                    // The realm key comes first in every file
-                    DocumentTree withRealm = DocumentTrees.parse(name, "");
-                    withRealm.root().put("realm", new PlainEntry(realm));
-                    for (String key : tree.root().keys()) {
-                        withRealm.root().put(key, tree.root().entry(key).orElseThrow());
-                    }
-                    tree = withRealm;
-                }
                 contents.put(name, tree.render());
             }
         }
@@ -471,7 +467,8 @@ public final class RealmDefinitionFiles implements RealmDefinitions {
         try {
             return EXTRACTED_MAPPER.readValue(Objects.requireNonNull(document, "document"), MAP_TYPE);
         } catch (IOException e) {
-            throw new IllegalArgumentException("The extracted realm is not a JSON object", e);
+            // No cause: its message quotes a part of the document, which may hold secrets
+            throw new IllegalArgumentException("The extracted realm is not a JSON object");
         }
     }
 
